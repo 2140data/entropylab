@@ -154,8 +154,14 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .hint.bad { color: var(--danger); }
 .hint.ok { color: var(--ok); }
 #workspace { margin: 8px 0 4px; }
-#msig-card[hidden], #calc-card[hidden] { display: none !important; }
+#msig-card[hidden], #calc-card[hidden], #psbt-card[hidden] { display: none !important; }
 #calc-card:not([hidden]), #msig-card:not([hidden]) { margin-top: 0; border-radius: 0 0 20px 20px; position: relative; z-index: 1; }
+.psbt-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 14px; }
+@media (min-width: 720px) { .psbt-grid { grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); } }
+.psbt-kv { font-family: var(--mono); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+.psbt-ok { color: var(--ok); }
+.psbt-bad { color: var(--danger); }
+.psbt-warn { color: var(--warn); }
 .key-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .key-panel-head #modes { flex: 1 1 auto; min-width: 0; }
 .btn.delete-key {
@@ -233,7 +239,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
  the seed on this air-gapped machine. Carry only addresses and the xpub 
 online.</p>
     </section>
-    <div class="row no-print" id="workspace"><button class="tab active">Key Generation</button><button class="tab">Multi Signature</button></div>
+    <div class="row no-print" id="workspace"><button class="tab active">Key Generation</button><button class="tab">Multi Signature</button><button class="tab">PSBT / Nonce</button></div>
     <section class="key-manager no-print" id="key-manager">
       <div class="key-manager-head"><h2>Keys</h2><button class="btn secondary add-key" id="add-key" type="button" aria-label="Add key">+</button></div>
       <div class="key-tabs" id="key-tabs" role="status" aria-label="Keys"><p class="key-tabs-empty">click + to generate a new key</p></div>
@@ -335,6 +341,36 @@ needs the number of signatures you choose, on real signing devices.</p>
         <button class="btn secondary" id="msig-wipe" type="button">Wipe Current Multisig</button>
       </div>
       <p class="err" id="msig-error"></p>
+    </section>
+    <section class="card no-print" id="psbt-card" role="tabpanel" hidden>
+      <div class="kicker">Inspect first. Sign elsewhere.</div>
+      <h2>Read a PSBT. Check its ECDSA nonces.</h2>
+      <p class="muted">Inspecting a PSBT v0 does not require a private key. EntropyLab can show outputs, PSBT-provided input amounts and fees, signatures, and repeated ECDSA nonce values. Loading a matching key additionally checks whether supported signatures match plain RFC 6979; a mismatch alone is not evidence of a compromised signer.</p>
+      <label class="field">PSBT v0 (base64 or hex)
+        <textarea id="psbt-text" placeholder="cHNidP8B..." spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+      </label>
+      <div class="psbt-grid">
+        <label class="field">Optional session key (BIP39 seed phrase, WIF, or 64-character hex)
+          <textarea id="psbt-key" placeholder="Leave blank for inspect-only mode" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+        </label>
+        <div>
+          <label class="field">Optional BIP39 passphrase
+            <input id="psbt-pass" autocomplete="off" placeholder="Leave blank unless you set one">
+          </label>
+          <label class="field">Address network
+            <select id="psbt-network"><option value="mainnet">Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
+          </label>
+        </div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn primary" id="psbt-go" type="button">Inspect PSBT</button>
+        <button class="btn secondary" id="psbt-use-calc" type="button">Use active key this session</button>
+        <button class="btn secondary" id="psbt-wipe" type="button">End session / clear fields</button>
+      </div>
+      <p class="muted" id="psbt-session" aria-live="polite">No session key. Inspect-only mode.</p>
+      <p class="err" id="psbt-error" role="alert"></p>
+      <div id="psbt-out" aria-live="polite"></div>
+      <p class="muted">Session keys remain in this page only and are never intentionally stored or sent. Memory clearing is best-effort because browsers may retain internal copies; close the page before reconnecting the computer.</p>
     </section>
     <div id="out"></div>
     <section class="card muted">
@@ -2485,6 +2521,36 @@ zoo`.split(`
       </div>
       <p class="err" id="msig-error"></p>
     </section>
+    <section class="card no-print" id="psbt-card" role="tabpanel" hidden>
+      <div class="kicker">Inspect first. Sign elsewhere.</div>
+      <h2>Read a PSBT. Check its ECDSA nonces.</h2>
+      <p class="muted">Inspecting a PSBT v0 does not require a private key. EntropyLab can show outputs, PSBT-provided input amounts and fees, signatures, and repeated ECDSA nonce values. Loading a matching key additionally checks whether supported signatures match plain RFC 6979; a mismatch alone is not evidence of a compromised signer.</p>
+      <label class="field">PSBT v0 (base64 or hex)
+        <textarea id="psbt-text" placeholder="cHNidP8B..." spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+      </label>
+      <div class="psbt-grid">
+        <label class="field">Optional session key (BIP39 seed phrase, WIF, or 64-character hex)
+          <textarea id="psbt-key" placeholder="Leave blank for inspect-only mode" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+        </label>
+        <div>
+          <label class="field">Optional BIP39 passphrase
+            <input id="psbt-pass" autocomplete="off" placeholder="Leave blank unless you set one">
+          </label>
+          <label class="field">Address network
+            <select id="psbt-network"><option value="mainnet">Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
+          </label>
+        </div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn primary" id="psbt-go" type="button">Inspect PSBT</button>
+        <button class="btn secondary" id="psbt-use-calc" type="button">Use active key this session</button>
+        <button class="btn secondary" id="psbt-wipe" type="button">End session / clear fields</button>
+      </div>
+      <p class="muted" id="psbt-session" aria-live="polite">No session key. Inspect-only mode.</p>
+      <p class="err" id="psbt-error" role="alert"></p>
+      <div id="psbt-out" aria-live="polite"></div>
+      <p class="muted">Session keys remain in this page only and are never intentionally stored or sent. Memory clearing is best-effort because browsers may retain internal copies; close the page before reconnecting the computer.</p>
+    </section>
     <div id="out"></div>
     <section class="card muted">
       <h3 style="color:var(--fg)">Sources</h3>
@@ -2632,6 +2698,124 @@ function hodlDiceCompare(){let box=document.getElementById("dice-compare");if(!b
       <p><span class="muted">Hash the rolls</span><br><span class="mono ${ge==="coldcard"?"ok":""}">${$t(hashW)}</span></p>
       <p><span class="muted">Ian Coleman</span><br><span class="mono ${ge==="coleman"?"ok":""}">${$t(coleW)}</span></p>
       <p class="hint ok">${ge==="coldcard"?"You are hashing. Do not expect this to match Ian Coleman or a BitBox.":"You are on Ian Coleman (Keystone). Do not expect this to match hashing or a BitBox."}</p>`}
+var hodlPsbtPriv=null,hodlPsbtHd=null,hodlPsbtSource="",hodlPsbtNote="No session key. Inspect-only mode.";
+function hodlPsbtNeed(bytes,offset,length,message){if(!Number.isSafeInteger(offset)||!Number.isSafeInteger(length)||offset<0||length<0||offset+length>bytes.length)throw new Error(message||"PSBT ended early.")}
+function hodlU32(number){let bytes=new Uint8Array(4);new DataView(bytes.buffer).setUint32(0,number>>>0,!0);return bytes}
+function hodlU64(number){let bytes=new Uint8Array(8),value=BigInt(number);if(value<0n)throw new Error("Negative transaction amount.");for(let i=0;i<8;i++){bytes[i]=Number(value&255n);value>>=8n}if(value)throw new Error("Transaction amount is too large.");return bytes}
+function hodlR32(bytes,offset){hodlPsbtNeed(bytes,offset,4,"PSBT ended inside a 32-bit value.");return new DataView(bytes.buffer,bytes.byteOffset+offset,4).getUint32(0,!0)}
+function hodlR64(bytes,offset){hodlPsbtNeed(bytes,offset,8,"PSBT ended inside a 64-bit value.");let value=0n;for(let i=0;i<8;i++)value|=BigInt(bytes[offset+i])<<BigInt(8*i);return value}
+function hodlVarInt(bytes,offset){
+  hodlPsbtNeed(bytes,offset,1);let marker=bytes[offset];
+  if(marker<253)return[marker,offset+1];
+  if(marker===253){hodlPsbtNeed(bytes,offset+1,2);let value=bytes[offset+1]|bytes[offset+2]<<8;if(value<253)throw new Error("Non-canonical compact integer.");return[value,offset+3]}
+  if(marker===254){let value=hodlR32(bytes,offset+1);if(value<=65535)throw new Error("Non-canonical compact integer.");return[value,offset+5]}
+  let value=hodlR64(bytes,offset+1);if(value<=0xffffffffn)throw new Error("Non-canonical compact integer.");if(value>BigInt(Number.MAX_SAFE_INTEGER))throw new Error("PSBT field is too large for EntropyLab.");return[Number(value),offset+9]
+}
+function hodlVarIntBytes(number){if(!Number.isSafeInteger(number)||number<0)throw new Error("Invalid compact integer.");if(number<253)return Uint8Array.of(number);if(number<=65535)return Uint8Array.of(253,number&255,number>>8&255);if(number<=0xffffffff){let bytes=new Uint8Array(5);bytes[0]=254;bytes.set(hodlU32(number),1);return bytes}throw new Error("Compact integer is too large.")}
+function hodlPushScript(script){return Os(hodlVarIntBytes(script.length),script)}
+function hodlH256(bytes){return Z(Z(bytes))}
+function hodlEq(a,b){if(!a||!b||a.length!==b.length)return!1;let difference=0;for(let i=0;i<a.length;i++)difference|=a[i]^b[i];return difference===0}
+function hodlHexRev(bytes){let copy=new Uint8Array(bytes);copy.reverse();return M.encode(copy)}
+function hodlB64(value){let binary=atob(value),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return bytes}
+function hodlPsbtBytes(raw){
+  let value=raw.trim(),compact=value.replace(/\s/g,"");if(!value)throw new Error("Paste a PSBT v0.");if(compact.length>7000000)throw new Error("This PSBT is too large to inspect safely.");
+  let bytes;if(/^[0-9a-fA-F]+$/.test(compact)&&compact.length%2===0&&compact.length>=10)bytes=M.decode(compact.toLowerCase());else try{bytes=hodlB64(compact)}catch{throw new Error("That does not look like a PSBT in base64 or hex.")}
+  if(bytes.length>5000000)throw new Error("This PSBT is too large to inspect safely.");return bytes
+}
+function hodlReadMap(bytes,offset){
+  let entries=[],keys=new Set;
+  for(;;){let[keyLength,keyStart]=hodlVarInt(bytes,offset);if(keyLength===0)return{entries,next:keyStart};hodlPsbtNeed(bytes,keyStart,keyLength,"PSBT ended inside a key.");let key=bytes.slice(keyStart,keyStart+keyLength),keyHex=M.encode(key);if(keys.has(keyHex))throw new Error("PSBT contains a duplicate key.");keys.add(keyHex);offset=keyStart+keyLength;let[valueLength,valueStart]=hodlVarInt(bytes,offset);hodlPsbtNeed(bytes,valueStart,valueLength,"PSBT ended inside a value.");let value=bytes.slice(valueStart,valueStart+valueLength);offset=valueStart+valueLength;entries.push({type:key[0],keydata:key.slice(1),key,val:value})}
+}
+function hodlTx(bytes){
+  let offset=0,version=hodlR32(bytes,offset);offset+=4;hodlPsbtNeed(bytes,offset,2,"Unsigned transaction ended early.");if(bytes[offset]===0&&bytes[offset+1]===1)throw new Error("The PSBT v0 unsigned transaction must not contain a witness marker.");
+  let[inputCount,inputStart]=hodlVarInt(bytes,offset);if(inputCount>100000)throw new Error("Unsigned transaction has too many inputs.");offset=inputStart;let inputs=[];
+  for(let i=0;i<inputCount;i++){hodlPsbtNeed(bytes,offset,36,"Unsigned transaction ended inside an input.");let txid=bytes.slice(offset,offset+32);offset+=32;let vout=hodlR32(bytes,offset);offset+=4;let[scriptLength,scriptStart]=hodlVarInt(bytes,offset);hodlPsbtNeed(bytes,scriptStart,scriptLength+4,"Unsigned transaction ended inside an input.");let script=bytes.slice(scriptStart,scriptStart+scriptLength);if(script.length)throw new Error("PSBT v0 unsigned transaction inputs must have empty scriptSigs.");offset=scriptStart+scriptLength;let sequence=hodlR32(bytes,offset);offset+=4;inputs.push({txid,vout,script,sequence})}
+  let[outputCount,outputStart]=hodlVarInt(bytes,offset);if(outputCount>100000)throw new Error("Unsigned transaction has too many outputs.");offset=outputStart;let outputs=[];
+  for(let i=0;i<outputCount;i++){let amount=hodlR64(bytes,offset);offset+=8;let[scriptLength,scriptStart]=hodlVarInt(bytes,offset);hodlPsbtNeed(bytes,scriptStart,scriptLength,"Unsigned transaction ended inside an output.");let script=bytes.slice(scriptStart,scriptStart+scriptLength);offset=scriptStart+scriptLength;outputs.push({amount,script})}
+  let locktime=hodlR32(bytes,offset);offset+=4;if(offset!==bytes.length)throw new Error("Unsigned transaction contains trailing bytes.");return{version,inputs,outputs,locktime,raw:bytes}
+}
+function hodlParsePsbt(bytes){
+  if(bytes.length<5||bytes[0]!==0x70||bytes[1]!==0x73||bytes[2]!==0x62||bytes[3]!==0x74||bytes[4]!==0xff)throw new Error("Not a PSBT. Bitcoin PSBTs start with the bytes psbt followed by ff.");
+  let offset=5,globalMap=hodlReadMap(bytes,offset);offset=globalMap.next;let versionEntry=globalMap.entries.find(entry=>entry.type===0xfb&&entry.keydata.length===0);if(versionEntry){if(versionEntry.val.length!==4||hodlR32(versionEntry.val,0)!==0)throw new Error("EntropyLab currently supports PSBT v0 only.")}
+  let unsignedEntries=globalMap.entries.filter(entry=>entry.type===0&&entry.keydata.length===0);if(unsignedEntries.length!==1)throw new Error("This PSBT must contain exactly one unsigned transaction.");let tx=hodlTx(unsignedEntries[0].val),inputs=[],outputs=[];
+  for(let i=0;i<tx.inputs.length;i++){if(offset>=bytes.length)throw new Error("PSBT is missing an input map.");let map=hodlReadMap(bytes,offset);offset=map.next;inputs.push(map.entries)}
+  for(let i=0;i<tx.outputs.length;i++){if(offset>=bytes.length)throw new Error("PSBT is missing an output map.");let map=hodlReadMap(bytes,offset);offset=map.next;outputs.push(map.entries)}
+  if(offset!==bytes.length)throw new Error("PSBT contains trailing data or extra maps.");return{tx,global:globalMap.entries,inputs,outputs}
+}
+function hodlSats(number){let value=typeof number==="bigint"?number:BigInt(number),negative=value<0n;if(negative)value=-value;let whole=value/100000000n,fraction=value%100000000n;return(negative?"-":"")+whole.toString()+"."+fraction.toString().padStart(8,"0")}
+function hodlAddr(script,network){try{return or(_s(network)).encode(Oe.decode(script))}catch{return"script "+M.encode(script)}}
+function hodlFind(entries,type){return entries.filter(entry=>entry.type===type)}
+function hodlWitUtxo(entries){let entry=hodlFind(entries,1).find(item=>item.keydata.length===0);if(!entry)return null;if(entry.val.length<9)throw new Error("A witness UTXO field is truncated.");let amount=hodlR64(entry.val,0),parsed=hodlVarInt(entry.val,8),scriptLength=parsed[0],scriptStart=parsed[1];hodlPsbtNeed(entry.val,scriptStart,scriptLength,"A witness UTXO script is truncated.");if(scriptStart+scriptLength!==entry.val.length)throw new Error("A witness UTXO contains trailing bytes.");return{amount,script:entry.val.slice(scriptStart)}}
+function hodlPartialSigs(entries){return hodlFind(entries,2).map(entry=>{let signature=entry.val;if(signature.length<2)return{pubkey:entry.keydata,der:new Uint8Array,sighash:0,raw:signature};return{pubkey:entry.keydata,der:signature.slice(0,-1),sighash:signature[signature.length-1],raw:signature}})}
+function hodlTapSigs(entries){return hodlFind(entries,0x13).concat(hodlFind(entries,0x14))}
+function hodlFinalized(entries){return entries.some(entry=>entry.type===7||entry.type===8)}
+function hodlBip32(entries,pubkey){return hodlFind(entries,6).filter(entry=>!pubkey||hodlEq(entry.keydata,pubkey)).map(entry=>{if(entry.val.length<4||(entry.val.length-4)%4)throw new Error("A BIP32 derivation path is malformed.");let path=[];for(let i=4;i<entry.val.length;i+=4)path.push(new DataView(entry.val.buffer,entry.val.byteOffset+i,4).getUint32(0,!0));return{pubkey:entry.keydata,fingerprint:entry.val.slice(0,4),path}})}
+function hodlInputScriptCode(entries,witnessUtxo){
+  if(!witnessUtxo)return null;let outputScript=witnessUtxo.script,redeem=(hodlFind(entries,4).find(entry=>entry.keydata.length===0)||{}).val,witnessScript=(hodlFind(entries,5).find(entry=>entry.keydata.length===0)||{}).val,program=null;
+  if(outputScript.length===22&&outputScript[0]===0&&outputScript[1]===20)program=outputScript;
+  else if(redeem&&redeem.length===22&&redeem[0]===0&&redeem[1]===20)program=redeem;
+  if(program)return Os(Uint8Array.of(0x76,0xa9,0x14),program.slice(2),Uint8Array.of(0x88,0xac));
+  let isWitnessScript=outputScript.length===34&&outputScript[0]===0&&outputScript[1]===32||redeem&&redeem.length===34&&redeem[0]===0&&redeem[1]===32;return isWitnessScript&&witnessScript?witnessScript:null
+}
+function hodlBip143(tx,index,scriptCode,amount,sighashType){
+  if(sighashType!==1)return null;let prevouts=[],sequences=[],outputs=[];for(let input of tx.inputs){prevouts.push(input.txid,hodlU32(input.vout));sequences.push(hodlU32(input.sequence))}for(let output of tx.outputs)outputs.push(hodlU64(output.amount),hodlPushScript(output.script));let input=tx.inputs[index];
+  return hodlH256(Os(hodlU32(tx.version),hodlH256(Os(...prevouts)),hodlH256(Os(...sequences)),input.txid,hodlU32(input.vout),hodlPushScript(scriptCode),hodlU64(amount),hodlU32(input.sequence),hodlH256(Os(...outputs)),hodlU32(tx.locktime),hodlU32(sighashType)))
+}
+function hodlSigParts(der){try{let compact=xe.Signature.fromBytes(der,"der").toBytes("compact");return{r:compact.slice(0,32),s:compact.slice(32)}}catch{return null}}
+function hodlPrivForPub(pubkey){if(hodlPsbtPriv){let compressed=xe.getPublicKey(hodlPsbtPriv,!0),uncompressed=xe.getPublicKey(hodlPsbtPriv,!1);if(hodlEq(compressed,pubkey)||hodlEq(uncompressed,pubkey))return hodlPsbtPriv}if(hodlPsbtHd){try{let rootPubkey=hodlPsbtHd.publicKey;if(rootPubkey&&hodlEq(rootPubkey,pubkey))return hodlPsbtHd.privateKey}catch{}}return null}
+function hodlPrivFromPath(entries,pubkey){if(!hodlPsbtHd)return null;let rootFingerprint=Us(hodlPsbtHd.fingerprint);for(let derivation of hodlBip32(entries,pubkey)){if(M.encode(derivation.fingerprint)!==rootFingerprint)continue;try{let node=hodlPsbtHd;for(let index of derivation.path)node=node.deriveChild(index);if(node.publicKey&&hodlEq(node.publicKey,pubkey))return node.privateKey}catch{}}return null}
+function hodlPsbtWipeMem(){if(hodlPsbtPriv)try{hodlPsbtPriv.fill(0)}catch{}hodlPsbtPriv=null;if(hodlPsbtHd)try{let privateKey=hodlPsbtHd.privateKey;if(privateKey)privateKey.fill(0)}catch{}hodlPsbtHd=null;hodlPsbtSource="";hodlPsbtNote="No session key. Inspect-only mode."}
+function hodlLoadPsbtKey(text,passphrase){
+  hodlPsbtWipeMem();let value=text.trim(),hex=value.replace(/\s/g,"").replace(/^0x/i,"");if(!value)return;
+  if(/^[5KL9c][1-9A-HJ-NP-Za-km-z]{50,51}$/.test(value)){let decoded=Ls(value);hodlPsbtPriv=decoded.priv;hf(hodlPsbtPriv);hodlPsbtNote="Session key: WIF. Kept in page memory only."}
+  else if(/^[0-9a-fA-F]{64}$/.test(hex)){hodlPsbtPriv=M.decode(hex.toLowerCase());hf(hodlPsbtPriv);hodlPsbtNote="Session key: 32-byte private key. Kept in page memory only."}
+  else{let mnemonic=Mt(value);if(!mnemonic.ok)throw new Error(mnemonic.error||"Enter a BIP39 seed phrase, WIF, or 64-character hex key.");let seed=wi(mnemonic.words.join(" "),passphrase||"");try{hodlPsbtHd=Gt.fromMasterSeed(seed)}finally{seed.fill(0)}hodlPsbtNote="Session key: BIP39 seed"+(passphrase?" + passphrase":"")+". Kept in page memory only."}
+  hodlPsbtSource="manual"
+}
+function hodlUseActiveKeyForPsbt(){
+  let state=hodlKeys[hodlActiveKey];if(!state||!state.result)throw new Error("Generate an active key first, then return to PSBT / Nonce.");let result=state.result;hodlPsbtWipeMem();
+  if(result.kind==="hd"&&result.mnemonic){let seed=wi(result.mnemonic,state.fields.pass||"");try{hodlPsbtHd=Gt.fromMasterSeed(seed)}finally{seed.fill(0)}}
+  else if(result.kind==="hd"&&result.rootXprv)hodlPsbtHd=Gt.fromExtendedKey(result.rootXprv);
+  else if(result.kind==="single"&&result.privHex){hodlPsbtPriv=M.decode(result.privHex);hf(hodlPsbtPriv)}
+  else throw new Error("The active key has no private material available for a session check.");
+  hodlPsbtSource="active";hodlPsbtNote="Session key from "+(state.name||"the active key")+". Kept in page memory only."
+}
+function hodlInitPsbt(){
+  let go=document.getElementById("psbt-go");if(!go)return;go.onclick=hodlRunPsbt;
+  document.getElementById("psbt-use-calc").onclick=()=>{let error=document.getElementById("psbt-error");error.textContent="";try{hodlUseActiveKeyForPsbt();document.getElementById("psbt-key").value="";document.getElementById("psbt-pass").value="";document.getElementById("psbt-session").textContent=hodlPsbtNote}catch(exception){error.textContent=exception.message||String(exception)}};
+  document.getElementById("psbt-wipe").onclick=()=>{hodlPsbtWipeMem();document.getElementById("psbt-key").value="";document.getElementById("psbt-pass").value="";document.getElementById("psbt-text").value="";document.getElementById("psbt-out").innerHTML="";document.getElementById("psbt-error").textContent="";document.getElementById("psbt-session").textContent="Session ended and accessible fields were cleared (best effort)."};
+  let clearSecretFields=()=>{hodlPsbtWipeMem();let key=document.getElementById("psbt-key"),pass=document.getElementById("psbt-pass");if(key)key.value="";if(pass)pass.value=""};addEventListener("pagehide",clearSecretFields);addEventListener("pageshow",event=>{if(event.persisted)clearSecretFields()})
+}
+function hodlRunPsbt(){
+  let error=document.getElementById("psbt-error"),output=document.getElementById("psbt-out"),manual=document.getElementById("psbt-key").value;error.textContent="";output.innerHTML="";
+  try{if(manual.trim()){hodlLoadPsbtKey(manual,document.getElementById("psbt-pass").value);document.getElementById("psbt-key").value="";document.getElementById("psbt-pass").value=""}document.getElementById("psbt-session").textContent=hodlPsbtNote;let psbt=hodlParsePsbt(hodlPsbtBytes(document.getElementById("psbt-text").value));output.innerHTML=hodlRenderPsbt(psbt)}catch(exception){error.textContent=exception instanceof Error?exception.message:String(exception)}
+}
+function hodlRenderPsbt(psbt){
+  let network=document.getElementById("psbt-network").value,tx=psbt.tx,inputSum=0n,knownInputs=0,html=[],rValues=[],rows=[],tapSignatureCount=0;
+  html.push("<p class='label'>Where this transaction sends bitcoin</p>");tx.outputs.forEach((output,index)=>{html.push("<p class='psbt-kv'><strong>Output "+index+"</strong> · "+hodlSats(output.amount)+" BTC<br>"+$t(hodlAddr(output.script,network))+"</p>")});
+  psbt.inputs.forEach((entries,index)=>{
+    let witnessUtxo=hodlWitUtxo(entries);if(witnessUtxo){inputSum+=witnessUtxo.amount;knownInputs++}let previous=tx.inputs[index],destination=witnessUtxo?hodlAddr(witnessUtxo.script,network):"(previous output details unavailable)",signatures=hodlPartialSigs(entries),tapSignatures=hodlTapSigs(entries),finalized=hodlFinalized(entries);tapSignatureCount+=tapSignatures.length;
+    html.push("<p class='psbt-kv'><strong>Input "+index+"</strong> · "+hodlHexRev(previous.txid)+" : "+previous.vout+(witnessUtxo?" · "+hodlSats(witnessUtxo.amount)+" BTC":"")+"<br>"+$t(destination)+"<br>"+(signatures.length+tapSignatures.length?signatures.length+tapSignatures.length+" signature(s) present":finalized?"Finalized input data present":"Not signed yet")+"</p>");
+    signatures.forEach(signature=>{
+      let parts=hodlSigParts(signature.der),scriptCode=hodlInputScriptCode(entries,witnessUtxo),sighash=witnessUtxo&&scriptCode?hodlBip143(tx,index,scriptCode,witnessUtxo.amount,signature.sighash):null,signatureValid=parts&&sighash?xe.verify(signature.der,sighash,signature.pubkey,{prehash:!1,format:"der",lowS:!1}):null,privateKey=hodlPrivForPub(signature.pubkey)||hodlPrivFromPath(entries,signature.pubkey),message="Need the matching key in this session to check plain RFC 6979.",className="muted";
+      if(!parts){message="Signature is not strict DER and its nonce cannot be inspected.";className="psbt-warn"}
+      else{rValues.push({input:index,r:parts.r,s:parts.s,hex:M.encode(parts.r),pubkey:signature.pubkey,sighash,valid:signatureValid});if(signatureValid===!1){message="This signature does not verify against the reconstructed input digest.";className="psbt-warn"}else if(privateKey&&sighash)try{let expected=xe.sign(sighash,privateKey,{prehash:!1,extraEntropy:!1}),matches=hodlEq(expected.slice(0,32),parts.r);message=matches?"Matches plain RFC 6979 deterministic signing.":"Does not match plain RFC 6979. Honest signers may add auxiliary randomness; a mismatch alone is not evidence of compromise.";className=matches?"psbt-ok":"psbt-warn"}catch(exception){message="Could not recompute this signature: "+(exception.message||String(exception));className="psbt-warn"}else if(privateKey&&signature.sighash!==1){message="Matching key found, but this check currently supports SIGHASH_ALL without ANYONECANPAY only.";className="psbt-warn"}else if(privateKey&&!scriptCode){message="Matching key found, but this input script is not yet supported for RFC 6979 comparison.";className="psbt-warn"}}
+      rows.push({input:index,message,className,pubkey:M.encode(signature.pubkey)})
+    })
+  });
+  if(knownInputs===tx.inputs.length){let outputSum=tx.outputs.reduce((sum,output)=>sum+output.amount,0n),fee=inputSum-outputSum;if(fee>=0n)html.push("<p class='psbt-kv'><strong>Fee (from PSBT fields)</strong> · "+hodlSats(fee)+" BTC</p>");else html.push("<p class='psbt-bad'><strong>Invalid known amounts:</strong> outputs exceed inputs by "+hodlSats(-fee)+" BTC.</p>")}else html.push("<p class='muted'>Fee unknown — some inputs do not include a witness UTXO amount.</p>");
+  html.push("<p class='label'>ECDSA nonce check</p>");let reused=[],possible=[];
+  for(let first=0;first<rValues.length;first++)for(let second=first+1;second<rValues.length;second++){let a=rValues[first],b=rValues[second];if(!hodlEq(a.pubkey,b.pubkey)||!hodlEq(a.r,b.r))continue;if(a.valid&&b.valid&&a.sighash&&b.sighash&&!hodlEq(a.sighash,b.sighash))reused.push([a,b]);else if(a.input!==b.input)possible.push([a,b])}
+  if(reused.length)html.push("<p class='psbt-bad'><strong>Reused nonce detected for the same public key.</strong> The same r value appears on different message digests. If both signatures are valid, the private key can be recovered. Do not broadcast this transaction.</p>");
+  else if(possible.length)html.push("<p class='psbt-warn'><strong>Possible repeated nonce for the same public key.</strong> The message digests could not both be reconstructed, so verify these signatures independently before treating this as a key leak.</p>");
+  else if(rValues.length>=2)html.push("<p class='psbt-ok'>No repeated ECDSA nonce r values were found for the same public key in this PSBT.</p>");
+  else if(rValues.length===1)html.push("<p class='muted'>Only one strict ECDSA signature is present. Nonce reuse cannot be judged from this file alone.</p>");
+  else html.push("<p class='muted'>No strict ECDSA signatures are present, so there is no nonce to compare yet.</p>");
+  if(rValues.length)html.push("<p class='psbt-kv'>r values:<br>"+rValues.map(value=>$t(value.hex)+" (input "+value.input+")").join("<br>")+"</p>");
+  rows.forEach(row=>html.push("<p class='"+row.className+"'><strong>Input "+row.input+"</strong> pubkey "+$t(row.pubkey.slice(0,18))+"… — "+$t(row.message)+"</p>"));
+  if(tapSignatureCount)html.push("<p class='muted'>This PSBT also contains "+tapSignatureCount+" Taproot / Schnorr signature(s). They are counted but their BIP340 nonces are not analyzed in this version.</p>");
+  html.push("<p class='muted'>Plain RFC 6979 comparison currently covers SegWit v0 P2WPKH and P2WSH signatures using SIGHASH_ALL. Nonce reuse detection compares strict DER ECDSA signatures from the same public key.</p>");return html.join("")
+}
 var hodlAccountId=null,hodlNextKeyId=1,hodlNextKeyNumber=1,hodlKeys=[],hodlActiveKey=-1;
 function hodlKeyColor(id){let hue=Math.round((Number(id)*137.508+19)%360);return`hsl(${hue} 72% 62%)`}
 function hodlNewKeyState(name,keyId,keyNumber){let id=keyId??hodlNextKeyId++,number=keyNumber??hodlNextKeyNumber++;return{id,number,color:hodlKeyColor(id),name:name||hodlDefaultKeyName(number),mode:"dice",diceMethod:"coldcard",targetWords:24,lastWord:"",result:null,reveal:!1,accountId:null,error:"",fields:{pass:"",network:"mainnet",count:"5",dice:"",hex:"",bin:"",seed:"",key:"",keyKind:"wif-or-hex"}}}
@@ -2826,13 +3010,14 @@ function hodlDeleteActiveMsig(){
 function hodlShowWorkspace(id){
   if(id===hodlWorkspace)return;
   let preservedTop=window.scrollY,preservedLeft=window.scrollX;
-  if(hodlWorkspace==="calc")hodlCaptureKey();else hodlCaptureMsig();
+  if(hodlWorkspace==="calc")hodlCaptureKey();else if(hodlWorkspace==="msig")hodlCaptureMsig();
   hodlWorkspace=id;
-  [...W("#workspace").children].forEach((button,index)=>button.classList.toggle("active",index===(id==="calc"?0:1)));
+  [...W("#workspace").children].forEach(button=>button.classList.toggle("active",button.dataset.workspace===id));
   document.getElementById("key-manager").hidden=id!=="calc";
   document.getElementById("msig-manager").hidden=id!=="msig";
-  if(id==="calc"){document.getElementById("msig-card").hidden=!0;hodlRenderKeyTabs();hodlRestoreKey()}
-  else{document.getElementById("calc-card").hidden=!0;hodlRenderMsigTabs();hodlRestoreMsig()}
+  document.getElementById("calc-card").hidden=!0;document.getElementById("msig-card").hidden=!0;document.getElementById("psbt-card").hidden=id!=="psbt";re=null;Ge=!1;dr.innerHTML="";
+  if(id==="calc"){hodlRenderKeyTabs();hodlRestoreKey()}
+  else if(id==="msig"){hodlRenderMsigTabs();hodlRestoreMsig()}
   if(hodlWorkspaceScrollFrame)cancelAnimationFrame(hodlWorkspaceScrollFrame);window.scrollTo(preservedLeft,preservedTop);hodlWorkspaceScrollFrame=requestAnimationFrame(()=>{window.scrollTo(preservedLeft,preservedTop);hodlWorkspaceScrollFrame=0});
 }
 function hodlInitTabDrag(box){
@@ -2848,7 +3033,7 @@ function hodlInitKeyManager(){
   W("#add-key").onclick=hodlAddKey;W("#delete-key").onclick=hodlDeleteActiveKey;hodlRenderKeyTabs();hodlInitTabDrag(W("#key-tabs"));document.getElementById("calc-card").hidden=!0;
 }
 function hodlInitMsigManager(){W("#add-msig").onclick=hodlAddMsig;W("#delete-msig").onclick=hodlDeleteActiveMsig;hodlRenderMsigTabs();hodlInitTabDrag(W("#msig-tabs"));document.getElementById("msig-card").hidden=!0}
-function hodlInitWorkspace(){let box=W("#workspace");box.innerHTML="";[["calc","Key Generation"],["msig","Multi Signature"]].forEach(([id,label])=>{let button=document.createElement("button");button.className="tab"+(hodlWorkspace===id?" active":"");button.textContent=label;button.onclick=()=>hodlShowWorkspace(id);box.appendChild(button)});hodlInitMsig()}
+function hodlInitWorkspace(){let box=W("#workspace");box.innerHTML="";[["calc","Key Generation"],["msig","Multi Signature"],["psbt","PSBT / Nonce"]].forEach(([id,label])=>{let button=document.createElement("button");button.className="tab"+(hodlWorkspace===id?" active":"");button.dataset.workspace=id;button.textContent=label;button.onclick=()=>hodlShowWorkspace(id);box.appendChild(button)});hodlInitMsig();hodlInitPsbt()}
 hodlInitWorkspace();hodlInitKeyManager();hodlInitMsigManager();})();
 </script>
 <script>
