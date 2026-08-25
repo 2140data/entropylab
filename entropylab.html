@@ -2539,6 +2539,7 @@ hodlInitWorkspace();lr();})();
   const currentFile = "entropylab-" + current.replace(/^v/, "") + ".html";
   const selects = [...document.querySelectorAll(".version-select")];
   const downloads = [...document.querySelectorAll('[download^="entropylab-"]')];
+  let availableVersions = [{ version: current, file: currentFile }];
 
   downloads.forEach((link) => {
     link.href = currentFile;
@@ -2554,6 +2555,7 @@ hodlInitWorkspace();lr();})();
     if (!safe.some((item) => item.version === current)) {
       safe.unshift({ version: current, file: currentFile });
     }
+    availableVersions = safe.map((item) => ({ ...item }));
 
     selects.forEach((select) => {
       select.replaceChildren(...safe.map((item) => {
@@ -2567,7 +2569,8 @@ hodlInitWorkspace();lr();})();
     });
   };
 
-  render([{ version: current, file: currentFile }]);
+  render(availableVersions);
+  window.addEventListener("pageshow", () => render(availableVersions));
   if (/^https?:$/.test(location.protocol)) {
     fetch("versions.json", { cache: "no-store" })
       .then((response) => {
