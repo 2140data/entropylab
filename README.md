@@ -5,7 +5,7 @@ offline, air-gapped use. It converts user-supplied entropy, seed phrases, and
 private keys into wallet recovery information without intentionally sending
 sensitive data to a server.
 
-Current version: **v0.2**
+Current version: **v0.2.0**
 
 The project is created, owned, and maintained by **Mr.Hodl and Wicked**.
 
