@@ -28,6 +28,7 @@ jobs:
         run: |
           mkdir _site
           cp entropylab.html _site/index.html
+          cp entropylab.html _site/entropylab-0.1.html
           touch _site/.nojekyll
 
       - name: Configure GitHub Pages
