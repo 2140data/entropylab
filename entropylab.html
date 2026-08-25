@@ -162,7 +162,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
         <p class="muted">This file never generates randomness. Save it to USB and open it on a computer that never goes online.</p>
         <div class="download-controls no-print">
           <label class="version-picker">Version
-            <select class="version-select" aria-label="EntropyLab version"><option value="entropylab-0.2.html" selected>v0.2</option></select>
+            <select class="version-select" aria-label="EntropyLab version"><option value="entropylab-0.2.html" selected>v0.2 (Latest)</option></select>
           </label>
           <a class="btn secondary download-html" href="entropylab-0.2.html" download="entropylab-0.2.html">Download EntropyLab</a>
         </div>
@@ -2331,7 +2331,7 @@ zoo`.split(`
         <p class="muted">This file never generates randomness. Save it to USB and open it on a computer that never goes online.</p>
         <div class="download-controls no-print">
           <label class="version-picker">Version
-            <select class="version-select" aria-label="EntropyLab version"><option value="entropylab-0.2.html" selected>v0.2</option></select>
+            <select class="version-select" aria-label="EntropyLab version"><option value="entropylab-0.2.html" selected>v0.2 (Latest)</option></select>
           </label>
           <a class="btn secondary download-html" href="entropylab-0.2.html" download="entropylab-0.2.html">Download EntropyLab</a>
         </div>
@@ -2555,13 +2555,24 @@ hodlInitWorkspace();lr();})();
     if (!safe.some((item) => item.version === current)) {
       safe.unshift({ version: current, file: currentFile });
     }
+    const latest = safe.reduce((best, item) => {
+      const parts = item.version.slice(1).split(".").map(Number);
+      const bestParts = best.version.slice(1).split(".").map(Number);
+      const length = Math.max(parts.length, bestParts.length);
+      for (let index = 0; index < length; index++) {
+        const difference = (parts[index] || 0) - (bestParts[index] || 0);
+        if (difference > 0) return item;
+        if (difference < 0) return best;
+      }
+      return best;
+    }, safe[0]);
     availableVersions = safe.map((item) => ({ ...item }));
 
     selects.forEach((select) => {
       select.replaceChildren(...safe.map((item) => {
         const option = document.createElement("option");
         option.value = item.file;
-        option.textContent = item.version;
+        option.textContent = item.version + (item.version === latest.version ? " (Latest)" : "");
         option.selected = item.version === current;
         return option;
       }));
