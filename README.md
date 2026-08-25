@@ -5,7 +5,7 @@ offline, air-gapped use. It converts user-supplied entropy, seed phrases, and
 private keys into wallet recovery information without intentionally sending
 sensitive data to a server.
 
-Current version: **v0.2.0**
+Current version: **v0.2.1**
 
 The project is created, owned, and maintained by **Mr.Hodl and Wicked**.
 
@@ -40,15 +40,18 @@ for convenient access. Do not enter seed phrases, private keys, or other secret
 wallet material into an internet-connected device; use the downloaded HTML on
 a trusted air-gapped computer for sensitive operations.
 
-EntropyLab does not generate its own randomness. The security of a wallet
-depends on the quality and secrecy of the entropy, seed phrase, passphrase, or
-private key supplied by the user.
+EntropyLab does not generate wallet entropy. The optional BitBox Heads/Tails
+controls use browser randomness only to choose an equivalent displayed die
+face: 1–3 all mean Heads and 4–6 all mean Tails, so that numeric choice does not
+change the resulting BitBox entropy. Wallet security still depends on the
+quality and secrecy of the entropy, seed phrase, passphrase, or private key
+supplied by the user.
 
 ## Version snapshots
 
 The root `entropylab.html` file is the current working version. Distinct
-milestones are preserved in the `versions/` directory using names such as
-`entropylab-0.1.html`, with the version number incremented for major updates.
+releases are preserved in the `versions/` directory using names such as
+`entropylab-0.2.1.html`, with the version number incremented for each release.
 
 ## Security notice
 
