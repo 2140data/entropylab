@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head>
-<meta http-equiv="content-type" content="text/html; charset=UTF-8"><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="EntropyLab"><meta property="og:image" content="https://og.grok.me/v1/card.png?host=hds-u3vze5ds5ykt-6014-06z7c.grok-code-wild.hades-www.grok-sandbox.com&amp;title=EntropyLab"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="Air-Gap%20Bitcoin%20Calculator_files/styles_rv2v.css" data-precedence="default"><title>entropylab-0.1</title><meta name="application-name" content="EntropyLab"><meta name="application-version" content="0.1"><meta name="theme-color" content="#10110e"><link rel="modulepreload" href="Air-Gap%20Bitcoin%20Calculator_files/virtual_tanstack-start-dev-client-entry_rv2v"><link rel="icon" type="image/svg+xml" href="https://hds-u3vze5ds5ykt-6014-06z7c.grok-code-wild.hades-www.grok-sandbox.com/favicon.svg"><link rel="manifest" href="https://hds-u3vze5ds5ykt-6014-06z7c.grok-code-wild.hades-www.grok-sandbox.com/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="https://hds-u3vze5ds5ykt-6014-06z7c.grok-code-wild.hades-www.grok-sandbox.com/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="EntropyLab"><meta name="apple-mobile-web-app-status-bar-style" content="black"><script src="Air-Gap%20Bitcoin%20Calculator_files/extensions_rv2v.js" defer="defer"></script><style>:is([id*='google_ads_iframe'],[id*='taboola-'],.taboolaHeight,.taboola-placeholder,#top-ad,#credential_picker_container,#credentials-picker-container,#credential_picker_iframe,#onetap_google_intermediate_iframe,[id*='google-one-tap-iframe'],#google-one-tap-popup-container,.google-one-tap__module,.google-one-tap-modal-div,.adthrive-auto-injected-player-container,.adthrive[id^="cls-video-container"]:has(.adthrive-auto-injected-player-container),#amp_floatingAdDiv,#ez-content-blocker-container) {display:none!important;min-height:0!important;height:0!important;}</style><style id="btc-calc-style">:root {
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="EntropyLab"><meta property="og:image" content="https://og.grok.me/v1/card.png?host=hds-u3vze5ds5ykt-6014-06z7c.grok-code-wild.hades-www.grok-sandbox.com&amp;title=EntropyLab"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="Air-Gap%20Bitcoin%20Calculator_files/styles_rv2v.css" data-precedence="default"><title>EntropyLab</title><meta name="application-name" content="EntropyLab"><meta name="application-version" content="0.1"><meta name="theme-color" content="#10110e"><link rel="modulepreload" href="Air-Gap%20Bitcoin%20Calculator_files/virtual_tanstack-start-dev-client-entry_rv2v"><link rel="icon" type="image/svg+xml" href="https://hds-u3vze5ds5ykt-6014-06z7c.grok-code-wild.hades-www.grok-sandbox.com/favicon.svg"><link rel="manifest" href="https://hds-u3vze5ds5ykt-6014-06z7c.grok-code-wild.hades-www.grok-sandbox.com/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="https://hds-u3vze5ds5ykt-6014-06z7c.grok-code-wild.hades-www.grok-sandbox.com/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="EntropyLab"><meta name="apple-mobile-web-app-status-bar-style" content="black"><script src="Air-Gap%20Bitcoin%20Calculator_files/extensions_rv2v.js" defer="defer"></script><style>:is([id*='google_ads_iframe'],[id*='taboola-'],.taboolaHeight,.taboola-placeholder,#top-ad,#credential_picker_container,#credentials-picker-container,#credential_picker_iframe,#onetap_google_intermediate_iframe,[id*='google-one-tap-iframe'],#google-one-tap-popup-container,.google-one-tap__module,.google-one-tap-modal-div,.adthrive-auto-injected-player-container,.adthrive[id^="cls-video-container"]:has(.adthrive-auto-injected-player-container),#amp_floatingAdDiv,#ez-content-blocker-container) {display:none!important;min-height:0!important;height:0!important;}</style><style id="btc-calc-style">:root {
   --bg: #10110e;
   --surface: #181a14;
   --surface-2: #21241c;
@@ -104,6 +104,7 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 .err { color: var(--danger); font-size: 14px; }
 .ok { color: var(--ok); }
 header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; padding: 8px 0 16px; }
+.download-html { display: inline-flex; align-items: center; align-self: center; text-decoration: none; }
 @media print {
   .no-print { display: none !important; }
   body { background: white; color: #111; }
@@ -121,9 +122,10 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
     <header>
       <div>
         <div class="kicker">EntropyLab 0.1 · Offline · No RNG · You provide the entropy</div>
-        <h1>EntropyLab</h1>
+        <h1>EntropyLab — Air-Gapped Bitcoin Calculator</h1>
         <p class="muted">This file never generates randomness. Save it to USB and open it on a computer that never goes online.</p>
       </div>
+      <a class="btn secondary download-html no-print" href="entropylab-0.1.html" download="entropylab-0.1.html">Download EntropyLab 0.1</a>
     </header>
     <div class="row no-print" id="workspace"><button class="tab active">Calculator</button><button class="tab">Multisig</button></div>
     <section class="card">
@@ -2281,9 +2283,10 @@ zoo`.split(`
     <header>
       <div>
         <div class="kicker">EntropyLab 0.1 \xB7 Offline \xB7 No RNG \xB7 You provide the entropy</div>
-        <h1>EntropyLab</h1>
+        <h1>EntropyLab — Air-Gapped Bitcoin Calculator</h1>
         <p class="muted">This file never generates randomness. Save it to USB and open it on a computer that never goes online.</p>
       </div>
+      <a class="btn secondary download-html no-print" href="entropylab-0.1.html" download="entropylab-0.1.html">Download EntropyLab 0.1</a>
     </header>
     <div class="row no-print" id="workspace"></div>
     <section class="card">
