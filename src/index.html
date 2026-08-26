@@ -8,6 +8,9 @@
     <aside class="online-warning no-print" id="online-warning" role="alert" hidden>
       <strong>Online version:</strong> Do not enter seed phrases, private keys, or other wallet secrets on an internet-connected device. <a href="entropylab-{{VERSION}}.html" download="entropylab-{{VERSION}}.html">Download EntropyLab</a> and run the HTML file offline on a trusted, air-gapped computer.
     </aside>
+    <aside class="network-warning no-print" id="network-warning" role="alert" hidden>
+      <strong>Network detected:</strong> This computer has an active network adapter — it is online and possibly connected to the internet. Do not enter wallet secrets here; disconnect from all networks (Wi-Fi and Ethernet) and use this file on an air-gapped computer.
+    </aside>
     <header>
       <div>
         <div class="kicker">EntropyLab v{{VERSION}} · Offline · No entropy RNG · You provide the entropy</div>
@@ -211,5 +214,6 @@ needs the number of signatures you choose, on real signing devices.</p>
   </div>
 </div><!--/$--><script id="btc-calc-script">/*@@JS_MAIN@@*/</script>
 <script>/*@@JS_ONLINE@@*/</script>
+<script>/*@@JS_NETWORK@@*/</script>
 <script>/*@@JS_ENHANCED@@*/</script>
 <script>/*@@JS_REPEAT@@*/</script></body></html>
