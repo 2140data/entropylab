@@ -212,8 +212,9 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 .err { margin: var(--space-control) 0 0; color: var(--danger); font-size: 14px; }
 .ok { color: var(--ok); }
 header { padding: 8px 0 16px; }
-.header-title-row { display: flex; align-items: center; gap: 14px; }
-.online-brand-mark { flex: 0 0 auto; width: 72px; height: 72px; object-fit: contain; }
+.header-title-row { display: flex; align-items: center; gap: 12px; }
+.online-brand-mark:not([hidden]) + h1 { margin: 0; line-height: 1.15; }
+.online-brand-mark { flex: 0 0 auto; width: 56px; height: 56px; object-fit: contain; }
 .online-brand-mark[hidden] { display: none; }
 .download-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-top: 14px; }
 .version-picker { display: grid; gap: 5px; color: var(--muted); font-size: 12px; font-weight: 600; }
@@ -604,8 +605,8 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   .account-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 @media (max-width: 520px) {
-  .header-title-row { align-items: flex-start; gap: 10px; }
-  .online-brand-mark { width: 60px; height: 60px; }
+  .header-title-row { gap: 10px; }
+  .online-brand-mark { width: 48px; height: 48px; }
   .wallet-data-card { padding: 18px; }
   .wallet-private-section { padding: 13px; }
   .account-summary-grid { grid-template-columns: 1fr; padding: 13px; }
