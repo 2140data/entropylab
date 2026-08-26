@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head>
-<meta http-equiv="content-type" content="text/html; charset=UTF-8"><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="EntropyLab"><meta property="og:image" content="https://og.grok.me/v1/card.png?host=hds-u3vze5ds5ykt-6014-06z7c.grok-code-wild.hades-www.grok-sandbox.com&amp;title=EntropyLab"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="Air-Gap%20Bitcoin%20Calculator_files/styles_rv2v.css" data-precedence="default"><title>EntropyLab</title><meta name="application-name" content="EntropyLab"><meta name="application-version" content="v0.1.2"><meta name="theme-color" content="#000000"><link rel="modulepreload" href="Air-Gap%20Bitcoin%20Calculator_files/virtual_tanstack-start-dev-client-entry_rv2v"><link rel="icon" type="image/svg+xml" href="https://hds-u3vze5ds5ykt-6014-06z7c.grok-code-wild.hades-www.grok-sandbox.com/favicon.svg"><link rel="manifest" href="https://hds-u3vze5ds5ykt-6014-06z7c.grok-code-wild.hades-www.grok-sandbox.com/__grok/manifest.webmanifest"><link rel="apple-touch-icon" href="https://hds-u3vze5ds5ykt-6014-06z7c.grok-code-wild.hades-www.grok-sandbox.com/__grok/icon-180.png"><meta name="apple-mobile-web-app-title" content="EntropyLab"><meta name="apple-mobile-web-app-status-bar-style" content="black"><script src="Air-Gap%20Bitcoin%20Calculator_files/extensions_rv2v.js" defer="defer"></script><style>:is([id*='google_ads_iframe'],[id*='taboola-'],.taboolaHeight,.taboola-placeholder,#top-ad,#credential_picker_container,#credentials-picker-container,#credential_picker_iframe,#onetap_google_intermediate_iframe,[id*='google-one-tap-iframe'],#google-one-tap-popup-container,.google-one-tap__module,.google-one-tap-modal-div,.adthrive-auto-injected-player-container,.adthrive[id^="cls-video-container"]:has(.adthrive-auto-injected-player-container),#amp_floatingAdDiv,#ez-content-blocker-container) {display:none!important;min-height:0!important;height:0!important;}</style><style id="btc-calc-style">:root {
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"><meta name="twitter:card" content="summary_large_image"><meta property="og:title" content="EntropyLab"><meta property="og:image" content="https://og.grok.me/v1/card.png?host=hds-u3vze5ds5ykt-6014-06z7c.grok-code-wild.hades-www.grok-sandbox.com&amp;title=EntropyLab"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="Air-Gap%20Bitcoin%20Calculator_files/styles_rv2v.css" data-precedence="default"><title>EntropyLab</title><meta name="application-name" content="EntropyLab"><meta name="application-version" content="v0.1.2"><meta name="theme-color" content="#000000"><link rel="modulepreload" href="Air-Gap%20Bitcoin%20Calculator_files/virtual_tanstack-start-dev-client-entry_rv2v"><meta name="apple-mobile-web-app-title" content="EntropyLab"><meta name="apple-mobile-web-app-status-bar-style" content="black"><script src="Air-Gap%20Bitcoin%20Calculator_files/extensions_rv2v.js" defer="defer"></script><style>:is([id*='google_ads_iframe'],[id*='taboola-'],.taboolaHeight,.taboola-placeholder,#top-ad,#credential_picker_container,#credentials-picker-container,#credential_picker_iframe,#onetap_google_intermediate_iframe,[id*='google-one-tap-iframe'],#google-one-tap-popup-container,.google-one-tap__module,.google-one-tap-modal-div,.adthrive-auto-injected-player-container,.adthrive[id^="cls-video-container"]:has(.adthrive-auto-injected-player-container),#amp_floatingAdDiv,#ez-content-blocker-container) {display:none!important;min-height:0!important;height:0!important;}</style><style id="btc-calc-style">:root {
   color-scheme: dark;
   --bg: #000000;
   --surface: #141414;
@@ -10,9 +10,11 @@
   --faint: #737373;
   --border: #333333;
   --accent: #d8892b;
-  --accent-fg: #1a1208;
+  --selection-accent: #ff9900;
+  --selection-fg: #000000;
   --danger: #d4574a;
   --ok: #8aaa74;
+  --blue: #6f9fca;
   --warn: #c9a44a;
   --paper: #f3efe4;
   --scrollbar-track: #0a0a0a;
@@ -43,27 +45,26 @@ h2 { font-size: 1.5rem; margin: 8px 0; }
 a { color: var(--accent); }
 button, select, textarea, input { font: inherit; }
 button { cursor: pointer; }
-.wrap { max-width: 960px; margin: 0 auto; padding: 20px 16px 64px; }
+.wrap { max-width: 1000px; margin: 0 auto; padding: 20px 16px 64px; }
 .kicker { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px; margin: 16px 0; }
 .warn { background: color-mix(in oklab, var(--danger) 12%, var(--bg)); border-color: color-mix(in oklab, var(--danger) 40%, var(--border)); }
 .muted { color: var(--muted); font-size: 14px; line-height: 1.5; }
+.sources-heading { color: var(--fg); font-size: 1.17rem; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; }
 .tab, .btn {
   min-height: 44px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border);
   background: var(--bg); color: var(--muted);
 }
 .tab.active {
-  background: color-mix(in oklab, var(--accent) 16%, var(--bg));
-  color: var(--fg);
-  border-color: var(--accent);
+  background: var(--selection-accent);
+  color: var(--selection-fg);
+  border-color: var(--selection-accent);
 }
-.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.btn.primary { background: var(--selection-accent); color: var(--selection-fg); border-color: var(--selection-accent); }
 .btn.primary:disabled {
-  cursor: not-allowed; opacity: .45;
-  background: color-mix(in oklab, var(--accent) 38%, var(--surface-2));
-  border-color: color-mix(in oklab, var(--accent) 28%, var(--border));
-  color: color-mix(in oklab, var(--accent-fg) 55%, var(--muted));
+  cursor: not-allowed; opacity: 1;
+  background: var(--selection-accent); border-color: var(--selection-accent); color: var(--selection-fg);
 }
 .btn.secondary { background: var(--surface-2); color: var(--fg); }
 textarea, select,
@@ -186,9 +187,11 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-.secret { font-family: var(--mono); font-size: 13px; word-break: break-all; color: var(--warn); }
+.secret { font-family: var(--mono); font-size: 13px; word-break: break-all; }
 .private-field-value { display: block; margin-top: 2px; line-height: 1.55; }
 .table-private-field-value { display: inline-grid; white-space: nowrap; }
+.private-field-value:not(.secret-placeholder),
+.table-private-field-value:not(.secret-placeholder) { color: var(--blue); }
 .secret-placeholder { display: grid; color: var(--muted); }
 .secret-placeholder > .secret-placeholder-mask,
 .secret-placeholder > .secret-placeholder-message { grid-area: 1 / 1; }
@@ -209,10 +212,30 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 .err { margin: var(--space-control) 0 0; color: var(--danger); font-size: 14px; }
 .ok { color: var(--ok); }
 header { padding: 8px 0 16px; }
+.header-title-row { display: flex; align-items: center; gap: 14px; }
+.online-brand-mark { flex: 0 0 auto; width: 72px; height: 72px; object-fit: contain; }
+.online-brand-mark[hidden] { display: none; }
 .download-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-top: 14px; }
 .version-picker { display: grid; gap: 5px; color: var(--muted); font-size: 12px; font-weight: 600; }
 .download-controls .custom-select { width: auto; min-width: 104px; margin: 0; }
 .download-controls > a { display: inline-flex; align-items: center; text-decoration: none; }
+.download-controls .btn:is(.download-html, .github-repo-link) { flex: 0 0 auto; }
+.btn:is(.download-html, .save-recovery-sheet) {
+  border-color: color-mix(in oklab, var(--ok) 65%, var(--border));
+  background: color-mix(in oklab, var(--ok) 14%, var(--surface)); color: var(--ok);
+}
+.btn:is(.download-html, .save-recovery-sheet):hover {
+  background: color-mix(in oklab, var(--ok) 23%, var(--surface)); color: var(--fg);
+}
+.btn:is(.download-html, .save-recovery-sheet):focus-visible { outline: 2px solid var(--ok); outline-offset: 2px; }
+.download-controls .github-repo-link {
+  border-color: color-mix(in oklab, var(--blue) 65%, var(--border));
+  background: color-mix(in oklab, var(--blue) 14%, var(--surface)); color: var(--blue);
+}
+.download-controls .github-repo-link:hover {
+  background: color-mix(in oklab, var(--blue) 23%, var(--surface)); color: var(--fg);
+}
+.download-controls .github-repo-link:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 .custom-select-native {
   position: absolute !important; width: 1px !important; height: 1px !important; min-height: 0 !important;
   margin: 0 !important; padding: 0 !important; opacity: 0; pointer-events: none; overflow: hidden;
@@ -249,8 +272,26 @@ header { padding: 8px 0 16px; }
 }
 .beta-warning strong { color: var(--danger); }
 @media print {
+  :root {
+    color-scheme: light;
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f3f3f3;
+    --fg: #111111;
+    --muted: #444444;
+    --faint: #666666;
+    --border: #b8b8b8;
+    --blue: #245d8f;
+    --warn: #765a11;
+  }
   .no-print { display: none !important; }
-  body { background: white; color: #111; }
+  html, body { background: white; color: #111; }
+}
+
+.sr-only {
+  position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important;
+  margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important; border: 0 !important;
 }
 
 input.bad, textarea.bad { border-color: var(--danger) !important; }
@@ -259,6 +300,28 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .hint.ok { color: var(--ok); }
 .hint:empty, .err:empty { display: none; }
 #workspace { margin: 8px 0 4px; }
+.segmented-control {
+  display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; max-width: 100%; isolation: isolate;
+}
+.segmented-control > .tab {
+  position: relative; z-index: 0; flex: 0 0 auto; margin: 0; border-radius: 0; white-space: nowrap;
+}
+.segmented-control:not(.is-stacked) > .tab + .tab { margin-inline-start: -1px; }
+.segmented-control:not(.is-stacked) > .tab:first-child { border-radius: 8px 0 0 8px; }
+.segmented-control:not(.is-stacked) > .tab:last-child { border-radius: 0 8px 8px 0; }
+.segmented-control > .tab:only-child { border-radius: 8px; }
+.segmented-control > .tab:is(.active, [aria-pressed="true"]) {
+  z-index: 1; background: var(--selection-accent); border-color: var(--selection-accent); color: var(--selection-fg);
+}
+.segmented-control > .tab:focus-visible {
+  z-index: 2; outline: 2px solid color-mix(in oklab, var(--selection-accent) 72%, #ffffff); outline-offset: 2px;
+}
+.segmented-control.is-stacked { flex-direction: column; flex-wrap: nowrap; width: 100%; }
+.segmented-control.is-stacked > .tab { width: 100%; flex: 1 1 auto; }
+.segmented-control.is-stacked > .tab + .tab { margin-block-start: -1px; }
+.segmented-control.is-stacked > .tab:first-child { border-radius: 8px 8px 0 0; }
+.segmented-control.is-stacked > .tab:last-child { border-radius: 0 0 8px 8px; }
+.segmented-control.is-stacked > .tab:only-child { border-radius: 8px; }
 #msig-card[hidden], #calc-card[hidden], #psbt-card[hidden] { display: none !important; }
 #calc-card:not([hidden]), #msig-card:not([hidden]) { margin-top: 0; border-radius: 0 0 20px 20px; position: relative; z-index: 1; }
 .psbt-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 14px; }
@@ -480,15 +543,73 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   border: 1px solid color-mix(in oklab, var(--warn) 40%, var(--border)); border-radius: 10px;
   background: var(--surface-2); color: var(--fg); font-size: 14px; font-weight: 600; cursor: pointer;
 }
-.reveal-private-toggle input { margin: 0; }
+.reveal-private-toggle input { margin: 0; accent-color: var(--blue); }
 .reveal-private-toggle-note { color: var(--muted); font-weight: 400; }
+.recovery-download-disclosure {
+  flex: 1 1 100%; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5;
+}
+.recovery-download-disclosure strong { color: var(--fg); }
+.wallet-result-messages {
+  margin-top: 18px; padding: 14px 16px; border: 1px solid color-mix(in oklab, var(--warn) 42%, var(--border));
+  border-radius: 12px; background: color-mix(in oklab, var(--warn) 6%, var(--bg));
+}
+.wallet-result-messages h3 { margin: 0 0 8px; font-family: var(--sans); font-size: 14px; letter-spacing: 0; }
+.wallet-result-messages ul { display: grid; gap: 7px; margin: 0; padding-left: 20px; }
+.wallet-result-messages li { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.wallet-result-messages li.is-warning { color: var(--fg); }
+.wallet-result-messages li.is-warning::marker { color: var(--warn); }
 .wallet-data-fields { margin-top: 16px; }
 .wallet-data-fields > :first-child { margin-top: 0; }
 .wallet-data-fields > :last-child { margin-bottom: 0; }
 .wallet-data-subtitle { margin: 20px 0 6px; color: var(--fg); font-family: var(--sans); font-size: 14px; font-weight: 700; }
+.account-summary-grid {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 22px;
+  margin: 18px 0 0; padding: 16px; border: 1px solid var(--border); border-radius: 12px;
+  background: color-mix(in oklab, var(--surface-2) 58%, var(--bg));
+}
+.account-summary-grid > div { min-width: 0; margin: 0; }
+.account-summary-grid dt { color: var(--muted); font-size: 14px; line-height: 1.5; }
+.account-summary-grid dd { min-width: 0; margin: 2px 0 0; overflow-wrap: anywhere; }
+.account-result-section { margin-top: 24px; }
+.account-result-section > .wallet-data-section-head { margin-bottom: 16px; }
+.account-private-section {
+  padding: 18px; border: 1px solid color-mix(in oklab, var(--blue) 38%, var(--border));
+  border-radius: 14px; background: color-mix(in oklab, var(--blue) 5%, var(--bg));
+}
+.account-private-warning {
+  margin: 16px 0 0; padding: 12px 14px; border-left: 3px solid var(--blue);
+  border-radius: 0 8px 8px 0; background: color-mix(in oklab, var(--blue) 8%, var(--bg));
+}
+.account-watch-section, .account-address-section { padding-top: 22px; border-top: 1px solid var(--border); }
+.account-address-lead { display: grid; gap: 10px; justify-items: start; margin-bottom: 22px; }
+.account-address-lead p { margin: 0; }
+.wallet-table { width: 100%; overflow: auto; }
+.wallet-table:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.wallet-table table { min-width: max-content; }
+.wallet-table-public table { min-width: 700px; }
+.wallet-table-private table { min-width: 660px; }
+.wallet-table + .wallet-data-subtitle { margin-top: 22px; }
+.wallet-advanced {
+  margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border);
+}
+.wallet-advanced summary {
+  width: fit-content; color: var(--muted); font-weight: 700; cursor: pointer;
+}
+.wallet-advanced summary:hover { color: var(--fg); }
+.wallet-advanced summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 3px; }
+.wallet-advanced[open] summary { margin-bottom: 12px; color: var(--fg); }
+.watch-only-note { color: var(--muted); }
+.watch-only-note strong { color: var(--fg); }
+@media (min-width: 880px) {
+  .account-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 @media (max-width: 520px) {
+  .header-title-row { align-items: flex-start; gap: 10px; }
+  .online-brand-mark { width: 60px; height: 60px; }
   .wallet-data-card { padding: 18px; }
   .wallet-private-section { padding: 13px; }
+  .account-summary-grid { grid-template-columns: 1fr; padding: 13px; }
+  .account-private-section { padding: 14px; }
   .wallet-data-actions { align-items: stretch; }
   .wallet-data-actions > * { width: 100%; justify-content: center; }
 }
@@ -515,7 +636,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
     <header>
       <div>
         <div class="kicker">EntropyLab v0.1.2 · Offline · No entropy RNG · You provide the entropy</div>
-        <h1>EntropyLab — Air-Gapped Bitcoin Calculator</h1>
+        <div class="header-title-row"><img class="online-brand-mark" id="online-brand-mark" data-online-src="assets/entropylab_dark.png" alt="" aria-hidden="true" hidden><h1>EntropyLab — Air-Gapped Bitcoin Calculator</h1></div>
         <p class="muted">This file never generates wallet entropy. Save it to USB and open it on a computer that never goes online.</p>
         <div class="download-controls no-print">
           <label class="version-picker">Version
@@ -535,19 +656,19 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
  the seed on this air-gapped machine. Carry only addresses and the xpub
 online.</p>
     </section>
-    <div class="row no-print" id="workspace"><button class="tab active">Key Generation</button><button class="tab">Multi Signature</button><button class="tab">PSBT / Nonce</button></div>
+    <div class="row no-print segmented-control" id="workspace"><button class="tab active" aria-pressed="true">Key Generation</button><button class="tab" aria-pressed="false">Multi Signature</button><button class="tab" aria-pressed="false">PSBT / Nonce</button></div>
     <section class="key-manager no-print" id="key-manager">
       <div class="key-manager-head"><h2>Keys</h2><div class="add-item-control"><button class="btn secondary add-key" id="add-key" type="button" aria-label="Add key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Add another key</span></div></div>
       <div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div>
     </section>
     <section class="card no-print" id="calc-card" role="tabpanel" hidden>
       <div class="key-panel-head">
-        <div class="row" id="modes"><button class="tab active">Dice rolls</button><button class="tab">Hex or binary</button><button class="tab">Seed phrase</button><button class="tab">Private key</button></div>
+        <div class="row segmented-control" id="modes"><button class="tab active" aria-pressed="true">Dice rolls</button><button class="tab" aria-pressed="false">Hex or binary</button><button class="tab" aria-pressed="false">Seed phrase</button><button class="tab" aria-pressed="false">Private key</button></div>
         <button class="btn delete-key" id="delete-key" type="button" aria-label="Delete current key" disabled>Delete Key</button>
       </div>
       <section class="seed-length-control" id="seed-length" aria-labelledby="seed-length-label">
         <p class="label" id="seed-length-label">Seed phrase length</p>
-        <div class="row seed-length-options" role="group" aria-label="Seed phrase length">
+        <div class="row seed-length-options segmented-control" role="group" aria-label="Seed phrase length">
           <button type="button" class="tab" data-seed-words="12" aria-pressed="false">12 words</button>
           <button type="button" class="tab" data-seed-words="18" aria-pressed="false">18 words</button>
           <button type="button" class="tab active" data-seed-words="24" aria-pressed="true">24 words</button>
@@ -642,7 +763,7 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
         <div><div class="kicker">Several people, one pile of bitcoin</div><h2>Create a multisig wallet</h2></div>
         <button class="btn delete-key" id="delete-msig" type="button" aria-label="Delete current multisig" disabled>Delete Multisig</button>
       </div>
-      <p class="muted msig-intro">Paste each person’s account xpub. This does not
+      <p class="muted msig-intro">Paste each person’s multisig account or branch extended public key exported by their signing device. This does not
 need private keys. You can receive to these addresses. Spending later
 needs the number of signatures you choose, on real signing devices.</p>
       <div class="row msig-settings-row" style="align-items:end">
@@ -665,11 +786,11 @@ needs the number of signatures you choose, on real signing devices.</p>
       <label class="choice"><input type="radio" name="msig-script" value="p2sh-p2wsh">
         <span><strong>Nested SegWit</strong><span class="desc">Addresses start with 3. Older wallets. BIP48 script type 1.</span></span></label>
       <label class="choice"><input type="radio" name="msig-script" value="p2sh">
-        <span><strong>Legacy</strong><span class="desc">Addresses start with 3. Bare P2SH multisig.</span></span></label>
-      <div id="msig-keys" class="msig-keys"><label class="field">Co-signer 1 account xpub<textarea id="msig-x-0" placeholder="xpub / ypub / zpub / vpub" autocomplete="off" spellcheck="false"></textarea></label><label class="field">Co-signer 2 account xpub<textarea id="msig-x-1" placeholder="xpub / ypub / zpub / vpub" autocomplete="off" spellcheck="false"></textarea></label><label class="field">Co-signer 3 account xpub<textarea id="msig-x-2" placeholder="xpub / ypub / zpub / vpub" autocomplete="off" spellcheck="false"></textarea></label></div>
+        <span><strong>Legacy</strong><span class="desc">Addresses start with 3. Bare P2SH using matching depth-2 BIP45 cosigner-branch exports.</span></span></label>
+      <div id="msig-keys" class="msig-keys"><label class="field">Co-signer 1 multisig extended public key<textarea id="msig-x-0" placeholder="xpub / tpub / Ypub / Zpub / Upub / Vpub" autocomplete="off" spellcheck="false"></textarea></label><label class="field">Co-signer 2 multisig extended public key<textarea id="msig-x-1" placeholder="xpub / tpub / Ypub / Zpub / Upub / Vpub" autocomplete="off" spellcheck="false"></textarea></label><label class="field">Co-signer 3 multisig extended public key<textarea id="msig-x-2" placeholder="xpub / tpub / Ypub / Zpub / Upub / Vpub" autocomplete="off" spellcheck="false"></textarea></label></div>
       <p class="hint ok" id="msig-hint">Spending will need 2 of these 3 keys. Receiving needs none of the private keys.</p>
       <div class="row current-item-actions">
-        <button class="btn primary" id="msig-go" type="button">Build multisig</button>
+        <button class="btn primary" id="msig-go" type="button">Build Multisig</button>
         <button class="btn clear-current-action" id="msig-wipe" type="button" disabled aria-disabled="true">Clear Current Multisig</button>
       </div>
       <p class="err" id="msig-error"></p>
@@ -706,11 +827,11 @@ needs the number of signatures you choose, on real signing devices.</p>
     </section>
     <div id="out"></div>
     <section class="card muted">
-      <h3 style="color:var(--fg)">Sources</h3>
+      <h3 class="sources-heading">Sources</h3>
       <p>Ian Coleman BIP39: <a href="https://github.com/iancoleman/bip39">github.com/iancoleman/bip39</a> — pull <code>bip39-standalone.html</code> from Releases, or <code>src/js/index.js</code>, <code>entropy.js</code>, <code>jsbip39.js</code>, <code>wordlist_english.js</code>.</p>
       <p>bitaddress.org: <a href="https://github.com/pointbiz/bitaddress.org">github.com/pointbiz/bitaddress.org</a> — pull <code>bitaddress.org.html</code>, or <code>src/ninja.key.js</code>, <code>ninja.detailwallet.js</code>, <code>ninja.paperwallet.js</code>, <code>bitcoinjs-lib.eckey.js</code>.</p>
       <p>BitBox02 diceware: <a href="https://blog.bitbox.swiss/en/roll-the-dice-generate-your-own-seed/">roll-the-dice-generate-your-own-seed</a> — lookup table is the BIP39 English list in order.</p>
-      <p>D++ octal and hexadecimal dice: <a href="https://thesimplestbitcoinbook.net/wp-content/uploads/2023/09/Roll-Your-Own-Seed-Phrase-PDF.pdf">Roll Your Own Bitcoin Seed Phrase</a> — the published 24-word workflow uses one D8 and two D16 rolls per word, then a final D8. EntropyLab accepts either the custom D++ D16 faces 0–F or a numbered D16 from 1–16, entered as 1–9 and A–G with G mapped to face 0. Its 12- and 18-word variants use the same rolled-word mapping and an offline-random selection from the checksum-valid final-word list.</p>
+      <p>D++ D8 &amp; D16 method: <a href="https://thesimplestbitcoinbook.net/wp-content/uploads/2023/09/Roll-Your-Own-Seed-Phrase-PDF.pdf">Roll Your Own Bitcoin Seed Phrase</a> — the published 24-word workflow uses one D8 and two D16 rolls per word, then a final D8.</p>
     </section>
   </div>
 </div><!--/$--><script type="module" async="" src="Air-Gap%20Bitcoin%20Calculator_files/virtual_tanstack-start-dev-client-entry_rv2v"></script><script id="btc-calc-script">"use strict";(()=>{var ic=Object.defineProperty;var sc=(e,t,r)=>t in e?ic(e,t,{enumerable:!0,configurable:!0,writable:!0,value:r}):e[t]=r;var g=(e,t,r)=>sc(e,typeof t!="symbol"?t+"":t,r);var ur=BigInt(4294967295),Fo=BigInt(32);function cc(e,t=!1){return t?{h:Number(e&ur),l:Number(e>>Fo&ur)}:{h:Number(e>>Fo&ur)|0,l:Number(e&ur)|0}}function Mo(e,t=!1){let r=e.length,n=new Uint32Array(r),o=new Uint32Array(r);for(let i=0;i<r;i++){let{h:s,l:c}=cc(e[i],t);[n[i],o[i]]=[s,c]}return[n,o]}var ac=e=>e/2**32|0,fc=e=>e>>>0;function zo(e,t,r,n){let o=ac(r),i=fc(r);e.setUint32(t,n?i:o,n),e.setUint32(t+4,n?o:i,n)}var dn=(e,t,r)=>e>>>r,ln=(e,t,r)=>e<<32-r|t>>>r,Xe=(e,t,r)=>e>>>r|t<<32-r,Ze=(e,t,r)=>e<<32-r|t>>>r,_t=(e,t,r)=>e<<64-r|t>>>r-32,Rt=(e,t,r)=>e>>>r-32|t<<64-r;function Se(e,t,r,n){let o=(t>>>0)+(n>>>0);return{h:e+r+(o/2**32|0)|0,l:o|0}}var Do=(e,t,r)=>(e>>>0)+(t>>>0)+(r>>>0),jo=(e,t,r,n)=>t+r+n+(e/2**32|0)|0,Ko=(e,t,r,n)=>(e>>>0)+(t>>>0)+(r>>>0)+(n>>>0),Wo=(e,t,r,n,o)=>t+r+n+o+(e/2**32|0)|0,qo=(e,t,r,n,o)=>(e>>>0)+(t>>>0)+(r>>>0)+(n>>>0)+(o>>>0),Vo=(e,t,r,n,o,i)=>t+r+n+o+i+(e/2**32|0)|0;function hr(e){return e instanceof Uint8Array||ArrayBuffer.isView(e)&&e.constructor.name==="Uint8Array"&&"BYTES_PER_ELEMENT"in e&&e.BYTES_PER_ELEMENT===1}var un=e=>e?`"${e}" `:"";function V(e,t=""){if(typeof e!="number")throw new TypeError(un(t)+"expected number, got "+typeof e);if(!Number.isSafeInteger(e)||e<0)throw new RangeError(un(t)+"expected integer >= 0, got "+e);return e}function K(e,t,r=""){if(hr(e)&&(t===void 0||e.length===t))return e;t!==void 0&&V(t,"length");let n=hr(e),o=t!==void 0?` of length ${t}`:"",i=n?`length=${e.length}`:`type=${typeof e}`,s=un(r)+"expected Uint8Array"+o+", got "+i;throw n?new RangeError(s):new TypeError(s)}function lt(e){if(typeof e!="function"||typeof e.create!="function")throw new TypeError("expected hash wrapped by utils.createHasher");if(V(e.outputLen),V(e.blockLen),e.outputLen<1||e.blockLen<1)throw new Error("hash blockLen / outputLen must be >= 1")}var Yo=(e,t)=>{if(e===null||typeof e!="object"||Array.isArray(e))throw new TypeError((t==="object"?"":`"${t}" `)+"expected object, got type="+typeof e)};function ut(e,t=!0){if(e.destroyed)throw new Error("hash was destroyed");if(t&&e.finished)throw new Error("digest() was already called")}function pr(e,t){K(e,void 0,"output");let r=t.outputLen;if(!(e.length>=r))throw new RangeError('"output" expected length >= '+r)}function ue(...e){for(let t=0;t<e.length;t++)e[t].fill(0)}function Te(e){return new DataView(e.buffer,e.byteOffset,e.byteLength)}function we(e,t){return e<<32-t|e>>>t}function Ut(e,t){return e<<t|e>>>32-t>>>0}var Xo=typeof Uint8Array.from([]).toHex=="function"&&typeof Uint8Array.fromHex=="function",lc=Array.from({length:256},(e,t)=>t.toString(16).padStart(2,"0"));function gr(e){if(K(e),Xo)return e.toHex();let t="";for(let r=0;r<e.length;r++)t+=lc[e[r]];return t}function Go(e){return e>=48&&e<=57?e-48:e>=65&&e<=70?e-55:e>=97&&e<=102?e-87:void 0}function hn(e){if(typeof e!="string")throw new TypeError("hex string expected, got "+typeof e);if(Xo)try{return Uint8Array.fromHex(e)}catch(o){throw o instanceof SyntaxError?new RangeError(o.message):o}let t=e.length,r=t/2;if(t%2)throw new RangeError("hex string expected, got unpadded hex of length "+t);let n=new Uint8Array(r);for(let o=0,i=0;o<r;o++,i+=2){let s=Go(e.charCodeAt(i)),c=Go(e.charCodeAt(i+1));if(s===void 0||c===void 0){let a=e[i]+e[i+1];throw new RangeError('hex string expected, got non-hex character "'+a+'" at index '+i)}n[o]=s*16+c}return n}function uc(e){if(typeof e!="string")throw new TypeError("string expected");return new Uint8Array(new TextEncoder().encode(e))}function pn(e,t=""){return typeof e=="string"?uc(e):K(e,void 0,t)}function Qe(...e){let t=0;for(let n=0;n<e.length;n++){let o=e[n];K(o),t+=o.length}let r=new Uint8Array(t);for(let n=0,o=0;n<e.length;n++){let i=e[n];r.set(i,o),o+=i.length}return r}function gn(e,t,r="opts"){return Yo(e,"defaults"),t!==void 0&&Yo(t,r),Object.assign(e,t)}function Lt(e,t={}){if(typeof e!="function")throw new TypeError('"hashCons" expected function, got type='+typeof e);t=gn({},t,"info");let r=(o,i)=>e(i).update(o).digest(),n=e(void 0);return r.outputLen=n.outputLen,r.blockLen=n.blockLen,r.canXOF=n.canXOF,r.create=o=>e(o),Object.assign(r,t),Object.freeze(r)}function ht(e=32){V(e,"bytesLength");let t=typeof globalThis=="object"?globalThis.crypto:null;if(typeof t?.getRandomValues!="function")throw new Error("crypto.getRandomValues must be defined");if(e>65536)throw new RangeError(`"bytesLength" expected <= 65536, got ${e}`);return t.getRandomValues(new Uint8Array(e))}var yn=e=>({oid:Uint8Array.from([6,9,96,134,72,1,101,3,4,2,e])});function bn(e,t,r){return e&t^~e&r}function wn(e,t,r){return e&t^e&r^t&r}var Je=class{constructor(t,r,n,o){g(this,"blockLen");g(this,"outputLen");g(this,"canXOF",!1);g(this,"padOffset");g(this,"isLE");g(this,"buffer");g(this,"view");g(this,"finished",!1);g(this,"length",0);g(this,"pos",0);g(this,"destroyed",!1);this.blockLen=t,this.outputLen=r,this.padOffset=n,this.isLE=o,this.buffer=new Uint8Array(t),this.view=Te(this.buffer)}update(t){ut(this),K(t);let{view:r,buffer:n,blockLen:o}=this,i=t.length,s=!1;for(let c=0;c<i;){let a=Math.min(o-this.pos,i-c);if(a===o){let f=Te(t);for(;o<=i-c;c+=o)this.process(f,c);s=!0;continue}n.set(c===0&&a===i?t:t.subarray(c,c+a),this.pos),this.pos+=a,c+=a,this.pos===o&&(this.process(r,0),this.pos=0,s=!0)}return this.length+=t.length,s&&this.roundClean(),this}digestInto(t){ut(this),pr(t,this),this.finished=!0;let{buffer:r,view:n,blockLen:o,isLE:i}=this,{pos:s}=this;r[s++]=128,r.fill(0,s),this.padOffset>o-s&&(this.process(n,0),r.fill(0)),zo(n,o-8,this.length*8,i),this.process(n,0),this.roundClean();let c=t===r?n:Te(t),a=this.outputLen,f=a/4,d=this.get();if(a%4||f>d.length)throw new Error("invalid outputLen");for(let h=0;h<f;h++)c.setUint32(4*h,d[h],i)}digest(){let{buffer:t,outputLen:r}=this;this.digestInto(t);let n=t.slice(0,r);return this.destroy(),n}_cloneIntoMeta(t){let{buffer:r,length:n,finished:o,destroyed:i,pos:s}=this;return t.destroyed=i,t.finished=o,t.length=n,t.pos=s,s&&t.buffer.set(r),t}clone(){return this._cloneInto()}},Zo=Uint32Array.from([1779033703,3144134277,1013904242,2773480762,1359893119,2600822924,528734635,1541459225]);var Qo=Uint32Array.from([1779033703,4089235720,3144134277,2227873595,1013904242,4271175723,2773480762,1595750129,1359893119,2917565137,2600822924,725511199,528734635,4215389547,1541459225,327033209]);var hc=Uint32Array.from([1116352408,1899447441,3049323471,3921009573,961987163,1508970993,2453635748,2870763221,3624381080,310598401,607225278,1426881987,1925078388,2162078206,2614888103,3248222580,3835390401,4022224774,264347078,604807628,770255983,1249150122,1555081692,1996064986,2554220882,2821834349,2952996808,3210313671,3336571891,3584528711,113926993,338241895,666307205,773529912,1294757372,1396182291,1695183700,1986661051,2177026350,2456956037,2730485921,2820302411,3259730800,3345764771,3516065817,3600352804,4094571909,275423344,430227734,506948616,659060556,883997877,958139571,1322822218,1537002063,1747873779,1955562222,2024104815,2227730452,2361852424,2428436474,2756734187,3204031479,3329325298]),Me=new Uint32Array(64),mn=class extends Je{constructor(r,n){super(64,r,8,!1);g(this,"A",0);g(this,"B",0);g(this,"C",0);g(this,"D",0);g(this,"E",0);g(this,"F",0);g(this,"G",0);g(this,"H",0);this.A=n[0]|0,this.B=n[1]|0,this.C=n[2]|0,this.D=n[3]|0,this.E=n[4]|0,this.F=n[5]|0,this.G=n[6]|0,this.H=n[7]|0}get(){let{A:r,B:n,C:o,D:i,E:s,F:c,G:a,H:f}=this;return[r,n,o,i,s,c,a,f]}set(r,n,o,i,s,c,a,f){this.A=r|0,this.B=n|0,this.C=o|0,this.D=i|0,this.E=s|0,this.F=c|0,this.G=a|0,this.H=f|0}_cloneInto(r){return(r||(r=new this.constructor)).set(...this.get()),this._cloneIntoMeta(r)}process(r,n){for(let l=0;l<16;l++,n+=4)Me[l]=r.getUint32(n,!1);for(let l=16;l<64;l++){let u=Me[l-15],p=Me[l-2],b=we(u,7)^we(u,18)^u>>>3,w=we(p,17)^we(p,19)^p>>>10;Me[l]=w+Me[l-7]+b+Me[l-16]|0}let{A:o,B:i,C:s,D:c,E:a,F:f,G:d,H:h}=this;for(let l=0;l<64;l++){let u=we(a,6)^we(a,11)^we(a,25),p=h+u+bn(a,f,d)+hc[l]+Me[l]|0,w=(we(o,2)^we(o,13)^we(o,22))+wn(o,i,s)|0;h=d,d=f,f=a,a=c+p|0,c=s,s=i,i=o,o=p+w|0}o=o+this.A|0,i=i+this.B|0,s=s+this.C|0,c=c+this.D|0,a=a+this.E|0,f=f+this.F|0,d=d+this.G|0,h=h+this.H|0,this.set(o,i,s,c,a,f,d,h)}roundClean(){ue(Me)}destroy(){this.destroyed=!0,this.set(0,0,0,0,0,0,0,0),ue(this.buffer)}},xn=class extends mn{constructor(){super(32,Zo)}};var Jo=Mo(["0x428a2f98d728ae22","0x7137449123ef65cd","0xb5c0fbcfec4d3b2f","0xe9b5dba58189dbbc","0x3956c25bf348b538","0x59f111f1b605d019","0x923f82a4af194f9b","0xab1c5ed5da6d8118","0xd807aa98a3030242","0x12835b0145706fbe","0x243185be4ee4b28c","0x550c7dc3d5ffb4e2","0x72be5d74f27b896f","0x80deb1fe3b1696b1","0x9bdc06a725c71235","0xc19bf174cf692694","0xe49b69c19ef14ad2","0xefbe4786384f25e3","0x0fc19dc68b8cd5b5","0x240ca1cc77ac9c65","0x2de92c6f592b0275","0x4a7484aa6ea6e483","0x5cb0a9dcbd41fbd4","0x76f988da831153b5","0x983e5152ee66dfab","0xa831c66d2db43210","0xb00327c898fb213f","0xbf597fc7beef0ee4","0xc6e00bf33da88fc2","0xd5a79147930aa725","0x06ca6351e003826f","0x142929670a0e6e70","0x27b70a8546d22ffc","0x2e1b21385c26c926","0x4d2c6dfc5ac42aed","0x53380d139d95b3df","0x650a73548baf63de","0x766a0abb3c77b2a8","0x81c2c92e47edaee6","0x92722c851482353b","0xa2bfe8a14cf10364","0xa81a664bbc423001","0xc24b8b70d0f89791","0xc76c51a30654be30","0xd192e819d6ef5218","0xd69906245565a910","0xf40e35855771202a","0x106aa07032bbd1b8","0x19a4c116b8d2d0c8","0x1e376c085141ab53","0x2748774cdf8eeb99","0x34b0bcb5e19b48a8","0x391c0cb3c5c95a63","0x4ed8aa4ae3418acb","0x5b9cca4f7763e373","0x682e6ff3d6b2b8a3","0x748f82ee5defb2fc","0x78a5636f43172f60","0x84c87814a1f0ab72","0x8cc702081a6439ec","0x90befffa23631e28","0xa4506cebde82bde9","0xbef9a3f7b2c67915","0xc67178f2e372532b","0xca273eceea26619c","0xd186b8c721c0c207","0xeada7dd6cde0eb1e","0xf57d4f7fee6ed178","0x06f067aa72176fba","0x0a637dc5a2c898a6","0x113f9804bef90dae","0x1b710b35131c471b","0x28db77f523047d84","0x32caab7b40c72493","0x3c9ebe0a15c9bebc","0x431d67c49c100d4c","0x4cc5d4becb3e42b6","0x597f299cfc657e2a","0x5fcb6fab3ad6faec","0x6c44198c4a475817"].map(e=>BigInt(e))),pc=Jo[0],gc=Jo[1],ze=new Uint32Array(80),De=new Uint32Array(80),En=class extends Je{constructor(r,n){super(128,r,16,!1);g(this,"Ah",0);g(this,"Al",0);g(this,"Bh",0);g(this,"Bl",0);g(this,"Ch",0);g(this,"Cl",0);g(this,"Dh",0);g(this,"Dl",0);g(this,"Eh",0);g(this,"El",0);g(this,"Fh",0);g(this,"Fl",0);g(this,"Gh",0);g(this,"Gl",0);g(this,"Hh",0);g(this,"Hl",0);this.Ah=n[0]|0,this.Al=n[1]|0,this.Bh=n[2]|0,this.Bl=n[3]|0,this.Ch=n[4]|0,this.Cl=n[5]|0,this.Dh=n[6]|0,this.Dl=n[7]|0,this.Eh=n[8]|0,this.El=n[9]|0,this.Fh=n[10]|0,this.Fl=n[11]|0,this.Gh=n[12]|0,this.Gl=n[13]|0,this.Hh=n[14]|0,this.Hl=n[15]|0}get(){let{Ah:r,Al:n,Bh:o,Bl:i,Ch:s,Cl:c,Dh:a,Dl:f,Eh:d,El:h,Fh:l,Fl:u,Gh:p,Gl:b,Hh:w,Hl:E}=this;return[r,n,o,i,s,c,a,f,d,h,l,u,p,b,w,E]}set(r,n,o,i,s,c,a,f,d,h,l,u,p,b,w,E){this.Ah=r|0,this.Al=n|0,this.Bh=o|0,this.Bl=i|0,this.Ch=s|0,this.Cl=c|0,this.Dh=a|0,this.Dl=f|0,this.Eh=d|0,this.El=h|0,this.Fh=l|0,this.Fl=u|0,this.Gh=p|0,this.Gl=b|0,this.Hh=w|0,this.Hl=E|0}_cloneInto(r){return(r||(r=new this.constructor)).set(...this.get()),this._cloneIntoMeta(r)}process(r,n){for(let P=0;P<16;P++,n+=4)ze[P]=r.getUint32(n),De[P]=r.getUint32(n+=4);for(let P=16;P<80;P++){let J=ze[P-15]|0,N=De[P-15]|0,oe=Xe(J,N,1)^Xe(J,N,8)^dn(J,N,7),be=Ze(J,N,1)^Ze(J,N,8)^ln(J,N,7),ie=ze[P-2]|0,F=De[P-2]|0,ve=Xe(ie,F,19)^_t(ie,F,61)^dn(ie,F,6),X=Ze(ie,F,19)^Rt(ie,F,61)^ln(ie,F,6),ke=Ko(be,X,De[P-7],De[P-16]),se=Wo(ke,oe,ve,ze[P-7],ze[P-16]);ze[P]=se|0,De[P]=ke|0}let{Ah:o,Al:i,Bh:s,Bl:c,Ch:a,Cl:f,Dh:d,Dl:h,Eh:l,El:u,Fh:p,Fl:b,Gh:w,Gl:E,Hh:A,Hl:C}=this;for(let P=0;P<80;P++){let J=Xe(l,u,14)^Xe(l,u,18)^_t(l,u,41),N=Ze(l,u,14)^Ze(l,u,18)^Rt(l,u,41),oe=l&p^~l&w,be=u&b^~u&E,ie=qo(C,N,be,gc[P],De[P]),F=Vo(ie,A,J,oe,pc[P],ze[P]),ve=ie|0,X=Xe(o,i,28)^_t(o,i,34)^_t(o,i,39),ke=Ze(o,i,28)^Rt(o,i,34)^Rt(o,i,39),se=o&s^o&a^s&a,U=i&c^i&f^c&f;A=w|0,C=E|0,w=p|0,E=b|0,p=l|0,b=u|0,{h:l,l:u}=Se(d|0,h|0,F|0,ve|0),d=a|0,h=f|0,a=s|0,f=c|0,s=o|0,c=i|0;let R=Do(ve,ke,U);o=jo(R,F,X,se),i=R|0}({h:o,l:i}=Se(this.Ah|0,this.Al|0,o|0,i|0)),{h:s,l:c}=Se(this.Bh|0,this.Bl|0,s|0,c|0),{h:a,l:f}=Se(this.Ch|0,this.Cl|0,a|0,f|0),{h:d,l:h}=Se(this.Dh|0,this.Dl|0,d|0,h|0),{h:l,l:u}=Se(this.Eh|0,this.El|0,l|0,u|0),{h:p,l:b}=Se(this.Fh|0,this.Fl|0,p|0,b|0),{h:w,l:E}=Se(this.Gh|0,this.Gl|0,w|0,E|0),{h:A,l:C}=Se(this.Hh|0,this.Hl|0,A|0,C|0),this.set(o,i,s,c,a,f,d,h,l,u,p,b,w,E,A,C)}roundClean(){ue(ze,De)}destroy(){this.destroyed=!0,ue(this.buffer),this.set(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)}},vn=class extends En{constructor(){super(64,Qo)}};var Z=Lt(()=>new xn,yn(1));var Ct=Lt(()=>new vn,yn(3));var br=e=>Object.freeze(e());function ci(e){return e instanceof Uint8Array||ArrayBuffer.isView(e)&&e.constructor.name==="Uint8Array"&&"BYTES_PER_ELEMENT"in e&&e.BYTES_PER_ELEMENT===1}function et(e){if(!ci(e))throw new TypeError("Uint8Array expected")}function yc(e,t){return Array.isArray(t)?t.length===0?!0:e?t.every(r=>typeof r=="string"):t.every(r=>Number.isSafeInteger(r)):!1}function wr(e){if(typeof e!="function")throw new TypeError("function expected");return!0}function Nt(e,t){if(typeof t!="string")throw new TypeError(`${e}: string expected`);return!0}function yr(e,t="number"){if(typeof e!="number")throw new TypeError(`${t}: expected number, got ${typeof e}`);if(!Number.isSafeInteger(e))throw new RangeError(`${t}: expected safe integer, got ${e}`)}function ei(e,t){if(!yc(!1,t))throw new TypeError(`${e}: array of numbers expected`)}function Sn(...e){let t=i=>i,r=(i,s)=>c=>i(s(c)),n=e.map(i=>i.encode).reduceRight(r,t),o=e.map(i=>i.decode).reduce(r,t);return{encode:n,decode:o}}function bc(e){return wr(e),{encode:t=>t,decode:t=>e(t)}}var wc=(()=>{let e=[];for(let t=0;t<40;t++)e.push(2**t);return e})();function ti(e,t=e.length){let r=new Array(t);for(let n=0;n<t;n++)r[n]=e[n];return r}var ri=(()=>{try{let e=new TextDecoder;return e.decode(Uint8Array.of(65,48,43,127))==="A0+\x7F"?e:void 0}catch{return}})(),kn=8192;function mc(e){let t=e.length;if(ri!==void 0&&t>=12)return ri.decode(e);if(t<=kn)return String.fromCharCode.apply(null,e);let r="";for(let n=0;n<t;n+=kn)r+=String.fromCharCode.apply(null,e.subarray(n,n+kn));return r}function ai(e){if(yr(e),e<=0||e>8)throw new RangeError("radix2: bits should be in (0..8]");let t=wc[e]-1;return{encode:r=>{et(r);let n=r.length,o=new Uint8Array(Math.ceil(n*8/e)),i=0,s=0,c=0;for(let a=0;a<n;)for(a+2<n?(i=i<<24|r[a]<<16|r[a+1]<<8|r[a+2],s+=24,a+=3):(i=(i<<8|r[a])&65535,s+=8,a++);s-=e,o[c++]=i>>s&t,!(s<e););return s>0&&(o[c]=i<<e-s&t),o},decode:r=>{let n=r.length,o=new Uint8Array(Math.floor(n*e/8)),i=0,s=0,c=0;for(let a=0;a<n;a++)for(i=(i<<e|r[a])&65535,s+=e;s>=8;s-=8)o[c++]=i>>s-8&255;if(i=i<<8-s&255,s>=e)throw new Error("Excess padding");if(i>0)throw new Error(`Non-zero padding: ${i}`);return o}}}function Tn(e,t){let r=e.length;if(r>128)throw new Error("alphabet: max 128 letters");let n=new Uint8Array(r),o=new Int8Array(128).fill(-1);for(let i=0;i<r;i++){let s=e.charCodeAt(i);if(e.codePointAt(i)!==s||s>127)throw new Error("alphabet: single-char ASCII letters only");n[i]=s,o[s]=i}if(t!==void 0)for(let i of Object.keys(t)){let s=i.charCodeAt(0),c=o[t[i].charCodeAt(0)];if(i.length!==1||s>127||c===void 0||c===-1)throw new Error(`alphabet: invalid alias ${i}`);o[s]=c}return{encode:i=>{let s=new Uint8Array(i.length);for(let c=0;c<i.length;c++){let a=i[c],f=n[a];if(f===void 0)throw new Error(`alphabet.encode: invalid digit ${a}`);s[c]=f}return mc(s)},decode:i=>{Nt("decode",i);let s=i.length,c=new Uint8Array(s);for(let a=0;a<s;a++){let f=i.charCodeAt(a),d=f<128?o[f]:-1;if(d===-1)throw new Error(`Unknown letter "${i[a]}". Allowed: ${e}`);c[a]=d}return c}}}function ni(e){return wr(e),function(...t){try{return e.apply(null,t)}catch{}}}function xc(e,t){if(yr(e),e<=0)throw new RangeError(`checksum length must be positive: ${e}`);wr(t);let r=t;return{encode(n){et(n);let o=r(n).slice(0,e),i=new Uint8Array(n.length+e);return i.set(n),i.set(o,n.length),i},decode(n){et(n);let o=n.slice(0,-e),i=n.slice(-e),s=r(o).slice(0,e);for(let c=0;c<e;c++)if(s[c]!==i[c])throw new Error("Invalid checksum");return o}}}var oi=656356768,Ec={encode:e=>{et(e);let t=e.length;if(t===0)return new Uint8Array(0);let r=0;for(;r<t-1&&e[r]===0;)r++;let n=Math.ceil(t/2),o=new Uint16Array(n),i=t&1;i&&(o[0]=e[0]);for(let l=i,u=i;l<t;l+=2,u++)o[u]=e[l]<<8|e[l+1];let s=[],c=0;for(;c<n;){let l=0;for(let u=c;u<n;u++){let p=l*65536+o[u],b=Math.floor(p/oi);l=p-b*oi,o[u]=b,b===0&&u===c&&c++}s.push(l)}let a=s.length-1,f=a*5;for(let l=s[a];f++,!(l<58);l=Math.floor(l/58));let d=new Uint8Array(r+f),h=d.length-1;for(let l=0;l<a;l++){let u=s[l];for(let p=0;p<5;p++)d[h--]=u%58,u=Math.floor(u/58)}for(let l=s[a];h>=r;l=Math.floor(l/58))d[h--]=l%58;return d},decode:e=>{et(e);let t=e.length;if(t===0)return new Uint8Array(0);if(t>=65536)throw new Error("invalid length");let r=0;for(;r<t-1&&e[r]===0;)r++;let n=new Uint16Array(Math.ceil(t*6/16)+1),o=0,i=0,s=t%5||5;for(;i<t;){let d=0,h=1;for(let u=i+s;i<u;i++){let p=e[i];if(p>=58)throw new Error(`invalid integer: ${p}`);d=d*58+p,h*=58}s=5;let l=d;for(let u=0;u<o;u++){let p=n[u]*h+l;l=Math.floor(p/65536),n[u]=p-l*65536}for(;l>0;l=Math.floor(l/65536))n[o++]=l%65536}let c=o===0?1:o*2-(n[o-1]<256?1:0),a=new Uint8Array(r+c),f=a.length-1;for(let d=0;d<o;d++){let h=n[d];a[f--]=h&255,f>=r&&(a[f--]=h>>8)}return a}},vc=e=>Sn(Ec,Tn(e)),kc=br(()=>vc("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"));var Ft=e=>{wr(e);let t=e;return Sn(xc(4,r=>t(t(r))),kc)},fi=Ft,Bn=Tn("qpzry9x8gf2tvdw0s3jn54khce6mua7l");function Bc(e){let t=e.length,r=new Uint8Array(t);for(let n=0;n<t;n++){let o=e[n];if(o<0||o>=32)throw new Error(`alphabet.encode: invalid digit ${o}`);r[n]=o}return r}var ii=[996825010,642813549,513874426,1027748829,705979059];function Ht(e){let t=e>>25,r=(e&33554431)<<5;for(let n=0;n<ii.length;n++)(t>>n&1)===1&&(r^=ii[n]);return r}function si(e,t,r=1){let n=e.length,o=1;for(let s=0;s<n;s++){let c=e.charCodeAt(s);if(c<33||c>126)throw new Error(`Invalid prefix (${e})`);o=Ht(o)^c>>5}o=Ht(o);for(let s=0;s<n;s++)o=Ht(o)^e.charCodeAt(s)&31;for(let s of t)o=Ht(o)^s;for(let s=0;s<6;s++)o=Ht(o);o^=r;let i=new Uint8Array(6);for(let s=0;s<6;s++)i[s]=o>>>5*(5-s)&31;return Bn.encode(i)}function di(e){let t=e==="bech32"?1:734539939,r=ai(5),n=h=>{et(h);let l=h.length,u=new Array(Math.ceil(l*8/5)),p=0,b=0,w=0;for(let E=0;E<l;E++)for(p=p<<8|h[E],b+=8;b>=5;b-=5)u[w++]=p>>b-5&31;return b>0&&(u[w]=p<<5-b&31),u},o=h=>{ei("radix2.decode",h);let l=h.length,u=new Uint8Array(l);for(let p=0;p<l;p++){let b=h[p];if(b<0||b>=32)throw new Error(`convertRadix2: invalid word=${b}`);u[p]=b}return r.decode(u)},i=ni(o);function s(h,l,u=90){Nt("bech32.encode prefix",h),u!==!1&&yr(u,"limit"),ci(l)&&(l=ti(l)),ei("bech32.encode",l);let p=h.length;if(p===0)throw new TypeError(`Invalid prefix length ${p}`);let b=p+7+l.length;if(u!==!1&&b>u)throw new TypeError(`Length ${b} exceeds limit ${u}`);let w=h.toLowerCase(),E=si(w,l,t);return`${w}1${Bn.encode(Bc(l))}${E}`}function c(h,l=90){Nt("bech32.decode input",h),l!==!1&&yr(l,"limit");let u=h.length;if(u<8||l!==!1&&u>l)throw new TypeError(`invalid string length ${u}, expected (8..${l})`);let p=h.toLowerCase();if(h!==p&&h!==h.toUpperCase())throw new Error("mixed-case string not allowed");let b=p.lastIndexOf("1");if(b===0||b===-1)throw new Error('invalid separator "1"');let w=p.slice(0,b),E=p.slice(b+1);if(E.length<6)throw new Error("invalid data length");let A=Bn.decode(E),C=ti(A,A.length-6),P=si(w,C,t);if(!E.endsWith(P))throw new Error(`Invalid checksum in ${h}`);return{prefix:w,words:C}}let a=ni(c);function f(h){let{prefix:l,words:u}=c(h,!1);return{prefix:l,words:u,bytes:o(u)}}function d(h,l){return s(h,n(l))}return{encode:s,decode:c,encodeFromBytes:d,decodeToBytes:f,decodeUnsafe:a,fromWords:o,fromWordsUnsafe:i,toWords:n}}var mr=br(()=>di("bech32")),An=br(()=>di("bech32m"));var Sc=typeof Uint8Array.from([]).toHex=="function"&&typeof Uint8Array.fromHex=="function",Tc={encode(e){return et(e),e.toHex()},decode(e){return Nt("hex",e),Uint8Array.fromHex(e)}},M=br(()=>Sc?Tc:Sn(ai(4),Tn("0123456789abcdef",{A:"a",B:"b",C:"c",D:"d",E:"e",F:"f"}),bc(e=>{if(Nt("hex",e),e.length%2!==0)throw new TypeError(`hex.decode: odd-length string (${e.length})`);return e})));var xr=class{constructor(t,r){g(this,"oHash");g(this,"iHash");g(this,"blockLen");g(this,"outputLen");g(this,"canXOF",!1);g(this,"finished",!1);g(this,"destroyed",!1);if(lt(t),K(r,void 0,"key"),this.iHash=t.create(),typeof this.iHash.update!="function")throw new Error("expected Hash instance");this.blockLen=this.iHash.blockLen,this.outputLen=this.iHash.outputLen;let n=this.blockLen,o=new Uint8Array(n);o.set(r.length>n?t.create().update(r).digest():r);for(let i=0;i<o.length;i++)o[i]^=54;this.iHash.update(o),this.oHash=t.create();for(let i=0;i<o.length;i++)o[i]^=106;this.oHash.update(o),ue(o)}update(t){return ut(this),this.iHash.update(t),this}digestInto(t){ut(this),pr(t,this),this.finished=!0;let r=t.subarray(0,this.outputLen);this.iHash.digestInto(r),this.oHash.update(r),this.oHash.digestInto(r),this.destroy()}digest(){let t=new Uint8Array(this.oHash.outputLen);return this.digestInto(t),t}_cloneInto(t){t||(t=Object.create(Object.getPrototypeOf(this),{}));let{oHash:r,iHash:n,finished:o,destroyed:i,blockLen:s,outputLen:c,canXOF:a}=this;return t=t,t.finished=o,t.destroyed=i,t.blockLen=s,t.outputLen=c,t.canXOF=a,t.oHash=r._cloneInto(t.oHash),t.iHash=n._cloneInto(t.iHash),t}clone(){return this._cloneInto()}destroy(){this.destroyed=!0,this.oHash.destroy(),this.iHash.destroy()}},tt=(()=>{let e=((t,r,n)=>new xr(t,r).update(n).digest());return e.create=(t,r)=>new xr(t,r),e})();function Ac(e,t,r,n){lt(e);let o=gn({dkLen:32,asyncTick:10},n),{c:i,dkLen:s,asyncTick:c}=o;if(V(i,"c"),V(s,"dkLen"),V(c,"asyncTick"),i<1)throw new Error('"c" (iterations) must be >= 1');if(s<1)throw new Error('"dkLen" must be >= 1');if(s>(2**32-1)*e.outputLen)throw new Error("derived key too long");let a=pn(t,"password"),f=pn(r,"salt"),d=new Uint8Array(s),{iHash:h,oHash:l,outputLen:u}=tt.create(e,a),p=new Uint8Array(u),b=Pc(h,l,f,p);return{c:i,dkLen:s,asyncTick:c,DK:d,outputLen:u,eng:b}}function Pc(e,t,r,n){let o=new Uint8Array(4),i=Te(o),s=e._cloneInto().update(r),c=t._cloneInto(),a=e._cloneInto,f=t._cloneInto;return{u1:(d,h)=>{i.setInt32(0,d,!1),s._cloneInto(c).update(o).digestInto(n),t._cloneInto(c).update(n).digestInto(n),h.set(n.subarray(0,h.length))},rounds:(d,h)=>{for(let l=1;l<d;l++){a.call(e,c).update(n).digestInto(n),f.call(t,c).update(n).digestInto(n);for(let u=0;u<h.length;u++)h[u]^=n[u]}},output:d=>(e.destroy(),t.destroy(),s.destroy(),c.destroy(),ue(n),d)}}function li(e,t,r,n){let{c:o,dkLen:i,DK:s,outputLen:c,eng:a}=Ac(e,t,r,n);for(let f=1,d=0;d<i;f++,d+=c){let h=s.subarray(d,d+c);a.u1(f,h),a.rounds(o,h)}return a.output(s)}var $c=e=>e[0]==="\u3042\u3044\u3053\u304F\u3057\u3093";function ui(e){if(typeof e!="string")throw new TypeError("invalid mnemonic type: "+typeof e);return e.normalize("NFKD")}function hi(e){let t=ui(e),r=t.split(" ");if(![12,15,18,21,24].includes(r.length))throw new Error("Invalid mnemonic");return{nfkd:t,words:r}}function pi(e){if(K(e),![16,20,24,28,32].includes(e.length))throw new RangeError("invalid entropy length")}var gi=e=>{let t=8-e.length/4;return Z(e)[0]>>t<<t};function yi(e){if(!Array.isArray(e)||e.length!==2048||typeof e[0]!="string")throw new TypeError("Wordlist: expected array of 2048 strings");e.forEach(t=>{if(typeof t!="string")throw new TypeError("wordlist: non-string element: "+t)})}function Ic(e,t){yi(t);let r=new Uint8Array(e.length+1);r.set(e),r[e.length]=gi(e);let n=[],o=0,i=0;for(let s of r)o=o<<8|s,i+=8,i>=11&&(i-=11,n.push(t[o>>>i&2047]),o&=(1<<i)-1);return n}function Oc(e,t){yi(t);let r=e.length/3*4,n=new Uint8Array(r+1),o=0,i=0,s=0;for(let a of e){let f=t.indexOf(a);if(f===-1)throw new Error("Unknown word: "+a);for(o=o<<11|f,i+=11;i>=8;)i-=8,n[s++]=o>>>i&255;o&=(1<<i)-1}i>0&&(n[s]=o<<8-i);let c=n.subarray(0,r);if(n[r]!==gi(c))throw new Error("Invalid checksum");return Uint8Array.from(c)}function Er(e,t){let{words:r}=hi(e),n=Oc(r,t);return pi(n),n}function bi(e,t){return pi(e),Ic(e,t).join($c(t)?"\u3000":" ")}function Pn(e,t){try{Er(e,t)}catch{return!1}return!0}var _c=e=>{if(typeof e!="string")throw new TypeError("invalid passphrase type: "+typeof e);return ui("mnemonic"+e)};function wi(e,t=""){return li(Ct,hi(e).nfkd,_c(t),{c:2048,dkLen:64})}var Ae=Object.freeze(`abandon
@@ -2774,7 +2895,7 @@ zoo`.split(`
     <header>
       <div>
         <div class="kicker">EntropyLab v0.1.2 \xB7 Offline \xB7 No entropy RNG \xB7 You provide the entropy</div>
-        <h1>EntropyLab — Air-Gapped Bitcoin Calculator</h1>
+        <div class="header-title-row"><img class="online-brand-mark" id="online-brand-mark" data-online-src="assets/entropylab_dark.png" alt="" aria-hidden="true" hidden><h1>EntropyLab — Air-Gapped Bitcoin Calculator</h1></div>
         <p class="muted">This file never generates wallet entropy. Save it to USB and open it on a computer that never goes online.</p>
         <div class="download-controls no-print">
           <label class="version-picker">Version
@@ -2790,19 +2911,19 @@ zoo`.split(`
       <h2>You do not need a signing device to hold or receive bitcoin.</h2>
       <p class="muted">A signing device is only required when you spend. Turn dice rolls or a seed you already have into receive addresses, load the xpub into Bitcoin Core or any watch-only wallet, and get paid. Keep the seed on this air-gapped machine. Carry only addresses and the xpub online.</p>
     </section>
-    <div class="row no-print" id="workspace"></div>
+    <div class="row no-print segmented-control" id="workspace" role="group" aria-label="Workspace"></div>
     <section class="key-manager no-print" id="key-manager">
       <div class="key-manager-head"><h2>Keys</h2><div class="add-item-control"><button class="btn secondary add-key" id="add-key" type="button" aria-label="Add key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Add another key</span></div></div>
       <div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div>
     </section>
     <section class="card no-print" id="calc-card" role="tabpanel" hidden>
       <div class="key-panel-head">
-        <div class="row" id="modes"></div>
+        <div class="row segmented-control" id="modes" role="group" aria-label="Key input mode"></div>
         <button class="btn delete-key" id="delete-key" type="button" aria-label="Delete current key" disabled>Delete Key</button>
       </div>
       <section class="seed-length-control" id="seed-length" aria-labelledby="seed-length-label">
         <p class="label" id="seed-length-label">Seed phrase length</p>
-        <div class="row seed-length-options" role="group" aria-label="Seed phrase length">
+        <div class="row seed-length-options segmented-control" role="group" aria-label="Seed phrase length">
           <button type="button" class="tab" data-seed-words="12" aria-pressed="false">12 words</button>
           <button type="button" class="tab" data-seed-words="18" aria-pressed="false">18 words</button>
           <button type="button" class="tab active" data-seed-words="24" aria-pressed="true">24 words</button>
@@ -2867,7 +2988,7 @@ zoo`.split(`
         <div><div class="kicker">Several people, one pile of bitcoin</div><h2>Create a multisig wallet</h2></div>
         <button class="btn delete-key" id="delete-msig" type="button" aria-label="Delete current multisig" disabled>Delete Multisig</button>
       </div>
-      <p class="muted msig-intro">Paste each person&rsquo;s account xpub. This does not need private keys. You can receive to these addresses. Spending later needs the number of signatures you choose, on real signing devices.</p>
+      <p class="muted msig-intro">Paste each person&rsquo;s multisig account or branch extended public key exported by their signing device. This does not need private keys. You can receive to these addresses. Spending later needs the number of signatures you choose, on real signing devices.</p>
       <div class="row msig-settings-row" style="align-items:end">
         <label class="field" style="margin:0;flex:1">Signatures needed to spend (m)
           <select id="msig-m"></select>
@@ -2888,11 +3009,11 @@ zoo`.split(`
       <label class="choice"><input type="radio" name="msig-script" value="p2sh-p2wsh" />
         <span><strong>Nested SegWit</strong><span class="desc">Addresses start with 3. Older wallets. BIP48 script type 1.</span></span></label>
       <label class="choice"><input type="radio" name="msig-script" value="p2sh" />
-        <span><strong>Legacy</strong><span class="desc">Addresses start with 3. Bare P2SH multisig.</span></span></label>
+        <span><strong>Legacy</strong><span class="desc">Addresses start with 3. Bare P2SH using matching depth-2 BIP45 cosigner-branch exports.</span></span></label>
       <div id="msig-keys" class="msig-keys"></div>
       <p class="hint" id="msig-hint"></p>
       <div class="row current-item-actions">
-        <button class="btn primary" id="msig-go" type="button">Build multisig</button>
+        <button class="btn primary" id="msig-go" type="button">Build Multisig</button>
         <button class="btn clear-current-action" id="msig-wipe" type="button" disabled aria-disabled="true">Clear Current Multisig</button>
       </div>
       <p class="err" id="msig-error"></p>
@@ -2929,13 +3050,14 @@ zoo`.split(`
     </section>
     <div id="out"></div>
     <section class="card muted">
-      <h3 style="color:var(--fg)">Sources</h3>
+      <h3 class="sources-heading">Sources</h3>
       <p>Ian Coleman BIP39: <a href="https://github.com/iancoleman/bip39">github.com/iancoleman/bip39</a> \u2014 pull <code>bip39-standalone.html</code> from Releases, or <code>src/js/index.js</code>, <code>entropy.js</code>, <code>jsbip39.js</code>, <code>wordlist_english.js</code>.</p>
       <p>bitaddress.org: <a href="https://github.com/pointbiz/bitaddress.org">github.com/pointbiz/bitaddress.org</a> \u2014 pull <code>bitaddress.org.html</code>, or <code>src/ninja.key.js</code>, <code>ninja.detailwallet.js</code>, <code>ninja.paperwallet.js</code>, <code>bitcoinjs-lib.eckey.js</code>.</p>
       <p>BitBox02 diceware: <a href="https://blog.bitbox.swiss/en/roll-the-dice-generate-your-own-seed/">roll-the-dice-generate-your-own-seed</a> \u2014 lookup table is the BIP39 English list in order.</p>
+      <p>D++ D8 &amp; D16 method: <a href="https://thesimplestbitcoinbook.net/wp-content/uploads/2023/09/Roll-Your-Own-Seed-Phrase-PDF.pdf">Roll Your Own Bitcoin Seed Phrase</a> \u2014 the published 24-word workflow uses one D8 and two D16 rolls per word, then a final D8.</p>
     </section>
   </div>
-`;if(/^(www\.)?entropylab\.online$/i.test(location.hostname))document.getElementById("online-warning")?.removeAttribute("hidden");var Ne="dice",ge="coldcard",Pt=24,hodlEntropyFormat="hex",hodlDiceCoinPositions=[],hodlDPlusNumberedD16=!1,ft="",re=null,Ge=!1,Zs=W("#modes"),at=W("#form"),dr=W("#out");["dice","hex","seed","key"].forEach(e=>{let t=document.createElement("button");t.className="tab"+(e===Ne?" active":""),t.textContent=e==="dice"?"Dice rolls":e==="hex"?"Hex or binary":e==="seed"?"Seed phrase":"Private key",t.onclick=()=>hodlSetMode(e),Zs.appendChild(t)});document.querySelectorAll("#seed-length [data-seed-words]").forEach(button=>{button.onclick=()=>hodlSetSeedLength(Number(button.dataset.seedWords))});W("#go").onclick=hodlCalculateKey;W("#wipe").onclick=hodlWipeActiveKey;function W(e){let t=e.startsWith("#")?e.slice(1):e,r=document.getElementById(t);if(!r)throw new Error(t);return r}function lr(){if(Ne==="dice"){at.innerHTML=`
+`;if(/^(www\.)?entropylab\.online$/i.test(location.hostname))document.getElementById("online-warning")?.removeAttribute("hidden");var Ne="dice",ge="coldcard",Pt=24,hodlEntropyFormat="hex",hodlDiceCoinPositions=[],hodlDPlusNumberedD16=!1,ft="",re=null,Ge=!1,Zs=W("#modes"),at=W("#form"),dr=W("#out");["dice","hex","seed","key"].forEach(e=>{let t=document.createElement("button"),active=e===Ne;t.type="button";t.className="tab"+(active?" active":"");t.setAttribute("aria-pressed",String(active));t.textContent=e==="dice"?"Dice rolls":e==="hex"?"Hex or binary":e==="seed"?"Seed phrase":"Private key";t.onclick=()=>hodlSetMode(e);Zs.appendChild(t)});document.querySelectorAll("#seed-length [data-seed-words]").forEach(button=>{button.onclick=()=>hodlSetSeedLength(Number(button.dataset.seedWords))});W("#go").onclick=hodlCalculateKey;W("#wipe").onclick=hodlWipeActiveKey;function W(e){let t=e.startsWith("#")?e.slice(1):e,r=document.getElementById(t);if(!r)throw new Error(t);return r}function lr(){if(Ne==="dice"){at.innerHTML=`
       <p class="label">How to turn rolls into a seed</p>
       <label class="choice"><input type="radio" name="dm" value="coldcard" ${ge==="coldcard"?"checked":""} />
         <span><strong>Hashed rolls / Base 10 [0-9] (recommended)</strong>
@@ -2985,45 +3107,234 @@ zoo`.split(`
       ${hodlHdWalletData(t)}
       <div class="account-tabs no-print" id="acct-tabs" role="tablist" aria-label="Script type results"></div>
       <div id="acct" role="tabpanel"></div>
-    `;let n=W("#acct-tabs");t.accounts.forEach(o=>{let i=document.createElement("button");i.type="button",i.id=`account-tab-${o.def.id}`,i.className="tab account-tab"+(o.def.id===r.def.id?" active":""),i.dataset.account=o.def.id,i.textContent=o.def.label,i.setAttribute("role","tab"),i.setAttribute("aria-controls","acct"),i.setAttribute("aria-selected",String(o.def.id===r.def.id)),i.tabIndex=o.def.id===r.def.id?0:-1,i.onclick=()=>Qs(o.def.id),n.appendChild(i)}),n.onkeydown=hodlAccountTabsKeydown,Qs(r.def.id)}let e=document.getElementById("reveal");e&&(e.onchange=()=>{Ge=e.checked,tc()}),document.getElementById("save")?.addEventListener("click",()=>{if(!re)return;let t=new Blob([Oo(re,Ge)],{type:"text/plain"}),r=document.createElement("a");r.href=URL.createObjectURL(t),r.download="bitcoin-recovery-sheet.txt",r.click()})}function Qs(e){if(!re||re.kind!=="hd")return;let t=re.accounts.find(n=>n.def.id===e);if(!t)return;hodlSetSelectedScriptType(e),hodlSyncAccountTabs(e);let r=t.receive[0];W("#acct").innerHTML=`
-    <section class="card account-result-card">
-      <div class="kicker">${t.def.bip}</div>
-      <h3>${t.def.label}</h3>
-      <p class="muted">${t.def.beginner} Path ${$t(hodlDisplayDerivationPath(t.accountPath))}</p>
-      ${ye("xpub",t.xpub)}${ye("ypub",t.ypub)}${ye("zpub",t.zpub)}${ye("vpub",t.vpub)}
-      ${Ee("xprv",t.xprv)}${Ee("zprv",t.zprv)}
-      ${ye("Watch-only receive descriptor",t.receiveDescriptor)}
-      ${Ee("Spending receive descriptor",t.receiveDescriptorPriv)}
-      ${r?`<div class="qr">${an(r.address)}</div><p class="mono">${r.address}</p>${Ee("Your Bitcoin Core private key (WIF)",r.wif)}`:""}
-      <h3>Receive</h3>
-      ${Js(t.receive)}
-      <h3>Change</h3>
-      ${Js(t.change)}
-    </section>`}function ye(e,t){return`<p><span class="muted">${e}</span><br><span class="mono">${$t(t??"\u2014")}</span></p>`}function hodlPrivateValue(e,t="secret private-field-value"){let r="************",n=String(e??"\u2014");if(Ge)return`<span class="${t}">${$t(n)}</span>`;let o="\u2022".repeat(Math.max(Array.from(n).length,r.length));return`<span class="${t} secret-placeholder"><span class="secret-placeholder-mask" aria-hidden="true">${o}</span><span class="secret-placeholder-message" aria-hidden="true">${r}</span><span class="secret-placeholder-label">Private value hidden</span></span>`}function Ee(e,t){return`<p class="private-field"><span class="muted">${$t(e)}</span>${hodlPrivateValue(t)}</p>`}function hodlDisplayDerivationPath(e){return String(e??"").replace(/(^|\/)(\d+)'(?=\/|$)/g,"$1$2h")}function Js(e){return`<div style="overflow:auto"><table><thead><tr><th>#</th><th>Path</th><th>Address</th><th>WIF</th></tr></thead><tbody>${e.map(t=>`<tr><td>${t.index}</td><td>${$t(hodlDisplayDerivationPath(t.path))}</td><td>${$t(t.address)}</td><td>${hodlPrivateValue(t.wif,"mono table-private-field-value")}</td></tr>`).join("")}</tbody></table></div>`}function $t(e){let t={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};return Array.from(e,r=>t[r]??r).join("")}
+    `;let n=W("#acct-tabs");t.accounts.forEach(o=>{let i=document.createElement("button");i.type="button",i.id=`account-tab-${o.def.id}`,i.className="tab account-tab"+(o.def.id===r.def.id?" active":""),i.dataset.account=o.def.id,i.textContent=o.def.label,i.setAttribute("role","tab"),i.setAttribute("aria-controls","acct"),i.setAttribute("aria-selected",String(o.def.id===r.def.id)),i.tabIndex=o.def.id===r.def.id?0:-1,i.onclick=()=>Qs(o.def.id),n.appendChild(i)}),n.onkeydown=hodlAccountTabsKeydown,Qs(r.def.id)}let e=document.getElementById("reveal");e&&(e.onchange=()=>{Ge=e.checked,tc()}),document.getElementById("save")?.addEventListener("click",()=>{if(!re)return;let t=new Blob([hodlFormatRecoverySheet(Oo(re,Ge))],{type:"text/plain"}),r=document.createElement("a");r.href=URL.createObjectURL(t),r.download="bitcoin-recovery-sheet.txt",r.click()})}
 
-function hodlPrivateDataControls(descriptionId){
+/* Correct, network-aware extended-key exports. Keep HD nodes normalized internally,
+   and apply x/t/y/u/z/v version bytes only at export boundaries. */
+To=To.map(definition=>definition.id==="bip86"?{...definition,slip:"x"}:definition);
+cr={
+  mainnet:{
+    x:{pub:0x0488b21e,prv:0x0488ade4,pubName:"xpub",prvName:"xprv"},
+    y:{pub:0x049d7cb2,prv:0x049d7878,pubName:"ypub",prvName:"yprv"},
+    z:{pub:0x04b24746,prv:0x04b2430c,pubName:"zpub",prvName:"zprv"}
+  },
+  testnet:{
+    x:{pub:0x043587cf,prv:0x04358394,pubName:"tpub",prvName:"tprv"},
+    y:{pub:0x044a5262,prv:0x044a4e28,pubName:"upub",prvName:"uprv"},
+    z:{pub:0x045f1cf6,prv:0x045f18bc,pubName:"vpub",prvName:"vprv"}
+  }
+};
+var hodlMultisigKeyVersions=[
+  {network:"mainnet",family:"y",scope:"multisig",private:!1,ver:0x0295b43f,name:"Ypub"},
+  {network:"mainnet",family:"y",scope:"multisig",private:!0,ver:0x0295b005,name:"Yprv"},
+  {network:"mainnet",family:"z",scope:"multisig",private:!1,ver:0x02aa7ed3,name:"Zpub"},
+  {network:"mainnet",family:"z",scope:"multisig",private:!0,ver:0x02aa7a99,name:"Zprv"},
+  {network:"testnet",family:"y",scope:"multisig",private:!1,ver:0x024289ef,name:"Upub"},
+  {network:"testnet",family:"y",scope:"multisig",private:!0,ver:0x024285b5,name:"Uprv"},
+  {network:"testnet",family:"z",scope:"multisig",private:!1,ver:0x02575483,name:"Vpub"},
+  {network:"testnet",family:"z",scope:"multisig",private:!0,ver:0x02575048,name:"Vprv"}
+];
+So=[];
+for(let [network,families] of Object.entries(cr))for(let [family,entry] of Object.entries(families)){
+  So.push({network,family,scope:"singlesig",private:!1,ver:entry.pub,name:entry.pubName});
+  So.push({network,family,scope:"singlesig",private:!0,ver:entry.prv,name:entry.prvName})
+}
+So.push(...hodlMultisigKeyVersions);
+uf=function(value){
+  let input=String(value??"").trim(),payload=sr.decode(input),version=lf(input),entry=So.find(candidate=>candidate.ver===version);
+  if(!entry)throw new Error("Not a recognized extended key. Use xpub/xprv, tpub/tprv, ypub/yprv, zpub/zprv, upub/uprv, vpub/vprv, or a supported multisig export.");
+  if(payload.length!==78)throw new Error("The extended key payload has an unexpected length.");
+  let normalized=le(input,entry.private?cr.mainnet.x.prv:cr.mainnet.x.pub),node=Gt.fromExtendedKey(normalized);
+  if(Boolean(node.privateKey)!==entry.private)throw new Error("The extended-key prefix does not match its key payload.");
+  let depth=payload[4],childNumber=new DataView(payload.buffer,payload.byteOffset+9,4).getUint32(0,!1);
+  if(node.depth!==depth)throw new Error("The extended-key depth does not match its serialized payload.");
+  return{xkey:normalized,isPrivate:entry.private,network:entry.network,family:entry.family,scope:entry.scope,prefix:entry.name,version:entry.ver,node,depth,childNumber}
+};
+function hodlAccountExportFamily(definition){return definition.id==="bip49"?"y":definition.id==="bip84"?"z":"x"}
+function hodlSerializeExtendedKey(value,network,family,isPrivate){return value?le(value,cr[network][family][isPrivate?"prv":"pub"]):null}
+function hodlAccountResult(node,definition,network,count,options={}){
+  let rawPublic=node.publicExtendedKey,rawPrivate=node.privateKey?node.privateExtendedKey:null,family=hodlAccountExportFamily(definition),primaryConfig=cr[network][family],genericConfig=cr[network].x;
+  let genericPublic=hodlSerializeExtendedKey(rawPublic,network,"x",!1),genericPrivate=hodlSerializeExtendedKey(rawPrivate,network,"x",!0);
+  let primaryPublic=hodlSerializeExtendedKey(rawPublic,network,family,!1),primaryPrivate=hodlSerializeExtendedKey(rawPrivate,network,family,!0);
+  let origin=options.originFingerprint&&options.originPath?`[${options.originFingerprint}/${options.originPath}]`:"";
+  let publicReceive=`${origin}${genericPublic}/0/*`,publicChange=`${origin}${genericPublic}/1/*`;
+  let privateReceive=genericPrivate?`${origin}${genericPrivate}/0/*`:null,privateChange=genericPrivate?`${origin}${genericPrivate}/1/*`:null;
+  let accountPath=options.accountPath??"Imported account key";
+  return{
+    def:definition,network,accountPath,accountIndex:options.accountIndex??null,originKnown:Boolean(origin),imported:Boolean(options.imported),
+    masterFingerprint:options.masterFingerprint??null,parentFingerprint:options.parentFingerprint??null,nodeFingerprint:options.nodeFingerprint??null,
+    primaryFamily:family,primaryPublic,primaryPrivate,primaryPublicLabel:primaryConfig.pubName,primaryPrivateLabel:primaryConfig.prvName,
+    genericPublic,genericPrivate,genericPublicLabel:genericConfig.pubName,genericPrivateLabel:genericConfig.prvName,
+    hasAlternateExport:family!=="x",publicExports:[{name:primaryConfig.pubName,value:primaryPublic}],privateExports:primaryPrivate?[{name:primaryConfig.prvName,value:primaryPrivate}]:[],
+    xpub:genericPublic,xprv:genericPrivate,
+    ypub:family==="y"?primaryPublic:null,yprv:family==="y"?primaryPrivate:null,
+    zpub:family==="z"?primaryPublic:null,zprv:family==="z"?primaryPrivate:null,
+    vpub:null,vprv:null,
+    receiveDescriptor:Le(Ye(definition.script,publicReceive)),changeDescriptor:Le(Ye(definition.script,publicChange)),
+    receiveDescriptorPriv:privateReceive?Le(Ye(definition.script,privateReceive)):null,changeDescriptorPriv:privateChange?Le(Ye(definition.script,privateChange)):null,
+    receive:nn(node,accountPath,definition.script,network,count,"receive"),change:nn(node,accountPath,definition.script,network,count,"change")
+  }
+}
+mf=function(root,definition,network,count,masterFingerprint,accountIndex=0){
+  let accountPath=Ao(definition,network,accountIndex),node=root.derive(accountPath),originPath=`${definition.purpose}h/${Rs(network)}h/${accountIndex}h`;
+  return hodlAccountResult(node,definition,network,count,{accountPath,accountIndex,masterFingerprint,originFingerprint:masterFingerprint,originPath})
+};
+Hs=function(root,network,count,source,accountIndex=0){
+  let addressCount=Math.min(Math.max(count,1),50),masterFingerprint=Us(root.fingerprint),accounts=To.map(definition=>mf(root,definition,network,addressCount,masterFingerprint,accountIndex));
+  return{
+    kind:"hd",network,mnemonic:source.mnemonic,passphraseUsed:source.passphraseUsed,entropyHex:source.entropyHex,seedHex:source.seedHex,
+    rootXprv:hodlSerializeExtendedKey(root.privateKey?root.privateExtendedKey:null,network,"x",!0),rootXpub:hodlSerializeExtendedKey(root.publicExtendedKey,network,"x",!1),
+    rootPrivateLabel:cr[network].x.prvName,rootPublicLabel:cr[network].x.pubName,masterFingerprint,imported:!1,notes:source.notes,warnings:source.warnings,accounts
+  }
+};
+function hodlImportedScriptDefinition(parsed){
+  if(parsed.family==="y")return To.find(definition=>definition.id==="bip49");
+  if(parsed.family==="z")return To.find(definition=>definition.id==="bip84");
+  return hodlScriptDefinition(hodlSelectedScriptType())
+}
+Po=function(value,network,count,accountIndex=0){
+  let importedValue=String(value??"").trim(),parsed=uf(importedValue);
+  if(parsed.scope!=="singlesig")throw new Error(`${parsed.prefix} is a multisig extended key. Use it in Multi Signature, not Key Generation.`);
+  if(parsed.network!==network)throw new Error(`This ${parsed.prefix} belongs to Bitcoin ${parsed.network}. Change Network to ${parsed.network} before deriving it.`);
+  let node=parsed.node,notes=[parsed.isPrivate?"Imported an extended private key. Addresses and WIF keys are derived from it.":"Imported an extended public key. This is watch-only: it can derive addresses but cannot spend."];
+  if(node.depth===0){
+    if(!parsed.isPrivate)throw new Error("A root extended public key cannot derive the hardened BIP44/49/84/86 account paths. Import an account-level extended public key, or use the root xprv/tprv offline.");
+    if(parsed.family!=="x")throw new Error("A BIP32 root private key must use the generic xprv/tprv prefix.");
+    return Hs(node,network,count,{mnemonic:null,passphraseUsed:!1,entropyHex:null,seedHex:null,notes,warnings:[]},accountIndex)
+  }
+  if(node.depth!==3)throw new Error(`This extended key is depth ${node.depth}. Key Generation accepts a BIP32 root private key (depth 0) or an account-level extended key (depth 3).`);
+  let definition=hodlImportedScriptDefinition(parsed),addressCount=Math.min(Math.max(count,1),50),parentFingerprint=Us(node.parentFingerprint),nodeFingerprint=Us(node.fingerprint);
+  let account=hodlAccountResult(node,definition,network,addressCount,{accountPath:"Imported account key",accountIndex:null,imported:!0,parentFingerprint,nodeFingerprint});
+  return{
+    kind:"hd",network,mnemonic:null,passphraseUsed:!1,entropyHex:null,seedHex:null,rootXprv:null,rootXpub:null,
+    importedPrivateKey:parsed.isPrivate?importedValue:null,importedPublicKey:parsed.isPrivate?null:importedValue,
+    importedPrivateLabel:parsed.isPrivate?parsed.prefix:null,importedPublicLabel:parsed.isPrivate?null:parsed.prefix,
+    masterFingerprint:null,parentFingerprint,nodeFingerprint,imported:!0,notes,
+    warnings:[...(parsed.isPrivate?[]:["Watch-only. This key contains no private key material."]),"The imported account key did not include a master fingerprint or origin path, so descriptors intentionally omit a fabricated key origin."],accounts:[account]
+  }
+};
+
+function hodlAccountHasPrivate(account){
+  return Boolean(account.primaryPrivate||account.receiveDescriptorPriv||account.changeDescriptorPriv||account.receive.some(row=>row.wif)||account.change.some(row=>row.wif))
+}
+function hodlAccountSummaryItem(label,value,mono=false){
+  return`<div><dt>${$t(label)}</dt><dd${mono?' class="mono"':""}>${$t(value??"Not supplied")}</dd></div>`
+}
+function hodlAccountAdvancedExports(account,includePrivate=false){
+  if(!account.hasAlternateExport)return"";
+  let privateExport=includePrivate&&account.genericPrivate?Ee(`Generic ${account.genericPrivateLabel} for descriptor compatibility`,account.genericPrivate):"";
+  let publicExport=!includePrivate&&account.genericPublic?ye(`Generic ${account.genericPublicLabel} for descriptor compatibility`,account.genericPublic):"";
+  if(!privateExport&&!publicExport)return"";
+  return`<details class="wallet-advanced"><summary>Advanced ${includePrivate?"private":"watch-only"} export</summary>${privateExport||publicExport}</details>`
+}
+function hodlAddressTable(rows,label="Addresses",includeWif=false){
+  let safeLabel=$t(includeWif?`${label} with WIF private keys`:label),tableClass=includeWif?"wallet-table-private":"wallet-table-public";
+  let wifHeading=includeWif?'<th scope="col">WIF</th>':"";
+  let body=rows.map(row=>`<tr><th scope="row">${row.index}</th><td>${$t(hodlDisplayDerivationPath(row.path))}</td><td>${$t(row.address)}</td>${includeWif?`<td>${hodlPrivateValue(row.wif,"mono table-private-field-value")}</td>`:""}</tr>`).join("");
+  return`<div class="wallet-table ${tableClass}" role="region" tabindex="0" aria-label="${safeLabel} table; scroll horizontally for more columns"><table><caption class="sr-only">${safeLabel}</caption><thead><tr><th scope="col">#</th><th scope="col">Path</th><th scope="col">Address</th>${wifHeading}</tr></thead><tbody>${body}</tbody></table></div>`
+}
+function Qs(id){
+  if(!re||re.kind!=="hd")return;let account=re.accounts.find(candidate=>candidate.def.id===id);if(!account)return;
+  hodlSetSelectedScriptType(id);hodlSyncAccountTabs(id);let firstReceive=account.receive[0],hasPrivate=hodlAccountHasPrivate(account);
+  let fingerprint=account.masterFingerprint||re.masterFingerprint||null,accountLabel=account.imported?"Imported account key":String(account.accountIndex??0);
+  let extraFingerprint=!fingerprint&&account.parentFingerprint?hodlAccountSummaryItem("Encoded parent fingerprint",account.parentFingerprint,true):"";
+  let nodeFingerprint=!fingerprint&&account.nodeFingerprint?hodlAccountSummaryItem("Imported key fingerprint",account.nodeFingerprint,true):"";
+  let privateSection=hasPrivate?`
+    <section class="account-result-section account-private-section" aria-labelledby="account-private-heading">
+      <div class="wallet-data-section-head">
+        <h3 id="account-private-heading">Private account material</h3>
+        <p class="muted">These exports can spend from this account. They are shown only for a seed or extended private-key source.</p>
+      </div>
+      ${Ee(`Account ${account.primaryPrivateLabel}`,account.primaryPrivate)}
+      ${Ee("Spending receive descriptor",account.receiveDescriptorPriv)}
+      ${Ee("Spending change descriptor",account.changeDescriptorPriv)}
+      ${hodlAccountAdvancedExports(account,!0)}
+      <p class="account-private-warning"><strong>Keep these exports together only in secure offline backups.</strong> An account extended public key combined with any non-hardened descendant private key, including a WIF shown in the address tables below, can reconstruct that account's extended private key.</p>
+    </section>`:"";
+  W("#acct").innerHTML=`
+    <section class="card account-result-card">
+      <div class="kicker">${$t(account.def.bip)} · ${$t(re.network)}</div>
+      <h2>${$t(account.def.label)}</h2>
+      <p class="muted">${$t(account.def.beginner)}</p>
+      <dl class="account-summary-grid" aria-label="Account summary">
+        ${hodlAccountSummaryItem("Network",re.network)}
+        ${hodlAccountSummaryItem("Script type",`${account.def.label} · ${account.def.bip}`)}
+        ${hodlAccountSummaryItem("Account",accountLabel)}
+        ${hodlAccountSummaryItem("Account derivation path",hodlDisplayDerivationPath(account.accountPath),true)}
+        ${hodlAccountSummaryItem("Master fingerprint",fingerprint,true)}
+        ${extraFingerprint}
+        ${nodeFingerprint}
+      </dl>
+      ${privateSection}
+      <section class="account-result-section account-watch-section" aria-labelledby="account-watch-heading">
+        <div class="wallet-data-section-head">
+          <h3 id="account-watch-heading">Watch-only wallet data</h3>
+          <p class="watch-only-note"><strong>Cannot spend:</strong> these exports can monitor every address and reveal this account's transaction history and balance. Treat them as privacy-sensitive.</p>
+        </div>
+        ${ye(`Account ${account.primaryPublicLabel}`,account.primaryPublic)}
+        ${ye("Watch-only receive descriptor",account.receiveDescriptor)}
+        ${ye("Watch-only change descriptor",account.changeDescriptor)}
+        ${hodlAccountAdvancedExports(account,!1)}
+      </section>
+      <section class="account-result-section account-address-section" aria-labelledby="account-address-heading">
+        <div class="wallet-data-section-head">
+          <h3 id="account-address-heading">Addresses</h3>
+          <p class="muted">Verify the first receive address on another trusted wallet or signing device before accepting bitcoin.</p>
+        </div>
+        ${firstReceive?`<div class="account-address-lead"><h4 class="wallet-data-subtitle">Receive address #0</h4><div class="qr" aria-label="Receive address 0 QR code">${an(firstReceive.address)}</div><p class="mono">${$t(firstReceive.address)}</p><p class="muted mono">${$t(hodlDisplayDerivationPath(firstReceive.path))}</p></div>`:""}
+        <h4 class="wallet-data-subtitle">Receive</h4>
+        ${hodlAddressTable(account.receive,"Receive addresses",hasPrivate)}
+        <h4 class="wallet-data-subtitle">Change</h4>
+        ${hodlAddressTable(account.change,"Change addresses",hasPrivate)}
+      </section>
+    </section>`
+}
+function ye(label,value){return`<p><span class="muted">${$t(label)}</span><br><span class="mono">${$t(value??"\u2014")}</span></p>`}
+function hodlPrivateValue(value,className="secret private-field-value"){let mask="************",text=String(value??"\u2014");if(Ge)return`<span class="${className}">${$t(text)}</span>`;let bullets="\u2022".repeat(Math.max(Array.from(text).length,mask.length));return`<span class="${className} secret-placeholder"><span class="secret-placeholder-mask" aria-hidden="true">${bullets}</span><span class="secret-placeholder-message" aria-hidden="true">${mask}</span><span class="secret-placeholder-label">Private value hidden</span></span>`}
+function Ee(label,value){return`<p class="private-field"><span class="muted">${$t(label)}</span>${hodlPrivateValue(value)}</p>`}
+function hodlDisplayDerivationPath(value){return String(value??"").replace(/(^|\/)(\d+)'(?=\/|$)/g,"$1$2h")}
+function Js(rows){return hodlAddressTable(rows,"Addresses")}
+function $t(value){let entities={"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"};return Array.from(String(value??""),character=>entities[character]??character).join("")}
+
+function hodlPrivateDataControls(descriptionId,scope="wallet"){
+  let privateSheet=Ge,downloadLabel=privateSheet?"Save unencrypted private sheet":"Save watch-only sheet";
+  let disclosure=privateSheet
+    ?scope==="wallet"
+      ?"The downloaded plain-text file is unencrypted and includes all available root and account private recovery material across every script type."
+      :"The downloaded plain-text file is unencrypted and includes every private key shown in this section."
+    :"The downloaded sheet omits all private recovery material.";
   return`<div class="wallet-data-actions no-print">
     <label class="reveal-private-toggle">
-      <input type="checkbox" id="reveal" ${Ge?"checked":""} aria-describedby="${descriptionId}" />
-      <span>Show private keys <span class="reveal-private-toggle-note">(air-gap only)</span></span>
+      <input type="checkbox" id="reveal" ${Ge?"checked":""} aria-describedby="${descriptionId} recovery-sheet-disclosure" />
+      <span>Show private recovery material <span class="reveal-private-toggle-note">(air-gap only)</span></span>
     </label>
-    <button class="btn secondary" id="save" type="button">Save recovery sheet</button>
+    <button class="btn secondary save-recovery-sheet" id="save" type="button" aria-describedby="recovery-sheet-disclosure">${downloadLabel}</button>
+    <p class="recovery-download-disclosure" id="recovery-sheet-disclosure"><strong>${privateSheet?"Private export:":"Watch-only export:"}</strong> ${disclosure}</p>
   </div>`
+}
+function hodlSaveRecoveryControl(){return`<div class="wallet-data-actions no-print"><button class="btn secondary save-recovery-sheet" id="save" type="button">Save watch-only sheet</button></div>`}
+function hodlWalletMessages(wallet,idPrefix){
+  let warnings=[...(wallet.warnings||[])].filter(message=>!wallet.passphraseUsed||!/\bpassphrase\b/i.test(message)),notes=[...(wallet.notes||[])];
+  if(wallet.passphraseUsed)warnings.unshift("A BIP39 passphrase is in use. It creates a different wallet, is not printed in the recovery sheet, and must be preserved separately to recover this wallet.");
+  if(!warnings.length&&!notes.length)return"";
+  let items=[...warnings.map(message=>`<li class="is-warning">${$t(message)}</li>`),...notes.map(message=>`<li>${$t(message)}</li>`)].join("");
+  return`<section class="wallet-result-messages" aria-labelledby="${idPrefix}-safety-heading"><h3 id="${idPrefix}-safety-heading">Safety notes</h3><ul>${items}</ul></section>`
 }
 function hodlSingleWalletData(wallet){
   let miniKey=wallet.minikey?Ee("Mini private key",wallet.minikey):"";
   return`<section class="card wallet-data-card">
     <div class="wallet-data-intro">
       <div class="kicker">Single-key wallet data</div>
-      <h2>Key recovery details</h2>
+      <h2 tabindex="-1">Key recovery details</h2>
       <p class="muted">Review the private key and addresses derived from this input. Sensitive recovery material is grouped first; public wallet data appears below.</p>
+      ${hodlWalletMessages(wallet,"single")}
     </div>
     <section class="wallet-data-section wallet-private-section" aria-labelledby="single-private-heading">
       <div class="wallet-data-section-head">
         <h3 id="single-private-heading">Private key material</h3>
         <p class="muted" id="single-private-description">These values can spend the bitcoin held by the addresses below. Reveal them only while this file is running offline on an air-gapped computer.</p>
       </div>
-      ${hodlPrivateDataControls("single-private-description")}
+      ${hodlPrivateDataControls("single-private-description","single")}
       <div class="wallet-data-fields">
         ${Ee("WIF compressed",wallet.wifCompressed)}
         ${Ee("WIF uncompressed",wallet.wifUncompressed)}
@@ -3056,38 +3367,133 @@ function hodlHdWalletData(wallet){
   if(wallet.mnemonic)privateFields.push(hodlSeedPhraseField(`Your seed phrase \u00b7 ${wallet.mnemonic.trim().split(/\s+/).length} words`,wallet.mnemonic));
   if(wallet.entropyHex)privateFields.push(Ee("BIP39 entropy hex",wallet.entropyHex));
   if(wallet.seedHex)privateFields.push(Ee("Master seed hex",wallet.seedHex));
-  if(wallet.rootXprv)privateFields.push(Ee("Root xprv",wallet.rootXprv));
-  let hasAccountPrivate=wallet.accounts.some(account=>Boolean(account.xprv));
-  let privateContent=privateFields.length?privateFields.join(""):`<p class="muted">${hasAccountPrivate?"No private root material is available in this summary. Private account material appears in the selected script panel below.":"This imported extended public key is watch-only and does not contain private recovery material."}</p>`;
-  let intro=wallet.mnemonic?"Review the root material derived from this seed. Private recovery data is grouped first; public watch-only data appears below.":"Review the material available from this imported extended key. Private data, when present, is grouped first; public watch-only data appears below.";
-  let source=wallet.mnemonic?"":`<p><span class="muted">Source</span><br><span>Imported extended key; no seed phrase was entered.</span></p>`;
-  return`<section class="card wallet-data-card">
-    <div class="wallet-data-intro">
-      <div class="kicker">Wallet data</div>
-      <h2>Wallet recovery details</h2>
-      <p class="muted">${intro}</p>
-    </div>
-    <section class="wallet-data-section wallet-private-section" aria-labelledby="wallet-private-heading">
+  if(wallet.rootXprv)privateFields.push(Ee(`Root ${wallet.rootPrivateLabel||cr[wallet.network].x.prvName}`,wallet.rootXprv));
+  if(wallet.importedPrivateKey)privateFields.push(Ee(`Imported ${wallet.importedPrivateLabel||"extended private key"}`,wallet.importedPrivateKey));
+  let hasAccountPrivate=wallet.accounts.some(hodlAccountHasPrivate),hasPrivate=privateFields.length>0||hasAccountPrivate;
+  let privateContent=privateFields.length?privateFields.join(""):`<p class="muted">Private account material is available in the selected script panel below; no BIP32 root private key was supplied.</p>`;
+  let intro=wallet.mnemonic?"Review the root material derived from this seed. Private recovery data is grouped first; watch-only data appears below.":"Review the material available from this imported extended key. Private data, when present, is grouped first; watch-only data appears below.";
+  let source=wallet.mnemonic?"":`<p><span class="muted">Source</span><br><span>Imported extended ${hasPrivate?"private":"public"} key; no seed phrase was entered.</span></p>`;
+  let privateSection=hasPrivate?`<section class="wallet-data-section wallet-private-section" aria-labelledby="wallet-private-heading">
       <div class="wallet-data-section-head">
         <h3 id="wallet-private-heading">Private recovery material</h3>
         <p class="muted" id="wallet-private-description">These values can recreate or spend from the wallet. Reveal them only while this file is running offline on an air-gapped computer.</p>
       </div>
       ${hodlPrivateDataControls("wallet-private-description")}
       <div class="wallet-data-fields">${privateContent}</div>
-    </section>
+    </section>`:"";
+  let fingerprint=wallet.masterFingerprint?ye("Master fingerprint",wallet.masterFingerprint):"";
+  let parentFingerprint=!wallet.masterFingerprint&&wallet.parentFingerprint?ye("Encoded parent fingerprint (not a master fingerprint)",wallet.parentFingerprint):"";
+  let nodeFingerprint=!wallet.masterFingerprint&&wallet.nodeFingerprint?ye("Imported key fingerprint (not a master fingerprint)",wallet.nodeFingerprint):"";
+  let rootPublic=wallet.rootXpub?ye(`Root ${wallet.rootPublicLabel||cr[wallet.network].x.pubName}`,wallet.rootXpub):"";
+  let importedPublic=wallet.importedPublicKey?ye(`Imported ${wallet.importedPublicLabel||"extended public key"}`,wallet.importedPublicKey):"";
+  return`<section class="card wallet-data-card">
+    <div class="wallet-data-intro">
+      <div class="kicker">Wallet data</div>
+      <h2 tabindex="-1">Wallet recovery details</h2>
+      <p class="muted">${intro}</p>
+      ${hodlWalletMessages(wallet,"wallet")}
+    </div>
+    ${privateSection}
     <section class="wallet-data-section wallet-public-section" aria-labelledby="wallet-public-heading">
       <div class="wallet-data-section-head">
-        <h3 id="wallet-public-heading">Public wallet data</h3>
-        <p class="muted">These values identify the wallet or enable watch-only use, but do not authorize spending.</p>
+        <h3 id="wallet-public-heading">Watch-only wallet data</h3>
+        <p class="muted">These values identify the wallet or enable watch-only use, but do not authorize spending. Treat them as privacy-sensitive because extended public keys and descriptors can reveal wallet addresses, balances, and transaction history.</p>
       </div>
+      ${hasPrivate?"":hodlSaveRecoveryControl()}
       <div class="wallet-data-fields">
-        ${ye("Master fingerprint",wallet.masterFingerprint)}
-        ${ye("Root xpub",wallet.rootXpub)}
+        ${fingerprint}
+        ${parentFingerprint}
+        ${nodeFingerprint}
+        ${rootPublic}
+        ${importedPublic}
         ${source}
       </div>
     </section>
   </section>`
 }
+
+function hodlDownloadRecoverySheet(){
+  if(!re)return;
+  let blob=new Blob([hodlFormatRecoverySheet(Oo(re,Ge))],{type:"text/plain"}),url=URL.createObjectURL(blob),link=document.createElement("a");
+  link.href=url;link.download="bitcoin-recovery-sheet.txt";link.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000)
+}
+function hodlBindWalletResultActions(){
+  let reveal=document.getElementById("reveal");
+  if(reveal)reveal.onchange=()=>{Ge=reveal.checked;tc();requestAnimationFrame(()=>document.getElementById("reveal")?.focus({preventScroll:true}))};
+  let save=document.getElementById("save");
+  if(save){let clean=save.cloneNode(!0);save.replaceWith(clean);clean.addEventListener("click",hodlDownloadRecoverySheet)}
+}
+function hodlFocusWalletResult(){
+  requestAnimationFrame(()=>dr.querySelector(".wallet-data-intro h2, .account-result-card > h2")?.focus({preventScroll:!1}))
+}
+var hodlRenderWalletBase=tc;
+tc=function(){hodlRenderWalletBase();hodlBindWalletResultActions()};
+
+function hodlSheetWarnings(lines,wallet){
+  for(let note of wallet.notes||[])lines.push(`Note: ${note}`);
+  for(let warning of wallet.warnings||[])lines.push(`Warning: ${warning}`)
+}
+function hodlSheetAddressRows(lines,label,rows){
+  lines.push(label.toUpperCase());
+  for(let row of rows)lines.push(`  ${row.index}  ${hodlDisplayDerivationPath(row.path)}  ${row.address}`)
+}
+function hodlSheetWifRows(lines,label,rows){
+  let privateRows=rows.filter(row=>row.wif);if(!privateRows.length)return;
+  lines.push(label.toUpperCase());
+  for(let row of privateRows)lines.push(`  ${row.index}  ${hodlDisplayDerivationPath(row.path)}  ${row.wif}`)
+}
+Oo=function(wallet,revealPrivate){
+  let lines=["ENTROPYLAB \u2014 RECOVERY SHEET","This file was computed locally. The calculator never generated wallet entropy.",""];
+  lines.push(`Network: ${wallet.network}`);if(wallet.passphraseUsed)lines.push("Passphrase: YES (not printed)");hodlSheetWarnings(lines,wallet);lines.push("");
+  if(wallet.kind==="single"){
+    if(revealPrivate){
+      lines.push("PRIVATE RECOVERY MATERIAL",`WIF compressed:   ${wallet.wifCompressed??""}`,`WIF uncompressed: ${wallet.wifUncompressed??""}`,`Hex private key:  ${wallet.privHex??""}`);if(wallet.minikey)lines.push(`Mini key: ${wallet.minikey}`)
+    }else lines.push("PRIVATE RECOVERY MATERIAL OMITTED","Private values were not saved because Show private recovery material was off.");
+    lines.push("","PUBLIC KEYS AND ADDRESSES",`Compressed public key:   ${wallet.pubkeyCompressed}`,`Uncompressed public key: ${wallet.pubkeyUncompressed}`,`Legacy uncompressed: ${wallet.p2pkhUncompressed}`,`Legacy compressed:   ${wallet.p2pkhCompressed}`,`Nested SegWit:       ${wallet.p2shP2wpkh}`,`Native SegWit:       ${wallet.p2wpkh}`,`Taproot:             ${wallet.p2tr}`);
+    return lines.join("\n")
+  }
+  let hasPrivate=Boolean(wallet.mnemonic||wallet.entropyHex||wallet.seedHex||wallet.rootXprv||wallet.importedPrivateKey||wallet.accounts.some(hodlAccountHasPrivate));
+  if(hasPrivate&&revealPrivate){
+    lines.push("PRIVATE RECOVERY MATERIAL");
+    if(wallet.mnemonic)lines.push("","YOUR SEED PHRASE",wallet.mnemonic);
+    if(wallet.entropyHex)lines.push("","BIP39 ENTROPY HEX",wallet.entropyHex);
+    if(wallet.seedHex)lines.push("","MASTER SEED HEX (BIP39 PBKDF2, 512 bits)",wallet.seedHex);
+    if(wallet.rootXprv)lines.push("",`BIP32 ROOT ${(wallet.rootPrivateLabel||cr[wallet.network].x.prvName).toUpperCase()}`,wallet.rootXprv);
+    if(wallet.importedPrivateKey)lines.push("",`IMPORTED ${(wallet.importedPrivateLabel||"EXTENDED PRIVATE KEY").toUpperCase()}`,wallet.importedPrivateKey);
+    for(let account of wallet.accounts){
+      if(!hodlAccountHasPrivate(account))continue;
+      lines.push("",`-- ${account.def.label} (${account.def.bip}) PRIVATE ACCOUNT MATERIAL --`);
+      if(account.primaryPrivate)lines.push(`${account.primaryPrivateLabel}: ${account.primaryPrivate}`);
+      if(account.hasAlternateExport&&account.genericPrivate)lines.push(`Advanced ${account.genericPrivateLabel} descriptor export: ${account.genericPrivate}`);
+      if(account.receiveDescriptorPriv)lines.push(`Spending receive descriptor: ${account.receiveDescriptorPriv}`);
+      if(account.changeDescriptorPriv)lines.push(`Spending change descriptor:  ${account.changeDescriptorPriv}`);
+      lines.push("Warning: An account extended public key plus a non-hardened descendant private key can reconstruct the account extended private key.");
+      hodlSheetWifRows(lines,"Receive-address private keys (WIF)",account.receive);
+      hodlSheetWifRows(lines,"Change-address private keys (WIF)",account.change)
+    }
+  }else if(hasPrivate){
+    lines.push("PRIVATE RECOVERY MATERIAL OMITTED","Private values were not saved because Show private recovery material was off.")
+  }else{
+    lines.push("NO PRIVATE RECOVERY MATERIAL","This source was watch-only; no private keys were available to save.")
+  }
+  lines.push("","WATCH-ONLY WALLET DATA","Privacy note: Extended public keys and descriptors cannot spend, but can reveal wallet history and balances.");
+  if(wallet.masterFingerprint)lines.push(`Master fingerprint: ${wallet.masterFingerprint}`);
+  if(wallet.parentFingerprint&&!wallet.masterFingerprint)lines.push(`Encoded parent fingerprint (not a master fingerprint): ${wallet.parentFingerprint}`);
+  if(wallet.nodeFingerprint&&!wallet.masterFingerprint)lines.push(`Imported key fingerprint (not a master fingerprint): ${wallet.nodeFingerprint}`);
+  if(wallet.rootXpub)lines.push(`BIP32 root ${(wallet.rootPublicLabel||cr[wallet.network].x.pubName).toUpperCase()}: ${wallet.rootXpub}`);
+  if(wallet.importedPublicKey)lines.push(`Imported ${(wallet.importedPublicLabel||"extended public key").toUpperCase()}: ${wallet.importedPublicKey}`);
+  for(let account of wallet.accounts){
+    lines.push("",`=== ${account.def.label} (${account.def.bip}) ===`,account.def.beginner,`Network: ${wallet.network}`,`Account: ${account.imported?"Imported account key":account.accountIndex??0}`,`Account path: ${hodlDisplayDerivationPath(account.accountPath)}`);
+    if(account.masterFingerprint||wallet.masterFingerprint)lines.push(`Master fingerprint: ${account.masterFingerprint||wallet.masterFingerprint}`);
+    else if(account.parentFingerprint)lines.push(`Encoded parent fingerprint (not a master fingerprint): ${account.parentFingerprint}`);
+    if(!account.masterFingerprint&&!wallet.masterFingerprint&&account.nodeFingerprint)lines.push(`Imported key fingerprint (not a master fingerprint): ${account.nodeFingerprint}`);
+    lines.push("WATCH-ONLY EXPORTS",`${account.primaryPublicLabel}: ${account.primaryPublic}`,`Watch-only receive descriptor: ${account.receiveDescriptor}`,`Watch-only change descriptor:  ${account.changeDescriptor}`);
+    if(account.hasAlternateExport)lines.push(`Advanced ${account.genericPublicLabel} descriptor export: ${account.genericPublic}`);
+    lines.push("ADDRESSES");hodlSheetAddressRows(lines,"Receive",account.receive);hodlSheetAddressRows(lines,"Change",account.change)
+  }
+  return lines.join("\n")
+};
 
 var hodlMaxAccount=2147483647;
 function hodlScriptDefinition(id){return To.find(definition=>definition.id===id)||To.find(definition=>definition.id==="bip84")||To[0]}
@@ -3165,11 +3571,13 @@ function hodlInitDerivationControls(){
   panel.addEventListener("change",event=>{
     let target=event.target;if(!(target instanceof Element))return;
     if(target.id==="script-type"){
-      let id=hodlSetSelectedScriptType(target.value);if(re?.kind==="hd")Qs(id);return
+      let id=hodlSetSelectedScriptType(target.value);
+      if(re?.kind==="hd"){if(re.accounts.some(account=>account.def.id===id))Qs(id);else hodlInvalidateLiveKeyResult()}
+      let seed=document.getElementById("seed");if(seed)seed.dispatchEvent(new Event("input"));return
     }
     if(target.id==="network"||target.id==="count"){
       let state=hodlKeys[hodlActiveKey];if(state)state.fields[target.id]=target.value;
-      hodlInvalidateLiveKeyResult();let error=document.getElementById("error");if(error)error.textContent="";hodlUpdateDerivationPathPreview()
+      hodlInvalidateLiveKeyResult();let error=document.getElementById("error");if(error)error.textContent="";hodlUpdateDerivationPathPreview();if(target.id==="network"){let seed=document.getElementById("seed");if(seed)seed.dispatchEvent(new Event("input"))}
     }
   });
   hodlUpdateDerivationPathPreview()
@@ -3191,7 +3599,22 @@ var hodlSeedLengths=Object.freeze({
 });
 var hodlBip39WordSet=new Set(Ae);
 function hodlSeedConfig(words=Pt){return hodlSeedLengths[Number(words)]||hodlSeedLengths[24]}
-function hodlLooksExtendedKey(value){return/^[xtyYzZvVun][A-Za-z0-9]+$/.test(value.trim())&&value.trim().length>80}
+function hodlLooksExtendedKey(value){return/^[xtyzuvYZUV][A-Za-z0-9]+$/.test(value.trim())&&value.trim().length>80}
+function hodlSinglesigImportStatus(value,network){
+  try{
+    let parsed=uf(value),depth=parsed.node.depth;
+    if(parsed.scope!=="singlesig")return{ok:!1,message:`${parsed.prefix} is a multisig export · use Multi Signature`};
+    if(parsed.network!==network)return{ok:!1,message:`${parsed.prefix} is for ${parsed.network} · change Network to ${parsed.network}`};
+    if(depth===0&&!parsed.isPrivate)return{ok:!1,message:"Root extended public keys cannot derive hardened account paths · import an account-level public key"};
+    if(depth===0&&parsed.family!=="x")return{ok:!1,message:"A root private key must use an xprv/tprv prefix"};
+    if(depth!==0&&depth!==3)return{ok:!1,message:`Depth ${depth} extended key · use a root private key or depth-3 account key`};
+    let definition=depth===3?hodlImportedScriptDefinition(parsed):null,detail=definition?` · ${definition.label} ${definition.bip}`:"";
+    return{ok:!0,message:`${parsed.prefix} ${parsed.isPrivate?"private":"watch-only"} key detected · ${network}${detail} · ready to derive`}
+  }catch(error){return{ok:!1,message:error.message||"Invalid extended key"}}
+}
+function hodlUsableSinglesigImport(value,network){
+  return hodlSinglesigImportStatus(value,network).ok
+}
 function hodlDPlusD16Value(face,numberedD16=hodlDPlusNumberedD16){
   let normalized=String(face??"").toUpperCase();if(numberedD16&&normalized==="G")return 0;
   let valid=numberedD16?/^[1-9A-F]$/.test(normalized):/^[0-9A-F]$/.test(normalized);if(!valid)return null;
@@ -3656,7 +4079,7 @@ function hodlRenderKeyForm(){
     at.innerHTML=`<p class="label">Your ${config.words}-word seed phrase</p><p class="muted" id="seed-help">Enter exactly ${config.words} English BIP39 words. You can also paste an extended key here; the selected phrase length does not apply to extended keys. With ${config.partialWords} compatible diceware words, choose the final checksum word below.</p><label class="seed-autocomplete-toggle"><input type="checkbox" id="seed-autocomplete" ${autocompleteEnabled?"checked":""} /><span>Autocomplete BIP39 words <span class="seed-autocomplete-note">(2+ letters normally; 1+ for a unique checksum word)</span></span></label><div class="dice-input-shell seed-input-shell"><pre class="dice-input-highlight" id="seed-highlight" aria-hidden="true"></pre><textarea id="seed" placeholder="Enter exactly ${config.words} BIP39 words" aria-describedby="seed-help seed-meta" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div><p class="muted" id="seed-meta" aria-live="polite"></p><div id="last-words" class="row" style="margin-top:8px"></div>`;
     let input=document.getElementById("seed"),update=()=>{
       let rawValue=input.value,value=rawValue.trim(),meta=W("#seed-meta"),picker=W("#last-words"),analysis=hodlRenderSeedInputState(input,config.words);
-      if(hodlLooksExtendedKey(value)){picker.innerHTML="";meta.textContent="Extended key detected \u00b7 seed phrase length does not apply.";meta.className="muted ok";return}
+      if(hodlLooksExtendedKey(value)){let status=hodlSinglesigImportStatus(value,document.getElementById("network")?.value||"mainnet");picker.innerHTML="";meta.textContent=status.message;meta.className="muted "+(status.ok?"ok":"err");return}
       let finalContext=hodlSeedFinalWordContext(rawValue,config.words),validation=hodlValidateTargetMnemonic(value,config.words),entered=analysis.tokens.length,progress=hodlSeedCountStatus(entered,config.words),remaining=Math.max(0,config.words-entered);
       if(finalContext){
         hodlRenderLastWordPicker(picker,finalContext.candidates,finalContext.selected,word=>hodlReplaceSeedFinalWord(input,finalContext,word),{forceSelect:!0,resettable:!0,targetWords:config.words,placeholder:`Choose ${config.words===18?"an":"a"} ${config.words}th word`});
@@ -3761,7 +4184,7 @@ function hodlCanDeriveCurrentKey(){
     if(Ne==="hex")return hodlSelectedEntropy().ok;
     if(Ne==="seed"){
       let value=document.getElementById("seed")?.value.trim()||"";if(!value)return!1;
-      if(hodlLooksExtendedKey(value)){let normalized=uf(value);Gt.fromExtendedKey(normalized.xkey);return!0}
+      if(hodlLooksExtendedKey(value))return hodlUsableSinglesigImport(value,document.getElementById("network")?.value||"mainnet");
       return hodlValidateTargetMnemonic(value,Pt).ok
     }
     return hodlPrivateKeyInputIsValid()
@@ -3868,7 +4291,7 @@ function hodlCalculateKey(){
     }else if(Ne==="seed"){
       let value=document.getElementById("seed").value.trim();if(hodlLooksExtendedKey(value))re=Po(value,network,count,account);else{let validation=hodlValidateTargetMnemonic(value,Pt);if(!validation.ok)throw new Error(validation.error);re=ar(validation.words.join(" "),passphrase,network,count,undefined,account)}
     }else{let kind=document.querySelector("input[name=kk]:checked")?.value||"wif-or-hex";re=Io(document.getElementById("key").value,network,kind)}
-    Ge=!1;hodlSetSelectedScriptType(scriptType);tc();hodlCaptureKey()
+    Ge=!1;hodlSetSelectedScriptType(scriptType);tc();hodlFocusWalletResult();hodlCaptureKey()
   }catch(error){re=null;W("#error").textContent=error instanceof Error?error.message:"Could not derive wallet";dr.innerHTML="";hodlCaptureKey()}
 }
 function hodlFilterHex(e){return e.replace(/[^0-9a-fA-F\s]/g,"")}
@@ -3887,27 +4310,99 @@ function hodlMergeMsigXpubs(state,values){let cached=Array.isArray(state?.fields
 function hodlInvalidateMsig(){let state=hodlMsigs[hodlActiveMsig];if(state){state.result=null;state.error=""}re=null;dr.innerHTML="";let err=document.getElementById("msig-error");if(err)err.textContent=""}
 function hodlUpdateMsigHint(){let n=Number(document.getElementById("msig-n").value||3),m=document.getElementById("msig-m").value||"2",hint=document.getElementById("msig-hint");if(hint){hint.textContent="Spending will need "+m+" of these "+n+" keys. Receiving needs none of the private keys.";hint.className="hint ok"}}
 function hodlFillM(wanted){let n=Number(document.getElementById("msig-n").value||3),mSel=document.getElementById("msig-m"),desired=Number(wanted==null?(mSel.value||2):wanted);mSel.innerHTML="";for(let i=1;i<=n;i++){let option=document.createElement("option");option.value=String(i);option.textContent=i===n?"All "+i:String(i);mSel.appendChild(option)}hodlSyncSelect(mSel,String(desired>=1&&desired<=n?desired:Math.min(2,n)));hodlUpdateMsigHint()}
-function hodlFillKeys(values){let n=Number(document.getElementById("msig-n").value||3),saved=Array.isArray(values)?values:hodlReadMsigXpubs(),box=document.getElementById("msig-keys");box.innerHTML="";for(let i=0;i<n;i++){let lab=document.createElement("label");lab.className="field";lab.textContent="Co-signer "+(i+1)+" account xpub";let ta=document.createElement("textarea");ta.id="msig-x-"+i;ta.placeholder="xpub / ypub / zpub / vpub";ta.autocomplete="off";ta.spellcheck=false;ta.value=saved[i]||"";lab.appendChild(ta);box.appendChild(lab);ta.oninput=()=>{ta.value=hodlFilterXpub(ta.value);hodlCheckXpub(ta);hodlInvalidateMsig()};if(ta.value)hodlCheckXpub(ta)}hodlUpdateMsigHint()}
-function hodlCheckXpub(ta){let v=ta.value.trim();if(!v){hodlHint(ta,!0,"");return}try{uf(v);hodlHint(ta,!0,"Extended public key checksum looks valid")}catch(err){hodlHint(ta,!1,err.message||"Not a valid xpub")}}
+function hodlFillKeys(values){let n=Number(document.getElementById("msig-n").value||3),saved=Array.isArray(values)?values:hodlReadMsigXpubs(),box=document.getElementById("msig-keys");box.innerHTML="";for(let i=0;i<n;i++){let lab=document.createElement("label");lab.className="field";lab.textContent="Co-signer "+(i+1)+" multisig extended public key";let ta=document.createElement("textarea");ta.id="msig-x-"+i;ta.placeholder="xpub / tpub / Ypub / Zpub / Upub / Vpub";ta.autocomplete="off";ta.spellcheck=false;ta.value=saved[i]||"";lab.appendChild(ta);box.appendChild(lab);ta.oninput=()=>{ta.value=hodlFilterXpub(ta.value);hodlCheckXpub(ta);hodlInvalidateMsig()};if(ta.value)hodlCheckXpub(ta)}hodlUpdateMsigHint()}
+function hodlMultisigPrefixCompatible(parsed,kind){
+  if(parsed.scope==="singlesig")return parsed.family==="x";
+  if(kind==="p2sh-p2wsh")return parsed.family==="y";
+  if(kind==="p2wsh")return parsed.family==="z";
+  return!1
+}
+function hodlMultisigAccountKeyError(parsed,kind){
+  if(kind==="p2wsh"||kind==="p2sh-p2wsh"){
+    let scriptIndex=kind==="p2wsh"?2:1,label=kind==="p2wsh"?"Native SegWit":"Nested SegWit",expected=0x80000000+scriptIndex;
+    if(parsed.depth!==4)return`${label} requires a depth-4 BIP48 script-account key ending in /${scriptIndex}h; this key is depth ${parsed.depth}.`;
+    if(parsed.childNumber!==expected)return`${label} requires a BIP48 script-account key whose final hardened child is ${scriptIndex}h.`;
+    return""
+  }
+  if(parsed.depth!==2)return`Legacy P2SH requires a depth-2 BIP45 cosigner-branch key at m/45h/cosigner_index; this key is depth ${parsed.depth}.`;
+  if(parsed.childNumber>=0x80000000)return"A BIP45 cosigner index must be non-hardened.";
+  return""
+}
+function hodlCanonicalMultisigKey(parsed){return hodlSerializeExtendedKey(parsed.node.publicExtendedKey,parsed.network,"x",!1)}
+function hodlDuplicateMultisigKey(ta,parsed){
+  let canonical=hodlCanonicalMultisigKey(parsed);
+  for(let other of document.querySelectorAll("#msig-keys textarea")){
+    if(other===ta||!other.value.trim())continue;
+    try{if(hodlCanonicalMultisigKey(uf(other.value.trim()))===canonical)return!0}catch{}
+  }
+  return!1
+}
+function hodlCheckXpub(ta){let value=ta.value.trim();if(!value){hodlHint(ta,!0,"");return}try{let parsed=uf(value),network=document.getElementById("msig-network")?.value||"mainnet",kind=hodlScriptKind();if(parsed.isPrivate)throw new Error("Paste an extended public key, never an extended private key.");if(parsed.network!==network)throw new Error(`${parsed.prefix} is for ${parsed.network}; the multisig is set to ${network}.`);if(!hodlMultisigPrefixCompatible(parsed,kind))throw new Error(parsed.scope==="singlesig"?"Use a generic xpub/tpub here, or a proper uppercase multisig SLIP-132 export.":`${parsed.prefix} does not match the selected multisig script type.`);let accountError=hodlMultisigAccountKeyError(parsed,kind);if(accountError)throw new Error(accountError);if(hodlDuplicateMultisigKey(ta,parsed))throw new Error("This duplicates another co-signer. Every co-signer must use a distinct extended public key.");hodlHint(ta,!0,`${parsed.prefix} checksum, network, and account path look valid`)}catch(error){hodlHint(ta,!1,error.message||"Not a valid multisig extended public key")}}
 function hodlResetMsigForm(){hodlSyncSelect(document.getElementById("msig-n"),"3");hodlFillM(2);document.querySelectorAll("input[name=msig-script]").forEach(input=>{input.checked=input.value==="p2wsh"});hodlFillKeys([]);hodlSyncSelect(document.getElementById("msig-network"),"mainnet");hodlSyncSelect(document.getElementById("msig-count"),"5");document.getElementById("msig-error").textContent=""}
-function hodlInitMsig(){let nSel=document.getElementById("msig-n");nSel.innerHTML="";for(let i=2;i<=15;i++){let option=document.createElement("option");option.value=String(i);option.textContent=String(i);nSel.appendChild(option)}nSel.value="3";nSel.onchange=()=>{let state=hodlMsigs[hodlActiveMsig],values=state?hodlMergeMsigXpubs(state):hodlReadMsigXpubs(),wanted=document.getElementById("msig-m").value;hodlFillM(wanted);hodlFillKeys(values);hodlInvalidateMsig()};document.getElementById("msig-m").onchange=()=>{hodlUpdateMsigHint();hodlInvalidateMsig()};["msig-network","msig-count"].forEach(id=>document.getElementById(id).addEventListener("change",hodlInvalidateMsig));document.querySelectorAll('input[name="msig-script"]').forEach(input=>input.addEventListener("change",hodlInvalidateMsig));hodlResetMsigForm();W("#msig-go").onclick=hodlBuildMsig;W("#msig-wipe").onclick=hodlWipeActiveMsig}
+function hodlInitMsig(){let nSel=document.getElementById("msig-n");nSel.innerHTML="";for(let i=2;i<=15;i++){let option=document.createElement("option");option.value=String(i);option.textContent=String(i);nSel.appendChild(option)}nSel.value="3";nSel.onchange=()=>{let state=hodlMsigs[hodlActiveMsig],values=state?hodlMergeMsigXpubs(state):hodlReadMsigXpubs(),wanted=document.getElementById("msig-m").value;hodlFillM(wanted);hodlFillKeys(values);hodlInvalidateMsig()};document.getElementById("msig-m").onchange=()=>{hodlUpdateMsigHint();hodlInvalidateMsig()};let recheck=()=>{hodlInvalidateMsig();document.querySelectorAll("#msig-keys textarea").forEach(hodlCheckXpub)};document.getElementById("msig-network").addEventListener("change",recheck);document.getElementById("msig-count").addEventListener("change",hodlInvalidateMsig);document.querySelectorAll('input[name="msig-script"]').forEach(input=>input.addEventListener("change",recheck));hodlResetMsigForm();W("#msig-go").onclick=hodlBuildMsig;W("#msig-wipe").onclick=hodlWipeActiveMsig}
 function hodlCmpBytes(a,b){let n=Math.min(a.length,b.length);for(let i=0;i<n;i++)if(a[i]!==b[i])return a[i]-b[i];return a.length-b.length}
 function hodlScriptKind(){return (document.querySelector("input[name=msig-script]:checked")||{}).value||"p2wsh"}
 function hodlMsigAddr(pubkeys,m,network,kind){let sorted=[...pubkeys].sort(hodlCmpBytes);let ms=Oe.encode({type:"ms",m,pubkeys:sorted});let net=_s(network);if(kind==="p2wsh"){let hash=tr(ms);return{address:or(net).encode({type:"wsh",hash}),scriptHex:M.encode(ms),kind}}if(kind==="p2sh-p2wsh"){let hash=tr(ms);let wshScript=Oe.encode({type:"wsh",hash});let wrapped=Jr({script:wshScript,witnessScript:ms},net);return{address:wrapped.address,scriptHex:M.encode(ms),kind}}let wrapped=Jr({script:ms},net);return{address:wrapped.address,scriptHex:M.encode(ms),kind}}
-function hodlBuildMsig(){let err=document.getElementById("msig-error");err.textContent="";try{let network=document.getElementById("msig-network").value;let count=Number(document.getElementById("msig-count").value);let n=Number(document.getElementById("msig-n").value);let m=Number(document.getElementById("msig-m").value);if(!(m>=1&&n>=2&&m<=n&&n<=15))throw new Error("Pick how many signatures out of how many keys.");let kind=hodlScriptKind();let nodes=[],xpubs=[];for(let i=0;i<n;i++){let raw=document.getElementById("msig-x-"+i).value.trim();if(!raw)throw new Error("Paste an xpub for co-signer "+(i+1)+".");let parsed=uf(raw);let hd=Gt.fromExtendedKey(parsed.xkey);if(hd.privateKey)throw new Error("Co-signer "+(i+1)+" looks like a private extended key. Paste the xpub only.");nodes.push(hd);xpubs.push(hd.publicExtendedKey)}let fps=nodes.map(hd=>Us(hd.fingerprint||hd.parentFingerprint||0));let inner=xpubs.map((x,i)=>"["+fps[i]+"]"+x+"/0/*").join(",");let innerC=xpubs.map((x,i)=>"["+fps[i]+"]"+x+"/1/*").join(",");let descCore=kind==="p2wsh"?"wsh(sortedmulti("+m+","+inner+"))":kind==="p2sh-p2wsh"?"sh(wsh(sortedmulti("+m+","+inner+")))":"sh(sortedmulti("+m+","+inner+"))";let descChange=kind==="p2wsh"?"wsh(sortedmulti("+m+","+innerC+"))":kind==="p2sh-p2wsh"?"sh(wsh(sortedmulti("+m+","+innerC+")))":"sh(sortedmulti("+m+","+innerC+"))";let receive=[],chg=[];for(let i=0;i<count;i++){let pubs=nodes.map(hd=>{let pk=hd.derive("m/0/"+i).publicKey;if(!pk)throw new Error("Could not derive a public key");return pk});let chp=nodes.map(hd=>{let pk=hd.derive("m/1/"+i).publicKey;if(!pk)throw new Error("Could not derive a public key");return pk});receive.push(Object.assign({index:i,path:"/0/"+i},hodlMsigAddr(pubs,m,network,kind)));chg.push(Object.assign({index:i,path:"/1/"+i},hodlMsigAddr(chp,m,network,kind)))}re={kind:"msig",network,m,n,script:kind,xpubs,fps,receiveDescriptor:Le(descCore),changeDescriptor:Le(descChange),receive,change:chg,notes:["This is watch-only. Private keys never entered this calculator.","Import the receive descriptor into Bitcoin Core or Sparrow as a watch-only wallet to get paid.","A signer is only needed when you spend."],warnings:[]};hodlCaptureMsig();hodlShowMsig()}catch(ex){re=null;dr.innerHTML="";err.textContent=ex.message||String(ex);hodlCaptureMsig()}}
+function hodlBuildMsig(){
+  let error=document.getElementById("msig-error");error.textContent="";
+  try{
+    let network=document.getElementById("msig-network").value,count=Number(document.getElementById("msig-count").value),n=Number(document.getElementById("msig-n").value),m=Number(document.getElementById("msig-m").value);
+    if(!(m>=1&&n>=2&&m<=n&&n<=15))throw new Error("Pick how many signatures out of how many keys.");
+    let kind=hodlScriptKind(),nodes=[],xpubs=[],legacyChildNumbers=[];
+    for(let index=0;index<n;index++){
+      let raw=document.getElementById("msig-x-"+index).value.trim();if(!raw)throw new Error("Paste an extended public key for co-signer "+(index+1)+".");
+      let parsed=uf(raw);if(parsed.isPrivate)throw new Error("Co-signer "+(index+1)+" is an extended private key. Paste only an extended public key.");
+      if(parsed.network!==network)throw new Error(`Co-signer ${index+1}'s ${parsed.prefix} is for ${parsed.network}, but this multisig is set to ${network}.`);
+      if(!hodlMultisigPrefixCompatible(parsed,kind))throw new Error(parsed.scope==="singlesig"?`Co-signer ${index+1} uses a singlesig ${parsed.prefix}. Use a generic ${cr[network].x.pubName}, or the proper uppercase multisig export for this script type.`:`Co-signer ${index+1}'s ${parsed.prefix} does not match the selected multisig script type.`);
+      let accountError=hodlMultisigAccountKeyError(parsed,kind);if(accountError)throw new Error(`Co-signer ${index+1}: ${accountError}`);
+      if(kind==="p2sh")legacyChildNumbers.push(parsed.childNumber);
+      let node=parsed.node,canonical=hodlSerializeExtendedKey(node.publicExtendedKey,network,"x",!1);
+      if(xpubs.includes(canonical))throw new Error(`Co-signer ${index+1} duplicates an earlier co-signer. Every slot must use a distinct extended public key.`);
+      nodes.push(node);xpubs.push(canonical)
+    }
+    if(kind==="p2sh"){
+      let sortedIndexes=[...legacyChildNumbers].sort((a,b)=>a-b),validIndexes=sortedIndexes.every((value,index)=>value===index);
+      if(!validIndexes)throw new Error(`Legacy P2SH requires one depth-2 BIP45 co-signer branch for each index from 0 through ${n-1}.`)
+    }
+    let inner=xpubs.map(key=>key+"/0/*").join(","),innerChange=xpubs.map(key=>key+"/1/*").join(",");
+    let descriptor=kind==="p2wsh"?`wsh(sortedmulti(${m},${inner}))`:kind==="p2sh-p2wsh"?`sh(wsh(sortedmulti(${m},${inner})))`:`sh(sortedmulti(${m},${inner}))`;
+    let changeDescriptor=kind==="p2wsh"?`wsh(sortedmulti(${m},${innerChange}))`:kind==="p2sh-p2wsh"?`sh(wsh(sortedmulti(${m},${innerChange})))`:`sh(sortedmulti(${m},${innerChange}))`;
+    let receive=[],change=[];for(let index=0;index<count;index++){
+      let receivePublicKeys=nodes.map(node=>{let key=node.derive("m/0/"+index).publicKey;if(!key)throw new Error("Could not derive a public key");return key});
+      let changePublicKeys=nodes.map(node=>{let key=node.derive("m/1/"+index).publicKey;if(!key)throw new Error("Could not derive a public key");return key});
+      receive.push(Object.assign({index,path:"/0/"+index},hodlMsigAddr(receivePublicKeys,m,network,kind)));
+      change.push(Object.assign({index,path:"/1/"+index},hodlMsigAddr(changePublicKeys,m,network,kind)))
+    }
+    re={kind:"msig",network,m,n,script:kind,xpubs,receiveDescriptor:Le(descriptor),changeDescriptor:Le(changeDescriptor),receive,change,notes:["This is watch-only. Private keys never entered this calculator.","Descriptor origins were omitted because no verified master fingerprint and full origin path were supplied.","A signer is only needed when you spend."],warnings:[]};
+    hodlCaptureMsig();hodlShowMsig();hodlFocusWalletResult()
+  }catch(exception){re=null;dr.innerHTML="";error.textContent=exception.message||String(exception);hodlCaptureMsig()}
+}
 function hodlShowMsig(){if(!re||re.kind!=="msig")return;Ge=!1;dr.innerHTML=`
-    <section class="card">
+    <section class="card account-result-card">
       <div class="kicker">${re.m}-of-${re.n} multisig · ${re.network}</div>
-      <h2>Your shared receive wallet</h2>
+      <h2 tabindex="-1">Your shared receive wallet</h2>
       <p class="muted">Anyone can pay these addresses. Spending later needs ${re.m} of the ${re.n} co-signers. This screen has no private keys.</p>
-      ${ye("Watch-only receive descriptor",re.receiveDescriptor)}
-      ${ye("Watch-only change descriptor",re.changeDescriptor)}
-      ${re.receive[0]?`<div class="qr">${an(re.receive[0].address)}</div><p class="mono">${$t(re.receive[0].address)}</p>`:""}
-      <h3>Receive addresses</h3>
-      <div style="overflow:auto"><table><thead><tr><th>#</th><th>Path</th><th>Address</th></tr></thead><tbody>${re.receive.map(a=>`<tr><td>${a.index}</td><td>${$t(a.path)}</td><td>${$t(a.address)}</td></tr>`).join("")}</tbody></table></div>
-      <h3>Change addresses</h3>
-      <div style="overflow:auto"><table><thead><tr><th>#</th><th>Path</th><th>Address</th></tr></thead><tbody>${re.change.map(a=>`<tr><td>${a.index}</td><td>${$t(a.path)}</td><td>${$t(a.address)}</td></tr>`).join("")}</tbody></table></div>
-      <p class="muted">Paste the receive descriptor into Sparrow or Bitcoin Core (importdescriptors). Verify the first address on each signing device before you receive real bitcoin.</p>
+      ${hodlWalletMessages(re,"multisig")}
+      <section class="account-result-section account-watch-section" aria-labelledby="multisig-watch-heading">
+        <div class="wallet-data-section-head">
+          <h3 id="multisig-watch-heading">Watch-only wallet data</h3>
+          <p class="muted">These descriptors reveal every receive and change address for this multisig, but cannot authorize spending.</p>
+        </div>
+        ${ye("Watch-only receive descriptor",re.receiveDescriptor)}
+        ${ye("Watch-only change descriptor",re.changeDescriptor)}
+      </section>
+      <section class="account-result-section account-address-section" aria-labelledby="multisig-address-heading">
+        <div class="wallet-data-section-head">
+          <h3 id="multisig-address-heading">Addresses</h3>
+          <p class="muted">Verify the first receive address on every signing device before accepting bitcoin.</p>
+        </div>
+        ${re.receive[0]?`<div class="account-address-lead"><h4 class="wallet-data-subtitle">Receive address #0</h4><div class="qr" aria-label="Multisig receive address 0 QR code">${an(re.receive[0].address)}</div><p class="mono">${$t(re.receive[0].address)}</p><p class="muted mono">${$t(re.receive[0].path)}</p></div>`:""}
+        <h4 class="wallet-data-subtitle">Receive</h4>
+        ${hodlAddressTable(re.receive,"Multisig receive addresses")}
+        <h4 class="wallet-data-subtitle">Change</h4>
+        ${hodlAddressTable(re.change,"Multisig change addresses")}
+      </section>
+      <p class="muted">Import both descriptors into a compatible watch-only wallet, such as Sparrow or Bitcoin Core's <span class="mono">importdescriptors</span> workflow.</p>
     </section>`}
 
 function hodlDiceCompare(){}
@@ -3988,7 +4483,8 @@ function hodlLoadPsbtKey(text,passphrase){
 function hodlUseActiveKeyForPsbt(){
   let state=hodlKeys[hodlActiveKey];if(!state||!state.result)throw new Error("Generate an active key first, then return to PSBT / Nonce.");let result=state.result;hodlPsbtWipeMem();
   if(result.kind==="hd"&&result.mnemonic){let seed=wi(result.mnemonic,state.fields.pass||"");try{hodlPsbtHd=Gt.fromMasterSeed(seed)}finally{seed.fill(0)}}
-  else if(result.kind==="hd"&&result.rootXprv)hodlPsbtHd=Gt.fromExtendedKey(result.rootXprv);
+  else if(result.kind==="hd"&&result.rootXprv)hodlPsbtHd=Gt.fromExtendedKey(uf(result.rootXprv).xkey);
+  else if(result.kind==="hd"&&result.importedPrivateKey)throw new Error("The active key is an account-level extended private key. PSBT session signing needs origin-aware relative paths, which this version does not infer. Use the original seed or root xprv/tprv instead.");
   else if(result.kind==="single"&&result.privHex){hodlPsbtPriv=M.decode(result.privHex);hf(hodlPsbtPriv)}
   else throw new Error("The active key has no private material available for a session check.");
   hodlPsbtSource="active";hodlPsbtNote="Session key from "+(state.name||"the active key")+". Kept in page memory only."
@@ -4042,8 +4538,8 @@ function hodlRestoreFormFields(state){
 function hodlSetMode(mode){
   hodlCaptureKey();
   let state=hodlKeys[hodlActiveKey];if(state)state.mode=mode;
-  Ne=mode;hodlEntropyFormat=state?.entropyFormat==="bin"?"bin":"hex";[...Zs.children].forEach((button,index)=>button.classList.toggle("active",["dice","hex","seed","key"][index]===Ne));
-  hodlRenderKeyForm();hodlRestoreFormFields(state);hodlUpdateSeedLengthControl();hodlUpdateDerivationPathPreview();
+  Ne=mode;hodlEntropyFormat=state?.entropyFormat==="bin"?"bin":"hex";[...Zs.children].forEach((button,index)=>{let active=["dice","hex","seed","key"][index]===Ne;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});
+  hodlRenderKeyForm();hodlRestoreFormFields(state);hodlUpdateSeedLengthControl();hodlUpdateDerivationPathPreview();hodlQueueSegmentedControlSync();
 }
 function hodlKeyStateNeedsClear(state){
   if(!state)return!1;let fields=state.fields||{},hasText=id=>String(fields[id]??"").length>0;
@@ -4078,13 +4574,13 @@ function hodlRestoreKey(){
   let state=hodlKeys[hodlActiveKey];
   if(!state){
     Ne="dice";ge="coldcard";hodlEntropyFormat="hex";hodlDPlusNumberedD16=!1;Pt=24;hodlDiceCoinPositions=[];ft="";re=null;Ge=!1;hodlAccountId="bip84";
-    [...Zs.children].forEach((button,index)=>button.classList.toggle("active",index===0));hodlRenderKeyForm();
+    [...Zs.children].forEach((button,index)=>{let active=index===0;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});hodlRenderKeyForm();
     let pass=document.getElementById("pass");if(pass)pass.value="";
     hodlSyncSelect(document.getElementById("script-type"),"bip84");hodlSyncSelect(document.getElementById("network"),"mainnet");let account=document.getElementById("account");if(account)account.value="0";hodlSyncSelect(document.getElementById("count"),"5");
     W("#error").textContent="";dr.innerHTML="";document.getElementById("calc-card").hidden=!0;hodlQueueMasterFingerprintPreview(0);hodlUpdateDerivationPathPreview();hodlSyncKeyClearButton();hodlSyncDeriveButton();return
   }
   Ne=state.mode;ge=state.diceMethod;hodlEntropyFormat=state.entropyFormat==="bin"?"bin":"hex";hodlDPlusNumberedD16=Boolean(state.dplusNumberedD16);Pt=hodlSeedLengths[Number(state.targetWords)]?Number(state.targetWords):24;hodlDiceCoinPositions=hodlNormalizeDiceCoinPositions(state.diceCoinPositions);ft=ge==="dplus"?state.dplusLastWord||"":ge==="bitbox"?state.lastWord||"":"";
-  [...Zs.children].forEach((button,index)=>button.classList.toggle("active",["dice","hex","seed","key"][index]===Ne));
+  [...Zs.children].forEach((button,index)=>{let active=["dice","hex","seed","key"][index]===Ne;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});
   hodlRenderKeyForm();
   let pass=document.getElementById("pass");if(pass)pass.value=state.fields.pass||"";
   hodlAccountId=state.accountId||state.fields.script||"bip84";
@@ -4252,13 +4748,13 @@ function hodlShowWorkspace(id){
   let preservedTop=window.scrollY,preservedLeft=window.scrollX;
   if(hodlWorkspace==="calc")hodlCaptureKey();else if(hodlWorkspace==="msig")hodlCaptureMsig();
   hodlWorkspace=id;
-  [...W("#workspace").children].forEach(button=>button.classList.toggle("active",button.dataset.workspace===id));
+  [...W("#workspace").children].forEach(button=>{let active=button.dataset.workspace===id;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});
   document.getElementById("key-manager").hidden=id!=="calc";
   document.getElementById("msig-manager").hidden=id!=="msig";
   document.getElementById("calc-card").hidden=!0;document.getElementById("msig-card").hidden=!0;document.getElementById("psbt-card").hidden=id!=="psbt";re=null;Ge=!1;dr.innerHTML="";
   if(id==="calc"){hodlRenderKeyTabs();hodlRestoreKey()}
   else if(id==="msig"){hodlRenderMsigTabs();hodlRestoreMsig()}
-  if(hodlWorkspaceScrollFrame)cancelAnimationFrame(hodlWorkspaceScrollFrame);window.scrollTo(preservedLeft,preservedTop);hodlWorkspaceScrollFrame=requestAnimationFrame(()=>{window.scrollTo(preservedLeft,preservedTop);hodlWorkspaceScrollFrame=0});
+  if(hodlWorkspaceScrollFrame)cancelAnimationFrame(hodlWorkspaceScrollFrame);window.scrollTo(preservedLeft,preservedTop);hodlWorkspaceScrollFrame=requestAnimationFrame(()=>{window.scrollTo(preservedLeft,preservedTop);hodlQueueSegmentedControlSync();hodlWorkspaceScrollFrame=0});
 }
 function hodlInitTabDrag(box){
   let pointerId=null,startX=0,startScroll=0,moved=!1,suppressClick=!1;
@@ -4274,7 +4770,7 @@ function hodlInitKeyManager(){
 }
 function hodlInitMsigManager(){W("#add-msig").onclick=hodlAddMsig;W("#delete-msig").onclick=hodlDeleteActiveMsig;hodlRenderMsigTabs();hodlInitTabDrag(W("#msig-tabs"));if(hodlWorkspace==="msig")hodlRestoreMsig();else document.getElementById("msig-card").hidden=!0}
 function hodlSeedInitialManagers(){if(!hodlKeys.length){hodlKeys.push(hodlNewKeyState());hodlActiveKey=0}if(!hodlMsigs.length){hodlMsigs.push(hodlNewMsigState());hodlActiveMsig=0}}
-function hodlInitWorkspace(){let box=W("#workspace");box.innerHTML="";[["calc","Key Generation"],["msig","Multi Signature"],["psbt","PSBT / Nonce"]].forEach(([id,label])=>{let button=document.createElement("button");button.className="tab"+(hodlWorkspace===id?" active":"");button.dataset.workspace=id;button.textContent=label;button.onclick=()=>hodlShowWorkspace(id);box.appendChild(button)});hodlInitMsig();hodlInitPsbt()}
+function hodlInitWorkspace(){let box=W("#workspace");box.innerHTML="";[["calc","Key Generation"],["msig","Multi Signature"],["psbt","PSBT / Nonce"]].forEach(([id,label])=>{let button=document.createElement("button"),active=hodlWorkspace===id;button.type="button";button.className="tab"+(active?" active":"");button.dataset.workspace=id;button.setAttribute("aria-pressed",String(active));button.textContent=label;button.onclick=()=>hodlShowWorkspace(id);box.appendChild(button)});hodlInitMsig();hodlInitPsbt()}
 var hodlKeyClearSyncQueued=!1,hodlMsigClearSyncQueued=!1,hodlDeriveSyncQueued=!1;
 function hodlQueueKeyClearButtonSync(){
   if(hodlKeyClearSyncQueued)return;hodlKeyClearSyncQueued=!0;queueMicrotask(()=>{hodlKeyClearSyncQueued=!1;hodlSyncKeyClearButton(!0)})
@@ -4290,9 +4786,55 @@ function hodlInitClearActionState(){
   ["input","change","click"].forEach(type=>{keyPanel.addEventListener(type,hodlQueueKeyClearButtonSync);keyPanel.addEventListener(type,hodlQueueDeriveButtonSync);msigPanel.addEventListener(type,hodlQueueMsigClearButtonSync)});
   hodlSyncKeyClearButton();hodlSyncMsigClearButton();hodlSyncDeriveButton()
 }
-hodlInitWorkspace();hodlSeedInitialManagers();hodlInitKeyManager();hodlInitMsigManager();hodlInitClearActionState();hodlInitMasterFingerprintPreview();hodlInitDerivationControls();})();
+var hodlSegmentedControlFrame=0,hodlSegmentedResizeObserver=null,hodlSegmentedControlWidths=new WeakMap();
+function hodlSyncSegmentedControls(){
+  hodlSegmentedControlFrame=0;
+  document.querySelectorAll(".segmented-control").forEach(group=>{
+    if(!group.getClientRects().length)return;
+    let buttons=[...group.children].filter(child=>child.matches(".tab"));group.classList.remove("is-stacked");
+    if(buttons.length<2)return;
+    let firstTop=buttons[0].offsetTop,wrapped=buttons.some(button=>Math.abs(button.offsetTop-firstTop)>1);group.classList.toggle("is-stacked",wrapped)
+  })
+}
+function hodlQueueSegmentedControlSync(){
+  if(hodlSegmentedControlFrame)return;hodlSegmentedControlFrame=requestAnimationFrame(hodlSyncSegmentedControls)
+}
+function hodlInitSegmentedControls(){
+  let groups=[...document.querySelectorAll(".segmented-control")];
+  if("ResizeObserver" in window){
+    hodlSegmentedResizeObserver=new ResizeObserver(entries=>{let changed=!1;entries.forEach(entry=>{let width=entry.contentRect.width,previous=hodlSegmentedControlWidths.get(entry.target);if(previous===undefined||Math.abs(previous-width)>.5){hodlSegmentedControlWidths.set(entry.target,width);changed=!0}});if(changed)hodlQueueSegmentedControlSync()});
+    groups.forEach(group=>hodlSegmentedResizeObserver.observe(group))
+  }
+  window.addEventListener("resize",hodlQueueSegmentedControlSync,{passive:!0});hodlQueueSegmentedControlSync()
+}
+hodlInitWorkspace();hodlSeedInitialManagers();hodlInitKeyManager();hodlInitMsigManager();hodlInitClearActionState();hodlInitMasterFingerprintPreview();hodlInitDerivationControls();hodlInitSegmentedControls();})();
 </script>
 <script>
+(() => {
+  const isHostedOnline = /^(www\.)?entropylab\.online$/i.test(location.hostname);
+  if (!isHostedOnline) return;
+
+  const brandMark = document.getElementById("online-brand-mark");
+  if (brandMark) {
+    brandMark.src = brandMark.dataset.onlineSrc;
+    brandMark.hidden = false;
+  }
+
+  const favicon = document.createElement("link");
+  favicon.id = "online-favicon";
+  favicon.rel = "icon";
+  favicon.type = "image/png";
+  favicon.sizes = "64x64";
+  favicon.href = "assets/favicon.png";
+  document.head.appendChild(favicon);
+})();
+
+function hodlFormatRecoverySheet(text) {
+  const lines = text.split("\n");
+  if (lines[1] !== "ENTROPYLAB V0.1.2") lines.splice(1, 0, "ENTROPYLAB V0.1.2");
+  return lines.join("\n");
+}
+
 (() => {
   const current = document.querySelector('meta[name="application-version"]')?.content || "v0.1.2";
   const currentFile = "entropylab-" + current.replace(/^v/, "") + ".html";
