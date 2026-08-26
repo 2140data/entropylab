@@ -29,11 +29,15 @@ Official website: [entropylab.online](https://entropylab.online)
 
 ## Usage
 
-Download the repository to a trusted computer, disconnect that computer from
-all networks, and open `entropylab.html` in a modern browser. For sensitive
-wallet material, use a dedicated air-gapped machine and verify important
-addresses and descriptors with an independent wallet or signing device before
-receiving funds.
+Download the latest self-contained `entropylab.html` build from the
+[releases page](https://github.com/w-s-bitcoin/entropylab/releases) or the
+[official website](https://entropylab.online), transfer it to a trusted
+computer, disconnect that computer from all networks, and open the file in a
+modern browser. For sensitive wallet material, use a dedicated air-gapped
+machine and verify important addresses and descriptors with an independent
+wallet or signing device before receiving funds.
+
+To build the HTML file yourself, see [Building from source](#building-from-source).
 
 An online version is available at [entropylab.online](https://entropylab.online)
 for convenient access. Do not enter seed phrases, private keys, or other secret
@@ -47,12 +51,44 @@ change the resulting BitBox entropy. Wallet security still depends on the
 quality and secrecy of the entropy, seed phrase, passphrase, or private key
 supplied by the user.
 
-## Version snapshots
+## Building from source
 
-The root `entropylab.html` file is the current working version. The current
-release snapshot is kept directly in `versions/`, while older releases are
-preserved in `versions/archived/`. Only snapshots directly inside `versions/`
-are published in the site's version dropdown.
+The project uses a zero-dependency Node.js build that inlines the sources in
+`src/` into a single self-contained HTML file under `dist/`.
+
+Requirements: Node.js 18 or newer (no npm packages to install).
+
+```sh
+npm run build
+```
+
+Build output:
+
+- `dist/entropylab.html` — the self-contained application (open this file)
+- `dist/entropylab-<version>.html` — versioned copy used by the download links
+- `dist/index.html` — copy served by static hosting
+- `dist/versions.json` — version manifest used by the hosted version picker
+- `dist/assets/` — static assets
+
+The version is declared once in `package.json` and substituted into the
+output at build time. To remove build output, run `npm run clean`.
+
+## Project structure
+
+```
+├── assets/                 Static assets (logo, favicon)
+├── scripts/build.mjs       Zero-dependency build script
+├── src/
+│   ├── index.html          HTML template (markup and document head)
+│   ├── css/styles.css      Application styles
+│   └── js/
+│       ├── vendor.js       Bundled third-party crypto (noble, scure, bip39)
+│       ├── app.js          Application logic
+│       ├── online.js       Hosted-site behavior and version picker
+│       ├── enhanced-inputs.js
+│       └── repeat-inputs.js
+└── dist/                   Build output (generated, not committed)
+```
 
 ## Security notice
 

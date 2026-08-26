@@ -15,53 +15,34 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Prepare static site
-        run: |
-          mkdir _site
-          cp entropylab.html _site/index.html
-          cp versions/entropylab-*.html _site/
-          mkdir _site/assets
-          cp assets/favicon.png assets/entropylab_dark.png _site/assets/
-          python3 - <<'PY'
-          import json
-          import re
-          from pathlib import Path
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
-          entries = []
-          for path in Path("versions").glob("entropylab-*.html"):
-              match = re.fullmatch(r"entropylab-(\d+(?:\.\d+)*)\.html", path.name)
-              if match:
-                  version = match.group(1)
-                  entries.append({
-                      "version": f"v{version}",
-                      "file": path.name,
-                      "sort": [int(part) for part in version.split(".")],
-                  })
-
-          entries.sort(key=lambda item: item.pop("sort"), reverse=True)
-          Path("_site/versions.json").write_text(
-              json.dumps({"versions": entries}, separators=(",", ":")) + "\n",
-              encoding="utf-8",
-          )
-          PY
-          touch _site/.nojekyll
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+      - name: Build static site
+        run: npm run build
 
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: dist
+
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
 
       - name: Deploy to GitHub Pages
         id: deployment
