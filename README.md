@@ -5,7 +5,7 @@ offline, air-gapped use. It converts user-supplied entropy, seed phrases, and
 private keys into wallet recovery information without intentionally sending
 sensitive data to a server.
 
-Current version: **v0.2.1**
+Current version: **v0.1.2**
 
 The project is created, owned, and maintained by **Mr.Hodl and Wicked**.
 
@@ -51,7 +51,7 @@ supplied by the user.
 
 The root `entropylab.html` file is the current working version. Distinct
 releases are preserved in the `versions/` directory using names such as
-`entropylab-0.2.1.html`, with the version number incremented for each release.
+`entropylab-0.1.2.html`, with the version number incremented for each release.
 
 ## Security notice
 
