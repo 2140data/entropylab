@@ -213,8 +213,9 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 .ok { color: var(--ok); }
 header { padding: 8px 0 16px; }
 .header-title-row { display: flex; align-items: center; gap: 12px; }
-.online-brand-mark:not([hidden]) + h1 { margin: 0; line-height: 1.15; }
-.online-brand-mark { flex: 0 0 auto; width: 56px; height: 56px; object-fit: contain; }
+.online-brand-mark:not([hidden]) { transform: translateY(4px); }
+.online-brand-mark:not([hidden]) + h1 { margin: 0; line-height: 1.15; transform: translate(-8px, 6px); }
+.online-brand-mark { flex: 0 0 auto; width: 40px; height: 40px; object-fit: contain; }
 .online-brand-mark[hidden] { display: none; }
 .download-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-top: 14px; }
 .version-picker { display: grid; gap: 5px; color: var(--muted); font-size: 12px; font-weight: 600; }
@@ -606,7 +607,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 }
 @media (max-width: 520px) {
   .header-title-row { gap: 10px; }
-  .online-brand-mark { width: 48px; height: 48px; }
+  .online-brand-mark { width: 36px; height: 36px; }
   .wallet-data-card { padding: 18px; }
   .wallet-private-section { padding: 13px; }
   .account-summary-grid { grid-template-columns: 1fr; padding: 13px; }
@@ -657,7 +658,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
  the seed on this air-gapped machine. Carry only addresses and the xpub
 online.</p>
     </section>
-    <div class="row no-print segmented-control" id="workspace"><button class="tab active" aria-pressed="true">Key Generation</button><button class="tab" aria-pressed="false">Multi Signature</button><button class="tab" aria-pressed="false">PSBT / Nonce</button></div>
+    <div class="row no-print segmented-control" id="workspace"><button class="tab active" aria-pressed="true">Key Derivation</button><button class="tab" aria-pressed="false">Multi Signature</button><button class="tab" aria-pressed="false">PSBT / Nonce</button></div>
     <section class="key-manager no-print" id="key-manager">
       <div class="key-manager-head"><h2>Keys</h2><div class="add-item-control"><button class="btn secondary add-key" id="add-key" type="button" aria-label="Add key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Add another key</span></div></div>
       <div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div>
@@ -3195,7 +3196,7 @@ function hodlImportedScriptDefinition(parsed){
 }
 Po=function(value,network,count,accountIndex=0){
   let importedValue=String(value??"").trim(),parsed=uf(importedValue);
-  if(parsed.scope!=="singlesig")throw new Error(`${parsed.prefix} is a multisig extended key. Use it in Multi Signature, not Key Generation.`);
+  if(parsed.scope!=="singlesig")throw new Error(`${parsed.prefix} is a multisig extended key. Use it in Multi Signature, not Key Derivation.`);
   if(parsed.network!==network)throw new Error(`This ${parsed.prefix} belongs to Bitcoin ${parsed.network}. Change Network to ${parsed.network} before deriving it.`);
   let node=parsed.node,notes=[parsed.isPrivate?"Imported an extended private key. Addresses and WIF keys are derived from it.":"Imported an extended public key. This is watch-only: it can derive addresses but cannot spend."];
   if(node.depth===0){
@@ -3203,7 +3204,7 @@ Po=function(value,network,count,accountIndex=0){
     if(parsed.family!=="x")throw new Error("A BIP32 root private key must use the generic xprv/tprv prefix.");
     return Hs(node,network,count,{mnemonic:null,passphraseUsed:!1,entropyHex:null,seedHex:null,notes,warnings:[]},accountIndex)
   }
-  if(node.depth!==3)throw new Error(`This extended key is depth ${node.depth}. Key Generation accepts a BIP32 root private key (depth 0) or an account-level extended key (depth 3).`);
+  if(node.depth!==3)throw new Error(`This extended key is depth ${node.depth}. Key Derivation accepts a BIP32 root private key (depth 0) or an account-level extended key (depth 3).`);
   let definition=hodlImportedScriptDefinition(parsed),addressCount=Math.min(Math.max(count,1),50),parentFingerprint=Us(node.parentFingerprint),nodeFingerprint=Us(node.fingerprint);
   let account=hodlAccountResult(node,definition,network,addressCount,{accountPath:"Imported account key",accountIndex:null,imported:!0,parentFingerprint,nodeFingerprint});
   return{
@@ -4771,7 +4772,7 @@ function hodlInitKeyManager(){
 }
 function hodlInitMsigManager(){W("#add-msig").onclick=hodlAddMsig;W("#delete-msig").onclick=hodlDeleteActiveMsig;hodlRenderMsigTabs();hodlInitTabDrag(W("#msig-tabs"));if(hodlWorkspace==="msig")hodlRestoreMsig();else document.getElementById("msig-card").hidden=!0}
 function hodlSeedInitialManagers(){if(!hodlKeys.length){hodlKeys.push(hodlNewKeyState());hodlActiveKey=0}if(!hodlMsigs.length){hodlMsigs.push(hodlNewMsigState());hodlActiveMsig=0}}
-function hodlInitWorkspace(){let box=W("#workspace");box.innerHTML="";[["calc","Key Generation"],["msig","Multi Signature"],["psbt","PSBT / Nonce"]].forEach(([id,label])=>{let button=document.createElement("button"),active=hodlWorkspace===id;button.type="button";button.className="tab"+(active?" active":"");button.dataset.workspace=id;button.setAttribute("aria-pressed",String(active));button.textContent=label;button.onclick=()=>hodlShowWorkspace(id);box.appendChild(button)});hodlInitMsig();hodlInitPsbt()}
+function hodlInitWorkspace(){let box=W("#workspace");box.innerHTML="";[["calc","Key Derivation"],["msig","Multi Signature"],["psbt","PSBT / Nonce"]].forEach(([id,label])=>{let button=document.createElement("button"),active=hodlWorkspace===id;button.type="button";button.className="tab"+(active?" active":"");button.dataset.workspace=id;button.setAttribute("aria-pressed",String(active));button.textContent=label;button.onclick=()=>hodlShowWorkspace(id);box.appendChild(button)});hodlInitMsig();hodlInitPsbt()}
 var hodlKeyClearSyncQueued=!1,hodlMsigClearSyncQueued=!1,hodlDeriveSyncQueued=!1;
 function hodlQueueKeyClearButtonSync(){
   if(hodlKeyClearSyncQueued)return;hodlKeyClearSyncQueued=!0;queueMicrotask(()=>{hodlKeyClearSyncQueued=!1;hodlSyncKeyClearButton(!0)})
@@ -4813,7 +4814,12 @@ hodlInitWorkspace();hodlSeedInitialManagers();hodlInitKeyManager();hodlInitMsigM
 <script>
 (() => {
   const isHostedOnline = /^(www\.)?entropylab\.online$/i.test(location.hostname);
-  if (!isHostedOnline) return;
+  const isLocalPreview = (
+    location.protocol === "file:" || /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(location.hostname)
+  ) && new URLSearchParams(location.search).get("online-preview") === "1";
+  if (!isHostedOnline && !isLocalPreview) return;
+
+  document.getElementById("online-warning")?.removeAttribute("hidden");
 
   const brandMark = document.getElementById("online-brand-mark");
   if (brandMark) {
