@@ -29,9 +29,10 @@ Official website: [entropylab.online](https://entropylab.online)
 
 ## Usage
 
-Download the latest self-contained `entropylab.html` build from the
-[releases page](https://github.com/w-s-bitcoin/entropylab/releases) or the
-[official website](https://entropylab.online), transfer it to a trusted
+Download the self-contained [`index.html`](../../raw/main/index.html) from the
+root of this repository (or from the
+[releases page](https://github.com/w-s-bitcoin/entropylab/releases) /
+[official website](https://entropylab.online)), transfer it to a trusted
 computer, disconnect that computer from all networks, and open the file in a
 modern browser. For sensitive wallet material, use a dedicated air-gapped
 machine and verify important addresses and descriptors with an independent
@@ -54,7 +55,7 @@ supplied by the user.
 ## Building from source
 
 The project uses a zero-dependency Node.js build that inlines the sources in
-`src/` into a single self-contained HTML file under `dist/`.
+`src/` into a single self-contained HTML file at the repository root.
 
 Requirements: Node.js 18 or newer (no npm packages to install).
 
@@ -62,16 +63,17 @@ Requirements: Node.js 18 or newer (no npm packages to install).
 npm run build
 ```
 
-Build output:
+Build output (committed to the repository so the file can be downloaded
+directly):
 
-- `dist/entropylab.html` — the self-contained application (open this file)
-- `dist/entropylab-<version>.html` — versioned copy used by the download links
-- `dist/index.html` — copy served by static hosting
-- `dist/versions.json` — version manifest used by the hosted version picker
-- `dist/assets/` — static assets
+- `index.html` — the self-contained application (open this file)
+- `entropylab-<version>.html` — versioned copy used by the download links
+- `versions.json` — version manifest used by the hosted version picker
 
 The version is declared once in `package.json` and substituted into the
-output at build time. To remove build output, run `npm run clean`.
+output at build time. After changing anything in `src/`, run `npm run build`
+and commit the regenerated files; CI verifies that the committed output is
+reproducible. To remove generated files, run `npm run clean`.
 
 ## Project structure
 
@@ -87,7 +89,9 @@ output at build time. To remove build output, run `npm run clean`.
 │       ├── online.js       Hosted-site behavior and version picker
 │       ├── enhanced-inputs.js
 │       └── repeat-inputs.js
-└── dist/                   Build output (generated, not committed)
+├── index.html              Compiled application (generated, committed)
+├── entropylab-*.html       Versioned copy of the compiled application
+└── versions.json           Version manifest for the hosted version picker
 ```
 
 ## Security notice

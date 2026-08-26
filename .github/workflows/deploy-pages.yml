@@ -29,10 +29,26 @@ jobs:
       - name: Build static site
         run: npm run build
 
+      - name: Verify committed build output is reproducible
+        run: |
+          if [ -n "$(git status --porcelain -- index.html versions.json 'entropylab-*.html')" ]; then
+            echo "Build output differs from the committed files."
+            echo "Run 'npm run build' and commit the result."
+            git status --porcelain -- index.html versions.json 'entropylab-*.html'
+            exit 1
+          fi
+
+      - name: Prepare static site
+        run: |
+          mkdir _site
+          cp index.html entropylab-*.html versions.json _site/
+          cp -r assets _site/assets
+          touch _site/.nojekyll
+
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: _site
 
   deploy:
     needs: build
