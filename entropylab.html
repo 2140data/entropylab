@@ -18,6 +18,9 @@
   --scrollbar-track: #0a0a0a;
   --scrollbar-thumb: #4a4a4a;
   --scrollbar-thumb-hover: #626262;
+  --space-control: 8px;
+  --space-component: 16px;
+  --space-section: 20px;
   --display: "Iowan Old Style", Palatino, Georgia, serif;
   --sans: "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
@@ -56,16 +59,22 @@ button { cursor: pointer; }
   border-color: var(--accent);
 }
 .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.btn.primary:disabled {
+  cursor: not-allowed; opacity: .45;
+  background: color-mix(in oklab, var(--accent) 38%, var(--surface-2));
+  border-color: color-mix(in oklab, var(--accent) 28%, var(--border));
+  color: color-mix(in oklab, var(--accent-fg) 55%, var(--muted));
+}
 .btn.secondary { background: var(--surface-2); color: var(--fg); }
 textarea, select,
 input:not([type="radio"]):not([type="checkbox"]) {
-  width: 100%; min-height: 44px; margin-top: 8px; padding: 10px 12px;
+  width: 100%; min-height: 44px; margin-top: var(--space-control); padding: 10px 12px;
   border-radius: 12px; border: 1px solid var(--border); background: var(--bg); color: var(--fg);
   font-family: var(--mono); font-size: 14px;
 }
-textarea { min-height: 96px; letter-spacing: 0.08em; }
+textarea { display: block; min-height: 96px; letter-spacing: 0.08em; }
 .dice-input-shell {
-  position: relative; margin-top: 8px; border-radius: 12px; background: var(--bg);
+  position: relative; margin-top: var(--space-control); border-radius: 12px; background: var(--bg);
 }
 .dice-input-shell textarea {
   position: relative; z-index: 1; margin-top: 0; background: transparent;
@@ -82,6 +91,14 @@ textarea { min-height: 96px; letter-spacing: 0.08em; }
 .dice-roll-invalid {
   color: var(--danger);
 }
+.seed-autocomplete-toggle {
+  display: inline-flex; align-items: center; gap: 9px; min-height: 44px;
+  margin-top: var(--space-component); padding: 9px 12px;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface-2); color: var(--fg); font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.seed-autocomplete-toggle input { margin: 0; }
+.seed-autocomplete-note { color: var(--muted); font-weight: 400; }
 input[type="radio"], input[type="checkbox"] {
   appearance: auto;
   width: 16px;
@@ -93,8 +110,8 @@ input[type="radio"], input[type="checkbox"] {
   accent-color: var(--accent);
   flex-shrink: 0;
 }
-label.field { display: block; margin-top: 14px; font-size: 14px; font-weight: 600; }
-.label { font-size: 14px; font-weight: 600; margin: 16px 0 6px; color: var(--fg); }
+label.field { display: block; margin-top: var(--space-component); font-size: 14px; font-weight: 600; }
+.label { font-size: 14px; font-weight: 600; margin: var(--space-section) 0 var(--space-control); color: var(--fg); }
 .choice {
   display: flex;
   align-items: flex-start;
@@ -103,7 +120,7 @@ label.field { display: block; margin-top: 14px; font-size: 14px; font-weight: 60
   background: var(--bg);
   border-radius: 12px;
   padding: 12px;
-  margin-top: 8px;
+  margin-top: var(--space-control);
   cursor: pointer;
   font-weight: 400;
   font-size: 14px;
@@ -112,15 +129,37 @@ label.field { display: block; margin-top: 14px; font-size: 14px; font-weight: 60
 .choice strong { display: block; color: var(--fg); font-weight: 600; }
 .choice .desc { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; line-height: 1.45; font-weight: 400; }
 .choice:has(input:checked) { border-color: color-mix(in oklab, var(--accent) 55%, var(--border)); }
-.dice-input-pad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.choice:has(input:disabled) { cursor: not-allowed; opacity: 0.52; }
+.dice-input-pad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: var(--space-control); }
 .dice-input-pad.with-coin { grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 3fr); }
+.dice-input-pad.dplus {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(48px, auto));
+  grid-auto-flow: column;
+}
+.dice-input-pad.binary-keypad {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: minmax(48px, auto);
+  grid-auto-flow: row;
+}
 .dice-input-pad button {
   min-height: 48px; font-family: var(--mono); font-size: 18px;
   border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); color: var(--fg);
 }
+.dice-input-pad.dplus button { padding-inline: 6px; white-space: nowrap; }
 .dice-input-pad .coin-button { font-size: 15px; }
 .dice-input-pad button:disabled {
   cursor: not-allowed; opacity: 0.38; color: var(--muted); border-color: var(--border);
+}
+@media (max-width: 639px) {
+  .dice-input-pad.dplus {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(4, minmax(48px, auto));
+  }
+  .dice-input-pad.binary-keypad {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(48px, auto);
+  }
 }
 .wordlist {
   display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 16px;
@@ -132,7 +171,7 @@ label.field { display: block; margin-top: 14px; font-size: 14px; font-weight: 60
   --dice-word-rows: var(--dice-word-rows-wide);
   display: grid; grid-auto-flow: column; grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-rows: repeat(var(--dice-word-rows), minmax(34px, auto)); gap: 6px 10px;
-  margin-top: 12px; font-family: var(--mono); font-size: 13px;
+  margin-top: var(--space-component); font-family: var(--mono); font-size: 13px;
 }
 .dice-word-slot {
   min-width: 0; display: flex; align-items: center; gap: 6px; padding: 7px 9px;
@@ -167,7 +206,7 @@ th { text-align: left; color: var(--muted); font-weight: 600; padding: 8px; }
 td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; font-family: var(--mono); }
 .qr { background: var(--paper); padding: 8px; border-radius: 8px; display: inline-block; }
 .qr svg { display: block; width: 140px; height: 140px; }
-.err { color: var(--danger); font-size: 14px; }
+.err { margin: var(--space-control) 0 0; color: var(--danger); font-size: 14px; }
 .ok { color: var(--ok); }
 header { padding: 8px 0 16px; }
 .download-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-top: 14px; }
@@ -178,7 +217,7 @@ header { padding: 8px 0 16px; }
   position: absolute !important; width: 1px !important; height: 1px !important; min-height: 0 !important;
   margin: 0 !important; padding: 0 !important; opacity: 0; pointer-events: none; overflow: hidden;
 }
-.custom-select { position: relative; width: 100%; margin-top: 8px; font-family: var(--mono); font-size: 14px; }
+.custom-select { position: relative; width: 100%; margin-top: var(--space-control); font-family: var(--mono); font-size: 14px; }
 .custom-select-button {
   width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
   padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px;
@@ -215,9 +254,10 @@ header { padding: 8px 0 16px; }
 }
 
 input.bad, textarea.bad { border-color: var(--danger) !important; }
-.hint { font-size: 13px; margin-top: 6px; }
+.hint { font-size: 13px; margin: var(--space-control) 0 0; }
 .hint.bad { color: var(--danger); }
 .hint.ok { color: var(--ok); }
+.hint:empty, .err:empty { display: none; }
 #workspace { margin: 8px 0 4px; }
 #msig-card[hidden], #calc-card[hidden], #psbt-card[hidden] { display: none !important; }
 #calc-card:not([hidden]), #msig-card:not([hidden]) { margin-top: 0; border-radius: 0 0 20px 20px; position: relative; z-index: 1; }
@@ -229,13 +269,20 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .psbt-warn { color: var(--warn); }
 .key-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .key-panel-head #modes { flex: 1 1 auto; min-width: 0; }
-.seed-length-control { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+.seed-length-control { margin-top: var(--space-section); padding-top: var(--space-component); border-top: 1px solid var(--border); }
 .seed-length-control[hidden] { display: none !important; }
 .seed-length-control .label { margin: 0 0 8px; }
-.seed-length-control .muted { margin: 8px 0 0; }
+.seed-length-control .muted { margin: var(--space-control) 0 0; }
 .seed-length-options { align-items: center; }
+.key-form { margin-top: var(--space-section); }
+.key-form > :first-child { margin-top: 0; }
+.key-form > .muted { margin: var(--space-control) 0 0; }
+.key-form > .label + .muted { margin-top: 0; }
+.key-form > .label + textarea { margin-top: 0; }
+.key-form > .muted:empty, .key-form > #last-words:empty { display: none; }
+#calc-card > .key-form + .field { margin-top: var(--space-section); }
 .master-fingerprint-preview {
-  display: flex; align-items: center; gap: 12px; max-width: 680px; margin-top: 10px;
+  display: flex; align-items: center; gap: 12px; max-width: 680px; margin-top: var(--space-component);
 }
 .master-fingerprint-card {
   flex: 0 1 240px; min-width: 0; padding: 10px 12px; border: 1px solid var(--border);
@@ -264,22 +311,25 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   transition: color .16s ease, opacity .16s ease;
 }
 .master-fingerprint-arrow.is-disabled { visibility: hidden; opacity: 0; }
-.key-settings { display: grid; gap: 12px; margin-top: 16px; }
+.key-settings { display: grid; gap: var(--space-component); margin-top: var(--space-section); }
 .key-settings-row {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-component);
 }
+.key-settings.single-key-mode .key-settings-row:first-child { grid-template-columns: minmax(0, 1fr); }
 .key-settings .field { min-width: 0; margin: 0; }
+#passphrase-field[hidden], #master-fingerprint-preview[hidden], #script-type-field[hidden],
+#account-address-settings[hidden], #derivation-path-preview[hidden] { display: none !important; }
 .field-note {
-  display: block; margin-top: 5px; color: var(--muted); font-size: 12px; font-weight: 400; line-height: 1.4;
+  display: block; margin-top: var(--space-control); color: var(--muted); font-size: 12px; font-weight: 400; line-height: 1.4;
 }
 .derivation-path-preview {
-  margin-top: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 12px;
+  margin-top: var(--space-component); padding: var(--space-component); border: 1px solid var(--border); border-radius: 12px;
   background: var(--bg);
 }
 .derivation-path-preview.is-invalid { border-color: color-mix(in oklab, var(--danger) 65%, var(--border)); }
 .derivation-path-head {
   display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 .derivation-path-head .label { margin: 0; }
 .derivation-path-context { color: var(--muted); font-size: 12px; }
@@ -331,9 +381,18 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   cursor: not-allowed; opacity: .45; border-color: color-mix(in oklab, var(--danger) 30%, var(--border));
   background: color-mix(in oklab, var(--danger) 6%, var(--surface-2)); color: color-mix(in oklab, var(--danger) 55%, var(--muted));
 }
-.current-item-actions { align-items: center; width: 100%; }
+.current-item-actions { align-items: center; width: 100%; margin-top: var(--space-component); }
 .current-item-actions .clear-current-action { margin-inline-start: auto; }
 .msig-keys textarea { min-height: 72px; }
+.msig-intro { margin: var(--space-control) 0 0; }
+.msig-settings-row { margin-top: var(--space-section); }
+.msig-keys { display: grid; gap: var(--space-component); margin-top: var(--space-section); }
+.msig-keys .field { margin-top: 0; }
+.psbt-intro { margin: var(--space-control) 0 0; }
+.psbt-grid { margin-top: var(--space-component); }
+.psbt-grid > .field, .psbt-grid > div > .field:first-child { margin-top: 0; }
+.psbt-actions { margin-top: var(--space-component); }
+#psbt-session { margin: var(--space-control) 0 0; }
 .key-manager { margin: 14px 0 -1px; position: relative; z-index: 2; }
 .key-manager-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .key-manager-head h2 { margin: 0; }
@@ -435,7 +494,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 }
 .key-tab-icon { display: inline-flex; flex: 0 0 auto; width: 16px; height: 16px; color: var(--key-color); }
 .key-tab-icon svg { display: block; width: 16px; height: 16px; }
-.multisig-tab-icon { display: inline-flex; flex: 0 0 auto; width: 28px; height: 23px; }
+.multisig-tab-icon { display: inline-flex; flex: 0 0 auto; width: 28px; height: 23px; margin-left: -5px; }
 .multisig-tab-icon svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .key-tab-label { display: inline-block; white-space: nowrap; }
 .key-tab-editing { height: 44px; }
@@ -495,34 +554,38 @@ online.</p>
         </div>
         <p class="muted" id="seed-length-help">24 words use 256 bits of BIP39 entropy.</p>
       </section>
-      <div id="form">
+      <div id="form" class="key-form">
       <p class="label">How to turn rolls into a seed</p>
       <label class="choice"><input type="radio" name="dm" value="coldcard" checked="checked">
-        <span><strong>Hash the rolls (recommended)</strong>
-        <span class="desc">SHA-256 of the digits 415263… Always a 24-word seed. Same check Coldcard shows for dice.</span></span>
+        <span><strong>Hashed rolls / Base 10 [0-9] (recommended)</strong>
+        <span class="desc">SHA-256 of the original dice digit string, matching the method used by COLDCARD and SeedSigner. Every entered roll is included.</span></span>
+      </label>
+      <label class="choice"><input type="radio" name="dm" value="coleman">
+        <span><strong>Hashed rolls / Dice [1-6]</strong>
+        <span class="desc">Convert every rolled 6 to 0, hash the complete
+digit string with SHA-256, then use the selected BIP39 entropy length.
+This matches the method used by Keystone, and all rolls are included.</span></span>
       </label>
       <label class="choice"><input type="radio" name="dm" value="bitbox">
-        <span><strong>BitBox-style diceware</strong>
+        <span><strong>BitBox diceware / Direct word selection</strong>
         <span class="desc">Same as the BitBox02 lookup table: five dice
 showing 1–4, then a coin (or 6th die: 1–3 heads, 4–6 tails). 5 and 6 on
 the first five dice of a word are skipped (reroll). After 23 words, pick
  one of the 8 checksum words.</span></span>
       </label>
-      <label class="choice"><input type="radio" name="dm" value="coleman">
-        <span><strong>Ian Coleman-style</strong>
-        <span class="desc">Prefix-free bit table from the BIP39 HTML
-tool. Keystone dice uses this. Not the same as hashing the rolls, and
-not the same as BitBox.</span></span>
+      <label class="choice"><input type="radio" name="dm" value="dplus">
+        <span><strong>D++ / Direct word selection</strong>
+        <span class="desc">For a 24-word seed, roll one D8 and two D16 dice for each of the first 23 words, then a final D8 for the checksum word.</span></span>
       </label>
       <p class="label" id="dice-label">Dice rolls (faces 1–6 only)</p>
-      <p class="muted" id="dice-help">Same 1–6 dice as Ian Coleman — but every digit is SHA-256 hashed into a 24-word seed. The seed will not match Ian Coleman.</p>
+      <p class="muted" id="dice-help">Base 10 [0-9] hashes the original roll string, matching COLDCARD and SeedSigner. Dice [1-6] converts each 6 to 0 before hashing, matching the method used by Keystone.</p>
       <div class="dice-input-shell"><pre class="dice-input-highlight" id="dice-highlight" aria-hidden="true"></pre><textarea id="dice" placeholder="e.g. 415263415263…" inputmode="numeric" autocomplete="off" spellcheck="false" aria-describedby="dice-help dice-meta"></textarea></div>
       <div class="dice-input-pad with-coin"><button type="button" data-d="1">1</button><button type="button" data-d="3">3</button><button type="button" data-d="5">5</button><button type="button" class="coin-button" data-d="H" data-coin="heads" disabled title="Heads and Tails are available in BitBox-style mode.">Heads (1–3)</button><button type="button" data-d="2">2</button><button type="button" data-d="4">4</button><button type="button" data-d="6">6</button><button type="button" class="coin-button" data-d="T" data-coin="tails" disabled title="Heads and Tails are available in BitBox-style mode.">Tails (4–6)</button></div>
       <p class="muted" id="dice-meta">0 of 99 recommended rolls · 0.0 bits estimated · 24-word seed</p>
       <div id="dice-words" class="dice-word-grid" aria-label="24 seed-word slots"></div>
       <div id="last-words" class="row" style="margin-top:8px"></div>
     </div>
-      <label class="field">Optional BIP39 passphrase
+      <label class="field" id="passphrase-field">Optional BIP39 passphrase
         <input id="pass" autocomplete="off" placeholder="Leave blank unless you set one">
       </label>
       <div class="master-fingerprint-preview" id="master-fingerprint-preview" role="status" aria-live="polite" aria-atomic="true">
@@ -536,16 +599,16 @@ not the same as BitBox.</span></span>
           <code class="master-fingerprint-value" id="passphrase-master-fingerprint"></code>
         </div>
       </div>
-      <div class="key-settings">
+      <div class="key-settings" id="key-settings">
         <div class="key-settings-row">
-          <label class="field">Script type
+          <label class="field" id="script-type-field">Script type
             <select id="script-type"><option value="bip44">Legacy · BIP44</option><option value="bip49">Nested SegWit · BIP49</option><option value="bip84" selected="selected">Native SegWit · BIP84</option><option value="bip86">Taproot · BIP86</option></select>
           </label>
           <label class="field">Network
             <select id="network"><option value="mainnet" selected="selected">Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
           </label>
         </div>
-        <div class="key-settings-row">
+        <div class="key-settings-row" id="account-address-settings">
           <label class="field">Account
             <input id="account" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0" aria-describedby="account-help">
             <span class="field-note" id="account-help">Hardened account index · 0 to 2,147,483,647</span>
@@ -564,8 +627,8 @@ not the same as BitBox.</span></span>
         </dl>
         <p class="derivation-path-error" id="derivation-path-error" hidden></p>
       </section>
-      <div class="row key-action-row current-item-actions" style="margin-top:8px">
-        <button class="btn primary" id="go">Calculate</button>
+      <div class="row key-action-row current-item-actions">
+        <button class="btn primary" id="go" disabled aria-disabled="true">Derive Wallet</button>
         <button class="btn clear-current-action" id="wipe" type="button" disabled aria-disabled="true">Clear Current Key</button>
       </div>
       <p class="err" id="error"></p>
@@ -579,10 +642,10 @@ not the same as BitBox.</span></span>
         <div><div class="kicker">Several people, one pile of bitcoin</div><h2>Create a multisig wallet</h2></div>
         <button class="btn delete-key" id="delete-msig" type="button" aria-label="Delete current multisig" disabled>Delete Multisig</button>
       </div>
-      <p class="muted">Paste each person’s account xpub. This does not
+      <p class="muted msig-intro">Paste each person’s account xpub. This does not
 need private keys. You can receive to these addresses. Spending later
 needs the number of signatures you choose, on real signing devices.</p>
-      <div class="row" style="align-items:end">
+      <div class="row msig-settings-row" style="align-items:end">
         <label class="field" style="margin:0;flex:1">Signatures needed to spend (m)
           <select id="msig-m"><option value="1">1</option><option value="2" selected="selected">2</option><option value="3">All 3</option></select>
         </label>
@@ -605,7 +668,7 @@ needs the number of signatures you choose, on real signing devices.</p>
         <span><strong>Legacy</strong><span class="desc">Addresses start with 3. Bare P2SH multisig.</span></span></label>
       <div id="msig-keys" class="msig-keys"><label class="field">Co-signer 1 account xpub<textarea id="msig-x-0" placeholder="xpub / ypub / zpub / vpub" autocomplete="off" spellcheck="false"></textarea></label><label class="field">Co-signer 2 account xpub<textarea id="msig-x-1" placeholder="xpub / ypub / zpub / vpub" autocomplete="off" spellcheck="false"></textarea></label><label class="field">Co-signer 3 account xpub<textarea id="msig-x-2" placeholder="xpub / ypub / zpub / vpub" autocomplete="off" spellcheck="false"></textarea></label></div>
       <p class="hint ok" id="msig-hint">Spending will need 2 of these 3 keys. Receiving needs none of the private keys.</p>
-      <div class="row current-item-actions" style="margin-top:16px">
+      <div class="row current-item-actions">
         <button class="btn primary" id="msig-go" type="button">Build multisig</button>
         <button class="btn clear-current-action" id="msig-wipe" type="button" disabled aria-disabled="true">Clear Current Multisig</button>
       </div>
@@ -614,7 +677,7 @@ needs the number of signatures you choose, on real signing devices.</p>
     <section class="card no-print" id="psbt-card" role="tabpanel" hidden>
       <div class="kicker">Inspect first. Sign elsewhere.</div>
       <h2>Read a PSBT. Check its ECDSA nonces.</h2>
-      <p class="muted">Inspecting a PSBT v0 does not require a private key. EntropyLab can show outputs, PSBT-provided input amounts and fees, signatures, and repeated ECDSA nonce values. Loading a matching key additionally checks whether supported signatures match plain RFC 6979; a mismatch alone is not evidence of a compromised signer.</p>
+      <p class="muted psbt-intro">Inspecting a PSBT v0 does not require a private key. EntropyLab can show outputs, PSBT-provided input amounts and fees, signatures, and repeated ECDSA nonce values. Loading a matching key additionally checks whether supported signatures match plain RFC 6979; a mismatch alone is not evidence of a compromised signer.</p>
       <label class="field">PSBT v0 (base64 or hex)
         <textarea id="psbt-text" placeholder="cHNidP8B..." spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
       </label>
@@ -631,7 +694,7 @@ needs the number of signatures you choose, on real signing devices.</p>
           </label>
         </div>
       </div>
-      <div class="row" style="margin-top:16px">
+      <div class="row psbt-actions">
         <button class="btn primary" id="psbt-go" type="button">Inspect PSBT</button>
         <button class="btn secondary" id="psbt-use-calc" type="button">Use active key this session</button>
         <button class="btn secondary" id="psbt-wipe" type="button">End session / clear fields</button>
@@ -647,6 +710,7 @@ needs the number of signatures you choose, on real signing devices.</p>
       <p>Ian Coleman BIP39: <a href="https://github.com/iancoleman/bip39">github.com/iancoleman/bip39</a> — pull <code>bip39-standalone.html</code> from Releases, or <code>src/js/index.js</code>, <code>entropy.js</code>, <code>jsbip39.js</code>, <code>wordlist_english.js</code>.</p>
       <p>bitaddress.org: <a href="https://github.com/pointbiz/bitaddress.org">github.com/pointbiz/bitaddress.org</a> — pull <code>bitaddress.org.html</code>, or <code>src/ninja.key.js</code>, <code>ninja.detailwallet.js</code>, <code>ninja.paperwallet.js</code>, <code>bitcoinjs-lib.eckey.js</code>.</p>
       <p>BitBox02 diceware: <a href="https://blog.bitbox.swiss/en/roll-the-dice-generate-your-own-seed/">roll-the-dice-generate-your-own-seed</a> — lookup table is the BIP39 English list in order.</p>
+      <p>D++ octal and hexadecimal dice: <a href="https://thesimplestbitcoinbook.net/wp-content/uploads/2023/09/Roll-Your-Own-Seed-Phrase-PDF.pdf">Roll Your Own Bitcoin Seed Phrase</a> — the published 24-word workflow uses one D8 and two D16 rolls per word, then a final D8. EntropyLab accepts either the custom D++ D16 faces 0–F or a numbered D16 from 1–16, entered as 1–9 and A–G with G mapped to face 0. Its 12- and 18-word variants use the same rolled-word mapping and an offline-random selection from the checksum-valid final-word list.</p>
     </section>
   </div>
 </div><!--/$--><script type="module" async="" src="Air-Gap%20Bitcoin%20Calculator_files/virtual_tanstack-start-dev-client-entry_rv2v"></script><script id="btc-calc-script">"use strict";(()=>{var ic=Object.defineProperty;var sc=(e,t,r)=>t in e?ic(e,t,{enumerable:!0,configurable:!0,writable:!0,value:r}):e[t]=r;var g=(e,t,r)=>sc(e,typeof t!="symbol"?t+"":t,r);var ur=BigInt(4294967295),Fo=BigInt(32);function cc(e,t=!1){return t?{h:Number(e&ur),l:Number(e>>Fo&ur)}:{h:Number(e>>Fo&ur)|0,l:Number(e&ur)|0}}function Mo(e,t=!1){let r=e.length,n=new Uint32Array(r),o=new Uint32Array(r);for(let i=0;i<r;i++){let{h:s,l:c}=cc(e[i],t);[n[i],o[i]]=[s,c]}return[n,o]}var ac=e=>e/2**32|0,fc=e=>e>>>0;function zo(e,t,r,n){let o=ac(r),i=fc(r);e.setUint32(t,n?i:o,n),e.setUint32(t+4,n?o:i,n)}var dn=(e,t,r)=>e>>>r,ln=(e,t,r)=>e<<32-r|t>>>r,Xe=(e,t,r)=>e>>>r|t<<32-r,Ze=(e,t,r)=>e<<32-r|t>>>r,_t=(e,t,r)=>e<<64-r|t>>>r-32,Rt=(e,t,r)=>e>>>r-32|t<<64-r;function Se(e,t,r,n){let o=(t>>>0)+(n>>>0);return{h:e+r+(o/2**32|0)|0,l:o|0}}var Do=(e,t,r)=>(e>>>0)+(t>>>0)+(r>>>0),jo=(e,t,r,n)=>t+r+n+(e/2**32|0)|0,Ko=(e,t,r,n)=>(e>>>0)+(t>>>0)+(r>>>0)+(n>>>0),Wo=(e,t,r,n,o)=>t+r+n+o+(e/2**32|0)|0,qo=(e,t,r,n,o)=>(e>>>0)+(t>>>0)+(r>>>0)+(n>>>0)+(o>>>0),Vo=(e,t,r,n,o,i)=>t+r+n+o+i+(e/2**32|0)|0;function hr(e){return e instanceof Uint8Array||ArrayBuffer.isView(e)&&e.constructor.name==="Uint8Array"&&"BYTES_PER_ELEMENT"in e&&e.BYTES_PER_ELEMENT===1}var un=e=>e?`"${e}" `:"";function V(e,t=""){if(typeof e!="number")throw new TypeError(un(t)+"expected number, got "+typeof e);if(!Number.isSafeInteger(e)||e<0)throw new RangeError(un(t)+"expected integer >= 0, got "+e);return e}function K(e,t,r=""){if(hr(e)&&(t===void 0||e.length===t))return e;t!==void 0&&V(t,"length");let n=hr(e),o=t!==void 0?` of length ${t}`:"",i=n?`length=${e.length}`:`type=${typeof e}`,s=un(r)+"expected Uint8Array"+o+", got "+i;throw n?new RangeError(s):new TypeError(s)}function lt(e){if(typeof e!="function"||typeof e.create!="function")throw new TypeError("expected hash wrapped by utils.createHasher");if(V(e.outputLen),V(e.blockLen),e.outputLen<1||e.blockLen<1)throw new Error("hash blockLen / outputLen must be >= 1")}var Yo=(e,t)=>{if(e===null||typeof e!="object"||Array.isArray(e))throw new TypeError((t==="object"?"":`"${t}" `)+"expected object, got type="+typeof e)};function ut(e,t=!0){if(e.destroyed)throw new Error("hash was destroyed");if(t&&e.finished)throw new Error("digest() was already called")}function pr(e,t){K(e,void 0,"output");let r=t.outputLen;if(!(e.length>=r))throw new RangeError('"output" expected length >= '+r)}function ue(...e){for(let t=0;t<e.length;t++)e[t].fill(0)}function Te(e){return new DataView(e.buffer,e.byteOffset,e.byteLength)}function we(e,t){return e<<32-t|e>>>t}function Ut(e,t){return e<<t|e>>>32-t>>>0}var Xo=typeof Uint8Array.from([]).toHex=="function"&&typeof Uint8Array.fromHex=="function",lc=Array.from({length:256},(e,t)=>t.toString(16).padStart(2,"0"));function gr(e){if(K(e),Xo)return e.toHex();let t="";for(let r=0;r<e.length;r++)t+=lc[e[r]];return t}function Go(e){return e>=48&&e<=57?e-48:e>=65&&e<=70?e-55:e>=97&&e<=102?e-87:void 0}function hn(e){if(typeof e!="string")throw new TypeError("hex string expected, got "+typeof e);if(Xo)try{return Uint8Array.fromHex(e)}catch(o){throw o instanceof SyntaxError?new RangeError(o.message):o}let t=e.length,r=t/2;if(t%2)throw new RangeError("hex string expected, got unpadded hex of length "+t);let n=new Uint8Array(r);for(let o=0,i=0;o<r;o++,i+=2){let s=Go(e.charCodeAt(i)),c=Go(e.charCodeAt(i+1));if(s===void 0||c===void 0){let a=e[i]+e[i+1];throw new RangeError('hex string expected, got non-hex character "'+a+'" at index '+i)}n[o]=s*16+c}return n}function uc(e){if(typeof e!="string")throw new TypeError("string expected");return new Uint8Array(new TextEncoder().encode(e))}function pn(e,t=""){return typeof e=="string"?uc(e):K(e,void 0,t)}function Qe(...e){let t=0;for(let n=0;n<e.length;n++){let o=e[n];K(o),t+=o.length}let r=new Uint8Array(t);for(let n=0,o=0;n<e.length;n++){let i=e[n];r.set(i,o),o+=i.length}return r}function gn(e,t,r="opts"){return Yo(e,"defaults"),t!==void 0&&Yo(t,r),Object.assign(e,t)}function Lt(e,t={}){if(typeof e!="function")throw new TypeError('"hashCons" expected function, got type='+typeof e);t=gn({},t,"info");let r=(o,i)=>e(i).update(o).digest(),n=e(void 0);return r.outputLen=n.outputLen,r.blockLen=n.blockLen,r.canXOF=n.canXOF,r.create=o=>e(o),Object.assign(r,t),Object.freeze(r)}function ht(e=32){V(e,"bytesLength");let t=typeof globalThis=="object"?globalThis.crypto:null;if(typeof t?.getRandomValues!="function")throw new Error("crypto.getRandomValues must be defined");if(e>65536)throw new RangeError(`"bytesLength" expected <= 65536, got ${e}`);return t.getRandomValues(new Uint8Array(e))}var yn=e=>({oid:Uint8Array.from([6,9,96,134,72,1,101,3,4,2,e])});function bn(e,t,r){return e&t^~e&r}function wn(e,t,r){return e&t^e&r^t&r}var Je=class{constructor(t,r,n,o){g(this,"blockLen");g(this,"outputLen");g(this,"canXOF",!1);g(this,"padOffset");g(this,"isLE");g(this,"buffer");g(this,"view");g(this,"finished",!1);g(this,"length",0);g(this,"pos",0);g(this,"destroyed",!1);this.blockLen=t,this.outputLen=r,this.padOffset=n,this.isLE=o,this.buffer=new Uint8Array(t),this.view=Te(this.buffer)}update(t){ut(this),K(t);let{view:r,buffer:n,blockLen:o}=this,i=t.length,s=!1;for(let c=0;c<i;){let a=Math.min(o-this.pos,i-c);if(a===o){let f=Te(t);for(;o<=i-c;c+=o)this.process(f,c);s=!0;continue}n.set(c===0&&a===i?t:t.subarray(c,c+a),this.pos),this.pos+=a,c+=a,this.pos===o&&(this.process(r,0),this.pos=0,s=!0)}return this.length+=t.length,s&&this.roundClean(),this}digestInto(t){ut(this),pr(t,this),this.finished=!0;let{buffer:r,view:n,blockLen:o,isLE:i}=this,{pos:s}=this;r[s++]=128,r.fill(0,s),this.padOffset>o-s&&(this.process(n,0),r.fill(0)),zo(n,o-8,this.length*8,i),this.process(n,0),this.roundClean();let c=t===r?n:Te(t),a=this.outputLen,f=a/4,d=this.get();if(a%4||f>d.length)throw new Error("invalid outputLen");for(let h=0;h<f;h++)c.setUint32(4*h,d[h],i)}digest(){let{buffer:t,outputLen:r}=this;this.digestInto(t);let n=t.slice(0,r);return this.destroy(),n}_cloneIntoMeta(t){let{buffer:r,length:n,finished:o,destroyed:i,pos:s}=this;return t.destroyed=i,t.finished=o,t.length=n,t.pos=s,s&&t.buffer.set(r),t}clone(){return this._cloneInto()}},Zo=Uint32Array.from([1779033703,3144134277,1013904242,2773480762,1359893119,2600822924,528734635,1541459225]);var Qo=Uint32Array.from([1779033703,4089235720,3144134277,2227873595,1013904242,4271175723,2773480762,1595750129,1359893119,2917565137,2600822924,725511199,528734635,4215389547,1541459225,327033209]);var hc=Uint32Array.from([1116352408,1899447441,3049323471,3921009573,961987163,1508970993,2453635748,2870763221,3624381080,310598401,607225278,1426881987,1925078388,2162078206,2614888103,3248222580,3835390401,4022224774,264347078,604807628,770255983,1249150122,1555081692,1996064986,2554220882,2821834349,2952996808,3210313671,3336571891,3584528711,113926993,338241895,666307205,773529912,1294757372,1396182291,1695183700,1986661051,2177026350,2456956037,2730485921,2820302411,3259730800,3345764771,3516065817,3600352804,4094571909,275423344,430227734,506948616,659060556,883997877,958139571,1322822218,1537002063,1747873779,1955562222,2024104815,2227730452,2361852424,2428436474,2756734187,3204031479,3329325298]),Me=new Uint32Array(64),mn=class extends Je{constructor(r,n){super(64,r,8,!1);g(this,"A",0);g(this,"B",0);g(this,"C",0);g(this,"D",0);g(this,"E",0);g(this,"F",0);g(this,"G",0);g(this,"H",0);this.A=n[0]|0,this.B=n[1]|0,this.C=n[2]|0,this.D=n[3]|0,this.E=n[4]|0,this.F=n[5]|0,this.G=n[6]|0,this.H=n[7]|0}get(){let{A:r,B:n,C:o,D:i,E:s,F:c,G:a,H:f}=this;return[r,n,o,i,s,c,a,f]}set(r,n,o,i,s,c,a,f){this.A=r|0,this.B=n|0,this.C=o|0,this.D=i|0,this.E=s|0,this.F=c|0,this.G=a|0,this.H=f|0}_cloneInto(r){return(r||(r=new this.constructor)).set(...this.get()),this._cloneIntoMeta(r)}process(r,n){for(let l=0;l<16;l++,n+=4)Me[l]=r.getUint32(n,!1);for(let l=16;l<64;l++){let u=Me[l-15],p=Me[l-2],b=we(u,7)^we(u,18)^u>>>3,w=we(p,17)^we(p,19)^p>>>10;Me[l]=w+Me[l-7]+b+Me[l-16]|0}let{A:o,B:i,C:s,D:c,E:a,F:f,G:d,H:h}=this;for(let l=0;l<64;l++){let u=we(a,6)^we(a,11)^we(a,25),p=h+u+bn(a,f,d)+hc[l]+Me[l]|0,w=(we(o,2)^we(o,13)^we(o,22))+wn(o,i,s)|0;h=d,d=f,f=a,a=c+p|0,c=s,s=i,i=o,o=p+w|0}o=o+this.A|0,i=i+this.B|0,s=s+this.C|0,c=c+this.D|0,a=a+this.E|0,f=f+this.F|0,d=d+this.G|0,h=h+this.H|0,this.set(o,i,s,c,a,f,d,h)}roundClean(){ue(Me)}destroy(){this.destroyed=!0,this.set(0,0,0,0,0,0,0,0),ue(this.buffer)}},xn=class extends mn{constructor(){super(32,Zo)}};var Jo=Mo(["0x428a2f98d728ae22","0x7137449123ef65cd","0xb5c0fbcfec4d3b2f","0xe9b5dba58189dbbc","0x3956c25bf348b538","0x59f111f1b605d019","0x923f82a4af194f9b","0xab1c5ed5da6d8118","0xd807aa98a3030242","0x12835b0145706fbe","0x243185be4ee4b28c","0x550c7dc3d5ffb4e2","0x72be5d74f27b896f","0x80deb1fe3b1696b1","0x9bdc06a725c71235","0xc19bf174cf692694","0xe49b69c19ef14ad2","0xefbe4786384f25e3","0x0fc19dc68b8cd5b5","0x240ca1cc77ac9c65","0x2de92c6f592b0275","0x4a7484aa6ea6e483","0x5cb0a9dcbd41fbd4","0x76f988da831153b5","0x983e5152ee66dfab","0xa831c66d2db43210","0xb00327c898fb213f","0xbf597fc7beef0ee4","0xc6e00bf33da88fc2","0xd5a79147930aa725","0x06ca6351e003826f","0x142929670a0e6e70","0x27b70a8546d22ffc","0x2e1b21385c26c926","0x4d2c6dfc5ac42aed","0x53380d139d95b3df","0x650a73548baf63de","0x766a0abb3c77b2a8","0x81c2c92e47edaee6","0x92722c851482353b","0xa2bfe8a14cf10364","0xa81a664bbc423001","0xc24b8b70d0f89791","0xc76c51a30654be30","0xd192e819d6ef5218","0xd69906245565a910","0xf40e35855771202a","0x106aa07032bbd1b8","0x19a4c116b8d2d0c8","0x1e376c085141ab53","0x2748774cdf8eeb99","0x34b0bcb5e19b48a8","0x391c0cb3c5c95a63","0x4ed8aa4ae3418acb","0x5b9cca4f7763e373","0x682e6ff3d6b2b8a3","0x748f82ee5defb2fc","0x78a5636f43172f60","0x84c87814a1f0ab72","0x8cc702081a6439ec","0x90befffa23631e28","0xa4506cebde82bde9","0xbef9a3f7b2c67915","0xc67178f2e372532b","0xca273eceea26619c","0xd186b8c721c0c207","0xeada7dd6cde0eb1e","0xf57d4f7fee6ed178","0x06f067aa72176fba","0x0a637dc5a2c898a6","0x113f9804bef90dae","0x1b710b35131c471b","0x28db77f523047d84","0x32caab7b40c72493","0x3c9ebe0a15c9bebc","0x431d67c49c100d4c","0x4cc5d4becb3e42b6","0x597f299cfc657e2a","0x5fcb6fab3ad6faec","0x6c44198c4a475817"].map(e=>BigInt(e))),pc=Jo[0],gc=Jo[1],ze=new Uint32Array(80),De=new Uint32Array(80),En=class extends Je{constructor(r,n){super(128,r,16,!1);g(this,"Ah",0);g(this,"Al",0);g(this,"Bh",0);g(this,"Bl",0);g(this,"Ch",0);g(this,"Cl",0);g(this,"Dh",0);g(this,"Dl",0);g(this,"Eh",0);g(this,"El",0);g(this,"Fh",0);g(this,"Fl",0);g(this,"Gh",0);g(this,"Gl",0);g(this,"Hh",0);g(this,"Hl",0);this.Ah=n[0]|0,this.Al=n[1]|0,this.Bh=n[2]|0,this.Bl=n[3]|0,this.Ch=n[4]|0,this.Cl=n[5]|0,this.Dh=n[6]|0,this.Dl=n[7]|0,this.Eh=n[8]|0,this.El=n[9]|0,this.Fh=n[10]|0,this.Fl=n[11]|0,this.Gh=n[12]|0,this.Gl=n[13]|0,this.Hh=n[14]|0,this.Hl=n[15]|0}get(){let{Ah:r,Al:n,Bh:o,Bl:i,Ch:s,Cl:c,Dh:a,Dl:f,Eh:d,El:h,Fh:l,Fl:u,Gh:p,Gl:b,Hh:w,Hl:E}=this;return[r,n,o,i,s,c,a,f,d,h,l,u,p,b,w,E]}set(r,n,o,i,s,c,a,f,d,h,l,u,p,b,w,E){this.Ah=r|0,this.Al=n|0,this.Bh=o|0,this.Bl=i|0,this.Ch=s|0,this.Cl=c|0,this.Dh=a|0,this.Dl=f|0,this.Eh=d|0,this.El=h|0,this.Fh=l|0,this.Fl=u|0,this.Gh=p|0,this.Gl=b|0,this.Hh=w|0,this.Hl=E|0}_cloneInto(r){return(r||(r=new this.constructor)).set(...this.get()),this._cloneIntoMeta(r)}process(r,n){for(let P=0;P<16;P++,n+=4)ze[P]=r.getUint32(n),De[P]=r.getUint32(n+=4);for(let P=16;P<80;P++){let J=ze[P-15]|0,N=De[P-15]|0,oe=Xe(J,N,1)^Xe(J,N,8)^dn(J,N,7),be=Ze(J,N,1)^Ze(J,N,8)^ln(J,N,7),ie=ze[P-2]|0,F=De[P-2]|0,ve=Xe(ie,F,19)^_t(ie,F,61)^dn(ie,F,6),X=Ze(ie,F,19)^Rt(ie,F,61)^ln(ie,F,6),ke=Ko(be,X,De[P-7],De[P-16]),se=Wo(ke,oe,ve,ze[P-7],ze[P-16]);ze[P]=se|0,De[P]=ke|0}let{Ah:o,Al:i,Bh:s,Bl:c,Ch:a,Cl:f,Dh:d,Dl:h,Eh:l,El:u,Fh:p,Fl:b,Gh:w,Gl:E,Hh:A,Hl:C}=this;for(let P=0;P<80;P++){let J=Xe(l,u,14)^Xe(l,u,18)^_t(l,u,41),N=Ze(l,u,14)^Ze(l,u,18)^Rt(l,u,41),oe=l&p^~l&w,be=u&b^~u&E,ie=qo(C,N,be,gc[P],De[P]),F=Vo(ie,A,J,oe,pc[P],ze[P]),ve=ie|0,X=Xe(o,i,28)^_t(o,i,34)^_t(o,i,39),ke=Ze(o,i,28)^Rt(o,i,34)^Rt(o,i,39),se=o&s^o&a^s&a,U=i&c^i&f^c&f;A=w|0,C=E|0,w=p|0,E=b|0,p=l|0,b=u|0,{h:l,l:u}=Se(d|0,h|0,F|0,ve|0),d=a|0,h=f|0,a=s|0,f=c|0,s=o|0,c=i|0;let R=Do(ve,ke,U);o=jo(R,F,X,se),i=R|0}({h:o,l:i}=Se(this.Ah|0,this.Al|0,o|0,i|0)),{h:s,l:c}=Se(this.Bh|0,this.Bl|0,s|0,c|0),{h:a,l:f}=Se(this.Ch|0,this.Cl|0,a|0,f|0),{h:d,l:h}=Se(this.Dh|0,this.Dl|0,d|0,h|0),{h:l,l:u}=Se(this.Eh|0,this.El|0,l|0,u|0),{h:p,l:b}=Se(this.Fh|0,this.Fl|0,p|0,b|0),{h:w,l:E}=Se(this.Gh|0,this.Gl|0,w|0,E|0),{h:A,l:C}=Se(this.Hh|0,this.Hl|0,A|0,C|0),this.set(o,i,s,c,a,f,d,h,l,u,p,b,w,E,A,C)}roundClean(){ue(ze,De)}destroy(){this.destroyed=!0,ue(this.buffer),this.set(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)}},vn=class extends En{constructor(){super(64,Qo)}};var Z=Lt(()=>new xn,yn(1));var Ct=Lt(()=>new vn,yn(3));var br=e=>Object.freeze(e());function ci(e){return e instanceof Uint8Array||ArrayBuffer.isView(e)&&e.constructor.name==="Uint8Array"&&"BYTES_PER_ELEMENT"in e&&e.BYTES_PER_ELEMENT===1}function et(e){if(!ci(e))throw new TypeError("Uint8Array expected")}function yc(e,t){return Array.isArray(t)?t.length===0?!0:e?t.every(r=>typeof r=="string"):t.every(r=>Number.isSafeInteger(r)):!1}function wr(e){if(typeof e!="function")throw new TypeError("function expected");return!0}function Nt(e,t){if(typeof t!="string")throw new TypeError(`${e}: string expected`);return!0}function yr(e,t="number"){if(typeof e!="number")throw new TypeError(`${t}: expected number, got ${typeof e}`);if(!Number.isSafeInteger(e))throw new RangeError(`${t}: expected safe integer, got ${e}`)}function ei(e,t){if(!yc(!1,t))throw new TypeError(`${e}: array of numbers expected`)}function Sn(...e){let t=i=>i,r=(i,s)=>c=>i(s(c)),n=e.map(i=>i.encode).reduceRight(r,t),o=e.map(i=>i.decode).reduce(r,t);return{encode:n,decode:o}}function bc(e){return wr(e),{encode:t=>t,decode:t=>e(t)}}var wc=(()=>{let e=[];for(let t=0;t<40;t++)e.push(2**t);return e})();function ti(e,t=e.length){let r=new Array(t);for(let n=0;n<t;n++)r[n]=e[n];return r}var ri=(()=>{try{let e=new TextDecoder;return e.decode(Uint8Array.of(65,48,43,127))==="A0+\x7F"?e:void 0}catch{return}})(),kn=8192;function mc(e){let t=e.length;if(ri!==void 0&&t>=12)return ri.decode(e);if(t<=kn)return String.fromCharCode.apply(null,e);let r="";for(let n=0;n<t;n+=kn)r+=String.fromCharCode.apply(null,e.subarray(n,n+kn));return r}function ai(e){if(yr(e),e<=0||e>8)throw new RangeError("radix2: bits should be in (0..8]");let t=wc[e]-1;return{encode:r=>{et(r);let n=r.length,o=new Uint8Array(Math.ceil(n*8/e)),i=0,s=0,c=0;for(let a=0;a<n;)for(a+2<n?(i=i<<24|r[a]<<16|r[a+1]<<8|r[a+2],s+=24,a+=3):(i=(i<<8|r[a])&65535,s+=8,a++);s-=e,o[c++]=i>>s&t,!(s<e););return s>0&&(o[c]=i<<e-s&t),o},decode:r=>{let n=r.length,o=new Uint8Array(Math.floor(n*e/8)),i=0,s=0,c=0;for(let a=0;a<n;a++)for(i=(i<<e|r[a])&65535,s+=e;s>=8;s-=8)o[c++]=i>>s-8&255;if(i=i<<8-s&255,s>=e)throw new Error("Excess padding");if(i>0)throw new Error(`Non-zero padding: ${i}`);return o}}}function Tn(e,t){let r=e.length;if(r>128)throw new Error("alphabet: max 128 letters");let n=new Uint8Array(r),o=new Int8Array(128).fill(-1);for(let i=0;i<r;i++){let s=e.charCodeAt(i);if(e.codePointAt(i)!==s||s>127)throw new Error("alphabet: single-char ASCII letters only");n[i]=s,o[s]=i}if(t!==void 0)for(let i of Object.keys(t)){let s=i.charCodeAt(0),c=o[t[i].charCodeAt(0)];if(i.length!==1||s>127||c===void 0||c===-1)throw new Error(`alphabet: invalid alias ${i}`);o[s]=c}return{encode:i=>{let s=new Uint8Array(i.length);for(let c=0;c<i.length;c++){let a=i[c],f=n[a];if(f===void 0)throw new Error(`alphabet.encode: invalid digit ${a}`);s[c]=f}return mc(s)},decode:i=>{Nt("decode",i);let s=i.length,c=new Uint8Array(s);for(let a=0;a<s;a++){let f=i.charCodeAt(a),d=f<128?o[f]:-1;if(d===-1)throw new Error(`Unknown letter "${i[a]}". Allowed: ${e}`);c[a]=d}return c}}}function ni(e){return wr(e),function(...t){try{return e.apply(null,t)}catch{}}}function xc(e,t){if(yr(e),e<=0)throw new RangeError(`checksum length must be positive: ${e}`);wr(t);let r=t;return{encode(n){et(n);let o=r(n).slice(0,e),i=new Uint8Array(n.length+e);return i.set(n),i.set(o,n.length),i},decode(n){et(n);let o=n.slice(0,-e),i=n.slice(-e),s=r(o).slice(0,e);for(let c=0;c<e;c++)if(s[c]!==i[c])throw new Error("Invalid checksum");return o}}}var oi=656356768,Ec={encode:e=>{et(e);let t=e.length;if(t===0)return new Uint8Array(0);let r=0;for(;r<t-1&&e[r]===0;)r++;let n=Math.ceil(t/2),o=new Uint16Array(n),i=t&1;i&&(o[0]=e[0]);for(let l=i,u=i;l<t;l+=2,u++)o[u]=e[l]<<8|e[l+1];let s=[],c=0;for(;c<n;){let l=0;for(let u=c;u<n;u++){let p=l*65536+o[u],b=Math.floor(p/oi);l=p-b*oi,o[u]=b,b===0&&u===c&&c++}s.push(l)}let a=s.length-1,f=a*5;for(let l=s[a];f++,!(l<58);l=Math.floor(l/58));let d=new Uint8Array(r+f),h=d.length-1;for(let l=0;l<a;l++){let u=s[l];for(let p=0;p<5;p++)d[h--]=u%58,u=Math.floor(u/58)}for(let l=s[a];h>=r;l=Math.floor(l/58))d[h--]=l%58;return d},decode:e=>{et(e);let t=e.length;if(t===0)return new Uint8Array(0);if(t>=65536)throw new Error("invalid length");let r=0;for(;r<t-1&&e[r]===0;)r++;let n=new Uint16Array(Math.ceil(t*6/16)+1),o=0,i=0,s=t%5||5;for(;i<t;){let d=0,h=1;for(let u=i+s;i<u;i++){let p=e[i];if(p>=58)throw new Error(`invalid integer: ${p}`);d=d*58+p,h*=58}s=5;let l=d;for(let u=0;u<o;u++){let p=n[u]*h+l;l=Math.floor(p/65536),n[u]=p-l*65536}for(;l>0;l=Math.floor(l/65536))n[o++]=l%65536}let c=o===0?1:o*2-(n[o-1]<256?1:0),a=new Uint8Array(r+c),f=a.length-1;for(let d=0;d<o;d++){let h=n[d];a[f--]=h&255,f>=r&&(a[f--]=h>>8)}return a}},vc=e=>Sn(Ec,Tn(e)),kc=br(()=>vc("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"));var Ft=e=>{wr(e);let t=e;return Sn(xc(4,r=>t(t(r))),kc)},fi=Ft,Bn=Tn("qpzry9x8gf2tvdw0s3jn54khce6mua7l");function Bc(e){let t=e.length,r=new Uint8Array(t);for(let n=0;n<t;n++){let o=e[n];if(o<0||o>=32)throw new Error(`alphabet.encode: invalid digit ${o}`);r[n]=o}return r}var ii=[996825010,642813549,513874426,1027748829,705979059];function Ht(e){let t=e>>25,r=(e&33554431)<<5;for(let n=0;n<ii.length;n++)(t>>n&1)===1&&(r^=ii[n]);return r}function si(e,t,r=1){let n=e.length,o=1;for(let s=0;s<n;s++){let c=e.charCodeAt(s);if(c<33||c>126)throw new Error(`Invalid prefix (${e})`);o=Ht(o)^c>>5}o=Ht(o);for(let s=0;s<n;s++)o=Ht(o)^e.charCodeAt(s)&31;for(let s of t)o=Ht(o)^s;for(let s=0;s<6;s++)o=Ht(o);o^=r;let i=new Uint8Array(6);for(let s=0;s<6;s++)i[s]=o>>>5*(5-s)&31;return Bn.encode(i)}function di(e){let t=e==="bech32"?1:734539939,r=ai(5),n=h=>{et(h);let l=h.length,u=new Array(Math.ceil(l*8/5)),p=0,b=0,w=0;for(let E=0;E<l;E++)for(p=p<<8|h[E],b+=8;b>=5;b-=5)u[w++]=p>>b-5&31;return b>0&&(u[w]=p<<5-b&31),u},o=h=>{ei("radix2.decode",h);let l=h.length,u=new Uint8Array(l);for(let p=0;p<l;p++){let b=h[p];if(b<0||b>=32)throw new Error(`convertRadix2: invalid word=${b}`);u[p]=b}return r.decode(u)},i=ni(o);function s(h,l,u=90){Nt("bech32.encode prefix",h),u!==!1&&yr(u,"limit"),ci(l)&&(l=ti(l)),ei("bech32.encode",l);let p=h.length;if(p===0)throw new TypeError(`Invalid prefix length ${p}`);let b=p+7+l.length;if(u!==!1&&b>u)throw new TypeError(`Length ${b} exceeds limit ${u}`);let w=h.toLowerCase(),E=si(w,l,t);return`${w}1${Bn.encode(Bc(l))}${E}`}function c(h,l=90){Nt("bech32.decode input",h),l!==!1&&yr(l,"limit");let u=h.length;if(u<8||l!==!1&&u>l)throw new TypeError(`invalid string length ${u}, expected (8..${l})`);let p=h.toLowerCase();if(h!==p&&h!==h.toUpperCase())throw new Error("mixed-case string not allowed");let b=p.lastIndexOf("1");if(b===0||b===-1)throw new Error('invalid separator "1"');let w=p.slice(0,b),E=p.slice(b+1);if(E.length<6)throw new Error("invalid data length");let A=Bn.decode(E),C=ti(A,A.length-6),P=si(w,C,t);if(!E.endsWith(P))throw new Error(`Invalid checksum in ${h}`);return{prefix:w,words:C}}let a=ni(c);function f(h){let{prefix:l,words:u}=c(h,!1);return{prefix:l,words:u,bytes:o(u)}}function d(h,l){return s(h,n(l))}return{encode:s,decode:c,encodeFromBytes:d,decodeToBytes:f,decodeUnsafe:a,fromWords:o,fromWordsUnsafe:i,toWords:n}}var mr=br(()=>di("bech32")),An=br(()=>di("bech32m"));var Sc=typeof Uint8Array.from([]).toHex=="function"&&typeof Uint8Array.fromHex=="function",Tc={encode(e){return et(e),e.toHex()},decode(e){return Nt("hex",e),Uint8Array.fromHex(e)}},M=br(()=>Sc?Tc:Sn(ai(4),Tn("0123456789abcdef",{A:"a",B:"b",C:"c",D:"d",E:"e",F:"f"}),bc(e=>{if(Nt("hex",e),e.length%2!==0)throw new TypeError(`hex.decode: odd-length string (${e.length})`);return e})));var xr=class{constructor(t,r){g(this,"oHash");g(this,"iHash");g(this,"blockLen");g(this,"outputLen");g(this,"canXOF",!1);g(this,"finished",!1);g(this,"destroyed",!1);if(lt(t),K(r,void 0,"key"),this.iHash=t.create(),typeof this.iHash.update!="function")throw new Error("expected Hash instance");this.blockLen=this.iHash.blockLen,this.outputLen=this.iHash.outputLen;let n=this.blockLen,o=new Uint8Array(n);o.set(r.length>n?t.create().update(r).digest():r);for(let i=0;i<o.length;i++)o[i]^=54;this.iHash.update(o),this.oHash=t.create();for(let i=0;i<o.length;i++)o[i]^=106;this.oHash.update(o),ue(o)}update(t){return ut(this),this.iHash.update(t),this}digestInto(t){ut(this),pr(t,this),this.finished=!0;let r=t.subarray(0,this.outputLen);this.iHash.digestInto(r),this.oHash.update(r),this.oHash.digestInto(r),this.destroy()}digest(){let t=new Uint8Array(this.oHash.outputLen);return this.digestInto(t),t}_cloneInto(t){t||(t=Object.create(Object.getPrototypeOf(this),{}));let{oHash:r,iHash:n,finished:o,destroyed:i,blockLen:s,outputLen:c,canXOF:a}=this;return t=t,t.finished=o,t.destroyed=i,t.blockLen=s,t.outputLen=c,t.canXOF=a,t.oHash=r._cloneInto(t.oHash),t.iHash=n._cloneInto(t.iHash),t}clone(){return this._cloneInto()}destroy(){this.destroyed=!0,this.oHash.destroy(),this.iHash.destroy()}},tt=(()=>{let e=((t,r,n)=>new xr(t,r).update(n).digest());return e.create=(t,r)=>new xr(t,r),e})();function Ac(e,t,r,n){lt(e);let o=gn({dkLen:32,asyncTick:10},n),{c:i,dkLen:s,asyncTick:c}=o;if(V(i,"c"),V(s,"dkLen"),V(c,"asyncTick"),i<1)throw new Error('"c" (iterations) must be >= 1');if(s<1)throw new Error('"dkLen" must be >= 1');if(s>(2**32-1)*e.outputLen)throw new Error("derived key too long");let a=pn(t,"password"),f=pn(r,"salt"),d=new Uint8Array(s),{iHash:h,oHash:l,outputLen:u}=tt.create(e,a),p=new Uint8Array(u),b=Pc(h,l,f,p);return{c:i,dkLen:s,asyncTick:c,DK:d,outputLen:u,eng:b}}function Pc(e,t,r,n){let o=new Uint8Array(4),i=Te(o),s=e._cloneInto().update(r),c=t._cloneInto(),a=e._cloneInto,f=t._cloneInto;return{u1:(d,h)=>{i.setInt32(0,d,!1),s._cloneInto(c).update(o).digestInto(n),t._cloneInto(c).update(n).digestInto(n),h.set(n.subarray(0,h.length))},rounds:(d,h)=>{for(let l=1;l<d;l++){a.call(e,c).update(n).digestInto(n),f.call(t,c).update(n).digestInto(n);for(let u=0;u<h.length;u++)h[u]^=n[u]}},output:d=>(e.destroy(),t.destroy(),s.destroy(),c.destroy(),ue(n),d)}}function li(e,t,r,n){let{c:o,dkLen:i,DK:s,outputLen:c,eng:a}=Ac(e,t,r,n);for(let f=1,d=0;d<i;f++,d+=c){let h=s.subarray(d,d+c);a.u1(f,h),a.rounds(o,h)}return a.output(s)}var $c=e=>e[0]==="\u3042\u3044\u3053\u304F\u3057\u3093";function ui(e){if(typeof e!="string")throw new TypeError("invalid mnemonic type: "+typeof e);return e.normalize("NFKD")}function hi(e){let t=ui(e),r=t.split(" ");if(![12,15,18,21,24].includes(r.length))throw new Error("Invalid mnemonic");return{nfkd:t,words:r}}function pi(e){if(K(e),![16,20,24,28,32].includes(e.length))throw new RangeError("invalid entropy length")}var gi=e=>{let t=8-e.length/4;return Z(e)[0]>>t<<t};function yi(e){if(!Array.isArray(e)||e.length!==2048||typeof e[0]!="string")throw new TypeError("Wordlist: expected array of 2048 strings");e.forEach(t=>{if(typeof t!="string")throw new TypeError("wordlist: non-string element: "+t)})}function Ic(e,t){yi(t);let r=new Uint8Array(e.length+1);r.set(e),r[e.length]=gi(e);let n=[],o=0,i=0;for(let s of r)o=o<<8|s,i+=8,i>=11&&(i-=11,n.push(t[o>>>i&2047]),o&=(1<<i)-1);return n}function Oc(e,t){yi(t);let r=e.length/3*4,n=new Uint8Array(r+1),o=0,i=0,s=0;for(let a of e){let f=t.indexOf(a);if(f===-1)throw new Error("Unknown word: "+a);for(o=o<<11|f,i+=11;i>=8;)i-=8,n[s++]=o>>>i&255;o&=(1<<i)-1}i>0&&(n[s]=o<<8-i);let c=n.subarray(0,r);if(n[r]!==gi(c))throw new Error("Invalid checksum");return Uint8Array.from(c)}function Er(e,t){let{words:r}=hi(e),n=Oc(r,t);return pi(n),n}function bi(e,t){return pi(e),Ic(e,t).join($c(t)?"\u3000":" ")}function Pn(e,t){try{Er(e,t)}catch{return!1}return!0}var _c=e=>{if(typeof e!="string")throw new TypeError("invalid passphrase type: "+typeof e);return ui("mnemonic"+e)};function wi(e,t=""){return li(Ct,hi(e).nfkd,_c(t),{c:2048,dkLen:64})}var Ae=Object.freeze(`abandon
@@ -2745,8 +2809,8 @@ zoo`.split(`
         </div>
         <p class="muted" id="seed-length-help">24 words use 256 bits of BIP39 entropy.</p>
       </section>
-      <div id="form"></div>
-      <label class="field">Optional BIP39 passphrase
+      <div id="form" class="key-form"></div>
+      <label class="field" id="passphrase-field">Optional BIP39 passphrase
         <input id="pass" autocomplete="off" placeholder="Leave blank unless you set one" />
       </label>
       <div class="master-fingerprint-preview" id="master-fingerprint-preview" role="status" aria-live="polite" aria-atomic="true">
@@ -2760,16 +2824,16 @@ zoo`.split(`
           <code class="master-fingerprint-value" id="passphrase-master-fingerprint"></code>
         </div>
       </div>
-      <div class="key-settings">
+      <div class="key-settings" id="key-settings">
         <div class="key-settings-row">
-          <label class="field">Script type
+          <label class="field" id="script-type-field">Script type
             <select id="script-type"><option value="bip44">Legacy · BIP44</option><option value="bip49">Nested SegWit · BIP49</option><option value="bip84" selected>Native SegWit · BIP84</option><option value="bip86">Taproot · BIP86</option></select>
           </label>
           <label class="field">Network
             <select id="network"><option value="mainnet">Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
           </label>
         </div>
-        <div class="key-settings-row">
+        <div class="key-settings-row" id="account-address-settings">
           <label class="field">Account
             <input id="account" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0" aria-describedby="account-help">
             <span class="field-note" id="account-help">Hardened account index · 0 to 2,147,483,647</span>
@@ -2788,8 +2852,8 @@ zoo`.split(`
         </dl>
         <p class="derivation-path-error" id="derivation-path-error" hidden></p>
       </section>
-      <div class="row key-action-row current-item-actions" style="margin-top:8px">
-        <button class="btn primary" id="go">Calculate</button>
+      <div class="row key-action-row current-item-actions">
+        <button class="btn primary" id="go" disabled aria-disabled="true">Derive Wallet</button>
         <button class="btn clear-current-action" id="wipe" type="button" disabled aria-disabled="true">Clear Current Key</button>
       </div>
       <p class="err" id="error"></p>
@@ -2803,8 +2867,8 @@ zoo`.split(`
         <div><div class="kicker">Several people, one pile of bitcoin</div><h2>Create a multisig wallet</h2></div>
         <button class="btn delete-key" id="delete-msig" type="button" aria-label="Delete current multisig" disabled>Delete Multisig</button>
       </div>
-      <p class="muted">Paste each person&rsquo;s account xpub. This does not need private keys. You can receive to these addresses. Spending later needs the number of signatures you choose, on real signing devices.</p>
-      <div class="row" style="align-items:end">
+      <p class="muted msig-intro">Paste each person&rsquo;s account xpub. This does not need private keys. You can receive to these addresses. Spending later needs the number of signatures you choose, on real signing devices.</p>
+      <div class="row msig-settings-row" style="align-items:end">
         <label class="field" style="margin:0;flex:1">Signatures needed to spend (m)
           <select id="msig-m"></select>
         </label>
@@ -2827,7 +2891,7 @@ zoo`.split(`
         <span><strong>Legacy</strong><span class="desc">Addresses start with 3. Bare P2SH multisig.</span></span></label>
       <div id="msig-keys" class="msig-keys"></div>
       <p class="hint" id="msig-hint"></p>
-      <div class="row current-item-actions" style="margin-top:16px">
+      <div class="row current-item-actions">
         <button class="btn primary" id="msig-go" type="button">Build multisig</button>
         <button class="btn clear-current-action" id="msig-wipe" type="button" disabled aria-disabled="true">Clear Current Multisig</button>
       </div>
@@ -2836,7 +2900,7 @@ zoo`.split(`
     <section class="card no-print" id="psbt-card" role="tabpanel" hidden>
       <div class="kicker">Inspect first. Sign elsewhere.</div>
       <h2>Read a PSBT. Check its ECDSA nonces.</h2>
-      <p class="muted">Inspecting a PSBT v0 does not require a private key. EntropyLab can show outputs, PSBT-provided input amounts and fees, signatures, and repeated ECDSA nonce values. Loading a matching key additionally checks whether supported signatures match plain RFC 6979; a mismatch alone is not evidence of a compromised signer.</p>
+      <p class="muted psbt-intro">Inspecting a PSBT v0 does not require a private key. EntropyLab can show outputs, PSBT-provided input amounts and fees, signatures, and repeated ECDSA nonce values. Loading a matching key additionally checks whether supported signatures match plain RFC 6979; a mismatch alone is not evidence of a compromised signer.</p>
       <label class="field">PSBT v0 (base64 or hex)
         <textarea id="psbt-text" placeholder="cHNidP8B..." spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
       </label>
@@ -2853,7 +2917,7 @@ zoo`.split(`
           </label>
         </div>
       </div>
-      <div class="row" style="margin-top:16px">
+      <div class="row psbt-actions">
         <button class="btn primary" id="psbt-go" type="button">Inspect PSBT</button>
         <button class="btn secondary" id="psbt-use-calc" type="button">Use active key this session</button>
         <button class="btn secondary" id="psbt-wipe" type="button">End session / clear fields</button>
@@ -2871,19 +2935,19 @@ zoo`.split(`
       <p>BitBox02 diceware: <a href="https://blog.bitbox.swiss/en/roll-the-dice-generate-your-own-seed/">roll-the-dice-generate-your-own-seed</a> \u2014 lookup table is the BIP39 English list in order.</p>
     </section>
   </div>
-`;if(/^(www\.)?entropylab\.online$/i.test(location.hostname))document.getElementById("online-warning")?.removeAttribute("hidden");var Ne="dice",ge="coldcard",Pt=24,hodlDiceCoinPositions=[],ft="",re=null,Ge=!1,Zs=W("#modes"),at=W("#form"),dr=W("#out");["dice","hex","seed","key"].forEach(e=>{let t=document.createElement("button");t.className="tab"+(e===Ne?" active":""),t.textContent=e==="dice"?"Dice rolls":e==="hex"?"Hex or binary":e==="seed"?"Seed phrase":"Private key",t.onclick=()=>hodlSetMode(e),Zs.appendChild(t)});document.querySelectorAll("#seed-length [data-seed-words]").forEach(button=>{button.onclick=()=>hodlSetSeedLength(Number(button.dataset.seedWords))});W("#go").onclick=hodlCalculateKey;W("#wipe").onclick=hodlWipeActiveKey;function W(e){let t=e.startsWith("#")?e.slice(1):e,r=document.getElementById(t);if(!r)throw new Error(t);return r}function lr(){if(Ne==="dice"){at.innerHTML=`
+`;if(/^(www\.)?entropylab\.online$/i.test(location.hostname))document.getElementById("online-warning")?.removeAttribute("hidden");var Ne="dice",ge="coldcard",Pt=24,hodlEntropyFormat="hex",hodlDiceCoinPositions=[],hodlDPlusNumberedD16=!1,ft="",re=null,Ge=!1,Zs=W("#modes"),at=W("#form"),dr=W("#out");["dice","hex","seed","key"].forEach(e=>{let t=document.createElement("button");t.className="tab"+(e===Ne?" active":""),t.textContent=e==="dice"?"Dice rolls":e==="hex"?"Hex or binary":e==="seed"?"Seed phrase":"Private key",t.onclick=()=>hodlSetMode(e),Zs.appendChild(t)});document.querySelectorAll("#seed-length [data-seed-words]").forEach(button=>{button.onclick=()=>hodlSetSeedLength(Number(button.dataset.seedWords))});W("#go").onclick=hodlCalculateKey;W("#wipe").onclick=hodlWipeActiveKey;function W(e){let t=e.startsWith("#")?e.slice(1):e,r=document.getElementById(t);if(!r)throw new Error(t);return r}function lr(){if(Ne==="dice"){at.innerHTML=`
       <p class="label">How to turn rolls into a seed</p>
       <label class="choice"><input type="radio" name="dm" value="coldcard" ${ge==="coldcard"?"checked":""} />
-        <span><strong>Hash the rolls (recommended)</strong>
-        <span class="desc">SHA-256 of the digits 415263… Always a 24-word seed. Same check Coldcard shows for dice.</span></span>
+        <span><strong>Hashed rolls / Base 10 [0-9] (recommended)</strong>
+        <span class="desc">SHA-256 of the original dice digit string, matching the method used by COLDCARD and SeedSigner. Every entered roll is included.</span></span>
       </label>
       <label class="choice"><input type="radio" name="dm" value="bitbox" ${ge==="bitbox"?"checked":""} />
-        <span><strong>BitBox-style diceware</strong>
+        <span><strong>BitBox diceware / Direct word selection</strong>
         <span class="desc">Same as the BitBox02 lookup table: five dice showing 1\u20134, then a coin (or 6th die: 1\u20133 heads, 4\u20136 tails). 5 and 6 on the first five dice of a word are skipped (reroll). After 23 words, pick one of the 8 checksum words.</span></span>
       </label>
       <label class="choice"><input type="radio" name="dm" value="coleman" ${ge==="coleman"?"checked":""} />
-        <span><strong>Ian Coleman-style</strong>
-        <span class="desc">Prefix-free bit table from the BIP39 HTML tool. Keystone dice uses this. Not the same as hashing the rolls, and not the same as BitBox.</span></span>
+        <span><strong>Hashed rolls / Dice [1-6]</strong>
+        <span class="desc">Convert every 6 to 0, then SHA-256 hash the complete mapped digit string, matching the method used by Keystone.</span></span>
       </label>
       <div id="bitbox-extra" ${ge==="bitbox"?"":"hidden"}>
         <div class="row" style="margin-top:12px">
@@ -2892,7 +2956,7 @@ zoo`.split(`
         </div>
       </div>
       <p class="label" id="dice-label">${ge==="bitbox"?"Dice rolls (1\u20134, then coin / 6th die)":"Dice rolls (faces 1\u20136 only)"}</p>
-      <p class="muted" id="dice-help">${ge==="bitbox"?`${Pt===24?23:11} lookup-table words, then a checksum pick. Type rolls, tap 1\u20134, then Heads/Tails (or 1\u20133 / 4\u20136).`:ge==="coleman"?"Same 1\u20136 dice as hashing \u2014 but each face becomes bits (6 becomes 0). Extra bits are cut, not hashed. The seed will not match Hash the rolls.":"Same 1\u20136 dice as Ian Coleman \u2014 but every digit is SHA-256 hashed into a 24-word seed. The seed will not match Ian Coleman."}</p>
+      <p class="muted" id="dice-help">${ge==="bitbox"?`${Pt===24?23:11} lookup-table words, then a checksum pick. Type rolls, tap 1\u20134, then Heads/Tails (or 1\u20133 / 4\u20136).`:ge==="coleman"?"Every 6 becomes 0 before SHA-256 hashing, matching the method used by Keystone.":"SHA-256 hashes the original digit string, matching the Base 10 [0-9] method used by COLDCARD and SeedSigner."}</p>
       <div class="dice-input-shell"><pre class="dice-input-highlight" id="dice-highlight" aria-hidden="true"></pre><textarea id="dice" placeholder="${ge==="bitbox"?"111111222224\u2026":"e.g. 415263415263\u2026"}" aria-describedby="dice-help dice-meta"></textarea></div>
       <div class="dice-input-pad with-coin">${[1,3,5].map(t=>`<button type="button" data-d="${t}">${t}</button>`).join("")}<button type="button" class="coin-button" data-d="H" data-coin="heads">Heads (1\u20133)</button>${[2,4,6].map(t=>`<button type="button" data-d="${t}">${t}</button>`).join("")}<button type="button" class="coin-button" data-d="T" data-coin="tails">Tails (4\u20136)</button></div>
       <p class="muted" id="dice-meta"></p>
@@ -3060,16 +3124,23 @@ function hodlImportedExtendedKeyDepth(){
   if(Ne!=="seed")return null;let value=document.getElementById("seed")?.value.trim()||"";if(!hodlLooksExtendedKey(value))return null;
   try{let normalized=uf(value);return Gt.fromExtendedKey(normalized.xkey).depth}catch{return null}
 }
+function hodlUpdateKeyModeControls(){
+  let singleKey=Ne==="key",settings=document.getElementById("key-settings");
+  ["passphrase-field","master-fingerprint-preview","script-type-field","account-address-settings","derivation-path-preview"].forEach(id=>{
+    let element=document.getElementById(id);if(element)element.hidden=singleKey
+  });
+  settings?.classList.toggle("single-key-mode",singleKey)
+}
 function hodlUpdateDerivationPathPreview(){
   let panel=document.getElementById("derivation-path-preview"),list=panel?.querySelector(".derivation-path-list"),context=document.getElementById("derivation-path-context"),message=document.getElementById("derivation-path-error"),accountInput=document.getElementById("account");
   if(!panel||!list||!context||!message)return;
+  hodlUpdateKeyModeControls();
   let setPath=(name,value)=>{let node=panel.querySelector(`[data-path="${name}"]`);if(node)node.textContent=value};
   let showMessage=(text,isError=false)=>{list.hidden=!0;message.hidden=!1;message.textContent=text;message.classList.toggle("is-note",!isError);panel.classList.toggle("is-invalid",isError)};
   let clearMessage=()=>{list.hidden=!1;message.hidden=!0;message.textContent="";message.classList.remove("is-note");panel.classList.remove("is-invalid")};
   let definition=hodlScriptDefinition(hodlSelectedScriptType());
   if(Ne==="key"){
-    accountInput?.classList.remove("bad");accountInput?.setAttribute("aria-invalid","false");context.textContent="Single private key";
-    showMessage("Not applicable to a single private key. Single keys do not use an HD derivation path.");return
+    accountInput?.classList.remove("bad");accountInput?.setAttribute("aria-invalid","false");context.textContent="";message.textContent="";panel.classList.remove("is-invalid");return
   }
   let account;try{account=hodlReadAccount()}catch(error){context.textContent="Invalid account";showMessage(error.message||"Invalid account.",true);return}
   let network=document.getElementById("network")?.value==="testnet"?"testnet":"mainnet",count=Math.min(Math.max(Number(document.getElementById("count")?.value)||5,1),50),last=count-1;
@@ -3118,18 +3189,77 @@ var hodlSeedLengths=Object.freeze({
   18:Object.freeze({words:18,bits:192,bytes:24,hexChars:48,hashRolls:75,partialWords:17,candidates:32}),
   24:Object.freeze({words:24,bits:256,bytes:32,hexChars:64,hashRolls:99,partialWords:23,candidates:8})
 });
+var hodlBip39WordSet=new Set(Ae);
 function hodlSeedConfig(words=Pt){return hodlSeedLengths[Number(words)]||hodlSeedLengths[24]}
 function hodlLooksExtendedKey(value){return/^[xtyYzZvVun][A-Za-z0-9]+$/.test(value.trim())&&value.trim().length>80}
-function hodlAnalyzeDiceInput(value,method=ge,targetWords=Pt,coinPositions=hodlDiceCoinPositions){
+function hodlDPlusD16Value(face,numberedD16=hodlDPlusNumberedD16){
+  let normalized=String(face??"").toUpperCase();if(numberedD16&&normalized==="G")return 0;
+  let valid=numberedD16?/^[1-9A-F]$/.test(normalized):/^[0-9A-F]$/.test(normalized);if(!valid)return null;
+  return Number.parseInt(normalized,16)
+}
+function hodlTranslateDPlusD16Notation(value,targetWords=Pt){
+  let rolledCharacters=hodlSeedConfig(targetWords).partialWords*3,ordinal=0,translated="";
+  for(let character of String(value??"")){
+    if(/\s|,|;|\|/.test(character)){translated+=character;continue}
+    let normalized=character.toUpperCase();if(!/^[0-9A-G]$/.test(normalized)){translated+=character;continue}let isD16=ordinal<rolledCharacters&&ordinal%3!==0;
+    translated+=isD16&&/[0G]/.test(normalized)?normalized==="0"?"G":"0":character;ordinal+=1
+  }
+  return translated
+}
+function hodlDPlusRolls(value,targetWords=Pt,numberedD16=hodlDPlusNumberedD16){
+  let config=hodlSeedConfig(targetWords),rolledTarget=config.partialWords,rolledCharacterTarget=rolledTarget*3,entries=[],invalidRanges=[],rejectedD8=0,rejectedD16=0,acceptedCharacters=[];
+  for(let index=0;index<value.length;){
+    let character=String.fromCodePoint(value.codePointAt(index)),end=index+character.length,normalized=character.toUpperCase();
+    if(/\s|,|;|\|/.test(character)){index=end;continue}
+    entries.push({face:normalized,start:index,end});index=end
+  }
+  let rolledEntries=entries.slice(0,rolledCharacterTarget),wordSlots=Array(rolledTarget).fill(""),groups=[],invalidRequiredCount=0,firstInvalid=null,bits=0;
+  for(let groupIndex=0;groupIndex<rolledTarget;groupIndex++){
+    let tokens=rolledEntries.slice(groupIndex*3,groupIndex*3+3);if(!tokens.length)break;
+    let validity=tokens.map((token,position)=>position===0?/^[1-8]$/.test(token.face):hodlDPlusD16Value(token.face,numberedD16)!==null);
+    tokens.forEach((token,position)=>{
+      if(validity[position]){acceptedCharacters.push(token.face);bits+=[3,4,4][position];return}
+      invalidRanges.push([token.start,token.end]);invalidRequiredCount+=1;if(position===0)rejectedD8+=1;else rejectedD16+=1;
+      if(!firstInvalid)firstInvalid={groupIndex,position,face:token.face,start:token.start,end:token.end,final:!1}
+    });
+    let complete=tokens.length===3,valid=complete&&validity.every(Boolean),word="";
+    if(valid){let wordIndex=(Number(tokens[0].face)-1)*256+hodlDPlusD16Value(tokens[1].face,numberedD16)*16+hodlDPlusD16Value(tokens[2].face,numberedD16);word=Ae[wordIndex];wordSlots[groupIndex]=word}
+    groups.push({groupIndex,faces:tokens.map(token=>token.face),complete,valid,word,validity})
+  }
+  let completedGroups=Math.min(rolledTarget,Math.floor(rolledEntries.length/3)),validWordCount=wordSlots.filter(Boolean).length,allRolledComplete=rolledEntries.length===rolledCharacterTarget,rolledInvalidCount=invalidRequiredCount,allRolledValid=allRolledComplete&&rolledInvalidCount===0&&validWordCount===rolledTarget;
+  let finalEntry=config.words===24?entries[rolledCharacterTarget]||null:null,finalRoll="";
+  if(finalEntry){
+    if(/^[1-8]$/.test(finalEntry.face)){finalRoll=finalEntry.face;acceptedCharacters.push(finalEntry.face);bits+=3}
+    else{invalidRanges.push([finalEntry.start,finalEntry.end]);invalidRequiredCount+=1;rejectedD8+=1;if(!firstInvalid)firstInvalid={groupIndex:rolledTarget,position:0,face:finalEntry.face,start:finalEntry.start,end:finalEntry.end,final:!0}}
+  }
+  let expectedCharacters=rolledCharacterTarget+(config.words===24?1:0),extraEntries=entries.slice(expectedCharacters),extraAfter=extraEntries.length;extraEntries.forEach(token=>invalidRanges.push([token.start,token.end]));
+  let finalOptions=allRolledValid?hodlTargetLastWords(wordSlots.join(" "),config.words):null,candidates=finalOptions&&!finalOptions.error?finalOptions.candidates:[],finalWord=finalRoll?candidates[Number(finalRoll)-1]||"":"";
+  let currentPosition=rolledEntries.length<rolledCharacterTarget?rolledEntries.length%3:null,activeGroupIndex=rolledEntries.length<rolledCharacterTarget?Math.floor(rolledEntries.length/3):rolledTarget-1,waiting;
+  if(!allRolledComplete)waiting=currentPosition===0?"d8":currentPosition===1?"d16-first":"d16-second";
+  else if(!allRolledValid)waiting="correction";
+  else if(config.words!==24)waiting="last-word";
+  else if(!finalEntry)waiting="checksum-d8";
+  else waiting=finalRoll?"complete":"correction";
+  let partialLength=rolledEntries.length%3,group=partialLength?rolledEntries.slice(-partialLength).map(token=>token.face):[],words=wordSlots.filter(Boolean),notes=[`D++: ${completedGroups} of ${rolledTarget} positional D8 + D16 + D16 groups entered; ${validWordCount} valid (${rolledEntries.length} of ${rolledCharacterTarget} required faces).`],warnings=[];
+  notes.push(numberedD16?"Numbered D16 notation: faces 10 through 16 are entered as A through G; G maps to D++ face 0.":"Custom D++ D16 notation: faces use hexadecimal 0 through F.");
+  if(finalRoll&&finalWord)notes.push(`Final D8 face ${finalRoll} selected checksum option ${finalRoll} of 8: ${finalWord}.`);
+  if(waiting==="last-word")notes.push(`Choose 1 of ${config.candidates} checksum-valid final words to complete the ${config.words}-word seed.`);
+  if(rejectedD8)notes.push(`Rejected ${rejectedD8} face${rejectedD8===1?"":"s"} that cannot be used for a D8 roll.`);
+  if(rejectedD16)notes.push(`Rejected ${rejectedD16} face${rejectedD16===1?"":"s"} that ${rejectedD16===1?"is":"are"} not valid for the selected D16 convention (${numberedD16?"1–9 or A–G":"0–9 or A–F"}).`);
+  if(extraAfter)warnings.push(`${extraAfter} extra input${extraAfter===1?" was":"s were"} ignored after ${config.words===24?"the final D8 roll":`the ${rolledTarget} rolled words`}.`);
+  return{words,wordSlots,groups,group,finalEntry:finalEntry?.face||"",finalRoll,finalWord,candidates,waiting,currentPosition,activeGroupIndex,completedGroups,validWordCount,allRolledComplete,allRolledValid,bits,notes,warnings,invalidRanges,invalidCount:invalidRanges.length,invalidRequiredCount,rolledInvalidCount,needsCorrection:invalidRequiredCount>0,firstInvalid,rejectedD8,rejectedD16,extraAfter,acceptedCharacters,targetWords:config.words,neededPartial:rolledTarget,numberedD16,complete:allRolledValid&&config.words===24&&Boolean(finalWord)}
+}
+function hodlAnalyzeDiceInput(value,method=ge,targetWords=Pt,coinPositions=hodlDiceCoinPositions,numberedD16=hodlDPlusNumberedD16){
+  if(method==="dplus"){
+    let parsed=hodlDPlusRolls(value,targetWords,numberedD16);return{invalidRanges:parsed.invalidRanges,invalidCount:parsed.invalidCount,coinDerivedCount:0,acceptedRolls:parsed.acceptedCharacters,words:parsed.validWordCount,diceInWord:parsed.currentPosition??0,mappedBits:parsed.bits,totalMappedBits:parsed.bits,complete:parsed.complete,coinTurn:!1,dplus:parsed}
+  }
   let config=hodlSeedConfig(targetWords),invalidRanges=[],acceptedRolls=[],coinPositionSet=new Set(coinPositions||[]),words=0,diceInWord=0,mappedBits=0,totalMappedBits=0;
   for(let index=0;index<value.length;){
     let character=String.fromCodePoint(value.codePointAt(index)),end=index+character.length,normalized=character.toLowerCase();
     if(/\s|,|;|\|/.test(character)){index=end;continue}
     let isDie=normalized>="1"&&normalized<="6",isCoin=normalized==="h"||normalized==="t",valid=!1;
-    if(method==="coldcard"){valid=isDie&&!coinPositionSet.has(index);if(valid)acceptedRolls.push(normalized)}
-    else if(method==="coleman"){
-      if(isDie&&!coinPositionSet.has(index)){let length=(normalized==="4"||normalized==="5")?1:2;totalMappedBits+=length;if(mappedBits<config.bits){valid=!0;mappedBits+=length;acceptedRolls.push(normalized)}}
-    }else if(words<config.partialWords){
+    if(method==="coldcard"||method==="coleman"){valid=isDie&&!coinPositionSet.has(index);if(valid)acceptedRolls.push(normalized)}
+    else if(words<config.partialWords){
       if(diceInWord<5){if(isDie&&Number(normalized)<=4){valid=!0;diceInWord+=1}}
       else if(isDie||isCoin){valid=!0;words+=1;diceInWord=0}
     }
@@ -3166,7 +3296,8 @@ function hodlTrackDiceInputEdit(input){
   else{let prefix=0;while(prefix<previous.length&&prefix<current.length&&previous[prefix]===current[prefix])prefix+=1;let previousEnd=previous.length,currentEnd=current.length;while(previousEnd>prefix&&currentEnd>prefix&&previous[previousEnd-1]===current[currentEnd-1]){previousEnd-=1;currentEnd-=1}hodlRebaseDiceCoinPositions(prefix,previousEnd,currentEnd-prefix,!1)}
   input.dataset.previousValue=current
 }
-function hodlSanitizeDiceInput(input,method=ge,targetWords=Pt){
+function hodlSanitizeDiceInput(input,method=ge,targetWords=Pt,numberedD16=hodlDPlusNumberedD16){
+  if(method==="dplus")return hodlSanitizeDPlusInput(input,targetWords,numberedD16);
   let raw=input.value,selectionStart=input.selectionStart??raw.length,selectionEnd=input.selectionEnd??selectionStart,selectionDirection=input.selectionDirection||"none",positions=new Set(hodlDiceCoinPositions),digits=[];
   for(let index=0;index<raw.length;index++)if(raw[index]>="1"&&raw[index]<="6")digits.push({value:raw[index],coin:positions.has(index)});
   let config=hodlSeedConfig(targetWords),clean="",nextPositions=[],digitEnds=[0],words=0,diceInWord=0,separateNext=!1;
@@ -3183,37 +3314,83 @@ function hodlSanitizeDiceInput(input,method=ge,targetWords=Pt){
   hodlDiceCoinPositions=hodlNormalizeDiceCoinPositions(nextPositions);input.dataset.previousValue=clean;delete input.hodlDiceBeforeInput;if(!changed)return!1;
   input.value=clean;input.setSelectionRange(cleanSelectionStart,cleanSelectionEnd,selectionDirection);return!0
 }
+function hodlSanitizeDPlusInput(input,targetWords=Pt,numberedD16=hodlDPlusNumberedD16){
+  let raw=input.value,selectionStart=input.selectionStart??raw.length,selectionEnd=input.selectionEnd??selectionStart,selectionDirection=input.selectionDirection||"none",characters=[];
+  for(let character of raw)if(/[0-9a-gA-G]/.test(character))characters.push(character.toUpperCase());
+  let rolledCharacterTarget=hodlSeedConfig(targetWords).partialWords*3,clean="",characterEnds=[0];
+  characters.forEach((character,index)=>{
+    if(index>0&&(index<rolledCharacterTarget&&index%3===0||index===rolledCharacterTarget))clean+=" ";
+    clean+=character;characterEnds.push(clean.length)
+  });
+  let countCharacters=value=>(value.match(/[0-9a-gA-G]/g)||[]).length,cleanSelectionStart=characterEnds[Math.min(countCharacters(raw.slice(0,selectionStart)),characters.length)]??clean.length,cleanSelectionEnd=characterEnds[Math.min(countCharacters(raw.slice(0,selectionEnd)),characters.length)]??clean.length,changed=raw!==clean;
+  input.dataset.previousValue=clean;delete input.hodlDiceBeforeInput;if(!changed)return!1;
+  input.value=clean;input.setSelectionRange(cleanSelectionStart,cleanSelectionEnd,selectionDirection);return!0
+}
 function hodlInsertDiceControl(input,button,update=hodlUpdateDice){
   let inserted;
   try{inserted=hodlDiceControlValue(button)}catch(error){let target=document.getElementById("error");if(target)target.textContent=error instanceof Error?error.message:String(error);return}
   let start=Number.isInteger(input.selectionStart)?input.selectionStart:input.value.length,end=Number.isInteger(input.selectionEnd)?input.selectionEnd:start;
-  delete input.hodlDiceBeforeInput;hodlRebaseDiceCoinPositions(start,end,inserted.length,Boolean(button.dataset.coin));input.value=input.value.slice(0,start)+inserted+input.value.slice(end);input.dataset.previousValue=input.value;
+  delete input.hodlDiceBeforeInput;if(ge!=="dplus")hodlRebaseDiceCoinPositions(start,end,inserted.length,Boolean(button.dataset.coin));input.value=input.value.slice(0,start)+inserted+input.value.slice(end);input.dataset.previousValue=input.value;
   let caret=start+inserted.length;input.focus({preventScroll:!0});input.setSelectionRange(caret,caret);hodlSanitizeDiceInput(input);update()
+}
+function hodlInsertEntropyControl(input,button){
+  let inserted=button.dataset.entropyDigit||"";if(!input||!inserted)return;
+  let start=Number.isInteger(input.selectionStart)?input.selectionStart:input.value.length,end=Number.isInteger(input.selectionEnd)?input.selectionEnd:start;
+  input.focus({preventScroll:!0});input.setRangeText(inserted,start,end,"end");input.dispatchEvent(new InputEvent("input",{bubbles:!0,inputType:"insertText",data:inserted}))
 }
 function hodlSyncDiceHighlight(input){
   let highlight=input.closest(".dice-input-shell")?.querySelector(".dice-input-highlight");if(!highlight)return;highlight.scrollTop=input.scrollTop;highlight.scrollLeft=input.scrollLeft
 }
-function hodlRenderDiceInputHighlight(input,analysis){
-  let highlight=input.closest(".dice-input-shell")?.querySelector(".dice-input-highlight");if(!highlight)return;let fragment=document.createDocumentFragment(),cursor=0;
-  analysis.invalidRanges.forEach(([start,end])=>{if(start>cursor)fragment.appendChild(document.createTextNode(input.value.slice(cursor,start)));let span=document.createElement("span");span.className="dice-roll-invalid";span.textContent=input.value.slice(start,end);fragment.appendChild(span);cursor=end});
+function hodlRenderInputHighlight(input,ranges=[]){
+  let highlight=input.closest(".dice-input-shell")?.querySelector(".dice-input-highlight");if(!highlight)return;let fragment=document.createDocumentFragment(),cursor=0,normalized=ranges.map(range=>[Math.max(0,Number(range[0])||0),Math.min(input.value.length,Number(range[1])||0)]).filter(([start,end])=>end>start).sort((a,b)=>a[0]-b[0]);
+  normalized.forEach(([rangeStart,rangeEnd])=>{let start=Math.max(cursor,rangeStart),end=Math.max(start,rangeEnd);if(start>cursor)fragment.appendChild(document.createTextNode(input.value.slice(cursor,start)));if(end>start){let span=document.createElement("span");span.className="dice-roll-invalid";span.textContent=input.value.slice(start,end);fragment.appendChild(span);cursor=end}});
   if(cursor<input.value.length)fragment.appendChild(document.createTextNode(input.value.slice(cursor)));highlight.dataset.trailingNewline=String(input.value.endsWith("\n"));highlight.replaceChildren(fragment);hodlSyncDiceHighlight(input);requestAnimationFrame(()=>hodlSyncDiceHighlight(input))
 }
+function hodlRenderDiceInputHighlight(input,analysis){hodlRenderInputHighlight(input,analysis.invalidRanges)}
+function hodlBinaryDigits(value){return String(value??"").replace(/[^01]/g,"")}
+function hodlGroupedBinary(value){let digits=hodlBinaryDigits(value),groups=digits.match(/.{1,11}/g);return groups?groups.join(" "):""}
+function hodlBinarySelectionOffset(bitCount,totalBits){let separators=totalBits>0?Math.floor((totalBits-1)/11):0;return bitCount+Math.min(Math.floor(bitCount/11),separators)}
+function hodlFormatBinaryInput(input){
+  let raw=input.value,grouped=hodlGroupedBinary(raw);if(grouped===raw)return!1;let start=input.selectionStart??raw.length,end=input.selectionEnd??start,direction=input.selectionDirection||"none",startBits=hodlBinaryDigits(raw.slice(0,start)).length,endBits=hodlBinaryDigits(raw.slice(0,end)).length,totalBits=hodlBinaryDigits(raw).length;
+  input.value=grouped;input.setSelectionRange(hodlBinarySelectionOffset(startBits,totalBits),hodlBinarySelectionOffset(endBits,totalBits),direction);return!0
+}
+function hodlHandleGroupedSeparatorDelete(input,event){
+  if(input.selectionStart!==input.selectionEnd)return;let caret=input.selectionStart??0,start=caret,end=caret;
+  if(event.inputType==="deleteContentBackward"&&caret>1&&input.value[caret-1]===" ")start=caret-2;
+  else if(event.inputType==="deleteContentForward"&&input.value[caret]===" "&&caret+1<input.value.length)end=caret+2;
+  else return;event.preventDefault();input.setRangeText("",start,end,"end");input.dispatchEvent(new InputEvent("input",{bubbles:!0,inputType:event.inputType}))
+}
+function hodlHandleBinarySeparatorDelete(input,event){hodlHandleGroupedSeparatorDelete(input,event)}
+function hodlAnalyzeEntropyInput(value,format,targetWords=Pt){
+  let config=hodlSeedConfig(targetWords),limit=format==="bin"?config.bits:config.hexChars,count=0,invalidRanges=[];
+  for(let index=0;index<value.length;index++){if(/\s/.test(value[index]))continue;if(count>=limit)invalidRanges.push([index,index+1]);count+=1}
+  return{count,limit,excessCount:Math.max(0,count-limit),invalidRanges}
+}
+function hodlRenderEntropyInputState(input,format,targetWords=Pt){let analysis=hodlAnalyzeEntropyInput(input.value,format,targetWords);hodlRenderInputHighlight(input,analysis.invalidRanges);return analysis}
 function hodlUpdateDiceButtons(input,analysis){
   let pad=input.closest("#form")?.querySelector(".dice-input-pad");if(!pad)return;pad.querySelectorAll("button[data-d]").forEach(button=>{
-    let face=Number(button.dataset.d),disabled=!1,reason="";
-    if(ge==="bitbox"){
+    let disabled=!1,reason="";
+    if(ge==="dplus"){
+      let turn=analysis.dplus?.waiting||"d8",isD8=turn==="d8"||turn==="checksum-d8",correcting=turn==="correction",value=String(button.dataset.d||"").toUpperCase();
+      disabled=turn==="complete"||turn==="last-word"||correcting||(isD8&&!/^[1-8]$/.test(value))||(!isD8&&!correcting&&hodlDPlusD16Value(value)===null);
+      if(turn==="complete")reason="The rolled words and final D8 checksum roll are complete.";
+      else if(turn==="last-word")reason=`All ${hodlSeedConfig().partialWords} rolled words are complete. Choose the final checksum word below.`;
+      else if(correcting)reason="Correct the highlighted invalid face in its existing D++ position before continuing.";
+      else if(disabled)reason="This roll needs the D8, so use a face from 1 through 8.";
+      else reason=isD8?(turn==="checksum-d8"?"Final D8: choose checksum option 1 through 8.":"D8 roll: choose face 1 through 8."):hodlDPlusNumberedD16?"Numbered D16 roll: choose face 1 through 16; the transcript uses A through G for 10 through 16.":"Custom D++ D16 roll: choose any hexadecimal face from 0 through F.";
+    }else if(ge==="bitbox"){
+      let face=Number(button.dataset.d);
       if(analysis.complete){disabled=!0;reason="All lookup-table words are complete."}
       else if(button.dataset.coin){disabled=!analysis.coinTurn;if(disabled)reason="Heads and Tails are available after five valid rolls of 1–4."}
       else if(!analysis.coinTurn&&face>=5){disabled=!0;reason="Reroll a 5 or 6 during the first five BitBox rolls."}
     }else if(button.dataset.coin){disabled=!0;reason="Heads and Tails are available in BitBox-style mode."}
-    else if(ge==="coleman"&&analysis.mappedBits>=hodlSeedConfig().bits){disabled=!0;reason="The selected seed already has all required mapped bits."}
     button.disabled=disabled;button.title=reason
   })
 }
 function hodlRenderDiceInputState(input){
   let analysis=hodlAnalyzeDiceInput(input.value,ge,Pt);input.setAttribute("aria-invalid",String(analysis.invalidCount>0));hodlRenderDiceInputHighlight(input,analysis);hodlUpdateDiceButtons(input,analysis);return analysis
 }
-function hodlDiceMappedBits(rolls){return rolls.map(face=>face==="6"?"0":face).map(face=>Rc[face]??"").join("")}
+function hodlIanColemanDiceString(rolls){return rolls.map(face=>face==="6"?"0":face).join("")}
 function hodlBitsToTargetEntropy(bitString,sourceBits,method,notes,warnings,targetWords,allowExtra){
   let config=hodlSeedConfig(targetWords);
   if(bitString.length<config.bits)return{ok:!1,error:`Need ${config.bits} mapped bits for a ${config.words}-word seed. This input provides ${bitString.length}.`,notes,warnings};
@@ -3225,20 +3402,19 @@ function hodlBitsToTargetEntropy(bitString,sourceBits,method,notes,warnings,targ
   return{ok:!0,bytes,hex:M.encode(bytes),bits:config.bits,sourceBits,method,notes,warnings}
 }
 function hodlDiceEntropy(value,method,targetWords=Pt){
-  let config=hodlSeedConfig(targetWords),notes=[],warnings=[],parsed=Br(value),rolls=parsed.rolls;
-  if(method==="bitbox")return{ok:!1,error:`BitBox-style diceware uses ${config.partialWords} lookup-table words and a final checksum pick for a ${config.words}-word seed.`,notes,warnings};
+  let config=hodlSeedConfig(targetWords),notes=[],warnings=[];
+  if(method==="dplus")return{ok:!1,error:`D++ directly selects ${config.partialWords} BIP39 words, then ${config.words===24?"uses a final D8 roll":"uses a checksum-valid word selection"} for the final word.`,notes,warnings};
+  let parsed=Br(value),rolls=parsed.rolls;
+  if(method==="bitbox")return{ok:!1,error:`BitBox diceware uses ${config.partialWords} lookup-table words and a final checksum pick for a ${config.words}-word seed.`,notes,warnings};
   if(parsed.leftover.length)return{ok:!1,error:`Dice must be faces 1\u20136. Ignored characters: ${JSON.stringify(parsed.leftover.slice(0,24))}`,notes,warnings};
   if(!rolls.length)return{ok:!1,error:"Enter at least one dice roll (faces 1\u20136).",notes,warnings};
   let sourceBits=kr(rolls.length);notes.push(`${rolls.length} rolls of a fair six-sided die \u2248 ${sourceBits.toFixed(1)} bits.`);
-  if(method==="coldcard"){
-    if(rolls.length<config.hashRolls)return{ok:!1,error:`Need at least ${config.hashRolls} dice rolls before creating a ${config.words}-word seed. You have ${rolls.length}.`,notes,warnings:[`${config.hashRolls} rolls is EntropyLab's recommendation for this selected seed length.`]};
-    let digest=Z(new TextEncoder().encode(rolls.join(""))),bytes=digest.slice(0,config.bytes);
-    notes.push(`Hash the rolls: SHA-256 of the complete digit string, then use the first ${config.bits} bits for the selected ${config.words}-word seed.`);
-    return{ok:!0,bytes,hex:M.encode(bytes),bits:config.bits,sourceBits,method:"coldcard-sha256",notes,warnings}
-  }
-  let mapped=hodlDiceMappedBits(rolls);
-  notes.push("Ian Coleman-style: each face is mapped through a prefix-free bit table (6 becomes 0). This is not the same as hashing the rolls.");
-  return hodlBitsToTargetEntropy(mapped,sourceBits,"coleman-dice",notes,warnings,config.words,!0)
+  if(rolls.length<config.hashRolls)warnings.push(`Only ${rolls.length} of ${config.hashRolls} recommended fair-die rolls were entered. The ${config.words}-word phrase is deterministic, but its security cannot exceed the approximately ${sourceBits.toFixed(1)} bits supplied. Use only for testing until the recommendation is met.`);
+  else if(rolls.length>config.hashRolls)notes.push(`All ${rolls.length} rolls, including ${rolls.length-config.hashRolls} beyond the recommendation, are included in the hash.`);
+  let hashInput=method==="coleman"?hodlIanColemanDiceString(rolls):rolls.join(""),digest=Z(new TextEncoder().encode(hashInput)),bytes=digest.slice(0,config.bytes);
+  if(method==="coleman")notes.push(`Hashed rolls / Dice [1-6]: convert every 6 to 0, SHA-256 hash the complete mapped digit string, then use the first ${config.bits} bits for the selected ${config.words}-word seed. This matches the method used by Keystone.`);
+  else notes.push(`Hashed rolls / Base 10 [0-9]: SHA-256 hash the complete original dice digit string, then use the first ${config.bits} bits for the selected ${config.words}-word seed. This matches COLDCARD and SeedSigner.`);
+  return{ok:!0,bytes,hex:M.encode(bytes),bits:config.bits,sourceBits,method:method==="coleman"?"ian-coleman-dice-sha256":"coldcard-sha256",notes,warnings}
 }
 function hodlHexEntropy(value,targetWords=Pt){
   let config=hodlSeedConfig(targetWords),notes=[],warnings=[],compact=value.replace(/\s|_/g,"").replace(/^0x/i,"").toLowerCase();
@@ -3256,10 +3432,14 @@ function hodlBinaryEntropy(value,targetWords=Pt){
   notes.push(`${compact.length} coin-flip bits.`);
   return hodlBitsToTargetEntropy(compact,compact.length,"binary",notes,warnings,config.words,!1)
 }
+function hodlSeedCountStatus(count,targetWords=Pt){
+  let config=hodlSeedConfig(targetWords),entered=Math.max(0,Number(count)||0);
+  return entered<=config.words?`${entered} of ${config.words} BIP39 words entered`:`${entered} entered \u00b7 ${config.words} required BIP39 words`
+}
 function hodlValidateTargetMnemonic(value,targetWords=Pt){
   let words=Rn(value).split(" ").filter(Boolean),config=hodlSeedConfig(targetWords);
-  if(!words.length)return{ok:!1,words,error:`Enter a ${config.words}-word BIP39 seed phrase.`,unknown:[]};
-  if(words.length!==config.words)return{ok:!1,words,error:`The selected seed phrase length is ${config.words} words. You entered ${words.length} word${words.length===1?"":"s"}.`,unknown:[]};
+  if(!words.length)return{ok:!1,words,error:`${hodlSeedCountStatus(0,config.words)} \u00b7 ${config.words} remaining`,unknown:[]};
+  if(words.length!==config.words){let difference=config.words-words.length,error=difference>0?`${hodlSeedCountStatus(words.length,config.words)} \u00b7 ${difference} remaining`:`${hodlSeedCountStatus(words.length,config.words)} \u00b7 ${-difference} extra word${difference===-1?"":"s"} must be removed`;return{ok:!1,words,error,unknown:[]}}
   return Mt(words.join(" "))
 }
 function hodlTargetLastWords(value,targetWords=Pt){
@@ -3267,6 +3447,39 @@ function hodlTargetLastWords(value,targetWords=Pt){
   if(words.length!==config.partialWords)return null;
   let result=Tr(words.join(" "));
   return result&&result.completeCount===config.words?result:null
+}
+function hodlSeedFinalWordContext(value,targetWords=Pt){
+  let config=hodlSeedConfig(targetWords),tokens=[...String(value??"").matchAll(/\S+/g)].map(match=>({word:match[0].toLowerCase(),start:match.index,end:match.index+match[0].length}));
+  if(tokens.length<config.partialWords||tokens.length>config.words)return null;
+  let baseTokens=tokens.slice(0,config.partialWords);if(baseTokens.some(token=>!hodlBip39WordSet.has(token.word)))return null;
+  let result=Tr(baseTokens.map(token=>token.word).join(" "));if(!result||result.error||result.completeCount!==config.words)return null;
+  let finalToken=tokens[config.partialWords]??null,prefix=finalToken?.word??"",matchingCandidates=prefix?result.candidates.filter(word=>word.startsWith(prefix)):result.candidates.slice();
+  return{baseWords:baseTokens.map(token=>token.word),candidates:result.candidates,finalToken,prefix,matchingCandidates,selected:result.candidates.includes(prefix)?prefix:"",targetWords:config.words}
+}
+function hodlAnalyzeSeedInput(input,targetWords=Pt){
+  let value=input.value,config=hodlSeedConfig(targetWords);if(hodlLooksExtendedKey(value))return{tokens:[],invalidRanges:[],invalidWords:[],excessCount:0,checksumInvalid:!1,extendedKey:!0};
+  let tokens=[...value.matchAll(/\S+/g)].map(match=>({word:match[0].toLowerCase(),start:match.index,end:match.index+match[0].length})),invalidRanges=[],invalidWords=[],excessCount=0,lastIndex=tokens.length-1,last=tokens[lastIndex],activePrefix=Boolean(last&&document.activeElement===input&&!/\s$/.test(value)&&input.selectionStart===input.selectionEnd&&input.selectionStart===last.end);
+  let finalContext=hodlSeedFinalWordContext(value,config.words);
+  tokens.forEach((token,index)=>{let listed=hodlBip39WordSet.has(token.word),options=index===config.partialWords&&finalContext?finalContext.candidates:Ae,viablePrefix=activePrefix&&index===lastIndex&&token.word.length>0&&options.some(word=>word.startsWith(token.word));if(index>=config.words){invalidRanges.push([token.start,token.end]);excessCount+=1}else if(!listed&&!viablePrefix){invalidRanges.push([token.start,token.end]);invalidWords.push({index,word:token.word})}});
+  let checksumInvalid=!1,allListed=tokens.length===config.words&&tokens.every(token=>hodlBip39WordSet.has(token.word)),finalCanContinue=Boolean(activePrefix&&finalContext?.prefix&&finalContext.matchingCandidates.some(word=>word!==finalContext.prefix));
+  if(allListed&&!Pn(tokens.map(token=>token.word).join(" "),Ae)&&!finalCanContinue){checksumInvalid=!0;let final=tokens[tokens.length-1];invalidRanges.push([final.start,final.end])}
+  return{tokens,invalidRanges,invalidWords,excessCount,checksumInvalid,extendedKey:!1}
+}
+function hodlRenderSeedInputState(input,targetWords=Pt){let analysis=hodlAnalyzeSeedInput(input,targetWords);input.setAttribute("aria-invalid",String(analysis.invalidRanges.length>0));hodlRenderInputHighlight(input,analysis.invalidRanges);return analysis}
+function hodlApplyFilteredInput(input,filter){
+  let value=input.value,clean=filter(value);if(clean===value)return!1;let start=input.selectionStart??value.length,end=input.selectionEnd??start,direction=input.selectionDirection||"none";
+  input.value=clean;input.setSelectionRange(filter(value.slice(0,start)).length,filter(value.slice(0,end)).length,direction);return!0
+}
+function hodlAutocompleteSeedInput(input,event){
+  let toggle=document.getElementById("seed-autocomplete");if(!toggle?.checked||event?.inputType!=="insertText"||event.isComposing||input.selectionStart!==input.selectionEnd)return!1;
+  let caret=input.selectionStart??input.value.length,suffix=input.value.slice(caret);if(suffix&&!/^\s/.test(suffix))return!1;
+  let match=input.value.slice(0,caret).match(/([A-Za-z]+)$/);if(!match)return!1;let prefix=match[1].toLowerCase(),start=caret-match[1].length,finalContext=hodlSeedFinalWordContext(input.value,Pt),isFinalPrefix=Boolean(finalContext?.finalToken&&finalContext.finalToken.start===start&&finalContext.finalToken.end===caret),options=isFinalPrefix?finalContext.candidates:Ae,minimumLength=isFinalPrefix?1:2;
+  if(prefix.length<minimumLength)return!1;let matches=options.filter(word=>word.startsWith(prefix));if(matches.length!==1)return!1;
+  let replacement=matches[0]+(suffix?"":" ");input.setRangeText(replacement,start,caret,"end");return!0
+}
+function hodlReplaceSeedFinalWord(input,context,word){
+  if(!input||!context)return;input.value=[...context.baseWords,...(word?[word]:[])].join(" ");input.setSelectionRange(input.value.length,input.value.length);
+  input.dispatchEvent(new InputEvent("input",{bubbles:!0,inputType:"insertReplacementText",data:word||null}))
 }
 function hodlBitBoxRolls(value,targetWords=Pt){
   let config=hodlSeedConfig(targetWords),words=[],skippedHigh=0,leftover="",extraAfter=0,diceInWord=[],notes=[],warnings=[];
@@ -3283,20 +3496,35 @@ function hodlBitBoxRolls(value,targetWords=Pt){
     words.push(mi(diceInWord,coin));diceInWord=[]
   }
   let waiting=words.length>=config.partialWords?"last-word":diceInWord.length===5?"coin":"dice",bits=words.length*11;
-  notes.push(`BitBox-style diceware: ${words.length} of ${config.partialWords} lookup-table words (${bits} encoded bits). Then choose the final checksum word.`);
+  notes.push(`BitBox diceware: ${words.length} of ${config.partialWords} lookup-table words (${bits} encoded bits). Then choose the final checksum word.`);
   if(skippedHigh)notes.push(`Skipped ${skippedHigh} face${skippedHigh===1?"":"s"} of 5 or 6 on the first five dice of a word (reroll).`);
   if(extraAfter)warnings.push("Extra rolls after the final lookup-table word are ignored. The checksum word is a separate pick, not another roll.");
   if(leftover.length)warnings.push(`Ignored characters: ${JSON.stringify(leftover.slice(0,24))}`);
   return{words,targetWords:config.words,neededPartial:config.partialWords,skippedHigh,leftover,extraAfter,waiting,diceInWord:diceInWord.length,bits,notes,warnings}
 }
 function hodlDicePreviewWords(value,method,targetWords=Pt){
-  let config=hodlSeedConfig(targetWords),parsed=Br(value),analysis=hodlAnalyzeDiceInput(value,method,targetWords);if(parsed.leftover.length||analysis.coinDerivedCount||!parsed.rolls.length)return[];let bytes;
+  let config=hodlSeedConfig(targetWords);
+  if(method==="dplus"){let parsed=hodlDPlusRolls(value,targetWords);return[...parsed.wordSlots,...(parsed.finalWord?[parsed.finalWord]:[])]}
+  let parsed=Br(value),analysis=hodlAnalyzeDiceInput(value,method,targetWords);if(parsed.leftover.length||analysis.coinDerivedCount||!parsed.rolls.length)return[];let bytes;
   if(method==="coldcard")bytes=Z(new TextEncoder().encode(parsed.rolls.join(""))).slice(0,config.bytes);
-  else if(method==="coleman"){
-    let mapped=hodlDiceMappedBits(parsed.rolls),preview=mapped.slice(0,config.bits).padEnd(config.bits,"0");bytes=new Uint8Array(config.bytes);
-    for(let index=0;index<bytes.length;index++)bytes[index]=Number.parseInt(preview.slice(index*8,index*8+8),2)
-  }else return[];
+  else if(method==="coleman")bytes=Z(new TextEncoder().encode(hodlIanColemanDiceString(parsed.rolls))).slice(0,config.bytes);
+  else return[];
   try{return _n(bytes).split(" ")}catch{return[]}
+}
+function hodlBinaryPreviewWords(value,targetWords=Pt){
+  let config=hodlSeedConfig(targetWords),digits=hodlBinaryDigits(value).slice(0,config.bits);if(!digits.length)return[];
+  if(digits.length>=config.bits){
+    let bytes=new Uint8Array(config.bytes);for(let index=0;index<bytes.length;index++)bytes[index]=Number.parseInt(digits.slice(index*8,index*8+8),2);
+    try{return _n(bytes).split(" ")}catch{return[]}
+  }
+  let words=[],completeGroups=Math.min(config.partialWords,Math.floor(digits.length/11));
+  for(let index=0;index<completeGroups;index++)words.push(Ae[Number.parseInt(digits.slice(index*11,index*11+11),2)]);
+  return words
+}
+function hodlHexPreviewWords(value,targetWords=Pt){
+  let config=hodlSeedConfig(targetWords),digits=String(value??"").replace(/[^0-9a-f]/gi,"").slice(0,config.hexChars);
+  let bits=Array.from(digits,digit=>Number.parseInt(digit,16).toString(2).padStart(4,"0")).join("");
+  return hodlBinaryPreviewWords(bits,config.words)
 }
 function hodlRenderDiceWordGrid(container,words,targetWords=Pt,provisional=!1){
   if(!container)return;let config=hodlSeedConfig(targetWords),values=Array.isArray(words)?words:[],fragment=document.createDocumentFragment();container.innerHTML="";
@@ -3307,6 +3535,20 @@ function hodlRenderDiceWordGrid(container,words,targetWords=Pt,provisional=!1){
     number.className="dice-word-number";number.textContent=`${index+1}.`;value.className="dice-word-value";value.dataset.word="";value.textContent=word||"\u2014";slot.append(number,value);fragment.appendChild(slot)
   }
   container.appendChild(fragment)
+}
+function hodlUpdateEntropyInput(input,format,targetWords=Pt){
+  let config=hodlSeedConfig(targetWords),analysis=hodlRenderEntropyInputState(input,format,config.words),meta=document.getElementById("entropy-meta"),ready=analysis.count===analysis.limit,hasExcess=analysis.excessCount>0;
+  input.setAttribute("aria-invalid",String(hasExcess));
+  if(format==="bin"){
+    let words=hodlBinaryPreviewWords(input.value,config.words),wordsBox=document.getElementById("entropy-words"),status=hasExcess?`${analysis.count} entered · ${analysis.limit} required binary digits · ${analysis.excessCount} extra highlighted · remove to continue`:`${analysis.count} of ${analysis.limit} binary digits · ${words.length} of ${config.words} seed words filled${ready?" · ready to derive":""}`;
+    if(meta){meta.textContent=status;meta.className="muted"+(ready?" ok":hasExcess?" err":"")}
+    hodlRenderDiceWordGrid(wordsBox,words,config.words,!1)
+  }else{
+    let words=hodlHexPreviewWords(input.value,config.words),wordsBox=document.getElementById("entropy-words"),status=hasExcess?`${analysis.count} entered · ${analysis.limit} required hexadecimal characters · ${analysis.excessCount} extra highlighted · remove to continue`:`${analysis.count} of ${analysis.limit} hexadecimal characters · ${words.length} of ${config.words} seed words filled${ready?" · ready to derive":""}`;
+    if(meta){meta.textContent=status;meta.className="muted"+(ready?" ok":hasExcess?" err":"")}
+    hodlRenderDiceWordGrid(wordsBox,words,config.words,!1)
+  }
+  return analysis
 }
 function hodlRenderLastWordPicker(container,candidates,selected,onPick,settings={}){
   if(!container)return;container.innerHTML="";if(!candidates||!candidates.length)return;
@@ -3325,64 +3567,144 @@ function hodlUpdateSeedLengthControl(){
   let section=document.getElementById("seed-length");if(!section)return;let config=hodlSeedConfig();section.hidden=Ne==="key";
   section.querySelectorAll("[data-seed-words]").forEach(button=>{let active=Number(button.dataset.seedWords)===config.words;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});
   let help=document.getElementById("seed-length-help");if(!help)return;
-  help.textContent=Ne==="hex"?`${config.words} words require exactly ${config.hexChars} hex characters or ${config.bits} binary digits.`:Ne==="seed"?`Enter exactly ${config.words} BIP39 words. Extended keys ignore this selection.`:`${config.words} words use ${config.bits} bits of BIP39 entropy.`
+  help.textContent=Ne==="hex"?(hodlEntropyFormat==="bin"?`${config.words} words require exactly ${config.bits} binary digits.`:`${config.words} words require exactly ${config.hexChars} hexadecimal characters.`):Ne==="seed"?`Enter exactly ${config.words} BIP39 words. Extended keys ignore this selection.`:`${config.words} words use ${config.bits} bits of BIP39 entropy.`
 }
 function hodlInvalidateActiveKeyOutput(){
   re=null;Ge=!1;ft="";dr.innerHTML="";let error=document.getElementById("error");if(error)error.textContent="";
-  let state=hodlKeys[hodlActiveKey];if(state){state.result=null;state.reveal=!1;state.lastWord="";state.error=""}
+  let state=hodlKeys[hodlActiveKey];if(state){state.result=null;state.reveal=!1;state.lastWord="";state.dplusLastWord="";state.error=""}
 }
 function hodlSetSeedLength(words){
   let config=hodlSeedLengths[Number(words)];if(!config)return;if(Pt===config.words){hodlUpdateSeedLengthControl();hodlQueueMasterFingerprintPreview(0);return}
   hodlCaptureKey();let state=hodlKeys[hodlActiveKey];Pt=config.words;hodlInvalidateActiveKeyOutput();
-  if(state){state.targetWords=config.words;state.lastWord="";state.result=null;state.reveal=!1;state.error=""}
+  if(state){state.targetWords=config.words;state.diceMethod=ge;state.lastWord="";state.dplusLastWord="";state.result=null;state.reveal=!1;state.error=""}
   hodlRenderKeyForm();hodlRestoreFormFields(state);hodlUpdateSeedLengthControl();hodlQueueMasterFingerprintPreview(0)
 }
 function hodlRenderKeyForm(){
   let config=hodlSeedConfig();hodlUpdateSeedLengthControl();
   if(Ne==="dice"){
+    let dplusFaces=["1","2","3","4","5","6","7","8","9","A","B","C","D","E","F",hodlDPlusNumberedD16?"G":"0"],dplusPad=dplusFaces.map(face=>{let decimal=face==="G"?16:Number.parseInt(face,16),label=decimal>=10?`${decimal} (${face})`:face,aria=face==="G"?"Numbered D16 face 16, entered as G":`D16 face ${face}${decimal>=10?`, decimal ${decimal}`:""}`;return`<button type="button" data-d="${face}" aria-label="${aria}">${label}</button>`}).join("");
+    let diceLabel=ge==="dplus"?(config.words===24?"D++ rolls (D8, D16, D16; then a final D8)":"D++ rolls (D8, D16, D16)"):ge==="bitbox"?"Dice rolls (1–4, then coin / 6th die)":"Dice rolls (faces 1–6 only)";
+    let diceHelp=ge==="dplus"?`For each of the first ${config.partialWords} words, enter the D8 face (1–8), then both D16 faces (${hodlDPlusNumberedD16?"1–9 or A–G; G represents 16 and maps to D++ face 0":"0–9 or A–F, following the custom D++ die"}). Each three-character group is positional: an invalid face stays in its original slot until you correct it. ${config.words===24?"The final D8 roll selects one of the eight checksum-valid 24th words.":`Then choose 1 of ${config.candidates} checksum-valid final words from the dropdown using your own offline randomness.`} Letters are stored as uppercase.`:ge==="bitbox"?`${config.partialWords} lookup-table words fill one slot at a time, then choose a confirmed final checksum word. Use 1–4 for the first five rolls. On the sixth, Heads inserts an equivalent face from 1–3 and Tails inserts one from 4–6; that numeric choice does not add entropy.`:ge==="coleman"?`Every rolled 6 becomes 0 before the complete digit string is hashed with SHA-256. This Dice [1-6] method matches the method used by Keystone. Any nonempty count produces a phrase, but use at least ${config.hashRolls} fair rolls before relying on it.`:`The original dice digit string is hashed with SHA-256. This Base 10 [0-9] method matches COLDCARD and SeedSigner. Any nonempty count produces a phrase, but use at least ${config.hashRolls} fair rolls before relying on it.`;
+    let dicePlaceholder=ge==="dplus"?`e.g. ${hodlDPlusNumberedD16?"1GG":"100"} 2AF …${config.words===24?" then final D8":""}`:ge==="bitbox"?"111111 222224…":"e.g. 415263415263…";
+    let dicePad=ge==="dplus"?`<div class="dice-input-pad dplus">${dplusPad}</div>`:`<div class="dice-input-pad with-coin">${[1,3,5].map(face=>`<button type="button" data-d="${face}">${face}</button>`).join("")}<button type="button" class="coin-button" data-d="H" data-coin="heads">Heads (1–3)</button>${[2,4,6].map(face=>`<button type="button" data-d="${face}">${face}</button>`).join("")}<button type="button" class="coin-button" data-d="T" data-coin="tails">Tails (4–6)</button></div>`;
+    let dplusConvention=ge==="dplus"?`<label class="seed-autocomplete-toggle"><input type="checkbox" id="dplus-numbered-d16" ${hodlDPlusNumberedD16?"checked":""} /><span>Use a numbered D16 (1–16) <span class="seed-autocomplete-note">(enter 10–16 as A–G; G maps to D++ face 0)</span></span></label>`:"";
     at.innerHTML=`
       <p class="label">How to turn rolls into a ${config.words}-word seed</p>
       <label class="choice"><input type="radio" name="dm" value="coldcard" ${ge==="coldcard"?"checked":""} />
-        <span><strong>Hash the rolls (recommended)</strong><span class="desc">SHA-256 of every digit, then the first ${config.bits} bits become the selected ${config.words}-word seed. Enter at least ${config.hashRolls} rolls.</span></span>
-      </label>
-      <label class="choice"><input type="radio" name="dm" value="bitbox" ${ge==="bitbox"?"checked":""} />
-        <span><strong>BitBox-style diceware</strong><span class="desc">Use five dice showing 1\u20134, then a coin (or 6th die: 1\u20133 heads, 4\u20136 tails). Build ${config.partialWords} lookup-table words, then choose 1 of ${config.candidates} valid final checksum words.</span></span>
+        <span><strong>Hashed rolls / Base 10 [0-9] (recommended)</strong><span class="desc">SHA-256 of the original dice digit string, matching the method used by COLDCARD and SeedSigner. The first ${config.bits} bits become the selected ${config.words}-word seed; ${config.hashRolls} rolls are recommended, and every entered roll is included.</span></span>
       </label>
       <label class="choice"><input type="radio" name="dm" value="coleman" ${ge==="coleman"?"checked":""} />
-        <span><strong>Ian Coleman-style</strong><span class="desc">Map each face through the BIP39 tool's prefix-free bit table until there are ${config.bits} bits. Extra mapped bits are cut, not hashed.</span></span>
+        <span><strong>Hashed rolls / Dice [1-6]</strong><span class="desc">Convert each 6 to 0 and SHA-256 the complete mapped digit string, matching the method used by Keystone. Use the first ${config.bits} bits; ${config.hashRolls} rolls are recommended, and every entered roll is included.</span></span>
       </label>
-      <p class="label" id="dice-label">${ge==="bitbox"?"Dice rolls (1\u20134, then coin / 6th die)":"Dice rolls (faces 1\u20136 only)"}</p>
-      <p class="muted" id="dice-help">${ge==="bitbox"?`${config.partialWords} lookup-table words fill one slot at a time, then choose a confirmed final checksum word. Use 1\u20134 for the first five rolls. On the sixth, Heads inserts an equivalent face from 1\u20133 and Tails inserts one from 4\u20136; that numeric choice does not add entropy.`:ge==="coleman"?`The grid fills after the first roll with a provisional phrase. Missing mapped bits are shown as zero until all ${config.bits} bits are supplied; calculation remains unavailable until then.`:`The grid fills after the first roll and changes whenever the roll string changes. Calculation becomes available after at least ${config.hashRolls} fair-die rolls.`}</p>
-      <div class="dice-input-shell"><pre class="dice-input-highlight" id="dice-highlight" aria-hidden="true"></pre><textarea id="dice" placeholder="${ge==="bitbox"?"111111 222224\u2026":"e.g. 415263415263\u2026"}" aria-describedby="dice-help dice-meta"></textarea></div>
-      <div class="dice-input-pad with-coin">${[1,3,5].map(face=>`<button type="button" data-d="${face}">${face}</button>`).join("")}<button type="button" class="coin-button" data-d="H" data-coin="heads">Heads (1\u20133)</button>${[2,4,6].map(face=>`<button type="button" data-d="${face}">${face}</button>`).join("")}<button type="button" class="coin-button" data-d="T" data-coin="tails">Tails (4\u20136)</button></div>
+      <label class="choice"><input type="radio" name="dm" value="bitbox" ${ge==="bitbox"?"checked":""} />
+        <span><strong>BitBox diceware / Direct word selection</strong><span class="desc">Use five dice showing 1\u20134, then a coin (or 6th die: 1\u20133 heads, 4\u20136 tails). Build ${config.partialWords} lookup-table words, then choose 1 of ${config.candidates} valid final checksum words.</span></span>
+      </label>
+      <label class="choice"><input type="radio" name="dm" value="dplus" ${ge==="dplus"?"checked":""} />
+        <span><strong>D++ / Direct word selection</strong><span class="desc">Roll one 8-sided die and two 16-sided dice for each of the first ${config.partialWords} words, then ${config.words===24?"roll the D8 once more to select the checksum-valid final word":`choose 1 of ${config.candidates} checksum-valid final words from the dropdown`}.</span></span>
+      </label>
+      <p class="label" id="dice-label">${diceLabel}</p>
+      <p class="muted" id="dice-help">${diceHelp}</p>
+      ${dplusConvention}
+      <div class="dice-input-shell"><pre class="dice-input-highlight" id="dice-highlight" aria-hidden="true"></pre><textarea id="dice" placeholder="${dicePlaceholder}" aria-describedby="dice-help dice-meta"></textarea></div>
+      ${dicePad}
       <p class="muted" id="dice-meta" aria-live="polite"></p>
       <div id="dice-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div><div id="last-words" class="row" style="margin-top:8px"></div>`;
     let input=document.getElementById("dice");input.dataset.previousValue=input.value;
     at.querySelectorAll("[data-d]").forEach(button=>{button.onclick=()=>hodlInsertDiceControl(input,button)});
-    input.oninput=()=>{hodlTrackDiceInputEdit(input);hodlSanitizeDiceInput(input);hodlUpdateDice()};input.onscroll=()=>hodlSyncDiceHighlight(input);
-    at.querySelectorAll("input[name=dm]").forEach(radio=>{radio.onchange=()=>{let raw=input.value,lastWord=ft;ge=radio.value;let state=hodlKeys[hodlActiveKey];if(state){state.diceMethod=ge;state.lastWord=lastWord;state.fields.dice=raw;state.diceCoinPositions=hodlDiceCoinPositions.slice()}hodlRenderKeyForm();ft=lastWord;let replacement=document.getElementById("dice");if(replacement){replacement.value=raw;replacement.dataset.previousValue=raw;replacement.setSelectionRange(raw.length,raw.length);hodlSanitizeDiceInput(replacement)}hodlUpdateDice();hodlQueueMasterFingerprintPreview(0)}});
+    input.oninput=()=>{if(ge!=="dplus")hodlTrackDiceInputEdit(input);else delete input.hodlDiceBeforeInput;hodlSanitizeDiceInput(input);hodlUpdateDice()};input.onscroll=()=>hodlSyncDiceHighlight(input);
+    let dplusToggle=document.getElementById("dplus-numbered-d16");if(dplusToggle)dplusToggle.onchange=()=>{
+      let state=hodlKeys[hodlActiveKey],selectionStart=input.selectionStart??input.value.length,selectionEnd=input.selectionEnd??selectionStart,selectionDirection=input.selectionDirection||"none",translated=hodlTranslateDPlusD16Notation(input.value);
+      hodlDPlusNumberedD16=dplusToggle.checked;if(state){state.dplusNumberedD16=hodlDPlusNumberedD16;state.fields.dplusDice=translated}
+      hodlInvalidateLiveKeyResult();hodlRenderKeyForm();hodlRestoreFormFields(state);let replacement=document.getElementById("dice");if(replacement)replacement.setSelectionRange(Math.min(selectionStart,replacement.value.length),Math.min(selectionEnd,replacement.value.length),selectionDirection);hodlUpdateDice();hodlQueueMasterFingerprintPreview(0)
+    };
+    at.querySelectorAll("input[name=dm]").forEach(radio=>{radio.onchange=()=>{
+      let raw=input.value,lastWord=ft,previousMethod=ge,state=hodlKeys[hodlActiveKey];
+      if(state){if(previousMethod==="dplus"){state.fields.dplusDice=raw;state.dplusLastWord=lastWord}else{state.fields.dice=raw;state.diceCoinPositions=hodlDiceCoinPositions.slice();if(previousMethod==="bitbox")state.lastWord=lastWord}}
+      ge=radio.value;if(state){state.diceMethod=ge;ft=ge==="dplus"?state.dplusLastWord||"":ge==="bitbox"?state.lastWord||"":""}else ft=previousMethod===ge?lastWord:"";hodlRenderKeyForm();
+      let replacement=document.getElementById("dice"),replacementValue=state?(ge==="dplus"?state.fields.dplusDice||"":state.fields.dice||""):(previousMethod===ge?raw:"");
+      if(replacement){replacement.value=replacementValue;replacement.dataset.previousValue=replacementValue;replacement.setSelectionRange(replacementValue.length,replacementValue.length);hodlSanitizeDiceInput(replacement)}
+      hodlUpdateDice();hodlQueueMasterFingerprintPreview(0)
+    }});
     hodlBindKeyFields();return
   }
   if(Ne==="hex"){
-    at.innerHTML=`<p class="label">Hexadecimal entropy for a ${config.words}-word seed</p><p class="muted">Enter exactly ${config.hexChars} hexadecimal characters (${config.bits} bits). No generator \u2014 paste entropy you already created.</p><textarea id="hex" placeholder="${config.hexChars} hex characters for a ${config.words}-word seed"></textarea><p class="label">Or binary (coin flips) for a ${config.words}-word seed</p><textarea id="bin" placeholder="Exactly ${config.bits} zeros and ones"></textarea>`;
-    hodlBindKeyFields();return
+    let binary=hodlEntropyFormat==="bin",inputId=binary?"bin":"hex",entropyCharacters=binary?["0","1"]:[..."0123456789ABCDEF"],entropyPad=`<div class="dice-input-pad dplus entropy-keypad${binary?" binary-keypad":""}" role="group" aria-label="${binary?"Binary":"Hexadecimal"} keypad">${entropyCharacters.map(character=>`<button type="button"${binary?' class="coin-button"':""} data-entropy-digit="${character}" aria-label="${binary?character==="0"?"Enter Heads as binary 0":"Enter Tails as binary 1":`Enter hexadecimal ${character}`}">${binary?character==="0"?"Heads (0)":"Tails (1)":character}</button>`).join("")}</div>`;
+    at.innerHTML=`
+      <p class="label">Entropy format</p>
+      <label class="choice"><input type="radio" name="entropy-format" value="hex" ${binary?"":"checked"} />
+        <span><strong>Hexadecimal</strong><span class="desc">Use characters 0–9 and a–f. Compact and easy to copy.</span></span>
+      </label>
+      <label class="choice"><input type="radio" name="entropy-format" value="bin" ${binary?"checked":""} />
+        <span><strong>Binary (coin flips)</strong><span class="desc">Use one 0 or 1 for each coin flip.</span></span>
+      </label>
+      <p class="label" id="entropy-input-label">${binary?`Binary entropy (coin flips) for a ${config.words}-word seed`:`Hexadecimal entropy for a ${config.words}-word seed`}</p>
+      <p class="muted" id="entropy-input-help">${binary?`Spaces are added every 11 bits. Each complete group fills one BIP39 word; the checksum-derived final word appears at ${config.bits} bits.`:`Each hex character contributes four bits. Seed-word cards fill as enough bits arrive; the checksum-derived final word appears at exactly ${config.hexChars} characters.`} No generator — enter entropy you already created.</p>
+      <div class="dice-input-shell entropy-input-shell"><pre class="dice-input-highlight" id="entropy-input-highlight" aria-hidden="true"></pre><textarea id="${inputId}" placeholder="${binary?`Exactly ${config.bits} zeros and ones`:`${config.hexChars} hex characters for a ${config.words}-word seed`}" aria-labelledby="entropy-input-label" aria-describedby="entropy-input-help entropy-meta" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div>
+      ${entropyPad}
+      <p class="muted" id="entropy-meta" aria-live="polite"></p>
+      <div id="entropy-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div>`;
+    at.querySelectorAll('input[name="entropy-format"]').forEach(radio=>{radio.onchange=()=>{
+      let state=hodlKeys[hodlActiveKey],previous=document.getElementById(hodlEntropyFormat);if(state&&previous)state.fields[hodlEntropyFormat]=previous.value;
+      hodlEntropyFormat=radio.value==="bin"?"bin":"hex";if(state)state.entropyFormat=hodlEntropyFormat;
+      hodlInvalidateLiveKeyResult();let error=document.getElementById("error");if(error)error.textContent="";
+      hodlRenderKeyForm();hodlRestoreFormFields(state);hodlUpdateSeedLengthControl();hodlQueueMasterFingerprintPreview(0)
+    }});
+    hodlBindKeyFields();let entropyInput=document.getElementById(inputId);if(entropyInput)at.querySelectorAll("[data-entropy-digit]").forEach(button=>{button.onclick=()=>hodlInsertEntropyControl(entropyInput,button)});return
   }
   if(Ne==="seed"){
-    at.innerHTML=`<p class="label">Your ${config.words}-word seed phrase</p><p class="muted">Enter exactly ${config.words} English BIP39 words. You can also paste an extended key here; the selected phrase length does not apply to extended keys. With ${config.partialWords} compatible diceware words, choose the final checksum word below.</p><textarea id="seed" placeholder="Enter exactly ${config.words} BIP39 words"></textarea><p class="muted" id="seed-meta" aria-live="polite"></p><div id="last-words" class="row" style="margin-top:8px"></div>`;
+    let autocompleteEnabled=Boolean(hodlKeys[hodlActiveKey]?.seedAutocomplete);
+    at.innerHTML=`<p class="label">Your ${config.words}-word seed phrase</p><p class="muted" id="seed-help">Enter exactly ${config.words} English BIP39 words. You can also paste an extended key here; the selected phrase length does not apply to extended keys. With ${config.partialWords} compatible diceware words, choose the final checksum word below.</p><label class="seed-autocomplete-toggle"><input type="checkbox" id="seed-autocomplete" ${autocompleteEnabled?"checked":""} /><span>Autocomplete BIP39 words <span class="seed-autocomplete-note">(2+ letters normally; 1+ for a unique checksum word)</span></span></label><div class="dice-input-shell seed-input-shell"><pre class="dice-input-highlight" id="seed-highlight" aria-hidden="true"></pre><textarea id="seed" placeholder="Enter exactly ${config.words} BIP39 words" aria-describedby="seed-help seed-meta" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div><p class="muted" id="seed-meta" aria-live="polite"></p><div id="last-words" class="row" style="margin-top:8px"></div>`;
     let input=document.getElementById("seed"),update=()=>{
-      let value=input.value.trim(),meta=W("#seed-meta"),picker=W("#last-words");
+      let rawValue=input.value,value=rawValue.trim(),meta=W("#seed-meta"),picker=W("#last-words"),analysis=hodlRenderSeedInputState(input,config.words);
       if(hodlLooksExtendedKey(value)){picker.innerHTML="";meta.textContent="Extended key detected \u00b7 seed phrase length does not apply.";meta.className="muted ok";return}
-      let partial=hodlTargetLastWords(value,config.words),validation=hodlValidateTargetMnemonic(value,config.words);
-      if(partial&&!partial.error){meta.textContent=`${partial.partialCount} of ${config.words} words \u00b7 ${partial.candidates.length} valid final words`;meta.className="muted ok";hodlRenderLastWordPicker(picker,partial.candidates,"",word=>{input.value=`${Rn(input.value)} ${word}`;update()});return}
-      picker.innerHTML="";meta.textContent=!value?"":partial?.error|| (validation.ok?`${validation.words.length} words \u00b7 checksum valid`:validation.error||"");meta.className="muted "+(validation.ok?"ok":"err")
+      let finalContext=hodlSeedFinalWordContext(rawValue,config.words),validation=hodlValidateTargetMnemonic(value,config.words),entered=analysis.tokens.length,progress=hodlSeedCountStatus(entered,config.words),remaining=Math.max(0,config.words-entered);
+      if(finalContext){
+        hodlRenderLastWordPicker(picker,finalContext.candidates,finalContext.selected,word=>hodlReplaceSeedFinalWord(input,finalContext,word),{forceSelect:!0,resettable:!0,targetWords:config.words,placeholder:`Choose ${config.words===18?"an":"a"} ${config.words}th word`});
+        if(!finalContext.finalToken){meta.textContent=`${progress} \u00b7 choose the final checksum word \u00b7 ${finalContext.candidates.length} valid choices`;meta.className="muted ok";return}
+        if(validation.ok){meta.textContent=`${progress} \u00b7 checksum valid \u00b7 ready to derive`;meta.className="muted ok";return}
+        if(!finalContext.matchingCandidates.length){meta.textContent=`${progress} \u00b7 No valid checksum word starts with "${finalContext.prefix}".`;meta.className="muted err";return}
+        meta.textContent=`${progress} \u00b7 ${finalContext.matchingCandidates.length} valid checksum word${finalContext.matchingCandidates.length===1?"":"s"} start${finalContext.matchingCandidates.length===1?"s":""} with "${finalContext.prefix}".`;meta.className="muted";return
+      }
+      picker.innerHTML="";let invalidWord=analysis.invalidWords[0];
+      if(analysis.excessCount){meta.textContent=`${entered} entered \u00b7 ${config.words} required BIP39 words \u00b7 ${analysis.excessCount} extra highlighted \u00b7 remove to continue`;meta.className="muted err";return}
+      if(invalidWord){meta.textContent=`${progress} \u00b7 Word ${invalidWord.index+1} (\u201c${invalidWord.word}\u201d) is not on the BIP39 English list \u00b7 correct to continue`;meta.className="muted err";return}
+      if(validation.ok){meta.textContent=`${progress} \u00b7 checksum valid \u00b7 ready to derive`;meta.className="muted ok";return}
+      meta.textContent=`${progress} \u00b7 ${remaining} remaining`;meta.className="muted"
     };
-    input.oninput=()=>{input.value=hodlFilterSeed(input.value);update()};hodlBindKeyFields();update();return
+    let toggle=document.getElementById("seed-autocomplete");toggle.onchange=()=>{let state=hodlKeys[hodlActiveKey];if(state)state.seedAutocomplete=toggle.checked};
+    input.oninput=event=>{hodlApplyFilteredInput(input,hodlFilterSeed);hodlAutocompleteSeedInput(input,event);update()};input.onscroll=()=>hodlSyncDiceHighlight(input);input.onfocus=update;input.onblur=update;hodlBindKeyFields();update();return
   }
-  at.innerHTML=`<p class="label">Your Bitcoin Core private key</p><p class="muted">WIF, hex, mini key, or a brain-wallet passphrase (unsafe \u2014 recovery only).</p><textarea id="key" placeholder="K\u2026 / L\u2026 / 5\u2026 / hex"></textarea><label class="choice"><input type="radio" name="kk" value="wif-or-hex" checked /><span><strong>WIF / hex</strong><span class="desc">Normal Bitcoin Core private key.</span></span></label><label class="choice"><input type="radio" name="kk" value="minikey" /><span><strong>Mini key</strong><span class="desc">Casascius-style short key.</span></span></label><label class="choice"><input type="radio" name="kk" value="brain" /><span><strong>Brain wallet</strong><span class="desc">Unsafe. Use only to recover an old passphrase wallet.</span></span></label>`;
+  at.innerHTML=`
+    <p class="label">Private key format</p>
+    <label class="choice"><input type="radio" name="kk" value="wif-or-hex" checked /><span><strong>WIF / hex</strong><span class="desc">Normal Bitcoin Core private key.</span></span></label>
+    <label class="choice"><input type="radio" name="kk" value="minikey" /><span><strong>Mini key</strong><span class="desc">Casascius-style short key.</span></span></label>
+    <label class="choice"><input type="radio" name="kk" value="brain" /><span><strong>Brain wallet</strong><span class="desc">Unsafe. Use only to recover an old passphrase wallet.</span></span></label>
+    <p class="label" id="private-key-input-label">Private key or recovery passphrase</p>
+    <p class="muted" id="private-key-input-help">Enter the value matching the selected format. Brain wallets are for recovery only.</p>
+    <textarea id="key" placeholder="K… / L… / 5… / 64-character hex / mini key" aria-labelledby="private-key-input-label" aria-describedby="private-key-input-help"></textarea>`;
   hodlBindKeyFields()
 }
 function hodlUpdateDice(){
   let input=document.getElementById("dice");if(!input)return;let wordsBox=document.getElementById("dice-words"),picker=document.getElementById("last-words"),config=hodlSeedConfig(),inputState=hodlRenderDiceInputState(input),invalidStatus=inputState.invalidCount?` \u00b7 ${inputState.invalidCount} invalid input${inputState.invalidCount===1?"":"s"} highlighted`:"";if(ge!=="bitbox"&&inputState.coinDerivedCount)invalidStatus+=` \u00b7 coin-button digits are BitBox-only`;
+  if(ge==="dplus"){
+    let result=inputState.dplus||hodlDPlusRolls(input.value,config.words),status="",selectingFinal=result.waiting==="last-word",d16Range=hodlDPlusNumberedD16?"1–9 or A–G":"0–9 or A–F";
+    if(ft&&(!selectingFinal||!result.candidates.includes(ft))){ft="";let state=hodlKeys[hodlActiveKey];if(state)state.dplusLastWord=""}
+    let selectedFinal=selectingFinal?ft:"",complete=result.complete||Boolean(selectedFinal);
+    if(result.waiting==="d8")status=`${result.completedGroups} of ${config.partialWords} groups entered \u00b7 word ${result.activeGroupIndex+1} \u00b7 D8 roll (1\u20138)`;
+    else if(result.waiting==="d16-first")status=`${result.completedGroups} of ${config.partialWords} groups entered \u00b7 word ${result.activeGroupIndex+1} \u00b7 first D16 roll (${d16Range})`;
+    else if(result.waiting==="d16-second")status=`${result.completedGroups} of ${config.partialWords} groups entered \u00b7 word ${result.activeGroupIndex+1} \u00b7 second D16 roll (${d16Range})`;
+    else if(result.waiting==="correction"){
+      let invalid=result.firstInvalid,position=invalid?.final?"the final D8 checksum roll":`word ${(invalid?.groupIndex??0)+1}'s ${invalid?.position===0?"D8":invalid?.position===1?"first D16":"second D16"} roll`;
+      status=`${result.completedGroups} of ${config.partialWords} groups entered \u00b7 correct ${result.invalidRequiredCount} highlighted invalid face${result.invalidRequiredCount===1?"":"s"}, starting with ${position}`
+    }
+    else if(selectingFinal)status=selectedFinal?`${config.words} of ${config.words} seed words \u00b7 checksum valid \u00b7 ready to derive`:`${config.partialWords} of ${config.partialWords} word rolls complete \u00b7 choose the final checksum word`;
+    else if(result.waiting==="checksum-d8")status=`${config.partialWords} of ${config.partialWords} word rolls complete \u00b7 final D8 checksum roll (1\u20138)`;
+    else status=`${config.words} of ${config.words} seed words \u00b7 checksum valid \u00b7 ready to derive`;
+    if(result.extraAfter)status+=` \u00b7 ${result.extraAfter} extra input${result.extraAfter===1?"":"s"} ignored`;
+    let displayWords=result.wordSlots.slice();if(result.finalWord)displayWords.push(result.finalWord);else if(selectedFinal)displayWords.push(selectedFinal);hodlRenderDiceWordGrid(wordsBox,displayWords,config.words,!1);
+    hodlRenderLastWordPicker(picker,selectingFinal?result.candidates:[],selectedFinal,word=>{ft=word;let state=hodlKeys[hodlActiveKey];if(state)state.dplusLastWord=ft;hodlUpdateDice()},{forceSelect:!0,resettable:!0,targetWords:config.words,placeholder:`Choose ${config.words===18?"an":"a"} ${config.words}th word`});
+    let meta=W("#dice-meta");meta.textContent=status+invalidStatus;meta.className="muted"+(complete&&!result.invalidCount?" ok":result.invalidCount?" err":"");hodlQueueMasterFingerprintPreview();return
+  }
   if(ge==="bitbox"){
     let result=hodlBitBoxRolls(input.value,config.words),status=result.waiting==="last-word"?`${result.words.length} words \u00b7 choose the final checksum word`:result.waiting==="coin"?`Word ${result.words.length+1} of ${result.neededPartial} \u00b7 coin / 6th die`:`Word ${result.words.length+1} of ${result.neededPartial} \u00b7 die ${result.diceInWord+1} of 5 (faces 1\u20134)`;if(result.extraAfter)status+=` \u00b7 ${result.extraAfter} extra input${result.extraAfter===1?"":"s"} ignored`;
     let last=result.waiting==="last-word"?hodlTargetLastWords(result.words.join(" "),config.words):null;if(last&&!last.error&&!last.candidates.includes(ft))ft="";
@@ -3391,28 +3713,74 @@ function hodlUpdateDice(){
     hodlRenderLastWordPicker(picker,last&&!last.error?last.candidates:[],ft,word=>{ft=word;let state=hodlKeys[hodlActiveKey];if(state)state.lastWord=ft;hodlUpdateDice()},{forceSelect:!0,resettable:!0,targetWords:config.words,placeholder:`Choose ${config.words===18?"an":"a"} ${config.words}th word`});hodlQueueMasterFingerprintPreview();return
   }
   if(picker)picker.innerHTML="";let rolls=inputState.acceptedRolls,words=hodlDicePreviewWords(input.value,ge,config.words);
-  if(ge==="coleman"){
-    let mapped=hodlDiceMappedBits(rolls),missing=Math.max(0,config.bits-mapped.length),extra=Math.max(0,mapped.length-config.bits),provisional=rolls.length>0&&missing>0;
-    hodlRenderDiceWordGrid(wordsBox,words,config.words,provisional);
-    W("#dice-meta").textContent=(!rolls.length?`0 rolls \u00b7 0 of ${config.bits} mapped bits \u00b7 ${config.words}-word seed`:missing?`${rolls.length} roll${rolls.length===1?"":"s"} \u00b7 ${mapped.length} of ${config.bits} mapped bits \u00b7 provisional preview (${missing} missing bit${missing===1?"":"s"} shown as zero)`: `${rolls.length} rolls \u00b7 ${mapped.length} of ${config.bits} mapped bits \u00b7 ready to Calculate${extra?` \u00b7 ${extra} extra bit${extra===1?"":"s"} will be ignored`:""}`)+invalidStatus
-  }else{
-    let missing=Math.max(0,config.hashRolls-rolls.length),provisional=rolls.length>0&&missing>0;
-    hodlRenderDiceWordGrid(wordsBox,words,config.words,provisional);
-    W("#dice-meta").textContent=(!rolls.length?`0 of ${config.hashRolls} recommended rolls \u00b7 0.0 bits estimated \u00b7 ${config.words}-word seed`:missing?`${rolls.length} of ${config.hashRolls} recommended rolls \u00b7 ${kr(rolls.length).toFixed(1)} bits estimated \u00b7 preview shown \u00b7 ${missing} more before Calculate`:`${rolls.length} of ${config.hashRolls} recommended rolls \u00b7 ${kr(rolls.length).toFixed(1)} bits estimated \u00b7 ready to Calculate`)+invalidStatus
-  }
+  let missing=Math.max(0,config.hashRolls-rolls.length),provisional=rolls.length>0&&missing>0,extra=Math.max(0,rolls.length-config.hashRolls),methodLabel=ge==="coleman"?"Hashed rolls / Dice [1-6]":"Hashed rolls / Base 10 [0-9]";
+  hodlRenderDiceWordGrid(wordsBox,words,config.words,provisional);
+  W("#dice-meta").textContent=(!rolls.length?`0 of ${config.hashRolls} recommended rolls \u00b7 0.0 bits estimated \u00b7 ${methodLabel}`:missing?`${rolls.length} of ${config.hashRolls} recommended rolls \u00b7 ${kr(rolls.length).toFixed(1)} bits estimated \u00b7 seed available for testing \u00b7 ${missing} more recommended`:`${rolls.length} roll${rolls.length===1?"":"s"} \u00b7 ${kr(rolls.length).toFixed(1)} bits estimated \u00b7 ready to derive${extra?` \u00b7 all ${extra} extra roll${extra===1?" is":"s are"} included`:""}`)+invalidStatus;
   hodlQueueMasterFingerprintPreview()
 }
 function hodlBindKeyFields(){
-  let dice=document.getElementById("dice");if(dice){dice.setAttribute("inputmode","numeric");dice.setAttribute("autocomplete","off");dice.setAttribute("spellcheck","false");dice.onbeforeinput=event=>hodlRememberDiceBeforeInput(dice,event)}
-  let hex=document.getElementById("hex");if(hex){hex.setAttribute("spellcheck","false");hex.oninput=()=>{hex.value=hodlFilterHex(hex.value);let compact=hex.value.replace(/\s/g,""),config=hodlSeedConfig(),message="",ok=!compact;if(compact){if(compact.length===config.hexChars){message=`${config.hexChars} hex characters \u00b7 ${config.words}-word seed`;ok=!0}else if(compact.length%2){message=`Hex must contain whole bytes; ${config.hexChars} characters are required for ${config.words} words`}else if(compact.length<config.hexChars)message=`Need ${config.hexChars-compact.length} more hex characters for the selected ${config.words}-word seed`;else message=`Remove ${compact.length-config.hexChars} hex characters for the selected ${config.words}-word seed`}hodlHint(hex,ok,message)}}
-  let binary=document.getElementById("bin");if(binary){binary.oninput=()=>{binary.value=hodlFilterBin(binary.value);let compact=binary.value.replace(/\s/g,""),config=hodlSeedConfig(),ok=!compact||compact.length===config.bits,message=!compact?"":compact.length===config.bits?`${config.bits} bits \u00b7 ${config.words}-word seed`:compact.length<config.bits?`Need ${config.bits-compact.length} more binary digits for the selected ${config.words}-word seed`:`Remove ${compact.length-config.bits} binary digits for the selected ${config.words}-word seed`;hodlHint(binary,ok,message)}}
+  let dice=document.getElementById("dice");if(dice){dice.setAttribute("inputmode",ge==="dplus"?"text":"numeric");dice.setAttribute("autocapitalize",ge==="dplus"?"characters":"off");dice.setAttribute("autocomplete","off");dice.setAttribute("spellcheck","false");dice.onbeforeinput=event=>{if(ge==="dplus")hodlHandleGroupedSeparatorDelete(dice,event);else hodlRememberDiceBeforeInput(dice,event)}}
+  let hex=document.getElementById("hex");if(hex){hex.setAttribute("spellcheck","false");hex.oninput=()=>{hodlApplyFilteredInput(hex,hodlFilterHex);hodlUpdateEntropyInput(hex,"hex")};hex.onscroll=()=>hodlSyncDiceHighlight(hex);hex.oninput()}
+  let binary=document.getElementById("bin");if(binary){binary.setAttribute("inputmode","numeric");binary.setAttribute("spellcheck","false");binary.onbeforeinput=event=>hodlHandleBinarySeparatorDelete(binary,event);binary.oninput=()=>{hodlFormatBinaryInput(binary);hodlUpdateEntropyInput(binary,"bin")};binary.onscroll=()=>hodlSyncDiceHighlight(binary);binary.oninput()}
   let key=document.getElementById("key");if(key){let apply=()=>{let kind=document.querySelector("input[name=kk]:checked")?.value||"wif-or-hex";if(kind!=="brain")key.value=hodlFilterKey(key.value,kind);let value=key.value.trim();if(!value){hodlHint(key,!0,"");return}if(kind==="brain"){hodlHint(key,!1,"Brain wallets are unsafe. Recovery only.");return}if(kind==="minikey"){try{Ns(value);hodlHint(key,!0,"Mini key checksum looks valid")}catch(error){hodlHint(key,!1,error.message||"Not a valid mini key")}return}if(/^[0-9a-fA-F]{64}$/.test(value)){hodlHint(key,!0,"64-character hex private key");return}try{Ls(value);hodlHint(key,!0,"WIF private key checksum looks valid")}catch{hodlHint(key,!1,"Not a WIF key or 64-character hex")}};key.oninput=apply;document.querySelectorAll("input[name=kk]").forEach(radio=>radio.addEventListener("change",apply))}
+}
+function hodlSelectedEntropy(targetWords=Pt){
+  let format=hodlEntropyFormat==="bin"?"bin":"hex",value=document.getElementById(format)?.value.trim()||"";
+  return format==="bin"?hodlBinaryEntropy(value,targetWords):hodlHexEntropy(value,targetWords)
+}
+function hodlPrivateKeyInputIsValid(){
+  let input=document.getElementById("key"),value=input?.value.trim()||"";if(!value)return!1;
+  let kind=document.querySelector("input[name=kk]:checked")?.value||"wif-or-hex";
+  try{
+    if(kind==="brain")return!0;
+    if(kind==="minikey"){hf(Ns(value));return!0}
+    let compact=value.replace(/\s/g,"").replace(/^0x/i,"");
+    if(/^[0-9a-fA-F]{64}$/.test(compact)){hf(M.decode(compact.toLowerCase()));return!0}
+    let decoded=Ls(value);hf(decoded.priv);return!0
+  }catch{return!1}
+}
+function hodlCanDeriveCurrentKey(){
+  try{
+    if(Ne!=="key")hodlReadAccount();
+    if(Ne==="dice"){
+      let input=document.getElementById("dice");if(!input)return!1;
+      let analysis=hodlAnalyzeDiceInput(input.value,ge,Pt);if(analysis.invalidCount||analysis.coinDerivedCount)return!1;
+      if(ge==="dplus"){
+        let parsed=analysis.dplus||hodlDPlusRolls(input.value,Pt),finalWord=Pt===24?parsed.finalWord:ft;
+        if(Pt===24){if(!parsed.complete)return!1}
+        else if(!parsed.allRolledValid||parsed.waiting!=="last-word"||!parsed.candidates.includes(finalWord))return!1;
+        return hodlValidateTargetMnemonic([...parsed.wordSlots,finalWord].join(" "),Pt).ok
+      }
+      if(ge==="bitbox"){
+        let parsed=hodlBitBoxRolls(input.value,Pt);if(parsed.leftover||parsed.extraAfter||parsed.waiting!=="last-word"||!ft)return!1;
+        let possible=hodlTargetLastWords(parsed.words.join(" "),Pt);if(!possible?.candidates.includes(ft))return!1;
+        return hodlValidateTargetMnemonic([...parsed.words,ft].join(" "),Pt).ok
+      }
+      return hodlDiceEntropy(input.value,ge,Pt).ok
+    }
+    if(Ne==="hex")return hodlSelectedEntropy().ok;
+    if(Ne==="seed"){
+      let value=document.getElementById("seed")?.value.trim()||"";if(!value)return!1;
+      if(hodlLooksExtendedKey(value)){let normalized=uf(value);Gt.fromExtendedKey(normalized.xkey);return!0}
+      return hodlValidateTargetMnemonic(value,Pt).ok
+    }
+    return hodlPrivateKeyInputIsValid()
+  }catch{return!1}
+}
+function hodlSyncDeriveButton(){
+  let button=document.getElementById("go");if(!button)return;
+  button.disabled=!hodlCanDeriveCurrentKey();button.setAttribute("aria-disabled",String(button.disabled))
 }
 var hodlMasterFingerprintTimer=0,hodlMasterFingerprintRevision=0;
 function hodlFingerprintMnemonic(){
   try{
     if(Ne==="dice"){
       let input=document.getElementById("dice");if(!input)return null;
+      if(ge==="dplus"){
+        let parsed=hodlDPlusRolls(input.value,Pt),finalWord=Pt===24?parsed.finalWord:ft;
+        if(!parsed.allRolledValid||parsed.invalidRequiredCount||(Pt===24?!parsed.complete:parsed.waiting!=="last-word"||!parsed.candidates.includes(finalWord)))return null;
+        let validation=hodlValidateTargetMnemonic([...parsed.wordSlots,finalWord].join(" "),Pt);return validation.ok?validation.words.join(" "):null
+      }
       if(ge==="bitbox"){
         let parsed=hodlBitBoxRolls(input.value,Pt);if(parsed.leftover||parsed.waiting!=="last-word"||!ft)return null;
         let possible=hodlTargetLastWords(parsed.words.join(" "),Pt);if(!possible?.candidates.includes(ft))return null;
@@ -3422,7 +3790,7 @@ function hodlFingerprintMnemonic(){
       let entropy=hodlDiceEntropy(input.value,ge,Pt);return entropy.ok?_n(entropy.bytes):null
     }
     if(Ne==="hex"){
-      let hex=document.getElementById("hex")?.value.trim()||"",binary=document.getElementById("bin")?.value.trim()||"",entropy=hex?hodlHexEntropy(hex,Pt):hodlBinaryEntropy(binary,Pt);return entropy.ok?_n(entropy.bytes):null
+      let entropy=hodlSelectedEntropy();return entropy.ok?_n(entropy.bytes):null
     }
     if(Ne==="seed"){
       let value=document.getElementById("seed")?.value.trim()||"";if(!value||hodlLooksExtendedKey(value))return null;
@@ -3441,6 +3809,7 @@ function hodlRenderMasterFingerprintPreview(revision=hodlMasterFingerprintRevisi
   if(revision!==hodlMasterFingerprintRevision)return;
   let preview=document.getElementById("master-fingerprint-preview"),baseCard=document.getElementById("base-master-fingerprint-card"),base=document.getElementById("base-master-fingerprint"),arrow=document.getElementById("master-fingerprint-arrow"),derivedCard=document.getElementById("passphrase-master-fingerprint-card"),derived=document.getElementById("passphrase-master-fingerprint"),pass=document.getElementById("pass");
   if(!preview||!baseCard||!base||!arrow||!derivedCard||!derived||!pass)return;
+  if(Ne==="key"){preview.hidden=!0;return}
   preview.hidden=!1;arrow.hidden=!1;derivedCard.hidden=!1;
   let clear=()=>{hodlSetMasterFingerprintCard(baseCard,base,"");hodlSetMasterFingerprintCard(derivedCard,derived,"");arrow.classList.add("is-disabled")};
   let mnemonic=hodlFingerprintMnemonic();if(!mnemonic){clear();return}
@@ -3465,7 +3834,7 @@ function hodlInitMasterFingerprintPreview(){
     hodlInvalidateLiveKeyResult();hodlQueueMasterFingerprintPreview()
   });
   panel.addEventListener("change",event=>{
-    let target=event.target;if(!(target instanceof Element)||!target.matches('input[name="dm"], select[aria-label^="Valid final word"]'))return;
+    let target=event.target;if(!(target instanceof Element)||!target.matches('input[name="dm"], input[name="entropy-format"], #dplus-numbered-d16, select[aria-label^="Valid final word"]'))return;
     hodlInvalidateLiveKeyResult();hodlQueueMasterFingerprintPreview()
   });
   panel.addEventListener("click",event=>{
@@ -3479,25 +3848,35 @@ function hodlCalculateKey(){
   try{
     let network=document.getElementById("network").value,count=Number(document.getElementById("count").value),passphrase=document.getElementById("pass").value,scriptType=hodlSelectedScriptType(),account=Ne==="key"?0:hodlReadAccount();
     if(Ne==="dice"){
-      if(ge==="bitbox"){
+      if(ge==="dplus"){
+        let parsed=hodlDPlusRolls(document.getElementById("dice").value,Pt);
+        if(parsed.firstInvalid){let invalid=parsed.firstInvalid,position=invalid.final?"the final D8 checksum roll":`word ${invalid.groupIndex+1}'s ${invalid.position===0?"D8":invalid.position===1?"first D16":"second D16"} roll`;throw new Error(`Correct the highlighted invalid face in ${position}. Each D++ word keeps its original three-character group.`)}
+        if(parsed.waiting==="d8")throw new Error(`Complete word ${parsed.activeGroupIndex+1}: roll the D8, then both D16 dice.`);
+        if(parsed.waiting==="d16-first")throw new Error(`Complete word ${parsed.activeGroupIndex+1}: enter the first D16 roll.`);
+        if(parsed.waiting==="d16-second")throw new Error(`Complete word ${parsed.activeGroupIndex+1}: enter the second D16 roll.`);
+        if(parsed.waiting==="checksum-d8")throw new Error("Roll the final D8 to select one of the eight checksum-valid 24th words.");
+        let finalWord=Pt===24?parsed.finalWord:ft;if(Pt!==24&&(!finalWord||!parsed.candidates.includes(finalWord)))throw new Error(`Choose one of the ${hodlSeedConfig().candidates} valid final checksum words before deriving the wallet.`);
+        if(Pt===24&&!parsed.complete)throw new Error("Complete all D++ rolls before deriving the wallet.");
+        let phrase=[...parsed.wordSlots,finalWord].join(" "),validation=hodlValidateTargetMnemonic(phrase,Pt);if(!validation.ok)throw new Error(validation.error);let notes=parsed.notes.slice();if(Pt!==24)notes.push(`Selected checksum-valid final word: ${finalWord}.`);re=ar(phrase,passphrase,network,count,{notes,warnings:parsed.warnings},account)
+      }else if(ge==="bitbox"){
         let parsed=hodlBitBoxRolls(document.getElementById("dice").value,Pt);if(parsed.leftover)throw new Error(`Invalid characters: ${parsed.leftover}`);if(parsed.waiting!=="last-word")throw new Error(`Need ${parsed.neededPartial} lookup-table words for a ${Pt}-word seed. You have ${parsed.words.length}.`);
-        let possible=hodlTargetLastWords(parsed.words.join(" "),Pt);if(!ft||!possible?.candidates.includes(ft))throw new Error(`Choose one of the ${hodlSeedConfig().candidates} valid final checksum words, then Calculate.`);
+        let possible=hodlTargetLastWords(parsed.words.join(" "),Pt);if(!ft||!possible?.candidates.includes(ft))throw new Error(`Choose one of the ${hodlSeedConfig().candidates} valid final checksum words before deriving the wallet.`);
         let phrase=[...parsed.words,ft].join(" "),validation=hodlValidateTargetMnemonic(phrase,Pt);if(!validation.ok)throw new Error(validation.error);re=ar(phrase,passphrase,network,count,{notes:parsed.notes,warnings:parsed.warnings},account)
       }else{let diceValue=document.getElementById("dice").value;if(hodlAnalyzeDiceInput(diceValue,ge,Pt).coinDerivedCount)throw new Error("Coin-button digits are entropy-equivalent only in BitBox mode. Clear them and enter fair die rolls for this conversion method.");let entropy=hodlDiceEntropy(diceValue,ge,Pt);if(!entropy.ok)throw new Error(entropy.error);re=on(entropy,passphrase,network,count,account)}
     }else if(Ne==="hex"){
-      let hex=document.getElementById("hex").value.trim(),binary=document.getElementById("bin").value.trim(),entropy=hex?hodlHexEntropy(hex,Pt):hodlBinaryEntropy(binary,Pt);if(!entropy.ok)throw new Error(entropy.error);re=on(entropy,passphrase,network,count,account)
+      let entropy=hodlSelectedEntropy();if(!entropy.ok)throw new Error(entropy.error);re=on(entropy,passphrase,network,count,account)
     }else if(Ne==="seed"){
       let value=document.getElementById("seed").value.trim();if(hodlLooksExtendedKey(value))re=Po(value,network,count,account);else{let validation=hodlValidateTargetMnemonic(value,Pt);if(!validation.ok)throw new Error(validation.error);re=ar(validation.words.join(" "),passphrase,network,count,undefined,account)}
     }else{let kind=document.querySelector("input[name=kk]:checked")?.value||"wif-or-hex";re=Io(document.getElementById("key").value,network,kind)}
     Ge=!1;hodlSetSelectedScriptType(scriptType);tc();hodlCaptureKey()
-  }catch(error){re=null;W("#error").textContent=error instanceof Error?error.message:"Could not calculate";dr.innerHTML="";hodlCaptureKey()}
+  }catch(error){re=null;W("#error").textContent=error instanceof Error?error.message:"Could not derive wallet";dr.innerHTML="";hodlCaptureKey()}
 }
 function hodlFilterHex(e){return e.replace(/[^0-9a-fA-F\s]/g,"")}
 function hodlFilterBin(e){return e.replace(/[^01\s]/g,"")}
 function hodlFilterSeed(e){return e.replace(/[^a-zA-Z0-9\s]/g,"")}
 function hodlFilterKey(e,t){return t==="brain"?e:e.replace(/[^0-9A-Za-z\s]/g,"")}
 function hodlFilterXpub(e){return e.replace(/[^A-Za-z0-9]/g,"")}
-function hodlHint(el,ok,msg){if(!el)return;el.classList.toggle("bad",!ok&&!!msg);let h=el.nextElementSibling;if(!h||!h.classList.contains("hint")){h=document.createElement("p");h.className="hint";el.insertAdjacentElement("afterend",h)}h.textContent=msg||"";h.className="hint "+(ok?"ok":msg?"bad":"")}
+function hodlHint(el,ok,msg){if(!el)return;el.classList.toggle("bad",!ok&&!!msg);let anchor=el.closest(".dice-input-shell")||el,h=anchor.nextElementSibling;if(!h||!h.classList.contains("hint")){h=document.createElement("p");h.className="hint";anchor.insertAdjacentElement("afterend",h)}h.textContent=msg||"";h.className="hint "+(ok?"ok":msg?"bad":"")}
 function hodlBindFields(){let d=document.getElementById("dice");if(d){d.setAttribute("inputmode","numeric");d.setAttribute("autocomplete","off");d.setAttribute("spellcheck","false")}
 let hx=document.getElementById("hex");if(hx){hx.setAttribute("spellcheck","false");hx.oninput=()=>{hx.value=hodlFilterHex(hx.value);let n=hx.value.replace(/\s/g,"");let ok=!n||/^[0-9a-fA-F]+$/.test(n)&&(n.length%2===0);let msg=!n?"":n.length===32?"32 hex characters · 12-word seed":n.length===64?"64 hex characters · 24-word seed":n.length<32?"Need 32 hex characters for 12 words (or 64 for 24)":n.length%2?"Hex must be an even number of characters":ok?n.length*4+" bits":"Not hex";hodlHint(hx,ok&&(!n||n.length===32||n.length===40||n.length===48||n.length===56||n.length===64),msg)}}
 let bn=document.getElementById("bin");if(bn){bn.oninput=()=>{bn.value=hodlFilterBin(bn.value);let n=bn.value.replace(/\s/g,"");hodlHint(bn,!n||n.length>=128,n&&n.length<128?"Need at least 128 coin flips":n?n.length+" bits":"")}}
@@ -3652,24 +4031,26 @@ function hodlRenderPsbt(psbt){
 }
 var hodlAccountId="bip84",hodlNextKeyId=1,hodlNextKeyNumber=1,hodlKeys=[],hodlActiveKey=-1;
 function hodlKeyColor(id){let hue=Math.round((Number(id)*137.508+19)%360);return`oklch(61% 0.08 ${hue})`}
-function hodlNewKeyState(name,keyId,keyNumber){let id=keyId??hodlNextKeyId++,number=keyNumber??hodlNextKeyNumber++;return{id,number,color:hodlKeyColor(id),name:name||hodlDefaultKeyName(number),mode:"dice",diceMethod:"coldcard",targetWords:24,diceCoinPositions:[],lastWord:"",result:null,reveal:!1,accountId:"bip84",error:"",fields:{pass:"",script:"bip84",network:"mainnet",account:"0",count:"5",dice:"",hex:"",bin:"",seed:"",key:"",keyKind:"wif-or-hex"}}}
+function hodlNewKeyState(name,keyId,keyNumber){let id=keyId??hodlNextKeyId++,number=keyNumber??hodlNextKeyNumber++;return{id,number,color:hodlKeyColor(id),name:name||hodlDefaultKeyName(number),mode:"dice",diceMethod:"coldcard",entropyFormat:"hex",seedAutocomplete:!1,dplusNumberedD16:!1,targetWords:24,diceCoinPositions:[],lastWord:"",dplusLastWord:"",result:null,reveal:!1,accountId:"bip84",error:"",fields:{pass:"",script:"bip84",network:"mainnet",account:"0",count:"5",dice:"",dplusDice:"",hex:"",bin:"",seed:"",key:"",keyKind:"wif-or-hex"}}}
 function hodlRestoreFormFields(state){
   if(!state)return;
   document.querySelectorAll("input[name=kk]").forEach(input=>{input.checked=input.value===(state.fields.keyKind||"wif-or-hex")});
-  ["dice","hex","bin","seed","key"].forEach(id=>{let el=document.getElementById(id);if(el){el.value=state.fields[id]||"";if(id==="dice"){el.dataset.previousValue=el.value;el.setSelectionRange(el.value.length,el.value.length)}el.dispatchEvent(new Event("input"))}});
+  let seedAutocomplete=document.getElementById("seed-autocomplete");if(seedAutocomplete)seedAutocomplete.checked=Boolean(state.seedAutocomplete);
+  let dplusToggle=document.getElementById("dplus-numbered-d16");if(dplusToggle)dplusToggle.checked=Boolean(state.dplusNumberedD16);
+  ["dice","hex","bin","seed","key"].forEach(id=>{let el=document.getElementById(id);if(el){el.value=id==="dice"&&ge==="dplus"?state.fields.dplusDice||"":state.fields[id]||"";if(id==="dice"){el.dataset.previousValue=el.value;el.setSelectionRange(el.value.length,el.value.length)}el.dispatchEvent(new Event("input"))}});
 }
 function hodlSetMode(mode){
   hodlCaptureKey();
   let state=hodlKeys[hodlActiveKey];if(state)state.mode=mode;
-  Ne=mode;[...Zs.children].forEach((button,index)=>button.classList.toggle("active",["dice","hex","seed","key"][index]===Ne));
+  Ne=mode;hodlEntropyFormat=state?.entropyFormat==="bin"?"bin":"hex";[...Zs.children].forEach((button,index)=>button.classList.toggle("active",["dice","hex","seed","key"][index]===Ne));
   hodlRenderKeyForm();hodlRestoreFormFields(state);hodlUpdateSeedLengthControl();hodlUpdateDerivationPathPreview();
 }
 function hodlKeyStateNeedsClear(state){
   if(!state)return!1;let fields=state.fields||{},hasText=id=>String(fields[id]??"").length>0;
-  return String(state.mode??"dice")!=="dice"||String(state.diceMethod??"coldcard")!=="coldcard"||Number(state.targetWords??24)!==24||
-    (Array.isArray(state.diceCoinPositions)&&state.diceCoinPositions.length>0)||String(state.lastWord??"").length>0||Boolean(state.result)||Boolean(state.reveal)||String(state.error??"").length>0||
+  return String(state.mode??"dice")!=="dice"||String(state.diceMethod??"coldcard")!=="coldcard"||String(state.entropyFormat??"hex")!=="hex"||Boolean(state.seedAutocomplete)||Boolean(state.dplusNumberedD16)||Number(state.targetWords??24)!==24||
+    (Array.isArray(state.diceCoinPositions)&&state.diceCoinPositions.length>0)||String(state.lastWord??"").length>0||String(state.dplusLastWord??"").length>0||Boolean(state.result)||Boolean(state.reveal)||String(state.error??"").length>0||
     String(state.accountId??"bip84")!=="bip84"||String(fields.script??"bip84")!=="bip84"||String(fields.network??"mainnet")!=="mainnet"||String(fields.account??"0")!=="0"||String(fields.count??"5")!=="5"||
-    String(fields.keyKind??"wif-or-hex")!=="wif-or-hex"||["pass","dice","hex","bin","seed","key"].some(hasText)
+    String(fields.keyKind??"wif-or-hex")!=="wif-or-hex"||["pass","dice","dplusDice","hex","bin","seed","key"].some(hasText)
 }
 function hodlSyncKeyClearButton(capture=!1){
   if(capture)hodlCaptureKey();let button=document.getElementById("wipe");if(!button)return;
@@ -3682,9 +4063,10 @@ function hodlWipeActiveKey(){
 function hodlCaptureKey(){
   if(hodlActiveKey<0||!hodlKeys[hodlActiveKey])return;
   let state=hodlKeys[hodlActiveKey];
-  state.mode=Ne;state.diceMethod=ge;state.targetWords=Pt;state.diceCoinPositions=hodlDiceCoinPositions.slice();state.lastWord=ft;state.result=re;state.reveal=Ge;state.accountId=hodlSelectedScriptType();state.fields.script=state.accountId;
+  state.mode=Ne;state.diceMethod=ge;state.entropyFormat=hodlEntropyFormat;let seedAutocomplete=document.getElementById("seed-autocomplete");if(seedAutocomplete)state.seedAutocomplete=seedAutocomplete.checked;let dplusToggle=document.getElementById("dplus-numbered-d16");if(dplusToggle)hodlDPlusNumberedD16=dplusToggle.checked;state.dplusNumberedD16=Boolean(hodlDPlusNumberedD16);state.targetWords=Pt;state.diceCoinPositions=hodlDiceCoinPositions.slice();if(ge==="dplus")state.dplusLastWord=ft;else if(ge==="bitbox")state.lastWord=ft;state.result=re;state.reveal=Ge;state.accountId=hodlSelectedScriptType();state.fields.script=state.accountId;
   state.error=document.getElementById("error")?.textContent||"";
-  ["pass","network","account","count","dice","hex","bin","seed","key"].forEach(id=>{let el=document.getElementById(id);if(el)state.fields[id]=el.value});
+  ["pass","network","account","count","hex","bin","seed","key"].forEach(id=>{let el=document.getElementById(id);if(el)state.fields[id]=el.value});
+  let dice=document.getElementById("dice");if(dice)state.fields[ge==="dplus"?"dplusDice":"dice"]=dice.value;
   state.fields.keyKind=document.querySelector("input[name=kk]:checked")?.value||state.fields.keyKind||"wif-or-hex";
 }
 function hodlSyncSelect(select,value){
@@ -3695,13 +4077,13 @@ function hodlSyncSelect(select,value){
 function hodlRestoreKey(){
   let state=hodlKeys[hodlActiveKey];
   if(!state){
-    Ne="dice";ge="coldcard";Pt=24;hodlDiceCoinPositions=[];ft="";re=null;Ge=!1;hodlAccountId="bip84";
+    Ne="dice";ge="coldcard";hodlEntropyFormat="hex";hodlDPlusNumberedD16=!1;Pt=24;hodlDiceCoinPositions=[];ft="";re=null;Ge=!1;hodlAccountId="bip84";
     [...Zs.children].forEach((button,index)=>button.classList.toggle("active",index===0));hodlRenderKeyForm();
     let pass=document.getElementById("pass");if(pass)pass.value="";
     hodlSyncSelect(document.getElementById("script-type"),"bip84");hodlSyncSelect(document.getElementById("network"),"mainnet");let account=document.getElementById("account");if(account)account.value="0";hodlSyncSelect(document.getElementById("count"),"5");
-    W("#error").textContent="";dr.innerHTML="";document.getElementById("calc-card").hidden=!0;hodlQueueMasterFingerprintPreview(0);hodlUpdateDerivationPathPreview();hodlSyncKeyClearButton();return
+    W("#error").textContent="";dr.innerHTML="";document.getElementById("calc-card").hidden=!0;hodlQueueMasterFingerprintPreview(0);hodlUpdateDerivationPathPreview();hodlSyncKeyClearButton();hodlSyncDeriveButton();return
   }
-  Ne=state.mode;ge=state.diceMethod;Pt=hodlSeedLengths[Number(state.targetWords)]?Number(state.targetWords):24;hodlDiceCoinPositions=hodlNormalizeDiceCoinPositions(state.diceCoinPositions);ft=state.lastWord;
+  Ne=state.mode;ge=state.diceMethod;hodlEntropyFormat=state.entropyFormat==="bin"?"bin":"hex";hodlDPlusNumberedD16=Boolean(state.dplusNumberedD16);Pt=hodlSeedLengths[Number(state.targetWords)]?Number(state.targetWords):24;hodlDiceCoinPositions=hodlNormalizeDiceCoinPositions(state.diceCoinPositions);ft=ge==="dplus"?state.dplusLastWord||"":ge==="bitbox"?state.lastWord||"":"";
   [...Zs.children].forEach((button,index)=>button.classList.toggle("active",["dice","hex","seed","key"][index]===Ne));
   hodlRenderKeyForm();
   let pass=document.getElementById("pass");if(pass)pass.value=state.fields.pass||"";
@@ -3715,7 +4097,7 @@ function hodlRestoreKey(){
   document.getElementById("calc-card").hidden=!1;
   W("#error").textContent=state.error||"";
   tc();
-  hodlQueueMasterFingerprintPreview(0);hodlUpdateDerivationPathPreview();hodlSyncKeyClearButton();
+  hodlQueueMasterFingerprintPreview(0);hodlUpdateDerivationPathPreview();hodlSyncKeyClearButton();hodlSyncDeriveButton();
 }
 function hodlKeyTabKeydown(event,index){
   if(event.key==="F2"){event.preventDefault();if(index===hodlActiveKey)hodlBeginKeyRename(index);return}
@@ -3893,17 +4275,20 @@ function hodlInitKeyManager(){
 function hodlInitMsigManager(){W("#add-msig").onclick=hodlAddMsig;W("#delete-msig").onclick=hodlDeleteActiveMsig;hodlRenderMsigTabs();hodlInitTabDrag(W("#msig-tabs"));if(hodlWorkspace==="msig")hodlRestoreMsig();else document.getElementById("msig-card").hidden=!0}
 function hodlSeedInitialManagers(){if(!hodlKeys.length){hodlKeys.push(hodlNewKeyState());hodlActiveKey=0}if(!hodlMsigs.length){hodlMsigs.push(hodlNewMsigState());hodlActiveMsig=0}}
 function hodlInitWorkspace(){let box=W("#workspace");box.innerHTML="";[["calc","Key Generation"],["msig","Multi Signature"],["psbt","PSBT / Nonce"]].forEach(([id,label])=>{let button=document.createElement("button");button.className="tab"+(hodlWorkspace===id?" active":"");button.dataset.workspace=id;button.textContent=label;button.onclick=()=>hodlShowWorkspace(id);box.appendChild(button)});hodlInitMsig();hodlInitPsbt()}
-var hodlKeyClearSyncQueued=!1,hodlMsigClearSyncQueued=!1;
+var hodlKeyClearSyncQueued=!1,hodlMsigClearSyncQueued=!1,hodlDeriveSyncQueued=!1;
 function hodlQueueKeyClearButtonSync(){
   if(hodlKeyClearSyncQueued)return;hodlKeyClearSyncQueued=!0;queueMicrotask(()=>{hodlKeyClearSyncQueued=!1;hodlSyncKeyClearButton(!0)})
 }
 function hodlQueueMsigClearButtonSync(){
   if(hodlMsigClearSyncQueued)return;hodlMsigClearSyncQueued=!0;queueMicrotask(()=>{hodlMsigClearSyncQueued=!1;hodlSyncMsigClearButton(!0)})
 }
+function hodlQueueDeriveButtonSync(){
+  if(hodlDeriveSyncQueued)return;hodlDeriveSyncQueued=!0;queueMicrotask(()=>{hodlDeriveSyncQueued=!1;hodlSyncDeriveButton()})
+}
 function hodlInitClearActionState(){
   let keyPanel=document.getElementById("calc-card"),msigPanel=document.getElementById("msig-card");
-  ["input","change","click"].forEach(type=>{keyPanel.addEventListener(type,hodlQueueKeyClearButtonSync);msigPanel.addEventListener(type,hodlQueueMsigClearButtonSync)});
-  hodlSyncKeyClearButton();hodlSyncMsigClearButton()
+  ["input","change","click"].forEach(type=>{keyPanel.addEventListener(type,hodlQueueKeyClearButtonSync);keyPanel.addEventListener(type,hodlQueueDeriveButtonSync);msigPanel.addEventListener(type,hodlQueueMsigClearButtonSync)});
+  hodlSyncKeyClearButton();hodlSyncMsigClearButton();hodlSyncDeriveButton()
 }
 hodlInitWorkspace();hodlSeedInitialManagers();hodlInitKeyManager();hodlInitMsigManager();hodlInitClearActionState();hodlInitMasterFingerprintPreview();hodlInitDerivationControls();})();
 </script>
@@ -4084,6 +4469,128 @@ hodlInitWorkspace();hodlSeedInitialManagers();hodlInitKeyManager();hodlInitMsigM
     roots.forEach((root) => {
       if (!root.contains(event.target)) close(root);
     });
+  });
+})();
+</script>
+<script>
+(() => {
+  const repeatableInputTypes = new Set(["text", "search", "tel", "url", "password"]);
+  const repeatDelay = 350;
+  const repeatInterval = 45;
+  let heldKey = null;
+
+  const isRepeatableTextControl = (target) => {
+    if (target instanceof HTMLTextAreaElement) return true;
+    return target instanceof HTMLInputElement && repeatableInputTypes.has(target.type);
+  };
+
+  const stopRepeating = (expectedState) => {
+    if (expectedState && heldKey !== expectedState) return;
+    const state = heldKey;
+    heldKey = null;
+    if (!state) return;
+    clearTimeout(state.delayTimer);
+    clearInterval(state.intervalTimer);
+  };
+
+  const insertText = (target, text) => {
+    const beforeInput = new InputEvent("beforeinput", {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      inputType: "insertText",
+      data: text
+    });
+    if (!target.dispatchEvent(beforeInput) || !target.isConnected) return false;
+
+    const start = target.selectionStart ?? target.value.length;
+    const end = target.selectionEnd ?? start;
+    let insertion = text;
+    if (target.maxLength >= 0) {
+      const remaining = target.maxLength - (target.value.length - (end - start));
+      insertion = insertion.slice(0, Math.max(0, remaining));
+    }
+    if (!insertion) return false;
+
+    target.setRangeText(insertion, start, end, "end");
+    target.dispatchEvent(new InputEvent("input", {
+      bubbles: true,
+      composed: true,
+      inputType: "insertText",
+      data: insertion
+    }));
+    return true;
+  };
+
+  const repeatHeldKey = (state) => {
+    if (
+      heldKey !== state ||
+      !state.target.isConnected ||
+      document.activeElement !== state.target ||
+      state.target.disabled ||
+      state.target.readOnly
+    ) {
+      stopRepeating(state);
+      return;
+    }
+    insertText(state.target, state.text);
+  };
+
+  const beginRepeating = (state) => {
+    if (heldKey !== state || state.intervalTimer) return;
+    clearTimeout(state.delayTimer);
+    repeatHeldKey(state);
+    if (heldKey !== state) return;
+    state.intervalTimer = setInterval(() => repeatHeldKey(state), repeatInterval);
+  };
+
+  document.addEventListener("keydown", (event) => {
+    const target = event.target;
+    if (
+      event.isComposing ||
+      event.defaultPrevented ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.altKey ||
+      event.key.length !== 1 ||
+      !isRepeatableTextControl(target) ||
+      target.disabled ||
+      target.readOnly
+    ) return;
+
+    const identity = event.code || event.key;
+    if (event.repeat) {
+      if (heldKey && heldKey.target === target && heldKey.identity === identity) {
+        event.preventDefault();
+        heldKey.text = event.key;
+        beginRepeating(heldKey);
+      }
+      return;
+    }
+
+    stopRepeating();
+    const state = {
+      target,
+      identity,
+      text: event.key,
+      delayTimer: 0,
+      intervalTimer: 0
+    };
+    heldKey = state;
+    state.delayTimer = setTimeout(() => beginRepeating(state), repeatDelay);
+  });
+
+  document.addEventListener("keyup", (event) => {
+    if (!heldKey) return;
+    const identity = event.code || event.key;
+    if (identity === heldKey.identity) stopRepeating();
+  });
+  document.addEventListener("focusout", (event) => {
+    if (heldKey?.target === event.target) stopRepeating();
+  });
+  window.addEventListener("blur", () => stopRepeating());
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stopRepeating();
   });
 })();
 </script></body></html>
