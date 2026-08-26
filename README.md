@@ -49,9 +49,10 @@ supplied by the user.
 
 ## Version snapshots
 
-The root `entropylab.html` file is the current working version. Distinct
-releases are preserved in the `versions/` directory using names such as
-`entropylab-0.1.2.html`, with the version number incremented for each release.
+The root `entropylab.html` file is the current working version. The current
+release snapshot is kept directly in `versions/`, while older releases are
+preserved in `versions/archived/`. Only snapshots directly inside `versions/`
+are published in the site's version dropdown.
 
 ## Security notice
 
