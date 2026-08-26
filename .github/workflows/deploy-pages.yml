@@ -29,6 +29,8 @@ jobs:
           mkdir _site
           cp entropylab.html _site/index.html
           cp versions/entropylab-*.html _site/
+          mkdir _site/assets
+          cp assets/favicon.png assets/entropylab_dark.png _site/assets/
           python3 - <<'PY'
           import json
           import re
