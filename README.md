@@ -85,12 +85,12 @@ files, run `npm run clean`.
 │   ├── build.mjs           Zero-dependency build script
 │   └── verify-site.mjs     Site artifact verification (npm run verify)
 ├── test/
-│   ├── network-check.test.mjs   Tests for the network-check module
-│   ├── validate.test.mjs        Source and security invariants
-│   └── browser.test.mjs         Headless-Firefox integration harness
-├── tests/
-│   ├── browser-instrumentation.html  In-page test hooks
-│   └── browser-suite.html            In-page suite run by the browser harness
+│   ├── browser-instrumentation.html  In-page browser test hooks
+│   ├── browser-suite.html            In-page browser test suite
+│   ├── browser.test.mjs              Headless-Firefox integration harness
+│   ├── network-check.test.mjs        Tests for the network-check module
+│   ├── ui-defaults.test.mjs          UI defaults and markup invariants
+│   └── validate.test.mjs             Source and security invariants
 ├── src/
 │   ├── index.html          HTML template (markup and document head)
 │   ├── css/styles.css      Application styles

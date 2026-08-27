@@ -1,7 +1,7 @@
 // Runs the assembled application in headless Firefox against a local Node.js
 // HTTP server and validates the BIP39/BIP32 vectors, input sanitization,
 // same-origin network behavior, hosted presentation, and recovery-sheet
-// exports. The in-page instrumentation and suite live in tests/.
+// exports. The in-page instrumentation and suite live alongside this harness.
 // Run with `npm run test:browser` or `npm test`.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -48,8 +48,8 @@ const stageSite = () => {
   cpSync(join(root, "assets"), join(siteDir, "assets"), { recursive: true });
 
   const appHtml = read("index.html");
-  const instrumentation = read("tests/browser-instrumentation.html");
-  const suite = read("tests/browser-suite.html");
+  const instrumentation = read("test/browser-instrumentation.html");
+  const suite = read("test/browser-suite.html");
 
   // Inject the test instrumentation before the application stylesheet.
   const marker = '<style id="btc-calc-style">';

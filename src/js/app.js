@@ -13,7 +13,7 @@ var vr=[16,20,24,28,32],Rc={0:"00",1:"01",2:"10",3:"11",4:"0",5:"1"};function kr
     </aside>
     <header>
       <div>
-        <div class="kicker">EntropyLab v{{VERSION}} \xB7 Offline \xB7 No entropy RNG \xB7 You provide the entropy</div>
+        <div class="kicker">EntropyLab v{{VERSION}} \xB7 Run Offline \xB7 No entropy RNG \xB7 Bring your own entropy</div>
         <div class="header-title-row"><img class="online-brand-mark" id="online-brand-mark" data-online-src="assets/entropylab_dark.png" alt="" aria-hidden="true" hidden><h1>EntropyLab — Air-Gapped Bitcoin Calculator</h1></div>
         <p class="muted">This file never generates wallet entropy. Save it to USB and open it on a computer that never goes online.</p>
         <div class="download-controls no-print">
