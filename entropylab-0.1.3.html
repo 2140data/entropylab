@@ -88,7 +88,7 @@ textarea { display: block; min-height: 96px; letter-spacing: 0.08em; }
   white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;
   color: var(--fg); font-family: var(--mono); font-size: 14px; line-height: 1.45; letter-spacing: 0.08em;
 }
-.dice-input-highlight[data-trailing-newline="true"]::after { content: "\200b"; }
+.dice-input-highlight[data-trailing-newline="true"]::after { content: "00b"; }
 .dice-roll-invalid {
   color: var(--danger);
 }
@@ -263,21 +263,19 @@ header { padding: 8px 0 16px; }
 .custom-select-option:hover, .custom-select-option:focus-visible { background: color-mix(in oklab, var(--accent) 14%, var(--surface-2)); outline: none; }
 .custom-select-option[aria-selected="true"] { background: color-mix(in oklab, var(--accent) 20%, var(--surface-2)); color: var(--accent); }
 .custom-select-option:disabled { background: transparent; color: var(--faint); cursor: not-allowed; opacity: .48; }
-.online-warning {
-  margin: 0 0 18px; padding: 14px 16px; border: 1px solid var(--danger); border-radius: 10px;
-  background: color-mix(in oklab, var(--danger) 14%, var(--surface)); color: var(--fg); line-height: 1.5;
+.beta-warning, .online-warning, .network-warning {
+  margin: 0 0 18px; padding: 14px 16px; border: 1px solid; border-radius: 10px;
+  color: var(--fg); line-height: 1.5;
+}
+.beta-warning, .online-warning {
+  border-color: var(--danger); background: color-mix(in oklab, var(--danger) 14%, var(--surface));
 }
 .online-warning strong { color: var(--danger); }
 .online-warning a { font-weight: 700; white-space: nowrap; }
 .network-warning {
-  margin: 0 0 18px; padding: 14px 16px; border: 1px solid var(--ok); border-radius: 10px;
-  background: color-mix(in oklab, var(--ok) 12%, var(--surface)); color: var(--fg); line-height: 1.5;
+  border-color: var(--ok); background: color-mix(in oklab, var(--ok) 12%, var(--surface));
 }
 .network-warning strong { color: var(--ok); }
-.beta-warning {
-  margin: 0 0 12px; padding: 14px 16px; border: 1px solid var(--danger); border-radius: 10px;
-  background: color-mix(in oklab, var(--danger) 14%, var(--surface)); color: var(--fg); line-height: 1.5;
-}
 .beta-warning strong { color: var(--danger); }
 @media print {
   :root {
@@ -742,7 +740,7 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
             <select id="script-type"><option value="bip44">Legacy · BIP44</option><option value="bip49">Nested SegWit · BIP49</option><option value="bip84" selected="selected">Native SegWit · BIP84</option><option value="bip86">Taproot · BIP86</option></select>
           </label>
           <label class="field">Network
-            <select id="network"><option value="mainnet" disabled="disabled">Bitcoin mainnet</option><option value="testnet" selected="selected">Testnet (practice)</option></select>
+            <select id="network"><option value="mainnet" selected="selected">Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
           </label>
         </div>
         <div class="key-settings-row" id="account-address-settings">
@@ -790,7 +788,7 @@ needs the number of signatures you choose, on real signing devices.</p>
           <select id="msig-n"><option value="2">2</option><option value="3" selected="selected">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option></select>
         </label>
         <label class="field" style="margin:0;flex:1">Network
-          <select id="msig-network"><option value="mainnet" disabled="disabled">Bitcoin mainnet</option><option value="testnet" selected="selected">Testnet (practice)</option></select>
+          <select id="msig-network"><option value="mainnet" selected="selected">Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
         </label>
         <label class="field" style="margin:0;flex:1">Addresses
           <select id="msig-count"><option value="5" selected="selected">5 + 5</option><option value="10">10 + 10</option><option value="20">20 + 20</option></select>
@@ -827,7 +825,7 @@ needs the number of signatures you choose, on real signing devices.</p>
             <input id="psbt-pass" autocomplete="off" placeholder="Leave blank unless you set one">
           </label>
           <label class="field">Address network
-            <select id="psbt-network"><option value="mainnet" disabled="disabled">Bitcoin mainnet</option><option value="testnet" selected="selected">Testnet (practice)</option></select>
+            <select id="psbt-network"><option value="mainnet" selected="selected">Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
           </label>
         </div>
       </div>
@@ -2970,7 +2968,7 @@ zoo`.split(`
             <select id="script-type"><option value="bip44">Legacy · BIP44</option><option value="bip49">Nested SegWit · BIP49</option><option value="bip84" selected>Native SegWit · BIP84</option><option value="bip86">Taproot · BIP86</option></select>
           </label>
           <label class="field">Network
-            <select id="network"><option value="mainnet" disabled>Bitcoin mainnet</option><option value="testnet" selected>Testnet (practice)</option></select>
+            <select id="network"><option value="mainnet" selected>Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
           </label>
         </div>
         <div class="key-settings-row" id="account-address-settings">
@@ -3016,7 +3014,7 @@ zoo`.split(`
           <select id="msig-n"></select>
         </label>
         <label class="field" style="margin:0;flex:1">Network
-          <select id="msig-network"><option value="mainnet" disabled>Bitcoin mainnet</option><option value="testnet" selected>Testnet (practice)</option></select>
+          <select id="msig-network"><option value="mainnet" selected>Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
         </label>
         <label class="field" style="margin:0;flex:1">Addresses
           <select id="msig-count"><option value="5">5 + 5</option><option value="10">10 + 10</option><option value="20">20 + 20</option></select>
@@ -3053,7 +3051,7 @@ zoo`.split(`
             <input id="psbt-pass" autocomplete="off" placeholder="Leave blank unless you set one">
           </label>
           <label class="field">Address network
-            <select id="psbt-network"><option value="mainnet" disabled>Bitcoin mainnet</option><option value="testnet" selected>Testnet (practice)</option></select>
+            <select id="psbt-network"><option value="mainnet" selected>Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
           </label>
         </div>
       </div>
@@ -3244,7 +3242,8 @@ function hodlAccountAdvancedExports(account,includePrivate=false){
   let privateExport=includePrivate&&account.genericPrivate?Ee(`Generic ${account.genericPrivateLabel} for descriptor compatibility`,account.genericPrivate):"";
   let publicExport=!includePrivate&&account.genericPublic?ye(`Generic ${account.genericPublicLabel} for descriptor compatibility`,account.genericPublic):"";
   if(!privateExport&&!publicExport)return"";
-  return`<details class="wallet-advanced"><summary>Advanced ${includePrivate?"private":"watch-only"} export</summary>${privateExport||publicExport}</details>`
+  if(includePrivate)return`<div class="wallet-advanced">${privateExport}</div>`;
+  return`<details class="wallet-advanced"><summary>Advanced watch-only export</summary>${publicExport}</details>`
 }
 function hodlAddressTable(rows,label="Addresses",includeWif=false){
   let safeLabel=$t(includeWif?`${label} with WIF private keys`:label),tableClass=includeWif?"wallet-table-private":"wallet-table-public";
@@ -3568,7 +3567,7 @@ function hodlUpdateDerivationPathPreview(){
     accountInput?.classList.remove("bad");accountInput?.setAttribute("aria-invalid","false");context.textContent="";message.textContent="";panel.classList.remove("is-invalid");return
   }
   let account;try{account=hodlReadAccount()}catch(error){context.textContent="Invalid account";showMessage(error.message||"Invalid account.",true);return}
-  let network=hodlForceTestnet(document.getElementById("network")),count=Math.min(Math.max(Number(document.getElementById("count")?.value)||5,1),50),last=count-1;
+  let network=hodlSelectedNetwork(document.getElementById("network")),count=Math.min(Math.max(Number(document.getElementById("count")?.value)||5,1),50),last=count-1;
   context.textContent=`${definition.label} · ${definition.bip}`;clearMessage();
   if((hodlImportedExtendedKeyDepth()??0)>0){
     setPath("account","Imported key base");setPath("receive",`imported-key/0/0 → imported-key/0/${last}`);setPath("change",`imported-key/1/0 → imported-key/1/${last}`);
@@ -3596,7 +3595,7 @@ function hodlInitDerivationControls(){
     }
     if(target.id==="network"||target.id==="count"){
       let state=hodlKeys[hodlActiveKey];if(state)state.fields[target.id]=target.value;
-      hodlInvalidateLiveKeyResult();let error=document.getElementById("error");if(error)error.textContent="";hodlUpdateDerivationPathPreview();if(target.id==="network"){let seed=document.getElementById("seed");if(seed)seed.dispatchEvent(new Event("input"))}
+      hodlInvalidateLiveKeyResult();let error=document.getElementById("error");if(error)error.textContent="";hodlUpdateDerivationPathPreview();if(target.id==="network"){let seed=document.getElementById("seed"),key=document.getElementById("key");if(seed)seed.dispatchEvent(new Event("input"));if(key)key.dispatchEvent(new Event("input"))}
     }
   });
   hodlUpdateDerivationPathPreview()
@@ -4098,7 +4097,7 @@ function hodlRenderKeyForm(){
     at.innerHTML=`<p class="label">Your ${config.words}-word seed phrase</p><p class="muted" id="seed-help">Enter exactly ${config.words} English BIP39 words. You can also paste an extended key here; the selected phrase length does not apply to extended keys. With ${config.partialWords} compatible diceware words, choose the final checksum word below.</p><label class="seed-autocomplete-toggle"><input type="checkbox" id="seed-autocomplete" ${autocompleteEnabled?"checked":""} /><span>Autocomplete BIP39 words <span class="seed-autocomplete-note">(2+ letters normally; 1+ for a unique checksum word)</span></span></label><div class="dice-input-shell seed-input-shell"><pre class="dice-input-highlight" id="seed-highlight" aria-hidden="true"></pre><textarea id="seed" placeholder="Enter exactly ${config.words} BIP39 words" aria-describedby="seed-help seed-meta" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div><p class="muted" id="seed-meta" aria-live="polite"></p><div id="last-words" class="row" style="margin-top:8px"></div>`;
     let input=document.getElementById("seed"),update=()=>{
       let rawValue=input.value,value=rawValue.trim(),meta=W("#seed-meta"),picker=W("#last-words"),analysis=hodlRenderSeedInputState(input,config.words);
-      if(hodlLooksExtendedKey(value)){let status=hodlSinglesigImportStatus(value,hodlForceTestnet(document.getElementById("network")));picker.innerHTML="";meta.textContent=status.message;meta.className="muted "+(status.ok?"ok":"err");return}
+      if(hodlLooksExtendedKey(value)){let status=hodlSinglesigImportStatus(value,hodlSelectedNetwork(document.getElementById("network")));picker.innerHTML="";meta.textContent=status.message;meta.className="muted "+(status.ok?"ok":"err");return}
       let finalContext=hodlSeedFinalWordContext(rawValue,config.words),validation=hodlValidateTargetMnemonic(value,config.words),entered=analysis.tokens.length,progress=hodlSeedCountStatus(entered,config.words),remaining=Math.max(0,config.words-entered);
       if(finalContext){
         hodlRenderLastWordPicker(picker,finalContext.candidates,finalContext.selected,word=>hodlReplaceSeedFinalWord(input,finalContext,word),{forceSelect:!0,resettable:!0,targetWords:config.words,placeholder:`Choose ${config.words===18?"an":"a"} ${config.words}th word`});
@@ -4164,7 +4163,7 @@ function hodlBindKeyFields(){
   let dice=document.getElementById("dice");if(dice){dice.setAttribute("inputmode",ge==="dplus"?"text":"numeric");dice.setAttribute("autocapitalize",ge==="dplus"?"characters":"off");dice.setAttribute("autocomplete","off");dice.setAttribute("spellcheck","false");dice.onbeforeinput=event=>{if(ge==="dplus")hodlHandleGroupedSeparatorDelete(dice,event);else hodlRememberDiceBeforeInput(dice,event)}}
   let hex=document.getElementById("hex");if(hex){hex.setAttribute("spellcheck","false");hex.oninput=()=>{hodlApplyFilteredInput(hex,hodlFilterHex);hodlUpdateEntropyInput(hex,"hex")};hex.onscroll=()=>hodlSyncDiceHighlight(hex);hex.oninput()}
   let binary=document.getElementById("bin");if(binary){binary.setAttribute("inputmode","numeric");binary.setAttribute("spellcheck","false");binary.onbeforeinput=event=>hodlHandleBinarySeparatorDelete(binary,event);binary.oninput=()=>{hodlFormatBinaryInput(binary);hodlUpdateEntropyInput(binary,"bin")};binary.onscroll=()=>hodlSyncDiceHighlight(binary);binary.oninput()}
-  let key=document.getElementById("key");if(key){let apply=()=>{let kind=document.querySelector("input[name=kk]:checked")?.value||"wif-or-hex";if(kind!=="brain")key.value=hodlFilterKey(key.value,kind);let value=key.value.trim();if(!value){hodlHint(key,!0,"");return}if(kind==="brain"){hodlHint(key,!1,"Brain wallets are unsafe. Recovery only.");return}if(kind==="minikey"){try{Ns(value);hodlHint(key,!0,"Mini key checksum looks valid")}catch(error){hodlHint(key,!1,error.message||"Not a valid mini key")}return}if(/^[0-9a-fA-F]{64}$/.test(value)){hodlHint(key,!0,"64-character hex private key");return}try{let decoded=Ls(value);if(decoded.network!=="testnet")throw new Error("Mainnet WIF keys are temporarily disabled. Use a Testnet WIF key.");hodlHint(key,!0,"Testnet WIF private key checksum looks valid")}catch(error){hodlHint(key,!1,error.message||"Not a Testnet WIF key or 64-character hex")}};key.oninput=apply;document.querySelectorAll("input[name=kk]").forEach(radio=>radio.addEventListener("change",apply))}
+  let key=document.getElementById("key");if(key){let apply=()=>{let kind=document.querySelector("input[name=kk]:checked")?.value||"wif-or-hex";if(kind!=="brain")key.value=hodlFilterKey(key.value,kind);let value=key.value.trim();if(!value){hodlHint(key,!0,"");return}if(kind==="brain"){hodlHint(key,!1,"Brain wallets are unsafe. Recovery only.");return}if(kind==="minikey"){try{Ns(value);hodlHint(key,!0,"Mini key checksum looks valid")}catch(error){hodlHint(key,!1,error.message||"Not a valid mini key")}return}if(/^[0-9a-fA-F]{64}$/.test(value)){hodlHint(key,!0,"64-character hex private key");return}try{let decoded=Ls(value),network=hodlSelectedNetwork(document.getElementById("network"));if(decoded.network!==network)throw new Error(`This WIF is for ${decoded.network}; Network is set to ${network}.`);hodlHint(key,!0,`${network} WIF private key checksum looks valid`)}catch(error){hodlHint(key,!1,error.message||"Not a valid WIF key or 64-character hex")}};key.oninput=apply;document.querySelectorAll("input[name=kk]").forEach(radio=>radio.addEventListener("change",apply))}
 }
 function hodlSelectedEntropy(targetWords=Pt){
   let format=hodlEntropyFormat==="bin"?"bin":"hex",value=document.getElementById(format)?.value.trim()||"";
@@ -4178,7 +4177,7 @@ function hodlPrivateKeyInputIsValid(){
     if(kind==="minikey"){hf(Ns(value));return!0}
     let compact=value.replace(/\s/g,"").replace(/^0x/i,"");
     if(/^[0-9a-fA-F]{64}$/.test(compact)){hf(M.decode(compact.toLowerCase()));return!0}
-    let decoded=Ls(value);if(decoded.network!=="testnet")return!1;hf(decoded.priv);return!0
+    let decoded=Ls(value);if(decoded.network!==hodlSelectedNetwork(document.getElementById("network")))return!1;hf(decoded.priv);return!0
   }catch{return!1}
 }
 function hodlCanDeriveCurrentKey(){
@@ -4203,7 +4202,7 @@ function hodlCanDeriveCurrentKey(){
     if(Ne==="hex")return hodlSelectedEntropy().ok;
     if(Ne==="seed"){
       let value=document.getElementById("seed")?.value.trim()||"";if(!value)return!1;
-      if(hodlLooksExtendedKey(value))return hodlUsableSinglesigImport(value,hodlForceTestnet(document.getElementById("network")));
+      if(hodlLooksExtendedKey(value))return hodlUsableSinglesigImport(value,hodlSelectedNetwork(document.getElementById("network")));
       return hodlValidateTargetMnemonic(value,Pt).ok
     }
     return hodlPrivateKeyInputIsValid()
@@ -4288,7 +4287,7 @@ function hodlInitMasterFingerprintPreview(){
 function hodlCalculateKey(){
   W("#error").textContent="";
   try{
-    let network=hodlForceTestnet(document.getElementById("network")),count=Number(document.getElementById("count").value),passphrase=document.getElementById("pass").value,scriptType=hodlSelectedScriptType(),account=Ne==="key"?0:hodlReadAccount();
+    let network=hodlSelectedNetwork(document.getElementById("network")),count=Number(document.getElementById("count").value),passphrase=document.getElementById("pass").value,scriptType=hodlSelectedScriptType(),account=Ne==="key"?0:hodlReadAccount();
     if(Ne==="dice"){
       if(ge==="dplus"){
         let parsed=hodlDPlusRolls(document.getElementById("dice").value,Pt);
@@ -4310,7 +4309,7 @@ function hodlCalculateKey(){
     }else if(Ne==="seed"){
       let value=document.getElementById("seed").value.trim();if(hodlLooksExtendedKey(value))re=Po(value,network,count,account);else{let validation=hodlValidateTargetMnemonic(value,Pt);if(!validation.ok)throw new Error(validation.error);re=ar(validation.words.join(" "),passphrase,network,count,undefined,account)}
     }else{let kind=document.querySelector("input[name=kk]:checked")?.value||"wif-or-hex";re=Io(document.getElementById("key").value,network,kind)}
-    if(re?.network!=="testnet")throw new Error("Mainnet key material is temporarily disabled. Use Testnet-formatted key material.");
+    if(re?.network!==network)throw new Error(`The supplied key is for ${re.network}, but Network is set to ${network}.`);
     Ge=!1;hodlSetSelectedScriptType(scriptType);tc();hodlFocusWalletResult();hodlCaptureKey()
   }catch(error){re=null;W("#error").textContent=error instanceof Error?error.message:"Could not derive wallet";dr.innerHTML="";hodlCaptureKey()}
 }
@@ -4357,8 +4356,8 @@ function hodlDuplicateMultisigKey(ta,parsed){
   }
   return!1
 }
-function hodlCheckXpub(ta){let value=ta.value.trim();if(!value){hodlHint(ta,!0,"");return}try{let parsed=uf(value),network=hodlForceTestnet(document.getElementById("msig-network")),kind=hodlScriptKind();if(parsed.isPrivate)throw new Error("Paste an extended public key, never an extended private key.");if(parsed.network!==network)throw new Error(`${parsed.prefix} is for ${parsed.network}; the multisig is set to ${network}.`);if(!hodlMultisigPrefixCompatible(parsed,kind))throw new Error(parsed.scope==="singlesig"?"Use a generic xpub/tpub here, or a proper uppercase multisig SLIP-132 export.":`${parsed.prefix} does not match the selected multisig script type.`);let accountError=hodlMultisigAccountKeyError(parsed,kind);if(accountError)throw new Error(accountError);if(hodlDuplicateMultisigKey(ta,parsed))throw new Error("This duplicates another co-signer. Every co-signer must use a distinct extended public key.");hodlHint(ta,!0,`${parsed.prefix} checksum, network, and account path look valid`)}catch(error){hodlHint(ta,!1,error.message||"Not a valid multisig extended public key")}}
-function hodlResetMsigForm(){hodlSyncSelect(document.getElementById("msig-n"),"3");hodlFillM(2);document.querySelectorAll("input[name=msig-script]").forEach(input=>{input.checked=input.value==="p2wsh"});hodlFillKeys([]);hodlSyncSelect(document.getElementById("msig-network"),"testnet");hodlSyncSelect(document.getElementById("msig-count"),"5");document.getElementById("msig-error").textContent=""}
+function hodlCheckXpub(ta){let value=ta.value.trim();if(!value){hodlHint(ta,!0,"");return}try{let parsed=uf(value),network=hodlSelectedNetwork(document.getElementById("msig-network")),kind=hodlScriptKind();if(parsed.isPrivate)throw new Error("Paste an extended public key, never an extended private key.");if(parsed.network!==network)throw new Error(`${parsed.prefix} is for ${parsed.network}; the multisig is set to ${network}.`);if(!hodlMultisigPrefixCompatible(parsed,kind))throw new Error(parsed.scope==="singlesig"?"Use a generic xpub/tpub here, or a proper uppercase multisig SLIP-132 export.":`${parsed.prefix} does not match the selected multisig script type.`);let accountError=hodlMultisigAccountKeyError(parsed,kind);if(accountError)throw new Error(accountError);if(hodlDuplicateMultisigKey(ta,parsed))throw new Error("This duplicates another co-signer. Every co-signer must use a distinct extended public key.");hodlHint(ta,!0,`${parsed.prefix} checksum, network, and account path look valid`)}catch(error){hodlHint(ta,!1,error.message||"Not a valid multisig extended public key")}}
+function hodlResetMsigForm(){hodlSyncSelect(document.getElementById("msig-n"),"3");hodlFillM(2);document.querySelectorAll("input[name=msig-script]").forEach(input=>{input.checked=input.value==="p2wsh"});hodlFillKeys([]);hodlSyncSelect(document.getElementById("msig-network"),"mainnet");hodlSyncSelect(document.getElementById("msig-count"),"5");document.getElementById("msig-error").textContent=""}
 function hodlInitMsig(){let nSel=document.getElementById("msig-n");nSel.innerHTML="";for(let i=2;i<=15;i++){let option=document.createElement("option");option.value=String(i);option.textContent=String(i);nSel.appendChild(option)}nSel.value="3";nSel.onchange=()=>{let state=hodlMsigs[hodlActiveMsig],values=state?hodlMergeMsigXpubs(state):hodlReadMsigXpubs(),wanted=document.getElementById("msig-m").value;hodlFillM(wanted);hodlFillKeys(values);hodlInvalidateMsig()};document.getElementById("msig-m").onchange=()=>{hodlUpdateMsigHint();hodlInvalidateMsig()};let recheck=()=>{hodlInvalidateMsig();document.querySelectorAll("#msig-keys textarea").forEach(hodlCheckXpub)};document.getElementById("msig-network").addEventListener("change",recheck);document.getElementById("msig-count").addEventListener("change",hodlInvalidateMsig);document.querySelectorAll('input[name="msig-script"]').forEach(input=>input.addEventListener("change",recheck));hodlResetMsigForm();W("#msig-go").onclick=hodlBuildMsig;W("#msig-wipe").onclick=hodlWipeActiveMsig}
 function hodlCmpBytes(a,b){let n=Math.min(a.length,b.length);for(let i=0;i<n;i++)if(a[i]!==b[i])return a[i]-b[i];return a.length-b.length}
 function hodlScriptKind(){return (document.querySelector("input[name=msig-script]:checked")||{}).value||"p2wsh"}
@@ -4366,7 +4365,7 @@ function hodlMsigAddr(pubkeys,m,network,kind){let sorted=[...pubkeys].sort(hodlC
 function hodlBuildMsig(){
   let error=document.getElementById("msig-error");error.textContent="";
   try{
-    let network=hodlForceTestnet(document.getElementById("msig-network")),count=Number(document.getElementById("msig-count").value),n=Number(document.getElementById("msig-n").value),m=Number(document.getElementById("msig-m").value);
+    let network=hodlSelectedNetwork(document.getElementById("msig-network")),count=Number(document.getElementById("msig-count").value),n=Number(document.getElementById("msig-n").value),m=Number(document.getElementById("msig-m").value);
     if(!(m>=1&&n>=2&&m<=n&&n<=15))throw new Error("Pick how many signatures out of how many keys.");
     let kind=hodlScriptKind(),nodes=[],xpubs=[],legacyChildNumbers=[];
     for(let index=0;index<n;index++){
@@ -4495,7 +4494,7 @@ function hodlPrivFromPath(entries,pubkey){if(!hodlPsbtHd)return null;let rootFin
 function hodlPsbtWipeMem(){if(hodlPsbtPriv)try{hodlPsbtPriv.fill(0)}catch{}hodlPsbtPriv=null;if(hodlPsbtHd)try{let privateKey=hodlPsbtHd.privateKey;if(privateKey)privateKey.fill(0)}catch{}hodlPsbtHd=null;hodlPsbtSource="";hodlPsbtNote="No session key. Inspect-only mode."}
 function hodlLoadPsbtKey(text,passphrase){
   hodlPsbtWipeMem();let value=text.trim(),hex=value.replace(/\s/g,"").replace(/^0x/i,"");if(!value)return;
-  if(/^[5KL9c][1-9A-HJ-NP-Za-km-z]{50,51}$/.test(value)){let decoded=Ls(value);if(decoded.network!=="testnet")throw new Error("Mainnet WIF keys are temporarily disabled. Use a Testnet WIF key.");hodlPsbtPriv=decoded.priv;hf(hodlPsbtPriv);hodlPsbtNote="Session key: WIF. Kept in page memory only."}
+  if(/^[5KL9c][1-9A-HJ-NP-Za-km-z]{50,51}$/.test(value)){let decoded=Ls(value);hodlPsbtPriv=decoded.priv;hf(hodlPsbtPriv);hodlPsbtNote=`Session key: ${decoded.network} WIF. Kept in page memory only.`}
   else if(/^[0-9a-fA-F]{64}$/.test(hex)){hodlPsbtPriv=M.decode(hex.toLowerCase());hf(hodlPsbtPriv);hodlPsbtNote="Session key: 32-byte private key. Kept in page memory only."}
   else{let mnemonic=Mt(value);if(!mnemonic.ok)throw new Error(mnemonic.error||"Enter a BIP39 seed phrase, WIF, or 64-character hex key.");let seed=wi(mnemonic.words.join(" "),passphrase||"");try{hodlPsbtHd=Gt.fromMasterSeed(seed)}finally{seed.fill(0)}hodlPsbtNote="Session key: BIP39 seed"+(passphrase?" + passphrase":"")+". Kept in page memory only."}
   hodlPsbtSource="manual"
@@ -4510,17 +4509,17 @@ function hodlUseActiveKeyForPsbt(){
   hodlPsbtSource="active";hodlPsbtNote="Session key from "+(state.name||"the active key")+". Kept in page memory only."
 }
 function hodlInitPsbt(){
-  let go=document.getElementById("psbt-go");if(!go)return;hodlForceTestnet(document.getElementById("psbt-network"));go.onclick=hodlRunPsbt;
+  let go=document.getElementById("psbt-go");if(!go)return;go.onclick=hodlRunPsbt;
   document.getElementById("psbt-use-calc").onclick=()=>{let error=document.getElementById("psbt-error");error.textContent="";try{hodlUseActiveKeyForPsbt();document.getElementById("psbt-key").value="";document.getElementById("psbt-pass").value="";document.getElementById("psbt-session").textContent=hodlPsbtNote}catch(exception){error.textContent=exception.message||String(exception)}};
   document.getElementById("psbt-wipe").onclick=()=>{hodlPsbtWipeMem();document.getElementById("psbt-key").value="";document.getElementById("psbt-pass").value="";document.getElementById("psbt-text").value="";document.getElementById("psbt-out").innerHTML="";document.getElementById("psbt-error").textContent="";document.getElementById("psbt-session").textContent="Session ended and accessible fields were cleared (best effort)."};
   let clearSecretFields=()=>{hodlPsbtWipeMem();let key=document.getElementById("psbt-key"),pass=document.getElementById("psbt-pass");if(key)key.value="";if(pass)pass.value=""};addEventListener("pagehide",clearSecretFields);addEventListener("pageshow",event=>{if(event.persisted)clearSecretFields()})
 }
 function hodlRunPsbt(){
   let error=document.getElementById("psbt-error"),output=document.getElementById("psbt-out"),manual=document.getElementById("psbt-key").value;error.textContent="";output.innerHTML="";
-  try{hodlForceTestnet(document.getElementById("psbt-network"));if(manual.trim()){hodlLoadPsbtKey(manual,document.getElementById("psbt-pass").value);document.getElementById("psbt-key").value="";document.getElementById("psbt-pass").value=""}document.getElementById("psbt-session").textContent=hodlPsbtNote;let psbt=hodlParsePsbt(hodlPsbtBytes(document.getElementById("psbt-text").value));output.innerHTML=hodlRenderPsbt(psbt)}catch(exception){error.textContent=exception instanceof Error?exception.message:String(exception)}
+  try{if(manual.trim()){hodlLoadPsbtKey(manual,document.getElementById("psbt-pass").value);document.getElementById("psbt-key").value="";document.getElementById("psbt-pass").value=""}document.getElementById("psbt-session").textContent=hodlPsbtNote;let psbt=hodlParsePsbt(hodlPsbtBytes(document.getElementById("psbt-text").value));output.innerHTML=hodlRenderPsbt(psbt)}catch(exception){error.textContent=exception instanceof Error?exception.message:String(exception)}
 }
 function hodlRenderPsbt(psbt){
-  let network=hodlForceTestnet(document.getElementById("psbt-network")),tx=psbt.tx,inputSum=0n,knownInputs=0,html=[],rValues=[],rows=[],tapSignatureCount=0;
+  let network=hodlSelectedNetwork(document.getElementById("psbt-network")),tx=psbt.tx,inputSum=0n,knownInputs=0,html=[],rValues=[],rows=[],tapSignatureCount=0;
   html.push("<p class='label'>Where this transaction sends bitcoin</p>");tx.outputs.forEach((output,index)=>{html.push("<p class='psbt-kv'><strong>Output "+index+"</strong> · "+hodlSats(output.amount)+" BTC<br>"+$t(hodlAddr(output.script,network))+"</p>")});
   psbt.inputs.forEach((entries,index)=>{
     let witnessUtxo=hodlWitUtxo(entries);if(witnessUtxo){inputSum+=witnessUtxo.amount;knownInputs++}let previous=tx.inputs[index],destination=witnessUtxo?hodlAddr(witnessUtxo.script,network):"(previous output details unavailable)",signatures=hodlPartialSigs(entries),tapSignatures=hodlTapSigs(entries),finalized=hodlFinalized(entries);tapSignatureCount+=tapSignatures.length;
@@ -4547,7 +4546,7 @@ function hodlRenderPsbt(psbt){
 }
 var hodlAccountId="bip84",hodlNextKeyId=1,hodlNextKeyNumber=1,hodlKeys=[],hodlActiveKey=-1;
 function hodlKeyColor(id){let hue=Math.round((Number(id)*137.508+19)%360);return`oklch(61% 0.08 ${hue})`}
-function hodlNewKeyState(name,keyId,keyNumber){let id=keyId??hodlNextKeyId++,number=keyNumber??hodlNextKeyNumber++;return{id,number,color:hodlKeyColor(id),name:name||hodlDefaultKeyName(number),mode:"dice",diceMethod:"coldcard",entropyFormat:"hex",seedAutocomplete:!1,dplusNumberedD16:!1,targetWords:24,diceCoinPositions:[],lastWord:"",dplusLastWord:"",result:null,reveal:!1,accountId:"bip84",error:"",fields:{pass:"",script:"bip84",network:"testnet",account:"0",count:"5",dice:"",dplusDice:"",hex:"",bin:"",seed:"",key:"",keyKind:"wif-or-hex"}}}
+function hodlNewKeyState(name,keyId,keyNumber){let id=keyId??hodlNextKeyId++,number=keyNumber??hodlNextKeyNumber++;return{id,number,color:hodlKeyColor(id),name:name||hodlDefaultKeyName(number),mode:"dice",diceMethod:"coldcard",entropyFormat:"hex",seedAutocomplete:!1,dplusNumberedD16:!1,targetWords:24,diceCoinPositions:[],lastWord:"",dplusLastWord:"",result:null,reveal:!1,accountId:"bip84",error:"",fields:{pass:"",script:"bip84",network:"mainnet",account:"0",count:"5",dice:"",dplusDice:"",hex:"",bin:"",seed:"",key:"",keyKind:"wif-or-hex"}}}
 function hodlRestoreFormFields(state){
   if(!state)return;
   document.querySelectorAll("input[name=kk]").forEach(input=>{input.checked=input.value===(state.fields.keyKind||"wif-or-hex")});
@@ -4565,7 +4564,7 @@ function hodlKeyStateNeedsClear(state){
   if(!state)return!1;let fields=state.fields||{},hasText=id=>String(fields[id]??"").length>0;
   return String(state.mode??"dice")!=="dice"||String(state.diceMethod??"coldcard")!=="coldcard"||String(state.entropyFormat??"hex")!=="hex"||Boolean(state.seedAutocomplete)||Boolean(state.dplusNumberedD16)||Number(state.targetWords??24)!==24||
     (Array.isArray(state.diceCoinPositions)&&state.diceCoinPositions.length>0)||String(state.lastWord??"").length>0||String(state.dplusLastWord??"").length>0||Boolean(state.result)||Boolean(state.reveal)||String(state.error??"").length>0||
-    String(state.accountId??"bip84")!=="bip84"||String(fields.script??"bip84")!=="bip84"||String(fields.network??"testnet")!=="testnet"||String(fields.account??"0")!=="0"||String(fields.count??"5")!=="5"||
+    String(state.accountId??"bip84")!=="bip84"||String(fields.script??"bip84")!=="bip84"||String(fields.network??"mainnet")!=="mainnet"||String(fields.account??"0")!=="0"||String(fields.count??"5")!=="5"||
     String(fields.keyKind??"wif-or-hex")!=="wif-or-hex"||["pass","dice","dplusDice","hex","bin","seed","key"].some(hasText)
 }
 function hodlSyncKeyClearButton(capture=!1){
@@ -4581,7 +4580,7 @@ function hodlCaptureKey(){
   let state=hodlKeys[hodlActiveKey];
   state.mode=Ne;state.diceMethod=ge;state.entropyFormat=hodlEntropyFormat;let seedAutocomplete=document.getElementById("seed-autocomplete");if(seedAutocomplete)state.seedAutocomplete=seedAutocomplete.checked;let dplusToggle=document.getElementById("dplus-numbered-d16");if(dplusToggle)hodlDPlusNumberedD16=dplusToggle.checked;state.dplusNumberedD16=Boolean(hodlDPlusNumberedD16);state.targetWords=Pt;state.diceCoinPositions=hodlDiceCoinPositions.slice();if(ge==="dplus")state.dplusLastWord=ft;else if(ge==="bitbox")state.lastWord=ft;state.result=re;state.reveal=Ge;state.accountId=hodlSelectedScriptType();state.fields.script=state.accountId;
   state.error=document.getElementById("error")?.textContent||"";
-  ["pass","account","count","hex","bin","seed","key"].forEach(id=>{let el=document.getElementById(id);if(el)state.fields[id]=el.value});state.fields.network="testnet";
+  ["pass","account","count","hex","bin","seed","key"].forEach(id=>{let el=document.getElementById(id);if(el)state.fields[id]=el.value});state.fields.network=hodlSelectedNetwork(document.getElementById("network"));
   let dice=document.getElementById("dice");if(dice)state.fields[ge==="dplus"?"dplusDice":"dice"]=dice.value;
   state.fields.keyKind=document.querySelector("input[name=kk]:checked")?.value||state.fields.keyKind||"wif-or-hex";
 }
@@ -4590,9 +4589,8 @@ function hodlSyncSelect(select,value){
   select.value=value;
   select.dispatchEvent(new Event("entropylab:sync-select"));
 }
-function hodlForceTestnet(select){
-  if(select&&select.value!=="testnet")hodlSyncSelect(select,"testnet");
-  return"testnet"
+function hodlSelectedNetwork(select){
+  return select?.value==="testnet"?"testnet":"mainnet"
 }
 function hodlRestoreKey(){
   let state=hodlKeys[hodlActiveKey];
@@ -4600,7 +4598,7 @@ function hodlRestoreKey(){
     Ne="dice";ge="coldcard";hodlEntropyFormat="hex";hodlDPlusNumberedD16=!1;Pt=24;hodlDiceCoinPositions=[];ft="";re=null;Ge=!1;hodlAccountId="bip84";
     [...Zs.children].forEach((button,index)=>{let active=index===0;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});hodlRenderKeyForm();
     let pass=document.getElementById("pass");if(pass)pass.value="";
-    hodlSyncSelect(document.getElementById("script-type"),"bip84");hodlSyncSelect(document.getElementById("network"),"testnet");let account=document.getElementById("account");if(account)account.value="0";hodlSyncSelect(document.getElementById("count"),"5");
+    hodlSyncSelect(document.getElementById("script-type"),"bip84");hodlSyncSelect(document.getElementById("network"),"mainnet");let account=document.getElementById("account");if(account)account.value="0";hodlSyncSelect(document.getElementById("count"),"5");
     W("#error").textContent="";dr.innerHTML="";document.getElementById("calc-card").hidden=!0;hodlQueueMasterFingerprintPreview(0);hodlUpdateDerivationPathPreview();hodlSyncKeyClearButton();hodlSyncDeriveButton();return
   }
   Ne=state.mode;ge=state.diceMethod;hodlEntropyFormat=state.entropyFormat==="bin"?"bin":"hex";hodlDPlusNumberedD16=Boolean(state.dplusNumberedD16);Pt=hodlSeedLengths[Number(state.targetWords)]?Number(state.targetWords):24;hodlDiceCoinPositions=hodlNormalizeDiceCoinPositions(state.diceCoinPositions);ft=ge==="dplus"?state.dplusLastWord||"":ge==="bitbox"?state.lastWord||"":"";
@@ -4609,7 +4607,7 @@ function hodlRestoreKey(){
   let pass=document.getElementById("pass");if(pass)pass.value=state.fields.pass||"";
   hodlAccountId=state.accountId||state.fields.script||"bip84";
   hodlSyncSelect(document.getElementById("script-type"),hodlAccountId);
-  state.fields.network="testnet";hodlSyncSelect(document.getElementById("network"),"testnet");
+  state.fields.network=state.fields.network==="testnet"?"testnet":"mainnet";hodlSyncSelect(document.getElementById("network"),state.fields.network);
   let account=document.getElementById("account");if(account)account.value=state.fields.account??"0";
   hodlSyncSelect(document.getElementById("count"),state.fields.count||"5");
   hodlRestoreFormFields(state);
@@ -4697,11 +4695,11 @@ function hodlDeleteActiveKey(){
   (hodlActiveKey>=0?W("#key-tabs").children[hodlActiveKey]:W("#add-key"))?.focus();
 }
 var hodlNextMsigId=1,hodlNextMsigNumber=1,hodlMsigs=[],hodlActiveMsig=-1;
-function hodlNewMsigState(name,msigId,msigNumber){let id=msigId??hodlNextMsigId++,number=msigNumber??hodlNextMsigNumber++;return{id,number,name:name||hodlDefaultMsigName(number),result:null,error:"",fields:{m:"2",n:"3",script:"p2wsh",xpubs:["","",""],network:"testnet",count:"5"}}}
+function hodlNewMsigState(name,msigId,msigNumber){let id=msigId??hodlNextMsigId++,number=msigNumber??hodlNextMsigNumber++;return{id,number,name:name||hodlDefaultMsigName(number),result:null,error:"",fields:{m:"2",n:"3",script:"p2wsh",xpubs:["","",""],network:"mainnet",count:"5"}}}
 function hodlMsigStateNeedsClear(state){
   if(!state)return!1;let fields=state.fields||{},xpubs=Array.isArray(fields.xpubs)?fields.xpubs:[];
   return Boolean(state.result)||String(state.error??"").length>0||xpubs.some(value=>String(value??"").length>0)||
-    String(fields.m??"2")!=="2"||String(fields.n??"3")!=="3"||String(fields.script??"p2wsh")!=="p2wsh"||String(fields.network??"testnet")!=="testnet"||String(fields.count??"5")!=="5"
+    String(fields.m??"2")!=="2"||String(fields.n??"3")!=="3"||String(fields.script??"p2wsh")!=="p2wsh"||String(fields.network??"mainnet")!=="mainnet"||String(fields.count??"5")!=="5"
 }
 function hodlSyncMsigClearButton(capture=!1){
   if(capture)hodlCaptureMsig();let button=document.getElementById("msig-wipe");if(!button)return;
@@ -4710,7 +4708,7 @@ function hodlSyncMsigClearButton(capture=!1){
 function hodlCaptureMsig(){
   if(hodlActiveMsig<0||!hodlMsigs[hodlActiveMsig])return;
   let state=hodlMsigs[hodlActiveMsig];
-  state.fields.n=document.getElementById("msig-n").value||"3";state.fields.m=document.getElementById("msig-m").value||"2";state.fields.script=hodlScriptKind();hodlMergeMsigXpubs(state);state.fields.network="testnet";state.fields.count=document.getElementById("msig-count").value||"5";
+  state.fields.n=document.getElementById("msig-n").value||"3";state.fields.m=document.getElementById("msig-m").value||"2";state.fields.script=hodlScriptKind();hodlMergeMsigXpubs(state);state.fields.network=hodlSelectedNetwork(document.getElementById("msig-network"));state.fields.count=document.getElementById("msig-count").value||"5";
   state.result=re&&re.kind==="msig"?re:null;state.error=document.getElementById("msig-error").textContent||"";
 }
 function hodlRestoreMsig(){
@@ -4718,7 +4716,7 @@ function hodlRestoreMsig(){
   if(!state){re=null;Ge=!1;hodlResetMsigForm();dr.innerHTML="";panel.hidden=!0;hodlSyncMsigClearButton();return}
   hodlSyncSelect(document.getElementById("msig-n"),state.fields.n||"3");hodlFillM(state.fields.m||"2");
   document.querySelectorAll("input[name=msig-script]").forEach(input=>{input.checked=input.value===(state.fields.script||"p2wsh")});
-  hodlFillKeys(state.fields.xpubs||[]);state.fields.network="testnet";hodlSyncSelect(document.getElementById("msig-network"),"testnet");hodlSyncSelect(document.getElementById("msig-count"),state.fields.count||"5");
+  hodlFillKeys(state.fields.xpubs||[]);state.fields.network=state.fields.network==="testnet"?"testnet":"mainnet";hodlSyncSelect(document.getElementById("msig-network"),state.fields.network);hodlSyncSelect(document.getElementById("msig-count"),state.fields.count||"5");
   document.getElementById("msig-error").textContent=state.error||"";re=state.result;Ge=!1;panel.hidden=!1;
   if(re&&re.kind==="msig")hodlShowMsig();else dr.innerHTML="";hodlSyncMsigClearButton();
 }

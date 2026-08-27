@@ -109,7 +109,7 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
             <select id="script-type"><option value="bip44">Legacy · BIP44</option><option value="bip49">Nested SegWit · BIP49</option><option value="bip84" selected="selected">Native SegWit · BIP84</option><option value="bip86">Taproot · BIP86</option></select>
           </label>
           <label class="field">Network
-            <select id="network"><option value="mainnet" disabled="disabled">Bitcoin mainnet</option><option value="testnet" selected="selected">Testnet (practice)</option></select>
+            <select id="network"><option value="mainnet" selected="selected">Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
           </label>
         </div>
         <div class="key-settings-row" id="account-address-settings">
@@ -157,7 +157,7 @@ needs the number of signatures you choose, on real signing devices.</p>
           <select id="msig-n"><option value="2">2</option><option value="3" selected="selected">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option></select>
         </label>
         <label class="field" style="margin:0;flex:1">Network
-          <select id="msig-network"><option value="mainnet" disabled="disabled">Bitcoin mainnet</option><option value="testnet" selected="selected">Testnet (practice)</option></select>
+          <select id="msig-network"><option value="mainnet" selected="selected">Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
         </label>
         <label class="field" style="margin:0;flex:1">Addresses
           <select id="msig-count"><option value="5" selected="selected">5 + 5</option><option value="10">10 + 10</option><option value="20">20 + 20</option></select>
@@ -194,7 +194,7 @@ needs the number of signatures you choose, on real signing devices.</p>
             <input id="psbt-pass" autocomplete="off" placeholder="Leave blank unless you set one">
           </label>
           <label class="field">Address network
-            <select id="psbt-network"><option value="mainnet" disabled="disabled">Bitcoin mainnet</option><option value="testnet" selected="selected">Testnet (practice)</option></select>
+            <select id="psbt-network"><option value="mainnet" selected="selected">Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
           </label>
         </div>
       </div>

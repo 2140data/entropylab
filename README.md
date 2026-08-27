@@ -19,9 +19,8 @@ Official website: [entropylab.online](https://entropylab.online)
   and Bitcoin Core-compatible descriptors.
 - Supports legacy, nested SegWit, native SegWit, and Taproot single-signature
   address types.
-- Currently restricts wallet derivation, multisignature construction, and PSBT
-  address rendering to Testnet. Mainnet remains visible but disabled while the
-  application is in beta.
+- Supports Mainnet and Testnet wallet derivation, multisignature construction,
+  and PSBT address rendering. Mainnet is selected by default.
 - Builds watch-only multisignature wallets from extended public keys without
   requiring private keys.
 - Inspects PSBT v0 transactions, reports PSBT-provided amounts and fees, checks
