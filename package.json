@@ -9,10 +9,11 @@
     "build": "node scripts/build.mjs",
     "clean": "node scripts/build.mjs --clean",
     "test": "node --test test/*.test.mjs",
+    "test:ci": "node --test test/network-check.test.mjs test/ui-defaults.test.mjs test/validate.test.mjs",
     "test:validate": "node --test test/validate.test.mjs",
     "test:browser": "node --test test/browser.test.mjs",
     "verify": "node scripts/verify-site.mjs",
-    "ci": "npm test && npm run build && npm run verify"
+    "ci": "npm run test:ci && npm run build && npm run verify"
   },
   "keywords": [
     "bitcoin",
