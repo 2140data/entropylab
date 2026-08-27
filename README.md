@@ -113,28 +113,31 @@ The toolchain is npm and Node.js (>=18) with no third-party dependencies. Every
 local and CI operation is exposed as an npm script:
 
 ```bash
-npm test                    # run all tests: network-check, source invariants, browser suite
+npm test                    # run all tests, including the headless-Firefox suite
+npm run test:ci             # the CI subset: network-check, ui-defaults, source invariants
 npm run test:validate       # validate source and security invariants
 npm run test:browser        # test crypto, sanitization, networking, exports in headless Firefox
 npm run build               # compile src/ into the committed root files
 npm run verify              # verify the site artifact (snapshot, manifest, assets)
-npm run ci                  # run test, build, and verify in order
+npm run ci                  # run the CI test subset, build, and verify in order
 ```
 
 GitHub Actions runs the same steps for pull requests and pushes to `main`,
 then stages the verified site (`index.html`, `entropylab-*.html`,
-`versions.json`, `assets/`) and deploys it to GitHub Pages. Local checks and
-CI/CD use the same commands; the workflow contains no separate build
-implementation.
+`versions.json`, `assets/`) and deploys it to GitHub Pages. CI runs the
+test suites that need no browser; the headless-Firefox suite runs locally
+where a Firefox binary is available. Local checks and CI/CD use the same
+commands; the workflow contains no separate build implementation.
 
-The browser tests run the assembled application in headless Firefox against a
-local Node.js HTTP server. They feed hostile markup and event-handler strings
-through user-facing fields and the version manifest, verify all observed
-application requests remain same-origin, exercise the hosted warning and
-assets, derive a known wallet through the UI, and inspect both watch-only and
-private recovery-sheet exports. They also run the BIP39 and BIP32 published
-vectors directly against the application code. Firefox is the only browser
-runtime used; the server, build, and test harness are dependency-free Node.js.
+The browser suite runs the assembled application in headless Firefox against a
+local Node.js HTTP server. It feeds hostile markup and event-handler strings
+through user-facing fields and the version manifest, verifies all observed
+application requests remain same-origin, exercises the hosted warning and
+assets, derives a known wallet through the UI, and inspects both watch-only
+and private recovery-sheet exports. It also runs the BIP39 and BIP32 published
+vectors directly against the application code. It is the only part of the
+toolchain that needs a browser; the server, build, and test harness are
+dependency-free Node.js.
 
 ## Security notice
 
