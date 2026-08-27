@@ -1,22 +1,23 @@
-name: Deploy EntropyLab to GitHub Pages
+name: EntropyLab CI/CD
 
 on:
+  pull_request:
   push:
     branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  build:
+  build-and-test:
+    name: Test and package
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -25,6 +26,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Install Firefox
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y firefox
+          firefox --version
 
       - name: Run tests
         run: npm test
@@ -41,6 +48,9 @@ jobs:
             exit 1
           fi
 
+      - name: Verify site artifact
+        run: npm run verify
+
       - name: Prepare static site
         run: |
           mkdir _site
@@ -48,21 +58,28 @@ jobs:
           cp -r assets _site/assets
           touch _site/.nojekyll
 
-      - name: Upload site artifact
+      - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+          retention-days: 7
 
   deploy:
-    needs: build
+    name: Deploy to GitHub Pages
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy tested artifact
         id: deployment
         uses: actions/deploy-pages@v4
