@@ -108,12 +108,12 @@ var vr=[16,20,24,28,32],Rc={0:"00",1:"01",2:"10",3:"11",4:"0",5:"1"};function kr
         <button class="btn delete-key" id="delete-msig" type="button" aria-label="Delete current multisig" disabled>Delete Multisig</button>
       </div>
       <p class="muted msig-intro">Combine extended public keys into a multisignature wallet. Paste each key origin and extended public key as exported by its signer: <span class="mono">[fingerprint/48h/0h/0h/2h]xpub…</span>. Private keys are not needed. The derived addresses can receive bitcoin, and spending requires the configured number of signatures.</p>
+      <div class="msig-threshold-labels">
+        <label for="msig-m-number"><span>Signatures needed to spend (m)</span><input class="msig-threshold-number" id="msig-m-number" type="number" min="1" max="15" step="1" value="2" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
+        <label for="msig-n-number"><span>Total signing keys (n)</span><input class="msig-threshold-number" id="msig-n-number" type="number" min="1" max="15" step="1" value="3" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
+      </div>
       <fieldset class="msig-threshold-control">
         <legend class="sr-only">Multisig signature threshold</legend>
-        <div class="msig-threshold-labels">
-          <label for="msig-m-number"><span>Signatures needed to spend (m)</span><input class="msig-threshold-number" id="msig-m-number" type="number" min="1" max="15" step="1" value="2" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
-          <label for="msig-n-number"><span>Total signing keys (n)</span><input class="msig-threshold-number" id="msig-n-number" type="number" min="1" max="15" step="1" value="3" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
-        </div>
         <div class="msig-threshold-slider" id="msig-threshold-slider" style="--msig-m-position:12.5%;--msig-n-position:25%" data-slider-max="9">
           <div class="msig-threshold-track" aria-hidden="true"><span></span></div>
           <span class="msig-threshold-thumb msig-threshold-thumb-m" aria-hidden="true"></span>
@@ -1699,8 +1699,8 @@ function hodlMsigThresholdPointerValue(clientX,rect,visibleMax){
 }
 function hodlBindMsigThresholdSlider(){
   let slider=document.getElementById("msig-threshold-slider"),mInput=document.getElementById("msig-m"),nInput=document.getElementById("msig-n"),mNumber=document.getElementById("msig-m-number"),nNumber=document.getElementById("msig-n-number");if(!slider||!mInput||!nInput)return;
-  let drag=null,setActive=(handle,value)=>{slider.dataset.activeHandle=handle;document.getElementById("msig-"+handle)?.focus({preventScroll:!0});hodlChangeMsigThreshold(handle,value)};
-  mInput.addEventListener("input",()=>hodlChangeMsigThreshold("m",mInput.value));nInput.addEventListener("input",()=>hodlChangeMsigThreshold("n",nInput.value));
+  let drag=null,setActive=(handle,value)=>{slider.dataset.activeHandle=handle;document.getElementById("msig-"+handle)?.focus({preventScroll:!0});hodlChangeMsigThreshold(handle,value,!0)};
+  mInput.addEventListener("input",()=>hodlChangeMsigThreshold("m",mInput.value,!0));nInput.addEventListener("input",()=>hodlChangeMsigThreshold("n",nInput.value,!0));
   mInput.addEventListener("focus",()=>{slider.dataset.activeHandle="m"});nInput.addEventListener("focus",()=>{slider.dataset.activeHandle="n"});
   let bindNumber=(input,handle)=>{if(!input)return;let apply=commit=>{let raw=input.value.trim();if(!raw){if(commit)hodlRenderMsigThreshold();return}hodlChangeMsigThreshold(handle,raw,!0)};input.addEventListener("input",()=>apply(!1));input.addEventListener("change",()=>apply(!0));input.addEventListener("blur",()=>apply(!0));input.addEventListener("focus",()=>input.select());input.addEventListener("keydown",event=>{if(["e","E","+","-","."].includes(event.key))event.preventDefault();if(event.key==="Enter"){event.preventDefault();apply(!0);input.select()}})};
   bindNumber(mNumber,"m");bindNumber(nNumber,"n");

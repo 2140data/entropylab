@@ -487,12 +487,15 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .msig-intro { margin: var(--space-control) 0 0; }
 .msig-threshold-control {
   --msig-slider-inset: 14px;
-  min-width: 0; margin: var(--space-section) 0 0; padding: 16px 18px 14px;
+  min-width: 0; margin: var(--space-control) 0 0; padding: 16px 18px 14px;
   border: 1px solid var(--border); border-radius: 12px; background: var(--bg);
 }
-.msig-threshold-labels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.msig-threshold-labels {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px;
+  margin: var(--space-section) 18px 0;
+}
 .msig-threshold-labels label {
-  display: flex; align-items: center; justify-content: center; gap: 10px; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0;
   color: var(--fg); font-size: 13px; font-weight: 600; line-height: 1.35; text-align: center; cursor: pointer;
 }
 .msig-threshold-number {
@@ -507,7 +510,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   border-color: var(--fg); outline: 2px solid var(--selection-accent); outline-offset: 2px;
 }
 .msig-threshold-slider {
-  position: relative; height: 30px; margin: 14px var(--msig-slider-inset) 0; touch-action: none; cursor: ew-resize;
+  position: relative; height: 30px; margin: 0 var(--msig-slider-inset); touch-action: none; cursor: ew-resize;
 }
 .msig-threshold-track {
   position: absolute; inset: 50% 0 auto; height: 8px; transform: translateY(-50%);
@@ -557,8 +560,8 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .msig-keys .field { margin-top: 0; }
 @media (max-width: 520px) {
   .msig-threshold-control { --msig-slider-inset: 12px; padding: 14px 10px 12px; }
-  .msig-threshold-labels { gap: 8px; }
-  .msig-threshold-labels label { flex-direction: column; justify-content: flex-end; gap: 6px; font-size: 11px; }
+  .msig-threshold-labels { gap: 8px; margin-inline: 10px; }
+  .msig-threshold-labels label { font-size: 11px; }
   .msig-threshold-number { flex: 0 0 auto; width: 48px !important; min-width: 48px; height: 28px; min-height: 28px !important; font-size: 15px; }
   .msig-threshold-ticks { font-size: 9px; }
 }
@@ -876,12 +879,12 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
         <button class="btn delete-key" id="delete-msig" type="button" aria-label="Delete current multisig" disabled>Delete Multisig</button>
       </div>
       <p class="muted msig-intro">Combine extended public keys into a multisignature wallet. Paste each key origin and extended public key as exported by its signer: <span class="mono">[fingerprint/48h/0h/0h/2h]xpub…</span>. Private keys are not needed. The derived addresses can receive bitcoin, and spending requires the configured number of signatures.</p>
+      <div class="msig-threshold-labels">
+        <label for="msig-m-number"><span>Signatures needed to spend (m)</span><input class="msig-threshold-number" id="msig-m-number" type="number" min="1" max="15" step="1" value="2" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
+        <label for="msig-n-number"><span>Total signing keys (n)</span><input class="msig-threshold-number" id="msig-n-number" type="number" min="1" max="15" step="1" value="3" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
+      </div>
       <fieldset class="msig-threshold-control">
         <legend class="sr-only">Multisig signature threshold</legend>
-        <div class="msig-threshold-labels">
-          <label for="msig-m-number"><span>Signatures needed to spend (m)</span><input class="msig-threshold-number" id="msig-m-number" type="number" min="1" max="15" step="1" value="2" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
-          <label for="msig-n-number"><span>Total signing keys (n)</span><input class="msig-threshold-number" id="msig-n-number" type="number" min="1" max="15" step="1" value="3" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
-        </div>
         <div class="msig-threshold-slider" id="msig-threshold-slider" style="--msig-m-position:12.5%;--msig-n-position:25%" data-slider-max="9">
           <div class="msig-threshold-track" aria-hidden="true"><span></span></div>
           <span class="msig-threshold-thumb msig-threshold-thumb-m" aria-hidden="true"></span>
@@ -3122,12 +3125,12 @@ zoo`.split(`
         <button class="btn delete-key" id="delete-msig" type="button" aria-label="Delete current multisig" disabled>Delete Multisig</button>
       </div>
       <p class="muted msig-intro">Combine extended public keys into a multisignature wallet. Paste each key origin and extended public key as exported by its signer: <span class="mono">[fingerprint/48h/0h/0h/2h]xpub…</span>. Private keys are not needed. The derived addresses can receive bitcoin, and spending requires the configured number of signatures.</p>
+      <div class="msig-threshold-labels">
+        <label for="msig-m-number"><span>Signatures needed to spend (m)</span><input class="msig-threshold-number" id="msig-m-number" type="number" min="1" max="15" step="1" value="2" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
+        <label for="msig-n-number"><span>Total signing keys (n)</span><input class="msig-threshold-number" id="msig-n-number" type="number" min="1" max="15" step="1" value="3" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
+      </div>
       <fieldset class="msig-threshold-control">
         <legend class="sr-only">Multisig signature threshold</legend>
-        <div class="msig-threshold-labels">
-          <label for="msig-m-number"><span>Signatures needed to spend (m)</span><input class="msig-threshold-number" id="msig-m-number" type="number" min="1" max="15" step="1" value="2" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
-          <label for="msig-n-number"><span>Total signing keys (n)</span><input class="msig-threshold-number" id="msig-n-number" type="number" min="1" max="15" step="1" value="3" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
-        </div>
         <div class="msig-threshold-slider" id="msig-threshold-slider" style="--msig-m-position:12.5%;--msig-n-position:25%" data-slider-max="9">
           <div class="msig-threshold-track" aria-hidden="true"><span></span></div>
           <span class="msig-threshold-thumb msig-threshold-thumb-m" aria-hidden="true"></span>
@@ -4713,8 +4716,8 @@ function hodlMsigThresholdPointerValue(clientX,rect,visibleMax){
 }
 function hodlBindMsigThresholdSlider(){
   let slider=document.getElementById("msig-threshold-slider"),mInput=document.getElementById("msig-m"),nInput=document.getElementById("msig-n"),mNumber=document.getElementById("msig-m-number"),nNumber=document.getElementById("msig-n-number");if(!slider||!mInput||!nInput)return;
-  let drag=null,setActive=(handle,value)=>{slider.dataset.activeHandle=handle;document.getElementById("msig-"+handle)?.focus({preventScroll:!0});hodlChangeMsigThreshold(handle,value)};
-  mInput.addEventListener("input",()=>hodlChangeMsigThreshold("m",mInput.value));nInput.addEventListener("input",()=>hodlChangeMsigThreshold("n",nInput.value));
+  let drag=null,setActive=(handle,value)=>{slider.dataset.activeHandle=handle;document.getElementById("msig-"+handle)?.focus({preventScroll:!0});hodlChangeMsigThreshold(handle,value,!0)};
+  mInput.addEventListener("input",()=>hodlChangeMsigThreshold("m",mInput.value,!0));nInput.addEventListener("input",()=>hodlChangeMsigThreshold("n",nInput.value,!0));
   mInput.addEventListener("focus",()=>{slider.dataset.activeHandle="m"});nInput.addEventListener("focus",()=>{slider.dataset.activeHandle="n"});
   let bindNumber=(input,handle)=>{if(!input)return;let apply=commit=>{let raw=input.value.trim();if(!raw){if(commit)hodlRenderMsigThreshold();return}hodlChangeMsigThreshold(handle,raw,!0)};input.addEventListener("input",()=>apply(!1));input.addEventListener("change",()=>apply(!0));input.addEventListener("blur",()=>apply(!0));input.addEventListener("focus",()=>input.select());input.addEventListener("keydown",event=>{if(["e","E","+","-","."].includes(event.key))event.preventDefault();if(event.key==="Enter"){event.preventDefault();apply(!0);input.select()}})};
   bindNumber(mNumber,"m");bindNumber(nNumber,"n");

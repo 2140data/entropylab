@@ -129,13 +129,16 @@ test("multisig threshold labels describe signatures and keys", () => {
     assert.match(markup, /id="msig-n" type="range" min="1" max="15"[^>]*value="3"/);
     assert.doesNotMatch(markup, /msig-threshold-ratio|msig-[mn]-output/);
     assert.doesNotMatch(markup, /<select id="msig-[mn]"/);
+    assert.ok(markup.indexOf('class="msig-threshold-labels"') < markup.indexOf('<fieldset class="msig-threshold-control"'));
   }
   assert.match(css, /\.msig-threshold-number\s*\{[^}]*appearance: textfield[^}]*text-align: center/s);
-  assert.match(css, /@media \(max-width: 520px\)[\s\S]*\.msig-threshold-labels label \{ flex-direction: column; justify-content: flex-end;/);
+  assert.match(css, /\.msig-threshold-labels label\s*\{[^}]*flex-direction: column[^}]*justify-content: flex-end;/s);
   assert.match(css, /\.msig-threshold-track span\s*\{[^}]*background: var\(--selection-accent\)/s);
   assert.match(css, /\.msig-threshold-thumb\s*\{[^}]*background: linear-gradient\(#858585, #5f5f5f\)/s);
   assert.match(css, /--msig-slider-inset: 14px/);
-  assert.match(css, /\.msig-threshold-slider\s*\{[^}]*margin: 14px var\(--msig-slider-inset\) 0/s);
+  assert.match(css, /\.msig-threshold-control\s*\{[^}]*margin: var\(--space-control\) 0 0/s);
+  assert.match(css, /\.msig-threshold-labels\s*\{[^}]*margin: var\(--space-section\) 18px 0/s);
+  assert.match(css, /\.msig-threshold-slider\s*\{[^}]*margin: 0 var\(--msig-slider-inset\)/s);
   assert.match(css, /\.msig-threshold-ticks\s*\{[^}]*margin: 0 var\(--msig-slider-inset\)/s);
   assert.match(css, /\.msig-threshold-ticks span\s*\{[^}]*left: var\(--msig-tick-position\)[^}]*transform: translateX\(-50%\)/s);
   assert.match(app, /hodlMsigSliderBaseMax=9,hodlMsigSliderLimit=15/);
@@ -146,6 +149,9 @@ test("multisig threshold labels describe signatures and keys", () => {
   assert.match(app, /n=hodlClampMsigThreshold\(nValue,1,hodlMsigSliderLimit\)/);
   assert.match(app, /m>=1&&n>=1&&m<=n&&n<=15/);
   assert.match(app, /if\(moveOther\)\{if\(changed==="m"\)n=Math\.max\(n,m\);else if\(changed==="n"\)m=Math\.min\(m,n\)\}/);
+  assert.match(app, /setActive=\(handle,value\)=>\{.*hodlChangeMsigThreshold\(handle,value,!0\)\}/);
+  assert.match(app, /mInput\.addEventListener\("input",\(\)=>hodlChangeMsigThreshold\("m",mInput\.value,!0\)\)/);
+  assert.match(app, /nInput\.addEventListener\("input",\(\)=>hodlChangeMsigThreshold\("n",nInput\.value,!0\)\)/);
   assert.match(app, /hodlChangeMsigThreshold\(handle,raw,!0\)/);
   assert.match(app, /bindNumber\(mNumber,"m"\);bindNumber\(nNumber,"n"\)/);
   assert.match(app, /tick\.style\.setProperty\("--msig-tick-position",\(value-1\)\/span\*100\+"%"\)/);

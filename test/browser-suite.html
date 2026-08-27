@@ -232,6 +232,14 @@
     const multisigNetwork = document.getElementById("msig-network");
     multisigNetwork.value = "testnet";
     multisigNetwork.dispatchEvent(new Event("change", { bubbles: true }));
+    input(document.getElementById("msig-m"), "4");
+    equal(document.getElementById("msig-m").value, "4");
+    equal(document.getElementById("msig-n").value, "4");
+    equal(document.querySelectorAll("#msig-keys textarea").length, 4);
+    input(document.getElementById("msig-n"), "2");
+    equal(document.getElementById("msig-m").value, "2");
+    equal(document.getElementById("msig-n").value, "2");
+    equal(document.querySelectorAll("#msig-keys textarea").length, 2);
     input(document.getElementById("msig-n-number"), "2");
     input(document.getElementById("msig-x-0"), bip87Export);
     input(document.getElementById("msig-x-1"), bip48Export);
