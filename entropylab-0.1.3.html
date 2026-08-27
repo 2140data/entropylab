@@ -211,7 +211,14 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 .qr svg { display: block; width: 140px; height: 140px; }
 .qr-descriptor { padding: 12px; }
 .qr-descriptor svg { width: 280px; height: 280px; }
+.qr-seed { padding: 12px; }
+.qr-seed svg { width: 200px; height: 200px; }
 .watch-only-qr { margin: 12px 0 16px; }
+.seed-qr-pair { display: grid; gap: 16px; }
+.seed-qr-pair .watch-only-qr { margin: 0; }
+@media (min-width: 720px) {
+  .seed-qr-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+}
 .err { margin: var(--space-control) 0 0; color: var(--danger); font-size: 14px; }
 .ok { color: var(--ok); }
 header { padding: 8px 0 16px; }
@@ -296,6 +303,7 @@ header { padding: 8px 0 16px; }
   .no-print { display: none !important; }
   html, body { background: white; color: #111; }
   .qr-descriptor svg { width: 52mm; height: 52mm; }
+  .qr-seed svg { width: 40mm; height: 40mm; }
 }
 
 .sr-only {
@@ -3387,7 +3395,7 @@ function hodlSingleWalletData(wallet){
 }
 function hodlHdWalletData(wallet){
   let privateFields=[];
-  if(wallet.mnemonic)privateFields.push(hodlSeedPhraseField(`Your seed phrase \u00b7 ${wallet.mnemonic.trim().split(/\s+/).length} words`,wallet.mnemonic));
+  if(wallet.mnemonic)privateFields.push(hodlSeedPhraseField(`Your seed phrase \u00b7 ${wallet.mnemonic.trim().split(/\s+/).length} words`,wallet.mnemonic),hodlSeedQrExport(wallet.mnemonic,{passphraseUsed:wallet.passphraseUsed,entropyHex:wallet.entropyHex}));
   if(wallet.entropyHex)privateFields.push(Ee("BIP39 entropy hex",wallet.entropyHex));
   if(wallet.seedHex)privateFields.push(Ee("Master seed hex",wallet.seedHex));
   if(wallet.rootXprv)privateFields.push(Ee(`Root ${wallet.rootPrivateLabel||cr[wallet.network].x.prvName}`,wallet.rootXprv));
@@ -3479,7 +3487,7 @@ Oo=function(wallet,revealPrivate){
   let hasPrivate=Boolean(wallet.mnemonic||wallet.entropyHex||wallet.seedHex||wallet.rootXprv||wallet.importedPrivateKey||wallet.accounts.some(hodlAccountHasPrivate));
   if(hasPrivate&&revealPrivate){
     lines.push("PRIVATE RECOVERY MATERIAL");
-    if(wallet.mnemonic)lines.push("","YOUR SEED PHRASE",wallet.mnemonic);
+    if(wallet.mnemonic){lines.push("","YOUR SEED PHRASE",wallet.mnemonic);let seedQrDigits=hodlSeedQrDigits(wallet.mnemonic);if(seedQrDigits)lines.push("","SEEDQR DIGITS",seedQrDigits)}
     if(wallet.entropyHex)lines.push("","BIP39 ENTROPY HEX",wallet.entropyHex);
     if(wallet.seedHex)lines.push("","MASTER SEED HEX (BIP39 PBKDF2, 512 bits)",wallet.seedHex);
     if(wallet.rootXprv)lines.push("",`BIP32 ROOT ${(wallet.rootPrivateLabel||cr[wallet.network].x.prvName).toUpperCase()}`,wallet.rootXprv);
@@ -3613,6 +3621,36 @@ function hodlSeedPhraseField(label,value){
   let text=String(value??"\u2014");
   if(Ge)return`<p class="private-field seed-phrase-field"><span class="muted">${$t(label)}</span><span class="secret private-field-value seed-phrase-value">${hodlSeedPhraseTokens(text)}</span></p>`;
   return`<p class="private-field seed-phrase-field"><span class="muted">${$t(label)}</span><span class="secret private-field-value secret-placeholder seed-phrase-value"><span class="secret-placeholder-mask" aria-hidden="true">${hodlSeedPhraseTokens(text,true)}</span><span class="secret-placeholder-message" aria-hidden="true">************</span><span class="secret-placeholder-label">Private value hidden</span></span></p>`
+}
+function hodlSeedQrDigits(mnemonic){
+  let words=String(mnemonic??"").trim().split(/\s+/).filter(Boolean);
+  if(words.length!==12&&words.length!==24)return"";
+  let digits="";
+  for(let word of words){
+    let index=Ae.indexOf(word);
+    if(index<0)return"";
+    digits+=String(index).padStart(4,"0");
+  }
+  return digits
+}
+function hodlCompactSeedQrBytes(entropyHex){
+  let hex=String(entropyHex??"").replace(/\s/g,"").toLowerCase();
+  if(hex.length!==32&&hex.length!==64)return null;
+  return Array.from(M.decode(hex))
+}
+function hodlSeedQrExport(mnemonic,options={}){
+  let words=String(mnemonic??"").trim().split(/\s+/).filter(Boolean);
+  if(!words.length||!Ge)return"";
+  if(words.length!==12&&words.length!==24)return`<details class="wallet-advanced"><summary>SeedQR</summary><p class="muted">SeedQR is defined for 12 and 24 word phrases. Type this ${words.length}-word seed on the signer.</p></details>`;
+  let digits=hodlSeedQrDigits(mnemonic);
+  if(!digits)return"";
+  let passNote=options.passphraseUsed?" This QR is the seed only. Enter the passphrase on the signer after scanning.":"";
+  let compact="";
+  try{
+    let bytes=hodlCompactSeedQrBytes(options.entropyHex);
+    if(bytes)compact=`<div class="watch-only-qr seed-qr"><div class="qr qr-seed" aria-label="CompactSeedQR">${Xs(bytes,{ecc:"L",border:4,pixelSize:4,blackColor:"#111111",whiteColor:"#ffffff"})}</div><p class="muted">CompactSeedQR. Same seed, smaller binary code.</p><p class="muted">Compatible with: SeedSigner, Krux, Jade, Passport.</p></div>`;
+  }catch{}
+  return`<details class="wallet-advanced"><summary>SeedQR</summary><p class="muted">Scan into a camera signer. This is the seed.${passNote}</p><div class="seed-qr-pair"><div class="watch-only-qr seed-qr"><div class="qr qr-seed" aria-label="SeedQR">${Xs(digits,{ecc:"L",border:4,pixelSize:4,blackColor:"#111111",whiteColor:"#ffffff"})}</div><p class="muted">SeedQR. Numeric.</p><p class="muted">Compatible with: SeedSigner, Krux, Jade, Passport, Coldcard Q.</p><p class="muted mono">${$t(digits)}</p></div>${compact}</div></details>`
 }
 
 var hodlSeedLengths=Object.freeze({
