@@ -81,8 +81,16 @@ files, run `npm run clean`.
 
 ```
 ├── assets/                 Static assets (logo, favicon)
-├── scripts/build.mjs       Zero-dependency build script
-├── test/network-check.test.mjs  Tests for the network-check module (npm test)
+├── scripts/
+│   ├── build.mjs           Zero-dependency build script
+│   └── verify-site.mjs     Site artifact verification (npm run verify)
+├── test/
+│   ├── network-check.test.mjs   Tests for the network-check module
+│   ├── validate.test.mjs        Source and security invariants
+│   └── browser.test.mjs         Headless-Firefox integration harness
+├── tests/
+│   ├── browser-instrumentation.html  In-page test hooks
+│   └── browser-suite.html            In-page suite run by the browser harness
 ├── src/
 │   ├── index.html          HTML template (markup and document head)
 │   ├── css/styles.css      Application styles
@@ -98,6 +106,35 @@ files, run `npm run clean`.
 ├── versions.json           Version manifest for the hosted version picker
 └── versions/archived/      Historical releases excluded from the picker
 ```
+
+## Development and deployment
+
+The toolchain is npm and Node.js (>=18) with no third-party dependencies. Every
+local and CI operation is exposed as an npm script:
+
+```bash
+npm test                    # run all tests: network-check, source invariants, browser suite
+npm run test:validate       # validate source and security invariants
+npm run test:browser        # test crypto, sanitization, networking, exports in headless Firefox
+npm run build               # compile src/ into the committed root files
+npm run verify              # verify the site artifact (snapshot, manifest, assets)
+npm run ci                  # run test, build, and verify in order
+```
+
+GitHub Actions runs the same steps for pull requests and pushes to `main`,
+then stages the verified site (`index.html`, `entropylab-*.html`,
+`versions.json`, `assets/`) and deploys it to GitHub Pages. Local checks and
+CI/CD use the same commands; the workflow contains no separate build
+implementation.
+
+The browser tests run the assembled application in headless Firefox against a
+local Node.js HTTP server. They feed hostile markup and event-handler strings
+through user-facing fields and the version manifest, verify all observed
+application requests remain same-origin, exercise the hosted warning and
+assets, derive a known wallet through the UI, and inspect both watch-only and
+private recovery-sheet exports. They also run the BIP39 and BIP32 published
+vectors directly against the application code. Firefox is the only browser
+runtime used; the server, build, and test harness are dependency-free Node.js.
 
 ## Security notice
 

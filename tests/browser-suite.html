@@ -1,0 +1,255 @@
+<script>
+(async () => {
+  const results = [];
+  const state = window.__entropyLabTest;
+  const crypto = window.__entropyLabCrypto;
+  const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+  const until = async (predicate, description, timeout = 15000) => {
+    const deadline = Date.now() + timeout;
+    while (Date.now() < deadline) {
+      const value = predicate();
+      if (value) return value;
+      await wait(50);
+    }
+    throw new Error("Timed out waiting for " + description);
+  };
+  const test = async (name, body) => {
+    try {
+      await body();
+      results.push({ name, ok: true });
+    } catch (error) {
+      results.push({
+        name,
+        ok: false,
+        error: (error instanceof Error ? error.message : String(error)).replace(/[\t\r\n]+/g, " "),
+      });
+    }
+  };
+  const assert = (condition, message) => { if (!condition) throw new Error(message); };
+  const equal = (actual, expected) => {
+    if (actual !== expected) throw new Error(`expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+  };
+  const report = (filename) => {
+    const text = results.map((result) =>
+      [result.ok ? "ok" : "not ok", result.name, result.error || ""].join("\t")
+    ).join("\n") + "\n";
+    window.__downloadTestReport(filename, text);
+  };
+  const currentVersion = document.querySelector('meta[name="application-version"]')?.content;
+  const currentNumber = currentVersion?.replace(/^v/, "");
+  const currentFile = `entropylab-${currentNumber}.html`;
+  const versionHeader = `ENTROPYLAB ${currentVersion?.toUpperCase()}`;
+
+  await wait(500);
+
+  if (new URLSearchParams(location.search).get("offline-test") === "1") {
+    await test("offline mode keeps online-only presentation disabled", () => {
+      const warning = document.getElementById("online-warning");
+      const brand = document.getElementById("online-brand-mark");
+      assert(warning && warning.hidden, "Offline mode displayed the online warning");
+      assert(brand && brand.hidden && !brand.getAttribute("src"), "Offline mode loaded online branding");
+    });
+    await test("offline mode performs no HTTP, WebSocket, or XHR connections", () => {
+      assert(state.network.length === 0, "Offline code attempted a connection");
+      const external = performance.getEntriesByType("resource")
+        .map((entry) => entry.name)
+        .filter((url) => /^(https?|wss?):/i.test(url));
+      assert(external.length === 0, "Offline mode loaded a network resource: " + external.join(", "));
+      const options = [...document.querySelectorAll(".version-select option")];
+      assert(options.length === 1 && options[0].value === currentFile, "Local version fallback is missing");
+    });
+    report("offline-results.txt");
+    return;
+  }
+
+  const vectors = [
+    {
+      entropy: "00000000000000000000000000000000",
+      mnemonic: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+      seed: "c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e53495531f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04",
+      xprv: "xprv9s21ZrQH143K3h3fDYiay8mocZ3afhfULfb5GX8kCBdno77K4HiA15Tg23wpbeF1pLfs1c5SPmYHrEpTuuRhxMwvKDwqdKiGJS9XFKzUsAF",
+    },
+    {
+      entropy: "000000000000000000000000000000000000000000000000",
+      mnemonic: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon agent",
+      seed: "035895f2f481b1b0f01fcf8c289c794660b289981a78f8106447707fdd9666ca06da5a9a565181599b79f53b844d8a71dd9f439c52a3d7b3e8a79c906ac845fa",
+      xprv: "xprv9s21ZrQH143K3mEDrypcZ2usWqFgzKB6jBBx9B6GfC7fu26X6hPRzVjzkqkPvDqp6g5eypdk6cyhGnBngbjeHTe4LsuLG1cCmKJka5SMkmU",
+    },
+    {
+      entropy: "0000000000000000000000000000000000000000000000000000000000000000",
+      mnemonic: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art",
+      seed: "bda85446c68413707090a52022edd26a1c9462295029f2e60cd7c4f2bbd3097170af7a4d73245cafa9c3cca8d561a7c3de6f5d4a10be8ed2a5e608d68f92fcc8",
+      xprv: "xprv9s21ZrQH143K32qBagUJAMU2LsHg3ka7jqMcV98Y7gVeVyNStwYS3U7yVVoDZ4btbRNf4h6ibWpY22iRmXq35qgLs79f312g2kj5539ebPM",
+    },
+  ];
+
+  for (const [index, vector] of vectors.entries()) {
+    const bits = vector.entropy.length * 4;
+    await test(`BIP39 vector ${index + 1}: ${bits}-bit entropy produces the expected mnemonic`, () => {
+      equal(crypto.entropyToMnemonic(vector.entropy), vector.mnemonic);
+    });
+    await test(`BIP39 vector ${index + 1}: mnemonic recovers the original entropy`, () => {
+      equal(crypto.mnemonicToEntropy(vector.mnemonic), vector.entropy);
+    });
+    await test(`BIP39 vector ${index + 1}: mnemonic and passphrase produce the expected seed`, () => {
+      equal(crypto.mnemonicToSeed(vector.mnemonic, "TREZOR"), vector.seed);
+    });
+    await test(`BIP32 vector ${index + 1}: seed produces the expected master xprv`, () => {
+      equal(crypto.masterXprv(vector.mnemonic, "TREZOR"), vector.xprv);
+    });
+  }
+
+  await test("BIP39 accepts a checksum-valid mnemonic", () => equal(crypto.validateMnemonic(vectors[0].mnemonic), true));
+  await test("BIP39 rejects a mnemonic with an invalid checksum", () => equal(crypto.validateMnemonic("abandon ".repeat(11) + "abandon"), false));
+  await test("BIP39 rejects a word outside the English list", () => equal(crypto.validateMnemonic("abandon ".repeat(11) + "entropy-lab"), false));
+  await test("BIP39 applies NFKD normalization to passphrases", () => {
+    equal(crypto.mnemonicToSeed(vectors[0].mnemonic, "caf\u00e9"), crypto.mnemonicToSeed(vectors[0].mnemonic, "cafe\u0301"));
+  });
+
+  const chooseMode = async (label) => {
+    const button = [...document.querySelectorAll("#modes button")].find((item) => item.textContent.includes(label));
+    assert(button, "Missing mode button: " + label);
+    button.click();
+    await wait(0);
+  };
+  const input = (element, value) => {
+    element.value = value;
+    element.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+
+  await test("hosted preview enables its warning and same-origin branding", () => {
+    const warning = document.getElementById("online-warning");
+    const brand = document.getElementById("online-brand-mark");
+    const favicon = document.getElementById("online-favicon");
+    assert(warning && !warning.hidden, "Online warning was not displayed");
+    assert(brand && !brand.hidden && new URL(brand.src).origin === location.origin, "Brand asset is not same-origin");
+    assert(favicon && new URL(favicon.href).origin === location.origin, "Favicon is not same-origin");
+  });
+
+  await test("hosted version manifest is fetched and allowlisted before entering the DOM", async () => {
+    const manifest = await until(
+      () => state.network.find((entry) => new URL(entry.url).pathname === "/versions.json" && entry.completed),
+      "completed version-manifest request",
+    );
+    assert(manifest.status === 200, `Version manifest returned HTTP ${manifest.status}`);
+    await wait(0);
+    const options = [...document.querySelectorAll(".version-select option")];
+    assert(options.length === 1 && options[0].value === currentFile, "Unsafe manifest entry was accepted");
+    assert(window.__browserTestInjected !== true, "Manifest executed script");
+  });
+
+  await test("hex, seed, and private-key inputs cannot inject markup", async () => {
+    const payload = '<img src=x onerror="window.__browserTestInjected=true">';
+    await chooseMode("Hex");
+    const hex = await until(() => document.getElementById("hex"), "hex input");
+    input(hex, payload + "0000");
+    assert(!/[<>="']/.test(hex.value), "Dangerous characters remained in hex input");
+    await chooseMode("Seed phrase");
+    const seed = await until(() => document.getElementById("seed"), "seed input");
+    input(seed, payload + "abandon");
+    assert(!/[<>="']/.test(seed.value), "Dangerous characters remained in seed input");
+    await chooseMode("Private key");
+    const key = await until(() => document.getElementById("key"), "private-key input");
+    input(key, payload);
+    assert(!/[<>="']/.test(key.value), "Dangerous characters remained in private-key input");
+    assert(!document.querySelector('img[src="x"]') && window.__browserTestInjected !== true, "Input executed markup");
+  });
+
+  await test("dice, binary, passphrase, multisig, and PSBT inputs cannot inject markup", async () => {
+    const payload = '<img src=x onerror="window.__browserTestInjected=true">';
+    await chooseMode("Dice rolls");
+    const dice = await until(() => document.getElementById("dice"), "dice input");
+    input(dice, payload + "123456");
+    assert(!/[<>="']/.test(dice.value), "Dangerous characters remained in dice input");
+    await chooseMode("Hex");
+    document.querySelector('input[name="entropy-format"][value="bin"]').click();
+    const binary = await until(() => document.getElementById("bin"), "binary input");
+    input(binary, payload + "010101");
+    assert(!/[<>="']/.test(binary.value), "Dangerous characters remained in binary input");
+    const passphrase = document.getElementById("pass");
+    input(passphrase, payload);
+    assert(!document.querySelector('img[src="x"]'), "Passphrase created markup");
+    input(passphrase, "");
+    document.querySelector('#workspace [data-workspace="msig"]').click();
+    const xpub = await until(() => document.querySelector("#msig-keys textarea"), "multisig input");
+    input(xpub, payload + "tpub123");
+    assert(!/[<>="']/.test(xpub.value), "Dangerous characters remained in multisig input");
+    document.querySelector('#workspace [data-workspace="psbt"]').click();
+    const psbt = await until(() => document.getElementById("psbt-text"), "PSBT input");
+    input(psbt, payload);
+    document.getElementById("psbt-go").click();
+    await until(() => document.getElementById("psbt-error").textContent, "PSBT rejection");
+    assert(!document.querySelector("#psbt-card img") && window.__browserTestInjected !== true, "Input executed markup");
+    document.querySelector('#workspace [data-workspace="calc"]').click();
+    await until(() => !document.getElementById("calc-card").hidden, "key workspace");
+  });
+
+  await test("a known BIP39 wallet can be derived through the UI", async () => {
+    document.querySelector('[data-seed-words="12"]').click();
+    await chooseMode("Hex");
+    document.querySelector('input[name="entropy-format"][value="hex"]').click();
+    const hex = await until(() => document.getElementById("hex"), "hex input");
+    input(hex, vectors[0].entropy);
+    const network = document.getElementById("network");
+    assert(network && [...network.options].some((option) => option.value === "testnet"), "Network selector is missing or has no testnet option");
+    network.value = "testnet";
+    network.dispatchEvent(new Event("change", { bubbles: true }));
+    const derive = await until(() => !document.getElementById("go").disabled && document.getElementById("go"), "derive button");
+    derive.click();
+    await until(() => document.getElementById("save") || document.getElementById("error").textContent, "wallet result");
+    assert(!document.getElementById("error").textContent, "Wallet derivation failed");
+  });
+
+  await test("watch-only export omits private recovery material", async () => {
+    state.lastBlob = null;
+    state.downloadName = "";
+    document.getElementById("save").click();
+    const blob = await until(() => state.lastBlob, "watch-only export");
+    const text = await blob.text();
+    assert(state.downloadName === "bitcoin-recovery-sheet.txt", "Unexpected filename");
+    assert(text.includes(versionHeader) && text.includes("Network: testnet"), "Export headers are missing");
+    assert(text.includes("PRIVATE RECOVERY MATERIAL OMITTED"), "Omission notice is missing");
+    assert(!text.includes("YOUR SEED PHRASE") && !text.includes("MASTER SEED HEX") && !text.includes("BIP32 ROOT TPRV"), "Watch-only export leaked private data");
+  });
+
+  await test("private export contains complete recovery material", async () => {
+    const reveal = document.getElementById("reveal");
+    reveal.checked = true;
+    reveal.dispatchEvent(new Event("change", { bubbles: true }));
+    await until(() => document.getElementById("save"), "private export control");
+    state.lastBlob = null;
+    document.getElementById("save").click();
+    const text = await (await until(() => state.lastBlob, "private export")).text();
+    assert(text.includes("YOUR SEED PHRASE") && text.includes(vectors[0].mnemonic), "Mnemonic is missing");
+    assert(text.includes("BIP39 ENTROPY HEX\n" + vectors[0].entropy), "Entropy is missing");
+    assert(text.includes("MASTER SEED HEX") && text.includes("BIP32 ROOT TPRV"), "Private derivation data is missing");
+  });
+
+  await test("versioned HTML export downloads the current self-contained release", async () => {
+    const link = document.querySelector(".download-html");
+    assert(link && link.download === currentFile, "HTML export filename is wrong");
+    const target = new URL(link.href);
+    assert(target.origin === location.origin && target.pathname.endsWith("/" + currentFile), "HTML export target is wrong");
+    const response = await fetch(target);
+    const html = await response.text();
+    assert(response.ok, `HTML export returned HTTP ${response.status}`);
+    assert(html.startsWith("<!DOCTYPE html>"), "HTML export is not a complete document");
+    assert(html.includes(`name="application-version" content="${currentVersion}"`), "HTML export version is wrong");
+  });
+
+  await test("hosted application makes only expected same-origin connections", () => {
+    const resources = performance.getEntriesByType("resource").map((entry) => entry.name);
+    const observed = [...state.network.map((entry) => entry.url), ...resources];
+    const external = observed.filter((url) => {
+      try { return new URL(url, location.href).origin !== location.origin; }
+      catch { return true; }
+    });
+    assert(external.length === 0, "External network activity: " + external.join(", "));
+    for (const expectedPath of ["/versions.json", "/assets/entropylab_dark.png", "/assets/favicon.png", "/" + currentFile]) {
+      assert(observed.some((url) => new URL(url, location.href).pathname === expectedPath), `Expected request is missing: ${expectedPath}`);
+    }
+  });
+
+  report("online-results.txt");
+})();
+</script>
