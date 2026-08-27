@@ -13,26 +13,86 @@ concurrency:
   group: pages-${{ github.ref }}
   cancel-in-progress: false
 
+# One version for every job so setup stays in a single place.
+env:
+  NODE_VERSION: "22"
+
 jobs:
-  build-and-test:
-    name: Test and package
+  # ── Per-section tests: each runs in its own isolated runner, in parallel ──
+
+  test-network:
+    name: Test · network-check (network-check.js)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Run network-check tests
+        run: npm run test:network
 
-      - name: Run tests
-        run: npm run test:ci
+  test-ui:
+    name: Test · UI defaults (app.js, index.html, styles.css)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Run UI-default tests
+        run: npm run test:ui
 
+  test-invariants:
+    name: Test · repo invariants (manifest, assets, security)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Run source-invariant tests
+        run: npm run test:invariants
+
+  test-descriptor:
+    name: Test · descriptor QR (watch-only + multisig origins)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Run descriptor tests
+        run: npm run test:descriptor
+
+  test-seedqr:
+    name: Test · SeedQR encoding (vendor + app)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Run SeedQR tests
+        run: npm run test:seedqr
+
+  # ── Build: compile, prove reproducibility, stage + upload the Pages artifact ──
+
+  build:
+    name: Build · reproducibility + Pages artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
       - name: Build static site
         run: npm run build
-
       - name: Verify committed build output is reproducible
         run: |
           if [ -n "$(git status --porcelain -- index.html versions.json 'entropylab-*.html')" ]; then
@@ -41,27 +101,38 @@ jobs:
             git status --porcelain -- index.html versions.json 'entropylab-*.html'
             exit 1
           fi
-
-      - name: Verify site artifact
-        run: npm run verify
-
       - name: Prepare static site
         run: |
           mkdir _site
           cp index.html entropylab-*.html versions.json _site/
           cp -r assets _site/assets
           touch _site/.nojekyll
-
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
           retention-days: 7
 
+  # ── Verify: independent check of the generated site artifact ──
+
+  verify:
+    name: Verify · site artifact (snapshot, manifest, assets)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Verify site artifact
+        run: npm run verify
+
+  # ── Deploy: gated on a good build and a clean verify ──
+
   deploy:
     name: Deploy to GitHub Pages
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    needs: build-and-test
+    needs: [build, verify]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -73,7 +144,6 @@ jobs:
     steps:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-
       - name: Deploy tested artifact
         id: deployment
         uses: actions/deploy-pages@v4
