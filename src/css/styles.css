@@ -207,6 +207,9 @@ th { text-align: left; color: var(--muted); font-weight: 600; padding: 8px; }
 td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; font-family: var(--mono); }
 .qr { background: var(--paper); padding: 8px; border-radius: 8px; display: inline-block; }
 .qr svg { display: block; width: 140px; height: 140px; }
+.qr-descriptor { padding: 12px; }
+.qr-descriptor svg { width: 280px; height: 280px; }
+.watch-only-qr { margin: 12px 0 16px; }
 .err { margin: var(--space-control) 0 0; color: var(--danger); font-size: 14px; }
 .ok { color: var(--ok); }
 header { padding: 8px 0 16px; }
@@ -290,6 +293,7 @@ header { padding: 8px 0 16px; }
   }
   .no-print { display: none !important; }
   html, body { background: white; color: #111; }
+  .qr-descriptor svg { width: 52mm; height: 52mm; }
 }
 
 .sr-only {

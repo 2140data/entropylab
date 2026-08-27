@@ -1,0 +1,155 @@
+// Watch-only descriptor QR payload and multisig key-origin parsing.
+// Run with `npm test`.
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const app = readFileSync(join(root, "src/js/app.js"), "utf8");
+
+function extract(startNeedle, endNeedle) {
+  const start = app.indexOf(startNeedle);
+  const end = app.indexOf(endNeedle, start);
+  if (start < 0 || end < 0) throw new Error(`extract failed: ${startNeedle}`);
+  return app.slice(start, end);
+}
+
+const INPUT_CHARSET =
+  "0123456789()[],'/*abcdefgh@:$%{}IJKLMNOPQRSTUVWXYZ&+-.;<=>?!^_|~ijklmnopqrstuvwxyzABCDEFGH`JKLMNOPQRSTUVWXYZ";
+const CHECKSUM_CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+
+function descsumPolymod(symbols) {
+  const GEN = [0xf5dee143af, 0x119f81b3da, 0x1010f5c26, 0x1d077e62e, 0x1077d1d3ea];
+  let chk = 1n;
+  for (const value of symbols) {
+    const top = chk >> 35n;
+    chk = ((chk & 0x7ffffffffn) << 5n) ^ BigInt(value);
+    for (let i = 0; i < 5; i++) if ((top >> BigInt(i)) & 1n) chk ^= BigInt(GEN[i]);
+  }
+  return chk;
+}
+
+function descsumExpand(s) {
+  const groups = [];
+  const symbols = [];
+  for (const character of s) {
+    const index = INPUT_CHARSET.indexOf(character);
+    if (index < 0) throw new Error(`Invalid descriptor character: ${character}`);
+    symbols.push(index & 31);
+    groups.push(index >> 5);
+    if (groups.length === 3) {
+      symbols.push(groups[0] * 9 + groups[1] * 3 + groups[2]);
+      groups.length = 0;
+    }
+  }
+  if (groups.length === 1) symbols.push(groups[0]);
+  else if (groups.length === 2) symbols.push(groups[0] * 9 + groups[1] * 3);
+  return symbols;
+}
+
+function independentChecksum(body) {
+  const symbols = descsumExpand(body).concat([0, 0, 0, 0, 0, 0, 0, 0]);
+  const polymod = descsumPolymod(symbols) ^ 1n;
+  let checksum = "";
+  for (let i = 0; i < 8; i++) checksum += CHECKSUM_CHARSET[Number((polymod >> BigInt(5 * (7 - i))) & 31n)];
+  return checksum;
+}
+
+function loadSlice(startNeedle, endNeedle, extra) {
+  const path = join(root, "test", `.descriptor-slice-${Math.random().toString(16).slice(2)}.mjs`);
+  writeFileSync(path, `${extra ?? ""}\n${extract(startNeedle, endNeedle)}\n`);
+  return path;
+}
+
+const originPath = loadSlice(
+  "function hodlFilterXpub",
+  "function hodlParseMultisigCosigner",
+  "export { hodlFilterXpub, hodlNormalizeOriginPath, hodlParseKeyOrigin, hodlOriginPathIndexes, hodlOriginMatchesParsedKey, hodlOriginScriptError };",
+);
+const {
+  hodlFilterXpub,
+  hodlNormalizeOriginPath,
+  hodlParseKeyOrigin,
+  hodlOriginPathIndexes,
+  hodlOriginMatchesParsedKey,
+  hodlOriginScriptError,
+} = await import(pathToFileURL(originPath).href);
+unlinkSync(originPath);
+
+
+const checksumPrelude = `
+const INPUT_CHARSET = ${JSON.stringify(INPUT_CHARSET)};
+const CHECKSUM_CHARSET = ${JSON.stringify(CHECKSUM_CHARSET)};
+${descsumPolymod.toString()}
+${descsumExpand.toString()}
+${independentChecksum.toString()}
+function Le(body){return body+"#"+independentChecksum(body)}
+export { hodlStripDescriptorChecksum, hodlWatchOnlyMultipathDescriptor, Le };
+`;
+const multipathPath = loadSlice(
+  "function hodlStripDescriptorChecksum",
+  "function hodlDescriptorQrSvg",
+  checksumPrelude,
+);
+const { hodlWatchOnlyMultipathDescriptor, Le } = await import(pathToFileURL(multipathPath).href);
+unlinkSync(multipathPath);
+test("filter keeps descriptor origin punctuation", () => {
+  const raw = "[73c5da0a/48h/1h/0h/2h]tpubABC";
+  assert.equal(hodlFilterXpub(raw), raw);
+  assert.equal(hodlFilterXpub("[73c5da0a/48'/1'/0'/2']tpubABC"), "[73c5da0a/48'/1'/0'/2']tpubABC");
+});
+
+test("origin parse normalizes apostrophes and strips /0/*", () => {
+  assert.equal(hodlNormalizeOriginPath("m/48'/1'/0'/2'"), "48h/1h/0h/2h");
+  const parsed = hodlParseKeyOrigin(
+    "[73c5da0a/48h/1h/0h/2h]tpubDFH9dgzveyD8zTbPUFuLrGmCydNvxehyNdUXKJAQN8x4aZ4j6UZqGfnqFrD4NqyaTVGKbvEW54tsvPTK2UoSbCC1PJY8iCNiwTL3RWZEheQ/0/*",
+  );
+  assert.equal(parsed.origin.fingerprint, "73c5da0a");
+  assert.equal(parsed.origin.path, "48h/1h/0h/2h");
+  assert.match(parsed.key, /^tpubDFH9/);
+  assert.equal(hodlParseKeyOrigin("tpubABC").origin, null);
+});
+
+test("placeholder fingerprint 00000000 is rejected", () => {
+  assert.throws(
+    () => hodlParseKeyOrigin("[00000000/48h/1h/0h/2h]tpubABC"),
+    /00000000/,
+  );
+});
+
+test("origin path must match key depth and script", () => {
+  const origin = { fingerprint: "73c5da0a", path: "48h/1h/0h/2h" };
+  const mock = { depth: 4, childNumber: 0x80000002 };
+  assert.equal(hodlOriginMatchesParsedKey(origin, mock), "");
+  assert.match(hodlOriginMatchesParsedKey({ fingerprint: "73c5da0a", path: "48h/1h/0h" }, mock), /steps/);
+  assert.equal(hodlOriginScriptError(origin, "p2wsh", "testnet"), "");
+  assert.equal(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "48h/0h/0h/2h" }, "p2wsh", "mainnet"), "");
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "48h/0h/0h/2h" }, "p2wsh", "testnet"), /1h/);
+  assert.equal(hodlOriginPathIndexes("48h/1h/0h/2h").at(-1), 0x80000002);
+});
+
+test("BIP389 multipath recomputes the checksum", () => {
+  const body =
+    "wpkh([73c5da0a/84h/1h/0h]tpubDC5FSn4cz1dG9u1ytfDkCUmpJdbive4LmiYBiShpJcCshz45L7Ab3UyQwKDgEQb7b4yQ4Nv68wS4TibDkS1PYtzTszwrX2k4t5mGx8fS3x3/0/*)";
+  const receive = Le(body);
+  assert.equal(receive, `${body}#${independentChecksum(body)}`);
+  const wallet = hodlWatchOnlyMultipathDescriptor(receive);
+  assert.match(wallet, /\/<0;1>\/\*/);
+  assert.equal(wallet.includes("/0/*"), false);
+  assert.equal(wallet, `${wallet.slice(0, wallet.lastIndexOf("#"))}#${independentChecksum(wallet.slice(0, wallet.lastIndexOf("#")))}`);
+});
+
+test("originated 2-of-3 payload keeps fingerprints and fits a static QR", () => {
+  const receive =
+    "wsh(sortedmulti(2,[73c5da0a/48h/1h/0h/2h]tpubDFH9dgzveyD8zTbPUFuLrGmCydNvxehyNdUXKJAQN8x4aZ4j6UZqGfnqFrD4NqyaTVGKbvEW54tsvPTK2UoSbCC1PJY8iCNiwTL3RWZEheQ/0/*,[b8688df1/48h/1h/0h/2h]tpubDEfobrrtptRTbKf4gysDhoabneABDTAcdj3Vbn4XwPsLE2pmqpizSPRG6zHsbAMuiSgWmWPsYCLHTKTPpyrGJ5rAoTpKoQNZcxodiPf2tSJ/0/*,[3f635a63/48h/1h/0h/2h]tpubDFPtPArj4GzBEFHohegg1Xatrc1Fi9oSox5LzuSRX91miwQxuUrEpBxpvDRsmZYJKYFhgdK3UStsjC8JKXfUbMinjFqiEM4uNwzVaCaHpys/0/*))";
+  const wallet = hodlWatchOnlyMultipathDescriptor(Le(receive));
+  assert.match(wallet, /\[73c5da0a\/48h\/1h\/0h\/2h\]/);
+  assert.match(wallet, /\[b8688df1\/48h\/1h\/0h\/2h\]/);
+  assert.match(wallet, /\[3f635a63\/48h\/1h\/0h\/2h\]/);
+  assert.equal((wallet.match(/\/<0;1>\/\*/g) || []).length, 3);
+  assert.equal(wallet.includes("/0/*"), false);
+  assert.ok(wallet.length < 1000);
+  assert.equal(wallet.slice(-8), independentChecksum(wallet.slice(0, wallet.lastIndexOf("#"))));
+});

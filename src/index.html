@@ -146,9 +146,7 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
         <div><div class="kicker">Several people, one pile of bitcoin</div><h2>Create a multisig wallet</h2></div>
         <button class="btn delete-key" id="delete-msig" type="button" aria-label="Delete current multisig" disabled>Delete Multisig</button>
       </div>
-      <p class="muted msig-intro">Paste each person’s multisig account or branch extended public key exported by their signing device. This does not
-need private keys. You can receive to these addresses. Spending later
-needs the number of signatures you choose, on real signing devices.</p>
+      <p class="muted msig-intro">Paste each person's key origin plus extended public key, as exported by their signer: <span class="mono">[fingerprint/48h/0h/0h/2h]xpub…</span>. This does not need private keys. You can receive to these addresses. Spending later needs the number of signatures you choose, on real signing devices.</p>
       <div class="row msig-settings-row" style="align-items:end">
         <label class="field" style="margin:0;flex:1">Signatures needed to spend (m)
           <select id="msig-m"><option value="1">1</option><option value="2" selected="selected">2</option><option value="3">All 3</option></select>

@@ -209,6 +209,9 @@ th { text-align: left; color: var(--muted); font-weight: 600; padding: 8px; }
 td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; font-family: var(--mono); }
 .qr { background: var(--paper); padding: 8px; border-radius: 8px; display: inline-block; }
 .qr svg { display: block; width: 140px; height: 140px; }
+.qr-descriptor { padding: 12px; }
+.qr-descriptor svg { width: 280px; height: 280px; }
+.watch-only-qr { margin: 12px 0 16px; }
 .err { margin: var(--space-control) 0 0; color: var(--danger); font-size: 14px; }
 .ok { color: var(--ok); }
 header { padding: 8px 0 16px; }
@@ -292,6 +295,7 @@ header { padding: 8px 0 16px; }
   }
   .no-print { display: none !important; }
   html, body { background: white; color: #111; }
+  .qr-descriptor svg { width: 52mm; height: 52mm; }
 }
 
 .sr-only {
@@ -777,9 +781,7 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
         <div><div class="kicker">Several people, one pile of bitcoin</div><h2>Create a multisig wallet</h2></div>
         <button class="btn delete-key" id="delete-msig" type="button" aria-label="Delete current multisig" disabled>Delete Multisig</button>
       </div>
-      <p class="muted msig-intro">Paste each person’s multisig account or branch extended public key exported by their signing device. This does not
-need private keys. You can receive to these addresses. Spending later
-needs the number of signatures you choose, on real signing devices.</p>
+      <p class="muted msig-intro">Paste each person's key origin plus extended public key, as exported by their signer: <span class="mono">[fingerprint/48h/0h/0h/2h]xpub…</span>. This does not need private keys. You can receive to these addresses. Spending later needs the number of signatures you choose, on real signing devices.</p>
       <div class="row msig-settings-row" style="align-items:end">
         <label class="field" style="margin:0;flex:1">Signatures needed to spend (m)
           <select id="msig-m"><option value="1">1</option><option value="2" selected="selected">2</option><option value="3">All 3</option></select>
@@ -3005,7 +3007,7 @@ zoo`.split(`
         <div><div class="kicker">Several people, one pile of bitcoin</div><h2>Create a multisig wallet</h2></div>
         <button class="btn delete-key" id="delete-msig" type="button" aria-label="Delete current multisig" disabled>Delete Multisig</button>
       </div>
-      <p class="muted msig-intro">Paste each person&rsquo;s multisig account or branch extended public key exported by their signing device. This does not need private keys. You can receive to these addresses. Spending later needs the number of signatures you choose, on real signing devices.</p>
+      <p class="muted msig-intro">Paste each person's key origin plus extended public key, as exported by their signer: <span class="mono">[fingerprint/48h/0h/0h/2h]xpub…</span>. This does not need private keys. You can receive to these addresses. Spending later needs the number of signatures you choose, on real signing devices.</p>
       <div class="row msig-settings-row" style="align-items:end">
         <label class="field" style="margin:0;flex:1">Signatures needed to spend (m)
           <select id="msig-m"></select>
@@ -3169,6 +3171,10 @@ uf=function(value){
 };
 function hodlAccountExportFamily(definition){return definition.id==="bip49"?"y":definition.id==="bip84"?"z":"x"}
 function hodlSerializeExtendedKey(value,network,family,isPrivate){return value?le(value,cr[network][family][isPrivate?"prv":"pub"]):null}
+function hodlStripDescriptorChecksum(descriptor){let text=String(descriptor??""),hash=text.lastIndexOf("#");return hash>=0?text.slice(0,hash):text}
+function hodlWatchOnlyMultipathDescriptor(receiveDescriptor){let body=hodlStripDescriptorChecksum(receiveDescriptor);if(!body)return"";if(body.includes("/<0;1>/*"))return Le(body);if(!/\/0\/\*/.test(body))return"";return Le(body.replace(/\/0\/\*/g,"/<0;1>/*"))}
+function hodlDescriptorQrSvg(payload){return Xs(payload,{ecc:"M",border:4,pixelSize:4,blackColor:"#111111",whiteColor:"#ffffff"})}
+function hodlWatchOnlyDescriptorExport(receiveDescriptor,changeDescriptor){let multipath=hodlWatchOnlyMultipathDescriptor(receiveDescriptor),qr="";if(multipath){try{if(multipath.length>1000)throw new Error("Descriptor too long for a static QR.");qr=`<div class="watch-only-qr"><div class="qr qr-descriptor" aria-label="Watch-only wallet descriptor QR code">${hodlDescriptorQrSvg(multipath)}</div><p class="muted">Import this output descriptor into Sparrow or another wallet.</p></div>`}catch(error){qr=`<p class="muted">${$t(error.message||"Descriptor too long for a static QR.")} Copy the text instead, or import the receive and change descriptors separately.</p>`}}return`${ye("Watch-only wallet descriptor",multipath||"—")}${qr}<details class="wallet-advanced"><summary>Receive and change descriptors</summary>${ye("Watch-only receive descriptor",receiveDescriptor)}${ye("Watch-only change descriptor",changeDescriptor)}</details>`}
 function hodlAccountResult(node,definition,network,count,options={}){
   let rawPublic=node.publicExtendedKey,rawPrivate=node.privateKey?node.privateExtendedKey:null,family=hodlAccountExportFamily(definition),primaryConfig=cr[network][family],genericConfig=cr[network].x;
   let genericPublic=hodlSerializeExtendedKey(rawPublic,network,"x",!1),genericPrivate=hodlSerializeExtendedKey(rawPrivate,network,"x",!0);
@@ -3187,7 +3193,7 @@ function hodlAccountResult(node,definition,network,count,options={}){
     ypub:family==="y"?primaryPublic:null,yprv:family==="y"?primaryPrivate:null,
     zpub:family==="z"?primaryPublic:null,zprv:family==="z"?primaryPrivate:null,
     vpub:null,vprv:null,
-    receiveDescriptor:Le(Ye(definition.script,publicReceive)),changeDescriptor:Le(Ye(definition.script,publicChange)),
+    receiveDescriptor:Le(Ye(definition.script,publicReceive)),changeDescriptor:Le(Ye(definition.script,publicChange)),walletDescriptor:hodlWatchOnlyMultipathDescriptor(Le(Ye(definition.script,publicReceive))),
     receiveDescriptorPriv:privateReceive?Le(Ye(definition.script,privateReceive)):null,changeDescriptorPriv:privateChange?Le(Ye(definition.script,privateChange)):null,
     receive:nn(node,accountPath,definition.script,network,count,"receive"),change:nn(node,accountPath,definition.script,network,count,"change")
   }
@@ -3290,8 +3296,7 @@ function Qs(id){
           <p class="watch-only-note"><strong>Cannot spend:</strong> these exports can monitor every address and reveal this account's transaction history and balance. Treat them as privacy-sensitive.</p>
         </div>
         ${ye(`Account ${account.primaryPublicLabel}`,account.primaryPublic)}
-        ${ye("Watch-only receive descriptor",account.receiveDescriptor)}
-        ${ye("Watch-only change descriptor",account.changeDescriptor)}
+        ${hodlWatchOnlyDescriptorExport(account.receiveDescriptor,account.changeDescriptor)}
         ${hodlAccountAdvancedExports(account,!1)}
       </section>
       <section class="account-result-section account-address-section" aria-labelledby="account-address-heading">
@@ -3506,7 +3511,7 @@ Oo=function(wallet,revealPrivate){
     if(account.masterFingerprint||wallet.masterFingerprint)lines.push(`Master fingerprint: ${account.masterFingerprint||wallet.masterFingerprint}`);
     else if(account.parentFingerprint)lines.push(`Encoded parent fingerprint (not a master fingerprint): ${account.parentFingerprint}`);
     if(!account.masterFingerprint&&!wallet.masterFingerprint&&account.nodeFingerprint)lines.push(`Imported key fingerprint (not a master fingerprint): ${account.nodeFingerprint}`);
-    lines.push("WATCH-ONLY EXPORTS",`${account.primaryPublicLabel}: ${account.primaryPublic}`,`Watch-only receive descriptor: ${account.receiveDescriptor}`,`Watch-only change descriptor:  ${account.changeDescriptor}`);
+    lines.push("WATCH-ONLY EXPORTS",`${account.primaryPublicLabel}: ${account.primaryPublic}`,...(account.walletDescriptor?[`Watch-only wallet descriptor: ${account.walletDescriptor}`]:[]),`Watch-only receive descriptor: ${account.receiveDescriptor}`,`Watch-only change descriptor:  ${account.changeDescriptor}`);
     if(account.hasAlternateExport)lines.push(`Advanced ${account.genericPublicLabel} descriptor export: ${account.genericPublic}`);
     lines.push("ADDRESSES");hodlSheetAddressRows(lines,"Receive",account.receive);hodlSheetAddressRows(lines,"Change",account.change)
   }
@@ -4317,7 +4322,55 @@ function hodlFilterHex(e){return e.replace(/[^0-9a-fA-F\s]/g,"")}
 function hodlFilterBin(e){return e.replace(/[^01\s]/g,"")}
 function hodlFilterSeed(e){return e.replace(/[^a-zA-Z0-9\s]/g,"")}
 function hodlFilterKey(e,t){return t==="brain"?e:e.replace(/[^0-9A-Za-z\s]/g,"")}
-function hodlFilterXpub(e){return e.replace(/[^A-Za-z0-9]/g,"")}
+function hodlFilterXpub(e){return String(e??"").replace(/[^A-Za-z0-9[\]/']/g,"")}
+function hodlNormalizeOriginPath(path){return String(path??"").trim().replace(/^m\//i,"").replace(/'/g,"h").replace(/H/g,"h")}
+function hodlParseKeyOrigin(raw){
+  let input=String(raw??"").trim();
+  let match=input.match(/^\[([0-9a-fA-F]{8})\/([0-9A-Za-z/']+)\](.+)$/);
+  if(!match)return{origin:null,key:input};
+  let fingerprint=match[1].toLowerCase(),path=hodlNormalizeOriginPath(match[2]),key=String(match[3]||"").trim().replace(/\/(?:<\d+(?:;\d+)*>|\d+)\/\*$/,"");
+  if(fingerprint==="00000000")throw new Error("Key origin fingerprint 00000000 is not a real master fingerprint.");
+  if(!/^(?:\d+h?)(?:\/\d+h?)*$/.test(path))throw new Error("Key origin path must look like 48h/0h/0h/2h.");
+  if(!key)throw new Error("Key origin is missing the extended public key.");
+  return{origin:{fingerprint,path},key}
+}
+function hodlOriginPathIndexes(path){
+  return hodlNormalizeOriginPath(path).split("/").filter(Boolean).map(step=>{
+    let hardened=step.endsWith("h"),index=Number(hardened?step.slice(0,-1):step);
+    if(!Number.isInteger(index)||index<0||index>0x7fffffff)throw new Error("Key origin path has an invalid index.");
+    return hardened?0x80000000+index:index
+  })
+}
+function hodlOriginMatchesParsedKey(origin,parsed){
+  let indexes=hodlOriginPathIndexes(origin.path);
+  if(indexes.length!==parsed.depth)return`Key origin path has ${indexes.length} steps, but this extended key is depth ${parsed.depth}.`;
+  if(indexes[indexes.length-1]!==parsed.childNumber)return"Key origin path does not end at this extended key.";
+  return""
+}
+function hodlOriginScriptError(origin,kind,network){
+  let steps=hodlNormalizeOriginPath(origin.path).split("/");
+  if(kind==="p2wsh"||kind==="p2sh-p2wsh"){
+    if(steps[0]!=="48h")return"This script type's origin must start at 48h.";
+    let coin=network==="testnet"?"1h":"0h";
+    if(steps[1]!==coin)return`This ${network} origin should use ${coin} as the coin type.`;
+    if(steps.length!==4)return"BIP48 origin must be 48h/coin/account/script.";
+    let last=kind==="p2wsh"?"2h":"1h";
+    if(steps[3]!==last)return`This script type's origin must end in ${last}.`;
+    return""
+  }
+  if(steps[0]!=="45h")return"Legacy P2SH origin must start at 45h.";
+  return""
+}
+function hodlParseMultisigCosigner(raw){
+  let parsedOrigin=hodlParseKeyOrigin(raw),parsed=uf(parsedOrigin.key);
+  parsed.origin=parsedOrigin.origin;
+  return parsed
+}
+function hodlMultisigKeyToken(parsed,network){
+  let canonical=hodlSerializeExtendedKey(parsed.node.publicExtendedKey,network,"x",!1);
+  if(!parsed.origin)throw new Error("Paste the key origin so a signer can recognize this key: [fingerprint/48h/0h/0h/2h]xpub…");
+  return`[${parsed.origin.fingerprint}/${parsed.origin.path}]${canonical}`
+}
 function hodlHint(el,ok,msg){if(!el)return;el.classList.toggle("bad",!ok&&!!msg);let anchor=el.closest(".dice-input-shell")||el,h=anchor.nextElementSibling;if(!h||!h.classList.contains("hint")){h=document.createElement("p");h.className="hint";anchor.insertAdjacentElement("afterend",h)}h.textContent=msg||"";h.className="hint "+(ok?"ok":msg?"bad":"")}
 function hodlBindFields(){let d=document.getElementById("dice");if(d){d.setAttribute("inputmode","numeric");d.setAttribute("autocomplete","off");d.setAttribute("spellcheck","false")}
 let hx=document.getElementById("hex");if(hx){hx.setAttribute("spellcheck","false");hx.oninput=()=>{hx.value=hodlFilterHex(hx.value);let n=hx.value.replace(/\s/g,"");let ok=!n||/^[0-9a-fA-F]+$/.test(n)&&(n.length%2===0);let msg=!n?"":n.length===32?"32 hex characters · 12-word seed":n.length===64?"64 hex characters · 24-word seed":n.length<32?"Need 32 hex characters for 12 words (or 64 for 24)":n.length%2?"Hex must be an even number of characters":ok?n.length*4+" bits":"Not hex";hodlHint(hx,ok&&(!n||n.length===32||n.length===40||n.length===48||n.length===56||n.length===64),msg)}}
@@ -4329,7 +4382,7 @@ function hodlMergeMsigXpubs(state,values){let cached=Array.isArray(state?.fields
 function hodlInvalidateMsig(){let state=hodlMsigs[hodlActiveMsig];if(state){state.result=null;state.error=""}re=null;dr.innerHTML="";let err=document.getElementById("msig-error");if(err)err.textContent=""}
 function hodlUpdateMsigHint(){let n=Number(document.getElementById("msig-n").value||3),m=document.getElementById("msig-m").value||"2",hint=document.getElementById("msig-hint");if(hint){hint.textContent="Spending will need "+m+" of these "+n+" keys. Receiving needs none of the private keys.";hint.className="hint ok"}}
 function hodlFillM(wanted){let n=Number(document.getElementById("msig-n").value||3),mSel=document.getElementById("msig-m"),desired=Number(wanted==null?(mSel.value||2):wanted);mSel.innerHTML="";for(let i=1;i<=n;i++){let option=document.createElement("option");option.value=String(i);option.textContent=i===n?"All "+i:String(i);mSel.appendChild(option)}hodlSyncSelect(mSel,String(desired>=1&&desired<=n?desired:Math.min(2,n)));hodlUpdateMsigHint()}
-function hodlFillKeys(values){let n=Number(document.getElementById("msig-n").value||3),saved=Array.isArray(values)?values:hodlReadMsigXpubs(),box=document.getElementById("msig-keys");box.innerHTML="";for(let i=0;i<n;i++){let lab=document.createElement("label");lab.className="field";lab.textContent="Co-signer "+(i+1)+" multisig extended public key";let ta=document.createElement("textarea");ta.id="msig-x-"+i;ta.placeholder="xpub / tpub / Ypub / Zpub / Upub / Vpub";ta.autocomplete="off";ta.spellcheck=false;ta.value=saved[i]||"";lab.appendChild(ta);box.appendChild(lab);ta.oninput=()=>{ta.value=hodlFilterXpub(ta.value);hodlCheckXpub(ta);hodlInvalidateMsig()};if(ta.value)hodlCheckXpub(ta)}hodlUpdateMsigHint()}
+function hodlFillKeys(values){let n=Number(document.getElementById("msig-n").value||3),saved=Array.isArray(values)?values:hodlReadMsigXpubs(),box=document.getElementById("msig-keys");box.innerHTML="";for(let i=0;i<n;i++){let lab=document.createElement("label");lab.className="field";lab.textContent="Co-signer "+(i+1)+" multisig extended public key";let ta=document.createElement("textarea");ta.id="msig-x-"+i;ta.placeholder="[fingerprint/48h/0h/0h/2h]xpub…";ta.autocomplete="off";ta.spellcheck=false;ta.value=saved[i]||"";lab.appendChild(ta);box.appendChild(lab);ta.oninput=()=>{ta.value=hodlFilterXpub(ta.value);hodlCheckXpub(ta);hodlInvalidateMsig()};if(ta.value)hodlCheckXpub(ta)}hodlUpdateMsigHint()}
 function hodlMultisigPrefixCompatible(parsed,kind){
   if(parsed.scope==="singlesig")return parsed.family==="x";
   if(kind==="p2sh-p2wsh")return parsed.family==="y";
@@ -4352,11 +4405,11 @@ function hodlDuplicateMultisigKey(ta,parsed){
   let canonical=hodlCanonicalMultisigKey(parsed);
   for(let other of document.querySelectorAll("#msig-keys textarea")){
     if(other===ta||!other.value.trim())continue;
-    try{if(hodlCanonicalMultisigKey(uf(other.value.trim()))===canonical)return!0}catch{}
+    try{if(hodlCanonicalMultisigKey(hodlParseMultisigCosigner(other.value.trim()))===canonical)return!0}catch{}
   }
   return!1
 }
-function hodlCheckXpub(ta){let value=ta.value.trim();if(!value){hodlHint(ta,!0,"");return}try{let parsed=uf(value),network=hodlSelectedNetwork(document.getElementById("msig-network")),kind=hodlScriptKind();if(parsed.isPrivate)throw new Error("Paste an extended public key, never an extended private key.");if(parsed.network!==network)throw new Error(`${parsed.prefix} is for ${parsed.network}; the multisig is set to ${network}.`);if(!hodlMultisigPrefixCompatible(parsed,kind))throw new Error(parsed.scope==="singlesig"?"Use a generic xpub/tpub here, or a proper uppercase multisig SLIP-132 export.":`${parsed.prefix} does not match the selected multisig script type.`);let accountError=hodlMultisigAccountKeyError(parsed,kind);if(accountError)throw new Error(accountError);if(hodlDuplicateMultisigKey(ta,parsed))throw new Error("This duplicates another co-signer. Every co-signer must use a distinct extended public key.");hodlHint(ta,!0,`${parsed.prefix} checksum, network, and account path look valid`)}catch(error){hodlHint(ta,!1,error.message||"Not a valid multisig extended public key")}}
+function hodlCheckXpub(ta){let value=ta.value.trim();if(!value){hodlHint(ta,!0,"");return}try{let parsed=hodlParseMultisigCosigner(value),network=hodlSelectedNetwork(document.getElementById("msig-network")),kind=hodlScriptKind();if(parsed.isPrivate)throw new Error("Paste an extended public key, never an extended private key.");if(parsed.network!==network)throw new Error(`${parsed.prefix} is for ${parsed.network}; the multisig is set to ${network}.`);if(!hodlMultisigPrefixCompatible(parsed,kind))throw new Error(parsed.scope==="singlesig"?"Use a generic xpub/tpub here, or a proper uppercase multisig SLIP-132 export.":`${parsed.prefix} does not match the selected multisig script type.`);let accountError=hodlMultisigAccountKeyError(parsed,kind);if(accountError)throw new Error(accountError);if(!parsed.origin)throw new Error("Paste [fingerprint/48h/0h/0h/2h]xpub… so a signer can recognize this key.");let originError=hodlOriginMatchesParsedKey(parsed.origin,parsed);if(originError)throw new Error(originError);let scriptOriginError=hodlOriginScriptError(parsed.origin,kind,network);if(scriptOriginError)throw new Error(scriptOriginError);if(hodlDuplicateMultisigKey(ta,parsed))throw new Error("This duplicates another co-signer. Every co-signer must use a distinct extended public key.");hodlHint(ta,!0,`${parsed.prefix} origin, checksum, and account path look valid`)}catch(error){hodlHint(ta,!1,error.message||"Not a valid multisig extended public key")}}
 function hodlResetMsigForm(){hodlSyncSelect(document.getElementById("msig-n"),"3");hodlFillM(2);document.querySelectorAll("input[name=msig-script]").forEach(input=>{input.checked=input.value==="p2wsh"});hodlFillKeys([]);hodlSyncSelect(document.getElementById("msig-network"),"mainnet");hodlSyncSelect(document.getElementById("msig-count"),"5");document.getElementById("msig-error").textContent=""}
 function hodlInitMsig(){let nSel=document.getElementById("msig-n");nSel.innerHTML="";for(let i=2;i<=15;i++){let option=document.createElement("option");option.value=String(i);option.textContent=String(i);nSel.appendChild(option)}nSel.value="3";nSel.onchange=()=>{let state=hodlMsigs[hodlActiveMsig],values=state?hodlMergeMsigXpubs(state):hodlReadMsigXpubs(),wanted=document.getElementById("msig-m").value;hodlFillM(wanted);hodlFillKeys(values);hodlInvalidateMsig()};document.getElementById("msig-m").onchange=()=>{hodlUpdateMsigHint();hodlInvalidateMsig()};let recheck=()=>{hodlInvalidateMsig();document.querySelectorAll("#msig-keys textarea").forEach(hodlCheckXpub)};document.getElementById("msig-network").addEventListener("change",recheck);document.getElementById("msig-count").addEventListener("change",hodlInvalidateMsig);document.querySelectorAll('input[name="msig-script"]').forEach(input=>input.addEventListener("change",recheck));hodlResetMsigForm();W("#msig-go").onclick=hodlBuildMsig;W("#msig-wipe").onclick=hodlWipeActiveMsig}
 function hodlCmpBytes(a,b){let n=Math.min(a.length,b.length);for(let i=0;i<n;i++)if(a[i]!==b[i])return a[i]-b[i];return a.length-b.length}
@@ -4367,23 +4420,26 @@ function hodlBuildMsig(){
   try{
     let network=hodlSelectedNetwork(document.getElementById("msig-network")),count=Number(document.getElementById("msig-count").value),n=Number(document.getElementById("msig-n").value),m=Number(document.getElementById("msig-m").value);
     if(!(m>=1&&n>=2&&m<=n&&n<=15))throw new Error("Pick how many signatures out of how many keys.");
-    let kind=hodlScriptKind(),nodes=[],xpubs=[],legacyChildNumbers=[];
+    let kind=hodlScriptKind(),nodes=[],xpubs=[],keyTokens=[],legacyChildNumbers=[];
     for(let index=0;index<n;index++){
-      let raw=document.getElementById("msig-x-"+index).value.trim();if(!raw)throw new Error("Paste an extended public key for co-signer "+(index+1)+".");
-      let parsed=uf(raw);if(parsed.isPrivate)throw new Error("Co-signer "+(index+1)+" is an extended private key. Paste only an extended public key.");
+      let raw=document.getElementById("msig-x-"+index).value.trim();if(!raw)throw new Error("Paste an origin and extended public key for co-signer "+(index+1)+".");
+      let parsed=hodlParseMultisigCosigner(raw);if(parsed.isPrivate)throw new Error("Co-signer "+(index+1)+" is an extended private key. Paste only an extended public key.");
       if(parsed.network!==network)throw new Error(`Co-signer ${index+1}'s ${parsed.prefix} is for ${parsed.network}, but this multisig is set to ${network}.`);
       if(!hodlMultisigPrefixCompatible(parsed,kind))throw new Error(parsed.scope==="singlesig"?`Co-signer ${index+1} uses a singlesig ${parsed.prefix}. Use a generic ${cr[network].x.pubName}, or the proper uppercase multisig export for this script type.`:`Co-signer ${index+1}'s ${parsed.prefix} does not match the selected multisig script type.`);
       let accountError=hodlMultisigAccountKeyError(parsed,kind);if(accountError)throw new Error(`Co-signer ${index+1}: ${accountError}`);
+      if(!parsed.origin)throw new Error(`Co-signer ${index+1} needs a key origin so a signer can recognize this key. Paste [fingerprint/48h/0h/0h/2h]xpub… as exported by the device.`);
+      let originError=hodlOriginMatchesParsedKey(parsed.origin,parsed);if(originError)throw new Error(`Co-signer ${index+1}: ${originError}`);
+      let scriptOriginError=hodlOriginScriptError(parsed.origin,kind,network);if(scriptOriginError)throw new Error(`Co-signer ${index+1}: ${scriptOriginError}`);
       if(kind==="p2sh")legacyChildNumbers.push(parsed.childNumber);
-      let node=parsed.node,canonical=hodlSerializeExtendedKey(node.publicExtendedKey,network,"x",!1);
+      let node=parsed.node,canonical=hodlCanonicalMultisigKey(parsed);
       if(xpubs.includes(canonical))throw new Error(`Co-signer ${index+1} duplicates an earlier co-signer. Every slot must use a distinct extended public key.`);
-      nodes.push(node);xpubs.push(canonical)
+      nodes.push(node);xpubs.push(canonical);keyTokens.push(hodlMultisigKeyToken(parsed,network))
     }
     if(kind==="p2sh"){
       let sortedIndexes=[...legacyChildNumbers].sort((a,b)=>a-b),validIndexes=sortedIndexes.every((value,index)=>value===index);
       if(!validIndexes)throw new Error(`Legacy P2SH requires one depth-2 BIP45 co-signer branch for each index from 0 through ${n-1}.`)
     }
-    let inner=xpubs.map(key=>key+"/0/*").join(","),innerChange=xpubs.map(key=>key+"/1/*").join(",");
+    let inner=keyTokens.map(key=>key+"/0/*").join(","),innerChange=keyTokens.map(key=>key+"/1/*").join(",");
     let descriptor=kind==="p2wsh"?`wsh(sortedmulti(${m},${inner}))`:kind==="p2sh-p2wsh"?`sh(wsh(sortedmulti(${m},${inner})))`:`sh(sortedmulti(${m},${inner}))`;
     let changeDescriptor=kind==="p2wsh"?`wsh(sortedmulti(${m},${innerChange}))`:kind==="p2sh-p2wsh"?`sh(wsh(sortedmulti(${m},${innerChange})))`:`sh(sortedmulti(${m},${innerChange}))`;
     let receive=[],change=[];for(let index=0;index<count;index++){
@@ -4392,7 +4448,7 @@ function hodlBuildMsig(){
       receive.push(Object.assign({index,path:"/0/"+index},hodlMsigAddr(receivePublicKeys,m,network,kind)));
       change.push(Object.assign({index,path:"/1/"+index},hodlMsigAddr(changePublicKeys,m,network,kind)))
     }
-    re={kind:"msig",network,m,n,script:kind,xpubs,receiveDescriptor:Le(descriptor),changeDescriptor:Le(changeDescriptor),receive,change,notes:["This is watch-only. Private keys never entered this calculator.","Descriptor origins were omitted because no verified master fingerprint and full origin path were supplied.","A signer is only needed when you spend."],warnings:[]};
+    re={kind:"msig",network,m,n,script:kind,xpubs,receiveDescriptor:Le(descriptor),changeDescriptor:Le(changeDescriptor),walletDescriptor:hodlWatchOnlyMultipathDescriptor(Le(descriptor)),receive,change,notes:["This is watch-only. Private keys never entered this calculator.","Each key origin lets a signer match its seed to one co-signer.","A signer is only needed when you spend."],warnings:[]};
     hodlCaptureMsig();hodlShowMsig();hodlFocusWalletResult()
   }catch(exception){re=null;dr.innerHTML="";error.textContent=exception.message||String(exception);hodlCaptureMsig()}
 }
@@ -4407,8 +4463,7 @@ function hodlShowMsig(){if(!re||re.kind!=="msig")return;Ge=!1;dr.innerHTML=`
           <h3 id="multisig-watch-heading">Watch-only wallet data</h3>
           <p class="muted">These descriptors reveal every receive and change address for this multisig, but cannot authorize spending.</p>
         </div>
-        ${ye("Watch-only receive descriptor",re.receiveDescriptor)}
-        ${ye("Watch-only change descriptor",re.changeDescriptor)}
+        ${hodlWatchOnlyDescriptorExport(re.receiveDescriptor,re.changeDescriptor)}
       </section>
       <section class="account-result-section account-address-section" aria-labelledby="multisig-address-heading">
         <div class="wallet-data-section-head">
@@ -4421,7 +4476,7 @@ function hodlShowMsig(){if(!re||re.kind!=="msig")return;Ge=!1;dr.innerHTML=`
         <h4 class="wallet-data-subtitle">Change</h4>
         ${hodlAddressTable(re.change,"Multisig change addresses")}
       </section>
-      <p class="muted">Import both descriptors into a compatible watch-only wallet, such as Sparrow or Bitcoin Core's <span class="mono">importdescriptors</span> workflow.</p>
+      <p class="muted">Import the watch-only wallet descriptor into Sparrow or another wallet.</p>
     </section>`}
 
 function hodlDiceCompare(){}
