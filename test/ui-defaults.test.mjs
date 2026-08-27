@@ -28,6 +28,6 @@ test("private alternate account exports are visible without an accordion", () =>
 test("top banners share one consistent gap", () => {
   assert.match(
     css,
-    /\.beta-warning, \.online-warning, \.network-warning\s*\{[^}]*margin: 0 0 18px;/s,
+    /\.beta-warning, \.online-warning, \.network-warning\s*\{[^}]*margin: 0 0 12px;/s,
   );
 });

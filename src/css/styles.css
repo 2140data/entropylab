@@ -262,7 +262,7 @@ header { padding: 8px 0 16px; }
 .custom-select-option[aria-selected="true"] { background: color-mix(in oklab, var(--accent) 20%, var(--surface-2)); color: var(--accent); }
 .custom-select-option:disabled { background: transparent; color: var(--faint); cursor: not-allowed; opacity: .48; }
 .beta-warning, .online-warning, .network-warning {
-  margin: 0 0 18px; padding: 14px 16px; border: 1px solid; border-radius: 10px;
+  margin: 0 0 12px; padding: 14px 16px; border: 1px solid; border-radius: 10px;
   color: var(--fg); line-height: 1.5;
 }
 .beta-warning, .online-warning {
