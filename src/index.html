@@ -60,6 +60,7 @@ online.</p>
       </section>
       <div id="form" class="key-form">
       <p class="label">How to turn rolls into a seed</p>
+      <div class="choice-grid">
       <label class="choice"><input type="radio" name="dm" value="coldcard" checked="checked">
         <span><strong>Hashed rolls / Base 10 [0-9] (recommended)</strong>
         <span class="desc">SHA-256 of the original dice digit string, matching the method used by COLDCARD and SeedSigner. Every entered roll is included.</span></span>
@@ -81,6 +82,7 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
         <span><strong>D++ / Direct word selection</strong>
         <span class="desc">For a 24-word seed, roll one D8 and two D16 dice for each of the first 23 words, then a final D8 for the checksum word.</span></span>
       </label>
+      </div>
       <p class="label" id="dice-label">Dice rolls (faces 1–6 only)</p>
       <p class="muted" id="dice-help">Base 10 [0-9] hashes the original roll string, matching COLDCARD and SeedSigner. Dice [1-6] converts each 6 to 0 before hashing, matching the method used by Keystone.</p>
       <div class="dice-input-shell"><pre class="dice-input-highlight" id="dice-highlight" aria-hidden="true"></pre><textarea id="dice" placeholder="e.g. 415263415263…" inputmode="numeric" autocomplete="off" spellcheck="false" aria-describedby="dice-help dice-meta"></textarea></div>
@@ -162,12 +164,14 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
         </label>
       </div>
       <p class="label">Address type</p>
+      <div class="choice-grid three-up">
       <label class="choice"><input type="radio" name="msig-script" value="p2wsh" checked="checked">
         <span><strong>Native SegWit</strong><span class="desc">Usual choice. Addresses start with bc1q. Matches BIP48 script type 2.</span></span></label>
       <label class="choice"><input type="radio" name="msig-script" value="p2sh-p2wsh">
         <span><strong>Nested SegWit</strong><span class="desc">Addresses start with 3. Older wallets. BIP48 script type 1.</span></span></label>
       <label class="choice"><input type="radio" name="msig-script" value="p2sh">
         <span><strong>Legacy</strong><span class="desc">Addresses start with 3. Bare P2SH using matching depth-2 BIP45 cosigner-branch exports.</span></span></label>
+      </div>
       <div id="msig-keys" class="msig-keys"><label class="field">Co-signer 1 multisig extended public key<textarea id="msig-x-0" placeholder="xpub / tpub / Ypub / Zpub / Upub / Vpub" autocomplete="off" spellcheck="false"></textarea></label><label class="field">Co-signer 2 multisig extended public key<textarea id="msig-x-1" placeholder="xpub / tpub / Ypub / Zpub / Upub / Vpub" autocomplete="off" spellcheck="false"></textarea></label><label class="field">Co-signer 3 multisig extended public key<textarea id="msig-x-2" placeholder="xpub / tpub / Ypub / Zpub / Upub / Vpub" autocomplete="off" spellcheck="false"></textarea></label></div>
       <p class="hint ok" id="msig-hint">Spending will need 2 of these 3 keys. Receiving needs none of the private keys.</p>
       <div class="row current-item-actions">

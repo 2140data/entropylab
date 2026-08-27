@@ -129,6 +129,12 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
 .choice .desc { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; line-height: 1.45; font-weight: 400; }
 .choice:has(input:checked) { border-color: color-mix(in oklab, var(--accent) 55%, var(--border)); }
 .choice:has(input:disabled) { cursor: not-allowed; opacity: 0.52; }
+.choice-grid { display: grid; gap: var(--space-control); margin-top: var(--space-control); }
+.choice-grid .choice { margin-top: 0; }
+@media (min-width: 720px) {
+  .choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; }
+  .choice-grid.three-up { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 .dice-input-pad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: var(--space-control); }
 .dice-input-pad.with-coin { grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 3fr); }
 .dice-input-pad.dplus {
@@ -341,7 +347,11 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 #msig-card[hidden], #calc-card[hidden], #psbt-card[hidden] { display: none !important; }
 #calc-card:not([hidden]), #msig-card:not([hidden]) { margin-top: 0; border-radius: 0 0 20px 20px; position: relative; z-index: 1; }
 .psbt-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 14px; }
-@media (min-width: 720px) { .psbt-grid { grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); } }
+@media (min-width: 720px) {
+  .psbt-grid { grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); }
+  .psbt-grid > .field { display: flex; flex-direction: column; }
+  .psbt-grid > .field > textarea { flex: 1; }
+}
 .psbt-kv { font-family: var(--mono); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
 .psbt-ok { color: var(--ok); }
 .psbt-bad { color: var(--danger); }

@@ -123,12 +123,14 @@ var vr=[16,20,24,28,32],Rc={0:"00",1:"01",2:"10",3:"11",4:"0",5:"1"};function kr
         </label>
       </div>
       <p class="label">Address type</p>
+      <div class="choice-grid three-up">
       <label class="choice"><input type="radio" name="msig-script" value="p2wsh" checked />
         <span><strong>Native SegWit</strong><span class="desc">Usual choice. Addresses start with bc1q. Matches BIP48 script type 2.</span></span></label>
       <label class="choice"><input type="radio" name="msig-script" value="p2sh-p2wsh" />
         <span><strong>Nested SegWit</strong><span class="desc">Addresses start with 3. Older wallets. BIP48 script type 1.</span></span></label>
       <label class="choice"><input type="radio" name="msig-script" value="p2sh" />
         <span><strong>Legacy</strong><span class="desc">Addresses start with 3. Bare P2SH using matching depth-2 BIP45 cosigner-branch exports.</span></span></label>
+      </div>
       <div id="msig-keys" class="msig-keys"></div>
       <p class="hint" id="msig-hint"></p>
       <div class="row current-item-actions">
@@ -1166,6 +1168,7 @@ function hodlRenderKeyForm(){
     let dplusConvention=ge==="dplus"?`<label class="seed-autocomplete-toggle"><input type="checkbox" id="dplus-numbered-d16" ${hodlDPlusNumberedD16?"checked":""} /><span>Use a numbered D16 (1–16) <span class="seed-autocomplete-note">(enter 10–16 as A–G; G maps to D++ face 0)</span></span></label>`:"";
     at.innerHTML=`
       <p class="label">How to turn rolls into a ${config.words}-word seed</p>
+      <div class="choice-grid">
       <label class="choice"><input type="radio" name="dm" value="coldcard" ${ge==="coldcard"?"checked":""} />
         <span><strong>Hashed rolls / Base 10 [0-9] (recommended)</strong><span class="desc">SHA-256 of the original dice digit string, matching the method used by COLDCARD and SeedSigner. The first ${config.bits} bits become the selected ${config.words}-word seed; ${config.hashRolls} rolls are recommended, and every entered roll is included.</span></span>
       </label>
@@ -1178,6 +1181,7 @@ function hodlRenderKeyForm(){
       <label class="choice"><input type="radio" name="dm" value="dplus" ${ge==="dplus"?"checked":""} />
         <span><strong>D++ / Direct word selection</strong><span class="desc">Roll one 8-sided die and two 16-sided dice for each of the first ${config.partialWords} words, then ${config.words===24?"roll the D8 once more to select the checksum-valid final word":`choose 1 of ${config.candidates} checksum-valid final words from the dropdown`}.</span></span>
       </label>
+      </div>
       <p class="label" id="dice-label">${diceLabel}</p>
       <p class="muted" id="dice-help">${diceHelp}</p>
       ${dplusConvention}
@@ -1207,12 +1211,14 @@ function hodlRenderKeyForm(){
     let binary=hodlEntropyFormat==="bin",inputId=binary?"bin":"hex",entropyCharacters=binary?["0","1"]:[..."0123456789ABCDEF"],entropyPad=`<div class="dice-input-pad dplus entropy-keypad${binary?" binary-keypad":""}" role="group" aria-label="${binary?"Binary":"Hexadecimal"} keypad">${entropyCharacters.map(character=>`<button type="button"${binary?' class="coin-button"':""} data-entropy-digit="${character}" aria-label="${binary?character==="0"?"Enter Heads as binary 0":"Enter Tails as binary 1":`Enter hexadecimal ${character}`}">${binary?character==="0"?"Heads (0)":"Tails (1)":character}</button>`).join("")}</div>`;
     at.innerHTML=`
       <p class="label">Entropy format</p>
+      <div class="choice-grid">
       <label class="choice"><input type="radio" name="entropy-format" value="hex" ${binary?"":"checked"} />
         <span><strong>Hexadecimal</strong><span class="desc">Use characters 0–9 and a–f. Compact and easy to copy.</span></span>
       </label>
       <label class="choice"><input type="radio" name="entropy-format" value="bin" ${binary?"checked":""} />
         <span><strong>Binary (coin flips)</strong><span class="desc">Use one 0 or 1 for each coin flip.</span></span>
       </label>
+      </div>
       <p class="label" id="entropy-input-label">${binary?`Binary entropy (coin flips) for a ${config.words}-word seed`:`Hexadecimal entropy for a ${config.words}-word seed`}</p>
       <p class="muted" id="entropy-input-help">${binary?`Spaces are added every 11 bits. Each complete group fills one BIP39 word; the checksum-derived final word appears at ${config.bits} bits.`:`Each hex character contributes four bits. Seed-word cards fill as enough bits arrive; the checksum-derived final word appears at exactly ${config.hexChars} characters.`} No generator — enter entropy you already created.</p>
       <div class="dice-input-shell entropy-input-shell"><pre class="dice-input-highlight" id="entropy-input-highlight" aria-hidden="true"></pre><textarea id="${inputId}" placeholder="${binary?`Exactly ${config.bits} zeros and ones`:`${config.hexChars} hex characters for a ${config.words}-word seed`}" aria-labelledby="entropy-input-label" aria-describedby="entropy-input-help entropy-meta" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div>
@@ -1252,9 +1258,11 @@ function hodlRenderKeyForm(){
   }
   at.innerHTML=`
     <p class="label">Private key format</p>
+    <div class="choice-grid three-up">
     <label class="choice"><input type="radio" name="kk" value="wif-or-hex" checked /><span><strong>WIF / hex</strong><span class="desc">Normal Bitcoin Core private key.</span></span></label>
     <label class="choice"><input type="radio" name="kk" value="minikey" /><span><strong>Mini key</strong><span class="desc">Casascius-style short key.</span></span></label>
     <label class="choice"><input type="radio" name="kk" value="brain" /><span><strong>Brain wallet</strong><span class="desc">Unsafe. Use only to recover an old passphrase wallet.</span></span></label>
+    </div>
     <p class="label" id="private-key-input-label">Private key or recovery passphrase</p>
     <p class="muted" id="private-key-input-help">Enter the value matching the selected format. Brain wallets are for recovery only.</p>
     <textarea id="key" placeholder="K… / L… / 5… / 64-character hex / mini key" aria-labelledby="private-key-input-label" aria-describedby="private-key-input-help"></textarea>`;
