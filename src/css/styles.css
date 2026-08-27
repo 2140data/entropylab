@@ -553,7 +553,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 @media (max-width: 520px) {
   .msig-threshold-control { --msig-slider-inset: 12px; padding: 14px 10px 12px; }
   .msig-threshold-labels { gap: 8px; }
-  .msig-threshold-labels label { flex-direction: column; gap: 6px; font-size: 11px; }
+  .msig-threshold-labels label { flex-direction: column; justify-content: flex-end; gap: 6px; font-size: 11px; }
   .msig-threshold-number { flex: 0 0 auto; width: 48px !important; min-width: 48px; height: 28px; min-height: 28px !important; font-size: 15px; }
   .msig-threshold-ticks { font-size: 9px; }
 }

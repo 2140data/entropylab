@@ -26,7 +26,7 @@ test("single-key network selector is half width on wide screens and full width o
   assert.match(css, /\.key-settings\.single-key-mode \.network-field \{ width: 100%; max-width: 50%; \}/);
   assert.match(
     css,
-    /@media \(max-width: 520px\) \{[^}]*\.key-settings\.single-key-mode \.network-field \{ max-width: none; \}/s,
+    /@media \(max-width: 520px\) \{[\s\S]*?\.key-settings\.single-key-mode \.network-field \{ max-width: none; \}/,
   );
 });
 
@@ -57,7 +57,7 @@ test("multisig script type and placeholders follow detected co-signer exports", 
   assert.match(app, /testnet\?"Upub":"Ypub"/);
   assert.match(app, /testnet\?"Vpub":"Zpub"/);
   assert.match(app, /summary\.mixed\?`Co-signer exports indicate different script types/);
-  assert.match(app, /button\.disabled=mixed/);
+  assert.match(app, /button\.disabled=!ready/);
   assert.match(app, /if\(kind==="mixed"\)throw new Error\("Co-signer keys indicate different script types/);
 });
 
@@ -85,6 +85,7 @@ test("multisig threshold labels describe signatures and keys", () => {
     assert.doesNotMatch(markup, /<select id="msig-[mn]"/);
   }
   assert.match(css, /\.msig-threshold-number\s*\{[^}]*appearance: textfield[^}]*text-align: center/s);
+  assert.match(css, /@media \(max-width: 520px\)[\s\S]*\.msig-threshold-labels label \{ flex-direction: column; justify-content: flex-end;/);
   assert.match(css, /\.msig-threshold-track span\s*\{[^}]*background: var\(--selection-accent\)/s);
   assert.match(css, /\.msig-threshold-thumb\s*\{[^}]*background: linear-gradient\(#858585, #5f5f5f\)/s);
   assert.match(css, /--msig-slider-inset: 14px/);
