@@ -635,6 +635,11 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 }
 </style></head><body><!--$--><div id="btc-calc" class="min-h-dvh bg-[#10110e]">
   <div class="wrap">
+    <noscript>
+      <aside class="beta-warning no-print" role="alert">
+        <strong>JavaScript is required:</strong> EntropyLab performs wallet calculations locally inside your browser. With JavaScript disabled the calculator cannot derive keys or addresses. Enable JavaScript, then run this file offline on an air-gapped computer.
+      </aside>
+    </noscript>
     <aside class="beta-warning no-print" role="alert">
       <strong>Beta software — not independently reviewed:</strong> EntropyLab is experimental and should be used only for testing. Do not rely on it to secure real bitcoin, and never test with funds you cannot afford to lose.
     </aside>
