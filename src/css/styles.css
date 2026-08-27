@@ -412,6 +412,9 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .field-note {
   display: block; margin-top: var(--space-control); color: var(--muted); font-size: 12px; font-weight: 400; line-height: 1.4;
 }
+.msig-legacy-account-toggle { margin: 0; }
+.msig-legacy-account-toggle[hidden] { display: none !important; }
+.msig-legacy-account-toggle input { margin-top: 2px; }
 #msig-account:disabled { cursor: not-allowed; color: var(--muted); opacity: 1; }
 #msig-account[data-state="mixed"] { color: var(--warn); }
 .msig-account-warning { color: var(--warn); }
@@ -668,14 +671,6 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .wallet-data-fields > :first-child { margin-top: 0; }
 .wallet-data-fields > :last-child { margin-bottom: 0; }
 .wallet-data-subtitle { margin: 20px 0 6px; color: var(--fg); font-family: var(--sans); font-size: 14px; font-weight: 700; }
-.account-summary-grid {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 22px;
-  margin: 18px 0 0; padding: 16px; border: 1px solid var(--border); border-radius: 12px;
-  background: color-mix(in oklab, var(--surface-2) 58%, var(--bg));
-}
-.account-summary-grid > div { min-width: 0; margin: 0; }
-.account-summary-grid dt { color: var(--muted); font-size: 14px; line-height: 1.5; }
-.account-summary-grid dd { min-width: 0; margin: 2px 0 0; overflow-wrap: anywhere; }
 .account-result-section { margin-top: 24px; }
 .account-result-section > .wallet-data-section-head { margin-bottom: 16px; }
 .account-private-section {
@@ -706,9 +701,6 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .wallet-advanced[open] summary { margin-bottom: 12px; color: var(--fg); }
 .watch-only-note { color: var(--muted); }
 .watch-only-note strong { color: var(--fg); }
-@media (min-width: 880px) {
-  .account-summary-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
 @media (max-width: 520px) {
   .header-title-row { gap: 10px; }
   .online-brand-mark { width: 36px; height: 36px; }
@@ -717,7 +709,6 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   #msig-card .key-panel-head > .delete-key { grid-column: 2; grid-row: 1; justify-self: end; }
   .wallet-data-card { padding: 18px; }
   .wallet-private-section { padding: 13px; }
-  .account-summary-grid { grid-template-columns: 1fr; padding: 13px; }
   .account-private-section { padding: 14px; }
   .wallet-data-actions { align-items: stretch; }
   .wallet-data-actions > * { width: 100%; justify-content: center; }

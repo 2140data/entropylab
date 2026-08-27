@@ -190,6 +190,9 @@
     document.querySelector('input[name="entropy-format"][value="hex"]').click();
     const hex = await until(() => document.getElementById("hex"), "hex input");
     input(hex, vectors[0].entropy);
+    const scriptType = document.getElementById("script-type");
+    scriptType.value = "bip44";
+    scriptType.dispatchEvent(new Event("change", { bubbles: true }));
     const network = document.getElementById("network");
     assert(network && [...network.options].some((option) => option.value === "testnet"), "Network selector is missing or has no testnet option");
     network.value = "testnet";
@@ -198,6 +201,61 @@
     derive.click();
     await until(() => document.getElementById("save") || document.getElementById("error").textContent, "wallet result");
     assert(!document.getElementById("error").textContent, "Wallet derivation failed");
+  });
+
+  await test("Legacy key derivation exports BIP87 and can derive a 1-of-1 Legacy BIP87 wallet", async () => {
+    const exportRow = [...document.querySelectorAll("#acct p")].find((row) =>
+      row.textContent.includes("Legacy · BIP87 · Account 0")
+    );
+    assert(exportRow, "Legacy account result did not show its BIP87 co-signer export");
+    const bip87Export = exportRow.querySelector(".mono")?.textContent.trim();
+    assert(/^\[[0-9a-f]{8}\/87h\/1h\/0h\]tpub/.test(bip87Export || ""), "BIP87 testnet origin or account key is wrong");
+    const nativeTab = [...document.querySelectorAll("#acct-tabs button")].find((button) => button.textContent.includes("Native SegWit"));
+    assert(nativeTab, "Native SegWit account tab is missing");
+    nativeTab.click();
+    const bip48Row = await until(
+      () => [...document.querySelectorAll("#acct p")].find((row) => row.textContent.includes("Native SegWit · BIP48")),
+      "Native SegWit BIP48 co-signer export",
+    );
+    const bip48Export = bip48Row.querySelector(".mono")?.textContent.trim();
+    assert(/^\[[0-9a-f]{8}\/48h\/1h\/0h\/2h\]Vpub/.test(bip48Export || ""), "BIP48 testnet origin or account key is wrong");
+
+    document.querySelector('#workspace [data-workspace="msig"]').click();
+    await until(() => !document.getElementById("msig-card").hidden, "multisig workspace");
+    const multisigScript = document.getElementById("msig-script-type");
+    multisigScript.value = "p2sh";
+    multisigScript.dispatchEvent(new Event("change", { bubbles: true }));
+    const bip87Toggle = document.getElementById("msig-legacy-bip87");
+    assert(!document.getElementById("msig-legacy-account-toggle").hidden, "BIP87 option stayed hidden for Legacy");
+    bip87Toggle.checked = true;
+    bip87Toggle.dispatchEvent(new Event("change", { bubbles: true }));
+    const multisigNetwork = document.getElementById("msig-network");
+    multisigNetwork.value = "testnet";
+    multisigNetwork.dispatchEvent(new Event("change", { bubbles: true }));
+    input(document.getElementById("msig-n-number"), "2");
+    input(document.getElementById("msig-x-0"), bip87Export);
+    input(document.getElementById("msig-x-1"), bip48Export);
+    equal(multisigScript.value, "mixed");
+    assert(
+      document.getElementById("msig-script-warning").textContent.includes("cannot be combined here with BIP48 keys"),
+      "BIP87 and BIP48 keys did not show an explicit incompatibility",
+    );
+    input(document.getElementById("msig-x-1"), "");
+    input(document.getElementById("msig-n-number"), "1");
+    equal(document.getElementById("msig-m").value, "1");
+    equal(document.getElementById("msig-n").value, "1");
+    equal(document.querySelectorAll("#msig-keys textarea").length, 1);
+    input(document.getElementById("msig-x-0"), bip87Export);
+    const deriveMultisig = await until(() => !document.getElementById("msig-go").disabled && document.getElementById("msig-go"), "1-of-1 BIP87 derive button");
+    deriveMultisig.click();
+    await until(() => document.querySelector("#out .account-result-card") || document.getElementById("msig-error").textContent, "1-of-1 BIP87 result");
+    assert(!document.getElementById("msig-error").textContent, "1-of-1 BIP87 derivation failed");
+    const resultText = document.getElementById("out").textContent;
+    assert(resultText.includes("1-of-1 multisig · BIP87"), "Result did not identify the 1-of-1 BIP87 policy");
+    assert(resultText.includes("/87h/1h/0h") && resultText.includes("/<0;1>/*"), "BIP87 wallet descriptor paths are wrong");
+
+    document.querySelector('#workspace [data-workspace="calc"]').click();
+    await until(() => !document.getElementById("calc-card").hidden, "key workspace");
   });
 
   await test("watch-only export omits private recovery material", async () => {

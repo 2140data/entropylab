@@ -153,14 +153,14 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
         <legend class="sr-only">Multisig signature threshold</legend>
         <div class="msig-threshold-labels">
           <label for="msig-m-number"><span>Signatures needed to spend (m)</span><input class="msig-threshold-number" id="msig-m-number" type="number" min="1" max="15" step="1" value="2" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
-          <label for="msig-n-number"><span>Total signing keys (n)</span><input class="msig-threshold-number" id="msig-n-number" type="number" min="2" max="15" step="1" value="3" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
+          <label for="msig-n-number"><span>Total signing keys (n)</span><input class="msig-threshold-number" id="msig-n-number" type="number" min="1" max="15" step="1" value="3" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
         </div>
         <div class="msig-threshold-slider" id="msig-threshold-slider" style="--msig-m-position:12.5%;--msig-n-position:25%" data-slider-max="9">
           <div class="msig-threshold-track" aria-hidden="true"><span></span></div>
           <span class="msig-threshold-thumb msig-threshold-thumb-m" aria-hidden="true"></span>
           <span class="msig-threshold-thumb msig-threshold-thumb-n" aria-hidden="true"></span>
           <input class="msig-threshold-range" id="msig-m" type="range" min="1" max="15" step="1" value="2" aria-label="Signatures needed to spend (m)" aria-describedby="msig-threshold-help">
-          <input class="msig-threshold-range" id="msig-n" type="range" min="2" max="15" step="1" value="3" aria-label="Total signing keys (n)" aria-describedby="msig-threshold-help">
+          <input class="msig-threshold-range" id="msig-n" type="range" min="1" max="15" step="1" value="3" aria-label="Total signing keys (n)" aria-describedby="msig-threshold-help">
         </div>
         <div class="msig-threshold-ticks" id="msig-threshold-ticks" aria-hidden="true"><span style="--msig-tick-position:0%">1</span><span style="--msig-tick-position:12.5%">2</span><span style="--msig-tick-position:25%">3</span><span style="--msig-tick-position:37.5%">4</span><span style="--msig-tick-position:50%">5</span><span style="--msig-tick-position:62.5%">6</span><span style="--msig-tick-position:75%">7</span><span style="--msig-tick-position:87.5%">8</span><span style="--msig-tick-position:100%">9</span></div>
         <p class="field-note msig-threshold-help" id="msig-threshold-help">Enter values, drag either handle, or use the arrow keys. Editing one value past the other moves both.</p>
@@ -168,6 +168,10 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
       <div id="msig-keys" class="msig-keys"><label class="field">Co-signer 1 multisig extended public key<textarea id="msig-x-0" placeholder="[fingerprint/48h/0h/0h/2h]Zpub…" autocomplete="off" spellcheck="false"></textarea></label><label class="field">Co-signer 2 multisig extended public key<textarea id="msig-x-1" placeholder="[fingerprint/48h/0h/0h/2h]Zpub…" autocomplete="off" spellcheck="false"></textarea></label><label class="field">Co-signer 3 multisig extended public key<textarea id="msig-x-2" placeholder="[fingerprint/48h/0h/0h/2h]Zpub…" autocomplete="off" spellcheck="false"></textarea></label></div>
       <p class="hint ok" id="msig-hint">Spending will need 2 of these 3 keys. Receiving needs none of the private keys.</p>
       <div class="key-settings msig-output-settings">
+        <label class="choice msig-legacy-account-toggle" id="msig-legacy-account-toggle" hidden>
+          <input id="msig-legacy-bip87" type="checkbox" aria-describedby="msig-legacy-bip87-help">
+          <span><strong>Use standardized BIP87 accounts</strong><span class="desc" id="msig-legacy-bip87-help">Uses <span class="mono">m/87h/coinh/accounth</span> with this Legacy P2SH descriptor. BIP87 account keys are script-agnostic. Leave unchecked for default BIP45 without accounts.</span></span>
+        </label>
         <div class="key-settings-row">
           <label class="field">Script type
             <select id="msig-script-type" aria-describedby="msig-script-warning"><option value="p2sh">Legacy · BIP45</option><option value="p2sh-p2wsh">Nested SegWit · BIP48</option><option value="p2wsh" selected="selected">Native SegWit · BIP48</option><option value="mixed" disabled data-custom-select-placeholder="true">Mixed · incompatible keys</option></select>
