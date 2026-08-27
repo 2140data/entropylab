@@ -20,6 +20,108 @@ test("all wallet network selectors enable and default to mainnet", () => {
   assert.match(app, /network:"mainnet"/);
 });
 
+test("single-key network selector is half width on wide screens and full width on narrow screens", () => {
+  assert.match(template, /<label class="field network-field">Network\s*<select id="network">/);
+  assert.match(app, /<label class="field network-field">Network\s*<select id="network">/);
+  assert.match(css, /\.key-settings\.single-key-mode \.network-field \{ width: 100%; max-width: 50%; \}/);
+  assert.match(
+    css,
+    /@media \(max-width: 520px\) \{[^}]*\.key-settings\.single-key-mode \.network-field \{ max-width: none; \}/s,
+  );
+});
+
+test("multisig derivation settings follow the key inputs", () => {
+  const fieldOrder = /id="msig-keys"[\s\S]*id="msig-hint"[\s\S]*id="msig-script-type"[\s\S]*id="msig-network"[\s\S]*id="msig-account"[\s\S]*id="msig-count"[\s\S]*id="msig-go"/;
+  assert.match(template, fieldOrder);
+  assert.match(app, fieldOrder);
+});
+
+test("key derivation and multisig use the accurate Script type label", () => {
+  for (const markup of [template, app]) {
+    assert.match(markup, /id="script-type-field">Script type\s*<select/);
+    assert.match(markup, /<label class="field">Script type\s*<select id="msig-script-type"[^>]*>/);
+    assert.match(markup, /<option value="p2wsh" selected(?:="selected")?>Native SegWit · BIP48<\/option>/);
+    assert.doesNotMatch(markup, /name="msig-script"|Matches BIP48 script type|Bare P2SH/);
+    assert.doesNotMatch(markup, />Address type</);
+  }
+});
+
+test("multisig script type and placeholders follow detected co-signer exports", () => {
+  for (const markup of [template, app]) {
+    assert.match(markup, /option value="mixed" disabled data-custom-select-placeholder="true">Mixed · incompatible keys/);
+    assert.match(markup, /id="msig-script-warning" role="status" hidden/);
+    assert.match(markup, /id="msig-go"[^>]*aria-describedby="msig-script-warning"/);
+  }
+  assert.match(template, /placeholder="\[fingerprint\/48h\/0h\/0h\/2h\]Zpub…"/);
+  assert.match(app, /function hodlMultisigKeyPlaceholder\(kind,network\)/);
+  assert.match(app, /testnet\?"Upub":"Ypub"/);
+  assert.match(app, /testnet\?"Vpub":"Zpub"/);
+  assert.match(app, /summary\.mixed\?`Co-signer exports indicate different script types/);
+  assert.match(app, /button\.disabled=mixed/);
+  assert.match(app, /if\(kind==="mixed"\)throw new Error\("Co-signer keys indicate different script types/);
+});
+
+test("multisig account is displayed as a disabled value derived from key origins", () => {
+  for (const markup of [template, app]) {
+    assert.match(markup, /<input id="msig-account" type="text" value="" placeholder="Derived from keys" disabled/);
+    assert.match(markup, /id="msig-account-warning" role="status" hidden/);
+  }
+  assert.match(app, /function hodlUpdateMsigAccount\(\)/);
+  assert.match(app, /field\.value=summary\.mixed\?"Mixed"/);
+  assert.match(app, /account:accountSummary\.account/);
+  assert.match(app, /accountMixed:accountSummary\.mixed/);
+});
+
+test("multisig threshold labels describe signatures and keys", () => {
+  for (const markup of [template, app]) {
+    assert.match(markup, />Signatures needed to spend \(m\)/);
+    assert.match(markup, />Total signing keys \(n\)/);
+    assert.doesNotMatch(markup, /People \/ devices \(n\)/);
+    assert.match(markup, /id="msig-m-number" type="number" min="1" max="15"[^>]*value="2"/);
+    assert.match(markup, /id="msig-n-number" type="number" min="2" max="15"[^>]*value="3"/);
+    assert.match(markup, /id="msig-m" type="range" min="1" max="15"[^>]*value="2"/);
+    assert.match(markup, /id="msig-n" type="range" min="2" max="15"[^>]*value="3"/);
+    assert.doesNotMatch(markup, /msig-threshold-ratio|msig-[mn]-output/);
+    assert.doesNotMatch(markup, /<select id="msig-[mn]"/);
+  }
+  assert.match(css, /\.msig-threshold-number\s*\{[^}]*appearance: textfield[^}]*text-align: center/s);
+  assert.match(css, /\.msig-threshold-track span\s*\{[^}]*background: var\(--selection-accent\)/s);
+  assert.match(css, /\.msig-threshold-thumb\s*\{[^}]*background: linear-gradient\(#858585, #5f5f5f\)/s);
+  assert.match(css, /--msig-slider-inset: 14px/);
+  assert.match(css, /\.msig-threshold-slider\s*\{[^}]*margin: 14px var\(--msig-slider-inset\) 0/s);
+  assert.match(css, /\.msig-threshold-ticks\s*\{[^}]*margin: 0 var\(--msig-slider-inset\)/s);
+  assert.match(css, /\.msig-threshold-ticks span\s*\{[^}]*left: var\(--msig-tick-position\)[^}]*transform: translateX\(-50%\)/s);
+  assert.match(app, /hodlMsigSliderBaseMax=9,hodlMsigSliderLimit=15/);
+  assert.match(app, /drag\.handle=delta<0\?"m":"n"/);
+  assert.match(app, /visibleMax=Math\.max\(hodlMsigSliderBaseMax,n\)/);
+  assert.match(app, /mNumber\.max=String\(hodlMsigSliderLimit\)/);
+  assert.match(app, /nNumber\.min="2"/);
+  assert.match(app, /if\(moveOther\)\{if\(changed==="m"\)n=Math\.max\(n,m\);else if\(changed==="n"\)m=Math\.min\(m,n\)\}/);
+  assert.match(app, /hodlChangeMsigThreshold\(handle,raw,!0\)/);
+  assert.match(app, /bindNumber\(mNumber,"m"\);bindNumber\(nNumber,"n"\)/);
+  assert.match(app, /tick\.style\.setProperty\("--msig-tick-position",\(value-1\)\/span\*100\+"%"\)/);
+});
+
+test("multisig consistently uses derive for its heading and action", () => {
+  for (const markup of [template, app]) {
+    assert.match(markup, /<h2>Derive a multisig wallet<\/h2>/);
+    assert.match(markup, /id="msig-go"[^>]*>Derive Multisig<\/button>/);
+    assert.match(markup, /id="msig-go"[^>]*disabled[^>]*aria-disabled="true"/);
+    assert.doesNotMatch(markup, /Create a multisig wallet|Build Multisig/);
+  }
+  assert.match(app, /function hodlValidatedMsigInputs\(\)/);
+  assert.match(app, /hodlValidatedMsigInputs\(\);ready=!0/);
+  assert.match(app, /button\.disabled=!ready/);
+  assert.match(app, /let\{network,count,n,m,kind,nodes,xpubs,keyTokens,accountSummary,accountWarning\}=hodlValidatedMsigInputs\(\)/);
+});
+
+test("multisig heading spans beneath the delete action on narrow screens", () => {
+  assert.match(
+    css,
+    /@media \(max-width: 520px\)[\s\S]*#msig-card \.key-panel-head \{ display: grid; grid-template-columns: minmax\(0, 1fr\) auto; \}[\s\S]*#msig-card \.key-panel-head > div:first-child \{ grid-column: 1 \/ -1; grid-row: 2; width: 100%; \}[\s\S]*#msig-card \.key-panel-head > \.delete-key \{ grid-column: 2; grid-row: 1; justify-self: end; \}/,
+  );
+});
+
 test("private alternate account exports are visible without an accordion", () => {
   assert.match(app, /if\(includePrivate\)return`<div class="wallet-advanced">\$\{privateExport\}<\/div>`/);
   assert.doesNotMatch(app, /Advanced private export/);
