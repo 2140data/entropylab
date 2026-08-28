@@ -6,6 +6,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf
 const template = read("src/index.html");
 const app = read("src/js/app.js");
 const css = read("src/css/styles.css");
+const online = read("src/js/online.js");
 
 test("top status banner omits the entropy RNG message", () => {
   assert.doesNotMatch(`${template}\n${app}`, /No entropy RNG/);
@@ -375,12 +376,13 @@ test("top banners share one consistent gap", () => {
     css,
     /\.beta-warning, \.online-warning, \.network-warning\s*\{[^}]*margin: 0 0 12px;/s,
   );
+  // The banners' 12px plus the header's top padding separate them from the title.
+  assert.match(css, /header \{ padding: var\(--space-section\) 0 var\(--space-control\); \}/);
 });
 
 test("header theme toggle cycles dark, light, and OS themes without a flash", () => {
   for (const markup of [template, app]) {
-    assert.match(markup, /class="seed-keyboard-toggle theme-toggle" id="theme-toggle" data-theme-mode="dark" aria-label="Theme: dark\. Switch to light"/);
-    assert.match(markup, /data-online-src="assets\/entropylab_dark\.png" data-online-src-light="assets\/entropylab_light\.png"/);
+    assert.match(markup, /class="seed-keyboard-toggle theme-toggle header-button" id="theme-toggle" data-theme-mode="dark" aria-label="Theme: dark\. Switch to light"/);
   }
   assert.match(template, /<script>\(function\(\)\{try\{var m=localStorage\.getItem\("entropylab-theme"\)/);
   assert.match(app, /var hodlThemeModes=\["dark","light","system"\],hodlThemeStorageKey="entropylab-theme"/);
@@ -388,5 +390,85 @@ test("header theme toggle cycles dark, light, and OS themes without a flash", ()
   assert.match(app, /hodlInitSecretFieldAutoClear\(\);hodlInitTheme\(\);/);
   assert.match(css, /:root\[data-theme="light"\] \{\s*color-scheme: light;/);
   assert.match(css, /@media print \{\s*:root, :root\[data-theme\] \{/);
-  assert.match(css, /\.download-controls \.theme-toggle \{ margin-left: auto; align-self: end; \}/);
+  assert.match(css, /\.download-controls \.theme-toggle \{ flex: 0 0 40px; width: 40px; align-self: center; \}/);
+});
+
+test("the site header is fixed, carries the logo, and holds the version, download, and theme controls", () => {
+  for (const markup of [template, app]) {
+    // The header precedes the page wrapper, so the banners scroll beneath it.
+    const header = markup.indexOf('<div class="site-header no-print">');
+    const wrapper = markup.indexOf('<div class="wrap">');
+    assert.ok(header >= 0, "the fixed site header is missing");
+    assert.ok(header < wrapper, "the site header must come before the page wrapper");
+    assert.match(markup, /<span class="site-logo" aria-hidden="true"><\/span>\s*<div class="download-controls">/);
+    for (const control of [/class="version-select header-button"/, /class="btn secondary download-html header-button"/, /class="btn secondary github-repo-link header-button"/, /id="theme-toggle"/]) {
+      assert.match(markup.slice(header, wrapper), control, `the fixed header is missing ${control}`);
+    }
+    // Those controls moved out of the in-flow header, which keeps the heading.
+    assert.match(markup.slice(wrapper), /<header>\s*<div>\s*<div class="kicker">/);
+    assert.doesNotMatch(markup.slice(wrapper), /download-controls/);
+  }
+  assert.match(css, /\.site-header \{\s*position: fixed; top: 0; left: 0; right: 0;/);
+  assert.match(css, /\.site-header-inner \{[^}]*height: var\(--site-header-height\)/s);
+  // Content clears the fixed header on screen, and reclaims the space in print.
+  assert.match(css, /\.wrap \{ max-width: 1000px; margin: 0 auto; padding: calc\(var\(--site-header-height\) \+ 20px\) 16px 64px; \}/);
+  assert.match(css, /@media print \{[\s\S]*?\.wrap \{ padding-top: 20px; \}/);
+  assert.match(css, /html \{[^}]*scroll-padding-top: calc\(var\(--site-header-height\) \+ 12px\)/);
+  // Every header control is one height, and the bar is sized to match it.
+  assert.match(css, /\.header-button, \.header-button \+ \.custom-select \.custom-select-button \{ min-height: 40px; font-size: 14px; \}/);
+  assert.match(css, /--site-header-height: 52px;/);
+});
+
+test("the header logo is inlined for both themes and never fetched from assets", () => {
+  assert.match(css, /\.site-logo \{[^}]*background: url\("data:image\/png;base64,\/\*@@LOGO_DARK@@\*\/"\) center \/ contain no-repeat;/s);
+  assert.match(css, /:root\[data-theme="light"\] \.site-logo \{ background-image: url\("data:image\/png;base64,\/\*@@LOGO_LIGHT@@\*\/"\); \}/);
+  // No markup copy may point the logo at the hosted assets directory.
+  for (const markup of [template, app]) {
+    assert.doesNotMatch(markup, /online-brand-mark/);
+    assert.doesNotMatch(markup, /assets\/entropylab_(dark|light)\.png/);
+  }
+});
+
+test("major page sections share one 32px seam", () => {
+  assert.match(css, /--space-major: 32px;/);
+  // Below the marketing card, and above the closing Sources card. Both
+  // collapse with a neighbouring card's 16px, so the larger value wins.
+  assert.match(css, /#workspace \{ margin: var\(--space-major\) 0 4px; \}/);
+  assert.match(css, /\.sources \{ margin-top: var\(--space-major\); \}/);
+  for (const markup of [template, app]) {
+    assert.match(markup, /<section class="card muted sources">/);
+  }
+});
+
+test("the favicon ships inside the document instead of the assets directory", () => {
+  assert.match(
+    template,
+    /<title>EntropyLab<\/title><link rel="icon" type="image\/png" sizes="64x64" href="data:image\/png;base64,\/\*@@FAVICON@@\*\/">/,
+  );
+  // The inlined icon covers hosted and offline alike, so online.js no longer
+  // layers a same-origin link over it.
+  assert.doesNotMatch(online, /online-favicon|assets\/favicon\.png/);
+});
+
+test("narrow screens keep the fixed header on one row by hiding control labels", () => {
+  assert.match(css, /@media \(max-width: 719px\) \{[\s\S]*?\.control-label \{ display: none; \}/);
+  // Icon-only buttons match the theme toggle's 40px square.
+  assert.match(css, /@media \(max-width: 719px\) \{[\s\S]*?\.download-controls \.btn:is\(\.download-html, \.github-repo-link\) \{ flex: 0 0 40px; width: 40px; padding: 0; justify-content: center; \}/);
+  for (const markup of [template, app]) {
+    // The version select carries no visible label at any width; the rendered
+    // option text ("v0.1.3 (Latest)") already says what it is.
+    assert.doesNotMatch(markup, /version-picker|<span class="control-label">Version<\/span>/);
+    // The glyph precedes the label at every width and stands alone once the
+    // labels collapse, so it is never hidden.
+    assert.match(markup, /<svg class="download-mark"[^>]*><path d="M12 3v12M7 11l5 5 5-5M5 21h14"\/><\/svg><span class="control-label">Download<\/span><\/a>/);
+    assert.match(css, /\.download-mark \{ display: block; flex: 0 0 auto; \}/);
+    assert.doesNotMatch(css, /@media \(max-width: 719px\) \{[\s\S]*?\.download-mark \{/);
+    assert.match(css, /\.download-controls > a \{ display: inline-flex; align-items: center; gap: 8px;/);
+    assert.match(markup, /<span class="control-label">GitHub<\/span><\/a>/);
+    // Each accessible name still contains its visible label (WCAG 2.5.3).
+    assert.match(markup, /class="btn secondary download-html header-button"[^>]*aria-label="Download EntropyLab"/);
+    // Every control that loses its label keeps an accessible name.
+    assert.match(markup, /<select class="version-select header-button" aria-label="EntropyLab version">/);
+    assert.match(markup, /class="btn secondary github-repo-link header-button"[^>]*aria-label="View the EntropyLab GitHub repository in a new tab"/);
+  }
 });

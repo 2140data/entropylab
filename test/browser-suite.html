@@ -45,9 +45,13 @@
   if (new URLSearchParams(location.search).get("offline-test") === "1") {
     await test("offline mode keeps online-only presentation disabled", () => {
       const warning = document.getElementById("online-warning");
-      const brand = document.getElementById("online-brand-mark");
+      const logo = document.querySelector(".site-logo");
       assert(warning && warning.hidden, "Offline mode displayed the online warning");
-      assert(brand && brand.hidden && !brand.getAttribute("src"), "Offline mode loaded online branding");
+      assert(logo, "Header logo is missing");
+      assert(
+        getComputedStyle(logo).backgroundImage.startsWith('url("data:image/png;base64,'),
+        "Offline mode did not render the header logo from an inline data URI",
+      );
     });
     await test("offline mode performs no HTTP, WebSocket, or XHR connections", () => {
       assert(state.network.length === 0, "Offline code attempted a connection");
@@ -124,13 +128,17 @@
     element.dispatchEvent(new Event("input", { bubbles: true }));
   };
 
-  await test("hosted preview enables its warning and same-origin branding", () => {
+  await test("hosted preview enables its warning and inline branding", () => {
     const warning = document.getElementById("online-warning");
-    const brand = document.getElementById("online-brand-mark");
-    const favicon = document.getElementById("online-favicon");
+    const logo = document.querySelector(".site-logo");
+    const favicon = document.querySelector('link[rel="icon"]');
     assert(warning && !warning.hidden, "Online warning was not displayed");
-    assert(brand && !brand.hidden && new URL(brand.src).origin === location.origin, "Brand asset is not same-origin");
-    assert(favicon && new URL(favicon.href).origin === location.origin, "Favicon is not same-origin");
+    assert(logo, "Header logo is missing");
+    assert(
+      getComputedStyle(logo).backgroundImage.startsWith('url("data:image/png;base64,'),
+      "Hosted mode did not render the header logo from an inline data URI",
+    );
+    assert(favicon && favicon.href.startsWith("data:image/png;base64,"), "Favicon is not inlined");
   });
 
   await test("hosted host passes the startup sanity-check barrage", () => {
@@ -861,9 +869,12 @@
       catch { return true; }
     });
     assert(external.length === 0, "External network activity: " + external.join(", "));
-    for (const expectedPath of ["/versions.json", "/assets/entropylab_dark.png", "/assets/favicon.png", "/" + currentFile]) {
+    for (const expectedPath of ["/versions.json", "/" + currentFile]) {
       assert(observed.some((url) => new URL(url, location.href).pathname === expectedPath), `Expected request is missing: ${expectedPath}`);
     }
+    // The logo and the favicon travel inside the document, so neither is fetched.
+    const imageRequests = observed.filter((url) => /\/assets\/(entropylab_(dark|light)|logo-(dark|light)|favicon)\.png$/.test(new URL(url, location.href).pathname));
+    assert(imageRequests.length === 0, "Hosted mode fetched an inlined image: " + imageRequests.join(", "));
   });
 
   report("online-results.txt");

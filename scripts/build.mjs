@@ -12,6 +12,7 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const SRC = join(root, "src");
 
 const read = (path) => readFileSync(join(SRC, path), "utf8");
+const readBase64 = (path) => readFileSync(join(SRC, path)).toString("base64");
 const version = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version;
 
 if (!/^\d+(?:\.\d+)*$/.test(version)) {
@@ -31,7 +32,14 @@ if (process.argv.includes("--clean")) {
 }
 
 const template = read("index.html");
-const css = read("css/styles.css");
+// The header logo is inlined as a data URI so the downloaded file shows it
+// without reaching for assets/ (which only exists on the hosted site).
+const css = read("css/styles.css")
+  .replace("/*@@LOGO_DARK@@*/", () => readBase64("assets/logo-dark.png"))
+  .replace("/*@@LOGO_LIGHT@@*/", () => readBase64("assets/logo-light.png"));
+// Inlined from the same file the site publishes, so the downloaded document
+// and the hosted tab icon can never drift apart.
+const favicon = readFileSync(join(root, "assets/favicon.png")).toString("base64");
 const jsMain = read("js/vendor.js") + read("js/app.js");
 const jsSqliteWriter = read("js/sqlite-writer.js");
 const jsWalletExport = read("js/wallet-export.js");
@@ -42,6 +50,7 @@ const jsEnhanced = read("js/enhanced-inputs.js");
 const jsRepeat = read("js/repeat-inputs.js");
 
 let html = template
+  .replace("/*@@FAVICON@@*/", () => favicon)
   .replace("/*@@CSS@@*/", () => css)
   .replace("/*@@JS_MAIN@@*/", () => jsMain)
   .replace("/*@@JS_SQLITE_WRITER@@*/", () => jsSqliteWriter)
