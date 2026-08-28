@@ -9,7 +9,7 @@
     "build": "node scripts/build.mjs",
     "clean": "node scripts/build.mjs --clean",
     "test": "node --test test/*.test.mjs",
-    "test:ci": "node --test test/network-check.test.mjs test/ui-defaults.test.mjs test/validate.test.mjs test/descriptor.test.mjs test/seedqr.test.mjs test/cards.test.mjs test/copy-seed.test.mjs test/number-bases.test.mjs test/psbt-low-r.test.mjs test/sqlite-writer.test.mjs test/wallet-export.test.mjs",
+    "test:ci": "node --test test/network-check.test.mjs test/ui-defaults.test.mjs test/validate.test.mjs test/descriptor.test.mjs test/seedqr.test.mjs test/cards.test.mjs test/copy-seed.test.mjs test/number-bases.test.mjs test/psbt-low-r.test.mjs test/sqlite-writer.test.mjs test/wallet-export.test.mjs test/psbt-anti-exfil.test.mjs",
     "test:network": "node --test test/network-check.test.mjs",
     "test:ui": "node --test test/ui-defaults.test.mjs",
     "test:invariants": "node --test test/validate.test.mjs",
@@ -23,7 +23,8 @@
     "test:browser": "node --test test/browser.test.mjs",
     "verify": "node scripts/verify-site.mjs",
     "ci": "npm run test:ci && npm run build && npm run verify",
-    "test:lowr": "node --test test/psbt-low-r.test.mjs"
+    "test:lowr": "node --test test/psbt-low-r.test.mjs",
+    "test:antiexfil": "node --test test/psbt-anti-exfil.test.mjs"
   },
   "keywords": [
     "bitcoin",
