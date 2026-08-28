@@ -24,6 +24,8 @@
   --space-control: 8px;
   --space-component: 16px;
   --space-section: 20px;
+  --space-major: 32px; /* seams between the page's major sections */
+  --site-header-height: 52px; /* .header-button height plus 6px above and below */
   --display: "Iowan Old Style", Palatino, Georgia, serif;
   --sans: "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
@@ -58,7 +60,7 @@
 }
 *::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 *::-webkit-scrollbar-corner { background: var(--scrollbar-track); }
-html { overflow-y: scroll; scrollbar-gutter: stable; }
+html { overflow-y: scroll; scrollbar-gutter: stable; scroll-padding-top: calc(var(--site-header-height) + 12px); }
 html, body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); }
 body { min-height: 100vh; }
 h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; }
@@ -67,9 +69,13 @@ h2 { font-size: 1.5rem; margin: 8px 0; }
 a { color: var(--accent); }
 button, select, textarea, input { font: inherit; }
 button { cursor: pointer; }
-.wrap { max-width: 1000px; margin: 0 auto; padding: 20px 16px 64px; }
+.wrap { max-width: 1000px; margin: 0 auto; padding: calc(var(--site-header-height) + 20px) 16px 64px; }
 .kicker { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px; margin: 16px 0; }
+/* Major seam above the closing Sources card. It collapses with the previous
+   card's 16px, so the larger value wins rather than the two adding up. The
+   matching seam below the marketing card lives on #workspace. */
+.sources { margin-top: var(--space-major); }
 .warn { background: color-mix(in oklab, var(--danger) 12%, var(--bg)); border-color: color-mix(in oklab, var(--danger) 40%, var(--border)); }
 .muted { color: var(--muted); font-size: 14px; line-height: 1.5; }
 .sources-heading { color: var(--fg); font-size: 1.17rem; }
@@ -383,18 +389,43 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 }
 .err { margin: var(--space-control) 0 0; color: var(--danger); font-size: 14px; }
 .ok { color: var(--ok); }
-header { padding: 8px 0 16px; }
-.header-title-row { display: flex; align-items: center; gap: 12px; }
-.online-brand-mark:not([hidden]) { transform: translateY(4px); }
-.online-brand-mark:not([hidden]) + h1 { margin: 0; line-height: 1.15; transform: translate(-8px, 6px); }
-.online-brand-mark { flex: 0 0 auto; width: 40px; height: 40px; object-fit: contain; }
-.online-brand-mark[hidden] { display: none; }
-.download-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-top: 14px; }
-.version-picker { display: grid; gap: 5px; color: var(--muted); font-size: 12px; font-weight: 600; }
+/* Top padding sets the gap below the warning banners, which carry 12px of
+   their own margin. */
+header { padding: var(--space-section) 0 var(--space-control); }
+header h1 { margin: 0; line-height: 1.15; }
+.site-header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+}
+.site-header-inner {
+  display: flex; align-items: center; gap: 12px; height: var(--site-header-height);
+  max-width: 1000px; margin: 0 auto; padding: 0 16px;
+}
+/* Both marks are inlined as data URIs at build time; the light one wins when
+   the light theme sets data-theme on the root element. */
+.site-logo {
+  flex: 0 0 auto; width: 32px; height: 32px;
+  background: url("data:image/png;base64,/*@@LOGO_DARK@@*/") center / contain no-repeat;
+}
+:root[data-theme="light"] .site-logo { background-image: url("data:image/png;base64,/*@@LOGO_LIGHT@@*/"); }
+/* min-width: 0 lets the row shrink on narrow screens; the version picker is
+   the only flexible item, so it ellipsizes instead of pushing controls out. */
+.download-controls { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; margin-left: auto; min-width: 0; }
 .download-controls .custom-select { width: auto; min-width: 104px; margin: 0; }
-.download-controls > a { display: inline-flex; align-items: center; text-decoration: none; }
+/* The download glyph sits left of the label at every width, and stands alone
+   once the labels collapse. */
+.download-mark { display: block; flex: 0 0 auto; }
+/* Header controls sit below the app's default 44px so the bar stays slim. The
+   version picker's real button is generated beside its select, so it follows
+   the class instead of carrying it. Keep --site-header-height in step. */
+.header-button, .header-button + .custom-select .custom-select-button { min-height: 40px; font-size: 14px; }
+.download-controls .custom-select-button { gap: 8px; }
+.download-controls .custom-select-button > span:first-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.download-controls > a { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
 .download-controls .btn:is(.download-html, .github-repo-link) { flex: 0 0 auto; }
-.download-controls .theme-toggle { margin-left: auto; align-self: end; }
+/* Square it off against the 40px header controls; the shared keyboard-toggle
+   base is 44px wide and stays that way everywhere else in the app. */
+.download-controls .theme-toggle { flex: 0 0 40px; width: 40px; align-self: center; }
 .theme-toggle svg { display: none; width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .theme-toggle[data-theme-mode="dark"] .theme-icon-dark, .theme-toggle[data-theme-mode="light"] .theme-icon-light, .theme-toggle[data-theme-mode="system"] .theme-icon-system { display: block; }
 .btn:is(.download-html, .save-recovery-sheet, .save-wallet-dat) {
@@ -487,6 +518,8 @@ header { padding: 8px 0 16px; }
   }
   .no-print { display: none !important; }
   html, body { background: white; color: #111; }
+  /* The fixed header is hidden when printing, so drop the space it reserved. */
+  .wrap { padding-top: 20px; }
   .qr-descriptor svg { width: 52mm; height: 52mm; }
   .qr-seed svg { width: 40mm; height: 40mm; }
 }
@@ -502,7 +535,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .hint.bad { color: var(--danger); }
 .hint.ok { color: var(--ok); }
 .hint:empty, .err:empty { display: none; }
-#workspace { margin: 8px 0 4px; }
+#workspace { margin: var(--space-major) 0 4px; } /* major seam below the marketing card */
 .segmented-control {
   display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; max-width: 100%; isolation: isolate;
 }
@@ -885,9 +918,17 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .wallet-advanced[open] summary { margin-bottom: 12px; color: var(--fg); }
 .watch-only-note { color: var(--muted); }
 .watch-only-note strong { color: var(--fg); }
+/* Narrow screens: drop the control labels so the bar stays one row. Each
+   control keeps its own aria-label, so nothing is lost to assistive tech. */
+@media (max-width: 719px) {
+  .site-header-inner { gap: 8px; padding: 0 12px; }
+  .control-label { display: none; }
+  /* Icon-only: square them off against the 40px theme toggle. */
+  .download-controls .btn:is(.download-html, .github-repo-link) { flex: 0 0 40px; width: 40px; padding: 0; justify-content: center; }
+  .download-controls { gap: 6px; }
+  .download-controls .custom-select { min-width: 0; }
+}
 @media (max-width: 520px) {
-  .header-title-row { gap: 10px; }
-  .online-brand-mark { width: 36px; height: 36px; }
   #msig-card .key-panel-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
   #msig-card .key-panel-head > div:first-child { grid-column: 1 / -1; grid-row: 2; width: 100%; }
   #msig-card .key-panel-head > .delete-key { grid-column: 2; grid-row: 1; justify-self: end; }

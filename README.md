@@ -107,6 +107,7 @@ files, run `npm run clean`.
 │   └── wallet-export.test.mjs        Tests for the wallet.dat export module
 ├── src/
 │   ├── index.html          HTML template (markup and document head)
+│   ├── assets/             Header logos, inlined as data URIs at build time
 │   ├── css/styles.css      Application styles
 │   └── js/
 │       ├── vendor.js       Bundled third-party crypto (noble, scure, bip39)

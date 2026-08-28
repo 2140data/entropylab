@@ -7,20 +7,6 @@
   if (!isHostedOnline && !isLocalPreview) return;
 
   document.getElementById("online-warning")?.removeAttribute("hidden");
-
-  const brandMark = document.getElementById("online-brand-mark");
-  if (brandMark) {
-    brandMark.src = document.documentElement.dataset.theme === "light" ? brandMark.dataset.onlineSrcLight : brandMark.dataset.onlineSrc;
-    brandMark.hidden = false;
-  }
-
-  const favicon = document.createElement("link");
-  favicon.id = "online-favicon";
-  favicon.rel = "icon";
-  favicon.type = "image/png";
-  favicon.sizes = "64x64";
-  favicon.href = "assets/favicon.png";
-  document.head.appendChild(favicon);
 })();
 
 function hodlFormatRecoverySheet(text) {

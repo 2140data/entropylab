@@ -32,6 +32,8 @@ const requiredFiles = [
   "test/browser-instrumentation.html",
   "test/browser-suite.html",
   "src/index.html",
+  "src/assets/logo-dark.png",
+  "src/assets/logo-light.png",
   "src/css/styles.css",
   "src/js/vendor.js",
   "src/js/app.js",
@@ -115,6 +117,21 @@ for (const file of htmlFiles) {
     const html = read(file);
     assert.doesNotMatch(html, /<(script|iframe)[^>]+src=["' ]*https?:\/\//i);
     assert.doesNotMatch(html, /<link[^>]+href=["' ]*https?:\/\//i);
+  });
+  test(`${file} inlines the favicon from the published asset`, () => {
+    const inlined = read(file).match(/<link rel="icon" type="image\/png" sizes="64x64" href="data:image\/png;base64,([A-Za-z0-9+/=]+)">/);
+    assert.ok(inlined, `${file} has no inlined favicon`);
+    assert.ok(
+      Buffer.from(inlined[1], "base64").equals(readFileSync(join(root, "assets/favicon.png"))),
+      `${file} favicon does not match assets/favicon.png`,
+    );
+  });
+  test(`${file} inlines the header logo for both themes`, () => {
+    const html = read(file);
+    // The downloaded file has no assets/ beside it, so the logo has to travel
+    // inside the document or the fixed header renders empty when air-gapped.
+    assert.match(html, /\.site-logo \{[^}]*background: url\("data:image\/png;base64,[A-Za-z0-9+/=]+"\) center \/ contain no-repeat;/);
+    assert.match(html, /:root\[data-theme="light"\] \.site-logo \{ background-image: url\("data:image\/png;base64,[A-Za-z0-9+/=]+"\); \}/);
   });
 }
 

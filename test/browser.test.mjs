@@ -109,8 +109,6 @@ const createTestServer = ({ siteDir, testHtmlPath }) => {
     "/browser-tests.html": { file: testHtmlPath, type: "text/html; charset=utf-8" },
     "/versions.json": { file: join(siteDir, "versions.json"), type: "application/json" },
     [`/${versionFile}`]: { file: join(siteDir, versionFile), type: "text/html; charset=utf-8" },
-    "/assets/favicon.png": { file: join(siteDir, "assets/favicon.png"), type: "image/png" },
-    "/assets/entropylab_dark.png": { file: join(siteDir, "assets/entropylab_dark.png"), type: "image/png" },
   };
   const server = createServer((request, response) => {
     const path = new URL(request.url, "http://localhost").pathname;
