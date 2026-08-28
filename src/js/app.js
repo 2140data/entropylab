@@ -1376,12 +1376,28 @@ function hodlSeedPhraseCopyText(words,targetWords=Pt){
 function hodlClipboardIconMarkup(){
   return`<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect class="seed-copy-icon-clip" x="8" y="2" width="8" height="4" rx="1"/><path class="seed-copy-icon-board" d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>`
 }
+function hodlCopiedIconMarkup(){
+  return`<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="seed-copy-icon-board" d="M20 6 9 17l-5-5"/></svg>`
+}
 function hodlSeedMetaRowMarkup(metaId,live=!1){
-  return`<div class="seed-word-meta"><p class="muted" id="${metaId}"${live?" aria-live=\"polite\"":""}></p><button type="button" class="seed-phrase-copy" data-copy-seed-phrase disabled aria-label="Copy seed phrase" title="Copy seed phrase">${hodlClipboardIconMarkup()}</button></div>`
+  return`<div class="seed-word-meta"><p class="muted" id="${metaId}"${live?" aria-live=\"polite\"":""}></p><span class="seed-phrase-copied" aria-live="polite"></span><button type="button" class="seed-phrase-copy" data-copy-seed-phrase disabled aria-label="Copy seed phrase" title="Copy seed phrase">${hodlClipboardIconMarkup()}</button></div>`
+}
+function hodlShowSeedPhraseCopied(button){
+  if(!button)return;let note=button.closest(".seed-word-meta")?.querySelector(".seed-phrase-copied");
+  if(note)note.textContent="Copied";button.classList.add("is-copied");button.innerHTML=hodlCopiedIconMarkup();
+  button.setAttribute("aria-label","Seed phrase copied");button.title="Copied";
+  clearTimeout(button.hodlCopiedTimer);
+  button.hodlCopiedTimer=setTimeout(()=>{
+    if(!button.isConnected)return;let phrase=button.dataset.phrase;
+    button.classList.remove("is-copied");button.innerHTML=hodlClipboardIconMarkup();
+    button.setAttribute("aria-label",phrase?"Copy seed phrase":"Seed phrase unavailable");
+    button.title=phrase?"Copy seed phrase":"Seed phrase unavailable";
+    if(note)note.textContent=""
+  },1600)
 }
 function hodlCopySeedPhraseButton(button){
   let phrase=button?.dataset.phrase;if(!phrase||button.disabled)return;
-  let done=()=>{button.setAttribute("aria-label","Seed phrase copied");setTimeout(()=>button.setAttribute("aria-label","Copy seed phrase"),1200)};
+  let done=()=>hodlShowSeedPhraseCopied(button);
   let fallback=()=>{let field=document.createElement("textarea");field.value=phrase;field.setAttribute("readonly","");field.style.position="fixed";field.style.left="-9999px";document.body.appendChild(field);field.select();try{document.execCommand("copy");done()}finally{field.remove()}};
   if(navigator.clipboard&&typeof navigator.clipboard.writeText==="function")navigator.clipboard.writeText(phrase).then(done).catch(fallback);
   else fallback()
@@ -1398,8 +1414,10 @@ function hodlRenderDiceWordGrid(container,words,targetWords=Pt,provisional=!1){
   let copy=container.previousElementSibling?.querySelector("[data-copy-seed-phrase]"),phrase=hodlSeedPhraseCopyText(values,config.words);
   if(copy){
     copy.disabled=!phrase;copy.dataset.phrase=phrase;
-    copy.setAttribute("aria-label",phrase?"Copy seed phrase":"Seed phrase unavailable");
-    copy.title=phrase?"Copy seed phrase":"Seed phrase unavailable";
+    if(!copy.classList.contains("is-copied")){
+      copy.setAttribute("aria-label",phrase?"Copy seed phrase":"Seed phrase unavailable");
+      copy.title=phrase?"Copy seed phrase":"Seed phrase unavailable"
+    }
     if(!copy.hodlCopyBound){copy.onclick=()=>hodlCopySeedPhraseButton(copy);copy.hodlCopyBound=!0}
   }
 }
