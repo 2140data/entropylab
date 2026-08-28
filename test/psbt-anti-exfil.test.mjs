@@ -106,3 +106,19 @@ test("tagged s2c/ecdsa/point hash matches secp256k1-zkp over opening||rho", () =
     "52be4b29692b2aa0d852edd9a5451e8ca2e6759b41c4bf0dc290f99cf145bea2",
   );
 });
+
+test("anti-exfil commit check is try/caught so a bad opening cannot wipe the PSBT report", () => {
+  assert.match(app, /else try\{if\(hodlAntiExfilCommitOk\(parts\.r,opening,transcript\.host\)\)/);
+  assert.match(
+    app,
+    /catch\(exception\)\{message="Could not verify Jade anti-exfil: "\+\(exception\.message\|\|String\(exception\)\);className="psbt-warn"\}/,
+  );
+});
+
+test("compressed 02\/03 openings parse even when x is off-curve (validity is the commit check's job)", () => {
+  const host = "11".repeat(32);
+  const opening = "02" + "00".repeat(31) + "01";
+  const parsed = hodlParseAntiExfil(`host ${host}\nopening ${opening}`);
+  assert.equal(parsed.openings.length, 1);
+  assert.equal(Buffer.from(parsed.openings[0]).toString("hex"), opening);
+});
