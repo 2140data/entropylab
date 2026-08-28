@@ -255,6 +255,28 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
 }
 @media (min-width: 640px) { .wordlist { grid-template-columns: repeat(3, 1fr); } }
 .wordlist span { color: var(--muted); display: inline-block; width: 1.6em; }
+.seed-word-meta {
+  display: flex; align-items: flex-start; gap: 8px;
+  margin: var(--space-control) 0 0;
+}
+.seed-word-meta:has(.muted:empty) { display: none; }
+.seed-word-meta > .muted { flex: 1 1 auto; min-width: 0; margin: 0; }
+.seed-phrase-copied {
+  flex: 0 0 auto; color: var(--ok); font-size: 13px; line-height: 21px; white-space: nowrap;
+}
+.seed-phrase-copied:empty { display: none; }
+.seed-phrase-copy {
+  flex: 0 0 auto; display: grid; place-items: center;
+  width: 21px; height: 21px; padding: 0; border: 0; background: transparent; color: var(--faint);
+}
+.seed-phrase-copy svg { display: block; width: 16px; height: 16px; }
+.seed-copy-icon-clip, .seed-copy-icon-board { fill: none; stroke: currentColor; stroke-width: 2; }
+.seed-phrase-copy:disabled { color: var(--faint); cursor: not-allowed; }
+.seed-phrase-copy:not(:disabled) { color: var(--selection-accent); }
+.seed-phrase-copy:not(:disabled):hover { color: var(--accent); }
+.seed-phrase-copy.is-copied, .seed-phrase-copy.is-copied:not(:disabled),
+.seed-phrase-copy.is-copied:not(:disabled):hover { color: var(--ok); }
+.seed-phrase-copy:focus-visible { outline: 2px solid var(--selection-accent); outline-offset: 2px; }
 .dice-word-grid {
   --dice-word-rows: var(--dice-word-rows-wide);
   display: grid; grid-auto-flow: column; grid-template-columns: repeat(3, minmax(0, 1fr));

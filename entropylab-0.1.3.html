@@ -257,6 +257,28 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
 }
 @media (min-width: 640px) { .wordlist { grid-template-columns: repeat(3, 1fr); } }
 .wordlist span { color: var(--muted); display: inline-block; width: 1.6em; }
+.seed-word-meta {
+  display: flex; align-items: flex-start; gap: 8px;
+  margin: var(--space-control) 0 0;
+}
+.seed-word-meta:has(.muted:empty) { display: none; }
+.seed-word-meta > .muted { flex: 1 1 auto; min-width: 0; margin: 0; }
+.seed-phrase-copied {
+  flex: 0 0 auto; color: var(--ok); font-size: 13px; line-height: 21px; white-space: nowrap;
+}
+.seed-phrase-copied:empty { display: none; }
+.seed-phrase-copy {
+  flex: 0 0 auto; display: grid; place-items: center;
+  width: 21px; height: 21px; padding: 0; border: 0; background: transparent; color: var(--faint);
+}
+.seed-phrase-copy svg { display: block; width: 16px; height: 16px; }
+.seed-copy-icon-clip, .seed-copy-icon-board { fill: none; stroke: currentColor; stroke-width: 2; }
+.seed-phrase-copy:disabled { color: var(--faint); cursor: not-allowed; }
+.seed-phrase-copy:not(:disabled) { color: var(--selection-accent); }
+.seed-phrase-copy:not(:disabled):hover { color: var(--accent); }
+.seed-phrase-copy.is-copied, .seed-phrase-copy.is-copied:not(:disabled),
+.seed-phrase-copy.is-copied:not(:disabled):hover { color: var(--ok); }
+.seed-phrase-copy:focus-visible { outline: 2px solid var(--selection-accent); outline-offset: 2px; }
 .dice-word-grid {
   --dice-word-rows: var(--dice-word-rows-wide);
   display: grid; grid-auto-flow: column; grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4470,6 +4492,39 @@ function hodlHexPreviewWords(value,targetWords=Pt){
   let bits=Array.from(digits,digit=>Number.parseInt(digit,16).toString(2).padStart(4,"0")).join("");
   return hodlBinaryPreviewWords(bits,config.words)
 }
+function hodlSeedPhraseCopyText(words,targetWords=Pt){
+  let needed=hodlSeedConfig(targetWords).words,values=(Array.isArray(words)?words:[]).map(word=>String(word||"").trim()).filter(Boolean);
+  return values.length===needed?values.join(" "):""
+}
+function hodlClipboardIconMarkup(){
+  return`<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect class="seed-copy-icon-clip" x="8" y="2" width="8" height="4" rx="1"/><path class="seed-copy-icon-board" d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>`
+}
+function hodlCopiedIconMarkup(){
+  return`<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="seed-copy-icon-board" d="M20 6 9 17l-5-5"/></svg>`
+}
+function hodlSeedMetaRowMarkup(metaId,live=!1){
+  return`<div class="seed-word-meta"><p class="muted" id="${metaId}"${live?" aria-live=\"polite\"":""}></p><span class="seed-phrase-copied" aria-live="polite"></span><button type="button" class="seed-phrase-copy" data-copy-seed-phrase disabled aria-label="Copy seed phrase" title="Copy seed phrase">${hodlClipboardIconMarkup()}</button></div>`
+}
+function hodlShowSeedPhraseCopied(button){
+  if(!button)return;let note=button.closest(".seed-word-meta")?.querySelector(".seed-phrase-copied");
+  if(note)note.textContent="Copied";button.classList.add("is-copied");button.innerHTML=hodlCopiedIconMarkup();
+  button.setAttribute("aria-label","Seed phrase copied");button.title="Copied";
+  clearTimeout(button.hodlCopiedTimer);
+  button.hodlCopiedTimer=setTimeout(()=>{
+    if(!button.isConnected)return;let phrase=button.dataset.phrase;
+    button.classList.remove("is-copied");button.innerHTML=hodlClipboardIconMarkup();
+    button.setAttribute("aria-label",phrase?"Copy seed phrase":"Seed phrase unavailable");
+    button.title=phrase?"Copy seed phrase":"Seed phrase unavailable";
+    if(note)note.textContent=""
+  },1600)
+}
+function hodlCopySeedPhraseButton(button){
+  let phrase=button?.dataset.phrase;if(!phrase||button.disabled)return;
+  let done=()=>hodlShowSeedPhraseCopied(button);
+  let fallback=()=>{let field=document.createElement("textarea");field.value=phrase;field.setAttribute("readonly","");field.style.position="fixed";field.style.left="-9999px";document.body.appendChild(field);field.select();try{document.execCommand("copy");done()}finally{field.remove()}};
+  if(navigator.clipboard&&typeof navigator.clipboard.writeText==="function")navigator.clipboard.writeText(phrase).then(done).catch(fallback);
+  else fallback()
+}
 function hodlRenderDiceWordGrid(container,words,targetWords=Pt,provisional=!1){
   if(!container)return;let config=hodlSeedConfig(targetWords),values=Array.isArray(words)?words:[],fragment=document.createDocumentFragment();container.innerHTML="";
   container.style.setProperty("--dice-word-rows-wide",String(Math.ceil(config.words/3)));container.style.setProperty("--dice-word-rows-narrow",String(Math.ceil(config.words/2)));
@@ -4478,7 +4533,16 @@ function hodlRenderDiceWordGrid(container,words,targetWords=Pt,provisional=!1){
     let word=values[index]||"",slot=document.createElement("div"),number=document.createElement("span"),value=document.createElement("span");slot.className="dice-word-slot"+(word?"":" empty");slot.dataset.wordSlot=String(index+1);
     number.className="dice-word-number";number.textContent=`${index+1}.`;value.className="dice-word-value";value.dataset.word="";value.textContent=word||"\u2014";slot.append(number,value);fragment.appendChild(slot)
   }
-  container.appendChild(fragment)
+  container.appendChild(fragment);
+  let copy=container.previousElementSibling?.querySelector("[data-copy-seed-phrase]"),phrase=hodlSeedPhraseCopyText(values,config.words);
+  if(copy){
+    copy.disabled=!phrase;copy.dataset.phrase=phrase;
+    if(!copy.classList.contains("is-copied")){
+      copy.setAttribute("aria-label",phrase?"Copy seed phrase":"Seed phrase unavailable");
+      copy.title=phrase?"Copy seed phrase":"Seed phrase unavailable"
+    }
+    if(!copy.hodlCopyBound){copy.onclick=()=>hodlCopySeedPhraseButton(copy);copy.hodlCopyBound=!0}
+  }
 }
 function hodlUpdateEntropyInput(input,format,targetWords=Pt){
   let config=hodlSeedConfig(targetWords),analysis=hodlRenderEntropyInputState(input,format,config.words),meta=document.getElementById("entropy-meta"),ready=analysis.count===analysis.limit,hasExcess=analysis.excessCount>0;
@@ -4553,7 +4617,7 @@ function hodlRenderKeyForm(){
       ${dplusConvention}
       <div class="dice-input-shell"><pre class="dice-input-highlight" id="dice-highlight" aria-hidden="true"></pre><textarea id="dice" placeholder="${dicePlaceholder}" aria-describedby="dice-help dice-meta"></textarea></div>
       ${dicePad}
-      <p class="muted" id="dice-meta" aria-live="polite"></p>
+      ${hodlSeedMetaRowMarkup("dice-meta",!0)}
       <div id="dice-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div><div id="last-words" class="row" style="margin-top:8px"></div>`;
     let input=document.getElementById("dice");input.dataset.previousValue=input.value;
     at.querySelectorAll("[data-d]").forEach(button=>{button.onclick=()=>hodlInsertDiceControl(input,button)});
@@ -4587,7 +4651,7 @@ function hodlRenderKeyForm(){
         <textarea id="cards" placeholder="AS 2C 10H TD\u2026" autocomplete="off" spellcheck="false" aria-describedby="cards-help cards-meta"></textarea>
       </label>
       <div class="row" style="margin-top:8px"><button class="btn secondary" id="card-undo" type="button" disabled>Undo last card</button></div>
-      <p class="muted" id="cards-meta"></p>
+      ${hodlSeedMetaRowMarkup("cards-meta")}
       <div id="dice-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div>
     `;
     let input=document.getElementById("cards");
@@ -4614,7 +4678,7 @@ function hodlRenderKeyForm(){
       <p class="muted" id="entropy-input-help">${binary?`Spaces are added every 11 bits. Each complete group fills one BIP39 word; the checksum-derived final word appears at ${config.bits} bits.`:`Each hex character contributes four bits. Seed-word cards fill as enough bits arrive; the checksum-derived final word appears at exactly ${config.hexChars} characters.`} No generator — enter entropy you already created.</p>
       <div class="dice-input-shell entropy-input-shell"><pre class="dice-input-highlight" id="entropy-input-highlight" aria-hidden="true"></pre><textarea id="${inputId}" placeholder="${binary?`Exactly ${config.bits} zeros and ones`:`${config.hexChars} hex characters for a ${config.words}-word seed`}" aria-labelledby="entropy-input-label" aria-describedby="entropy-input-help entropy-meta" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div>
       ${entropyPad}
-      <p class="muted" id="entropy-meta" aria-live="polite"></p>
+      ${hodlSeedMetaRowMarkup("entropy-meta",!0)}
       <div id="entropy-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div>`;
     at.querySelectorAll('input[name="entropy-format"]').forEach(radio=>{radio.onchange=()=>{
       let state=hodlKeys[hodlActiveKey],previous=document.getElementById(hodlEntropyFormat);if(state&&previous)state.fields[hodlEntropyFormat]=previous.value;
