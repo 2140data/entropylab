@@ -140,7 +140,9 @@
 
   await test("hex, seed, and private-key inputs cannot inject markup", async () => {
     const payload = '<img src=x onerror="window.__browserTestInjected=true">';
-    await chooseMode("Hex");
+    await chooseMode("Number bases");
+    assert(document.querySelector('input[name="entropy-format"][value="bin"]')?.checked, "Binary was not the default number base");
+    document.querySelector('input[name="entropy-format"][value="hex"]').click();
     const hex = await until(() => document.getElementById("hex"), "hex input");
     input(hex, payload + "0000");
     assert(!/[<>="']/.test(hex.value), "Dangerous characters remained in hex input");
@@ -254,6 +256,8 @@
     assert(!document.getElementById("go").disabled, "One valid card did not enable derivation");
     assert(document.getElementById("cards-meta").textContent.includes("seed available for testing"), "One-card warning is missing");
     equal([...document.querySelectorAll("#dice-words [data-word]")].filter((word) => word.textContent !== "—").length, 24);
+    const cardCopy = document.querySelector('[data-copy-seed-phrase]');
+    assert(cardCopy && !cardCopy.disabled && cardCopy.dataset.phrase.split(" ").length === 24, "Testing seed preview was not copyable");
     assert(!dealt.hidden && dealt.textContent.includes("A"), "Show cards did not reveal the dealt card");
     equal(dealt.getBoundingClientRect().height, emptyHistoryHeight);
     input(cards, "AS ZZ");
@@ -271,6 +275,116 @@
     assert(cards.dispatchEvent(disallowed) === false, "A character unused by card transcripts was accepted from typing");
     show.click();
     input(cards, "");
+  });
+
+  await test("partial entropy word grids remain copyable", async () => {
+    await chooseMode("Number bases");
+    document.querySelector('input[name="entropy-format"][value="bin"]').click();
+    const binary = await until(() => document.getElementById("bin"), "binary entropy input");
+    input(binary, "00000000000");
+    await wait(0);
+    const copy = document.querySelector('[data-copy-seed-phrase]');
+    assert(copy && !copy.disabled, "Partial seed-word copy control remained disabled");
+    equal(copy.dataset.phrase, "abandon");
+    input(binary, "");
+  });
+
+  await test("all six number bases preserve the same exact entropy", async () => {
+    document.querySelector('[data-seed-words="12"]').click();
+    await chooseMode("Number bases");
+    const cases = [
+      ["bin", 128, "0"],
+      ["base4", 64, "0"],
+      ["base8", 43, "0"],
+      ["hex", 32, "0"],
+      ["base32", 28, "0"],
+      ["base64", 23, "A"],
+    ];
+    equal(document.querySelectorAll('input[name="entropy-format"]').length, 6);
+    for (const [format, count, zero] of cases) {
+      document.querySelector(`input[name="entropy-format"][value="${format}"]`).click();
+      const field = await until(() => document.getElementById(format), `${format} entropy input`);
+      input(field, format === "base64" ? `${zero.repeat(21)}00` : zero.repeat(count));
+      await wait(0);
+      assert(!document.getElementById("go").disabled, `${format} did not accept exact zero entropy`);
+      equal(document.querySelector("#entropy-words [data-word]").textContent, "abandon");
+    }
+    const sync = document.getElementById("sync-number-bases");
+    assert(sync && !sync.checked, "Number-base syncing did not start opt-in");
+    sync.click();
+    await wait(0);
+    const syncStatus = document.getElementById("number-base-sync-status");
+    assert(syncStatus && !syncStatus.hidden && syncStatus.textContent.includes("Synced"), "Complete entropy did not show the synced confirmation");
+    document.querySelector('input[name="entropy-format"][value="hex"]').click();
+    const syncedHex = await until(() => document.getElementById("hex"), "synced hex input");
+    equal(syncedHex.value, "0".repeat(32));
+    assert(document.getElementById("sync-number-bases").checked, "Sync preference did not persist between formats");
+    document.querySelector('input[name="entropy-format"][value="base8"]').click();
+    const base8 = await until(() => document.getElementById("base8"), "Base 8 entropy input");
+    input(base8, `${"0".repeat(42)}4`);
+    await wait(0);
+    assert(document.getElementById("go").disabled, "Base 8 accepted a final value outside its two-bit range");
+    equal(document.querySelector("#entropy-input-highlight .dice-roll-invalid")?.textContent, "4");
+    input(base8, "0".repeat(42));
+    assert(document.querySelector('[data-entropy-digit="4"]').disabled, "Invalid final Base 8 digit remained enabled");
+    assert(!document.querySelector('[data-entropy-digit="2"]').disabled, "Valid final Base 8 digit was disabled");
+    document.querySelector('input[name="entropy-format"][value="base32"]').click();
+    const base32 = await until(() => document.getElementById("base32"), "Base32 entropy input");
+    input(base32, `o${"0".repeat(27)}`);
+    await wait(0);
+    assert(base32.value.startsWith("0") && !document.getElementById("go").disabled, "Crockford O alias did not normalize to 0");
+    document.querySelector('[data-seed-words="24"]').click();
+    const base32For24 = await until(() => document.getElementById("base32"), "24-word Base32 input");
+    input(base32For24, "0".repeat(51));
+    assert(document.getElementById("entropy-meta").textContent.includes("coin flip 1 of 1 · Heads (0) or Tails (1)"), "Base32 progress did not switch to coin-flip guidance");
+    assert(document.querySelector(".entropy-keypad").classList.contains("coin-phase"), "Base32 keypad did not switch to its coin-flip layout");
+    equal(document.querySelector('[data-entropy-digit="0"]').textContent, "Heads (0)");
+    equal(document.querySelector('[data-entropy-digit="1"]').textContent, "Tails (1)");
+    assert(!document.querySelector('[data-entropy-digit="1"]').disabled, "Final binary 1 was disabled for 24-word Base32");
+    assert(document.querySelector('[data-entropy-digit="2"]').disabled, "A non-binary final Base32 character remained enabled");
+    input(base32For24, `${"0".repeat(51)}1`);
+    await wait(0);
+    assert(!document.getElementById("go").disabled, "24-word Base32 did not accept a final single entropy bit");
+    document.getElementById("sync-number-bases").click();
+    input(base32For24, "0".repeat(51));
+    document.getElementById("sync-number-bases").click();
+    assert(document.getElementById("sync-number-bases").checked, "Sync did not turn back on for incomplete entropy");
+    assert(document.getElementById("number-base-sync-status").hidden, "Incomplete entropy incorrectly remained marked as synced");
+    document.querySelector('input[name="entropy-format"][value="hex"]').click();
+    const preservedHex = await until(() => document.getElementById("hex"), "preserved synchronized hex input");
+    assert(preservedHex.value.length === 64, "Re-enabling sync with an incomplete source blanked another representation");
+    document.querySelector('input[name="entropy-format"][value="base32"]').click();
+    const preservedBase32 = await until(() => document.getElementById("base32"), "preserved incomplete Base32 input");
+    equal(preservedBase32.value, "0".repeat(51));
+    input(preservedBase32, "");
+  });
+
+  await test("Base64 uses the shared case, number, and symbol keyboard", async () => {
+    document.querySelector('input[name="entropy-format"][value="base64"]').click();
+    const base64 = await until(() => document.getElementById("base64"), "Base64 input");
+    input(base64, "");
+    const toggle = document.getElementById("base64-keyboard-toggle");
+    const keyboard = document.getElementById("base64-keyboard");
+    assert(toggle && keyboard, "Base64 keyboard control is missing");
+    if (keyboard.hidden) toggle.click();
+    const mode = keyboard.querySelector("[data-seed-keyboard-mode]");
+    while (keyboard.dataset.seedKeyboardLayout !== "lower") mode.click();
+    [...keyboard.querySelectorAll("[data-seed-character-key]")].find((key) => key.dataset.seedKey === "a").click();
+    mode.click();
+    [...keyboard.querySelectorAll("[data-seed-character-key]")].find((key) => key.dataset.seedKey === "A").click();
+    mode.click();
+    const characterKey = (character) => [...keyboard.querySelectorAll("[data-seed-character-key]")].find((key) => key.dataset.seedKey === character);
+    assert(characterKey("+") && !characterKey("+").disabled && characterKey("/") && !characterKey("/").disabled, "RFC 4648 symbols are unavailable");
+    assert(characterKey("!").disabled, "A symbol outside the Base64 alphabet remained enabled");
+    characterKey("+").click();
+    characterKey("/").click();
+    equal(base64.value, "aA+/");
+    input(base64, "A".repeat(42));
+    assert(document.getElementById("entropy-meta").textContent.includes("coin flip 1 of 4 · Heads (0) or Tails (1)"), "Base64 progress did not switch to coin-flip guidance");
+    assert(!characterKey("0").disabled && !characterKey("1").disabled, "Base64 coin-flip keys were disabled");
+    assert(characterKey("+").disabled, "Base64 symbol key remained enabled during the coin-flip phase");
+    if (!keyboard.hidden) toggle.click();
+    input(base64, "");
   });
 
   await test("pasting a complete seed phrase computes final-word candidates once", async () => {
@@ -351,7 +465,7 @@
     equal(passphrase.value, "a");
     equal(dice.value, "");
 
-    await chooseMode("Hex");
+    await chooseMode("Number bases");
     toggle = await until(() => document.getElementById("passphrase-keyboard-toggle"), "hex passphrase keyboard toggle");
     keyboard = document.querySelector("#passphrase-keyboard-host [data-on-screen-keyboard]");
     const hex = document.getElementById("hex");
@@ -459,7 +573,7 @@
     const dice = await until(() => document.getElementById("dice"), "dice input");
     input(dice, payload + "123456");
     assert(!/[<>="']/.test(dice.value), "Dangerous characters remained in dice input");
-    await chooseMode("Hex");
+    await chooseMode("Number bases");
     document.querySelector('input[name="entropy-format"][value="bin"]').click();
     const binary = await until(() => document.getElementById("bin"), "binary input");
     input(binary, payload + "010101");
@@ -484,7 +598,7 @@
 
   await test("a known BIP39 wallet can be derived through the UI", async () => {
     document.querySelector('[data-seed-words="12"]').click();
-    await chooseMode("Hex");
+    await chooseMode("Number bases");
     document.querySelector('input[name="entropy-format"][value="hex"]').click();
     const hex = await until(() => document.getElementById("hex"), "hex input");
     input(hex, vectors[0].entropy);

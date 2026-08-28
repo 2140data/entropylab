@@ -80,6 +80,18 @@ jobs:
       - name: Run SeedQR tests
         run: npm run test:seedqr
 
+  test-number-bases:
+    name: Test · number-base entropy decoding
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Run number-base tests
+        run: npm run test:number-bases
+
   # ── Build: compile, prove reproducibility, stage + upload the Pages artifact ──
 
   build:

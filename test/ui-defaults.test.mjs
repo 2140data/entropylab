@@ -7,6 +7,11 @@ const template = read("src/index.html");
 const app = read("src/js/app.js");
 const css = read("src/css/styles.css");
 
+test("top status banner omits the entropy RNG message", () => {
+  assert.doesNotMatch(`${template}\n${app}`, /No entropy RNG/);
+  assert.match(template, /EntropyLab v\{\{VERSION\}\} · Run Offline · Bring your own entropy/);
+});
+
 test("all wallet network selectors enable and default to mainnet", () => {
   for (const id of ["network", "msig-network", "psbt-network"]) {
     const selectedMainnet = new RegExp(
@@ -33,9 +38,40 @@ test("single-key network selector is half width on wide screens and full width o
 test("entropy progress messages sit directly below their inputs and above keypads", () => {
   assert.match(app, /<textarea id="dice"[^>]*><\/textarea><\/div>\s*\$\{hodlSeedMetaRowMarkup\("dice-meta",!0\)\}\s*\$\{dicePad\}/);
   assert.match(app, /<textarea id="cards"[^>]*><\/textarea><\/div>\s*\$\{hodlSeedMetaRowMarkup\("cards-meta"\)\}\s*<div class="card-suit-pad"/);
-  assert.match(app, /<textarea id="\$\{inputId\}"[^>]*><\/textarea><\/div>\s*\$\{hodlSeedMetaRowMarkup\("entropy-meta",!0\)\}\s*\$\{entropyPad\}/);
+  assert.match(app, /<textarea id="\$\{inputId\}"[\s\S]*?<\/textarea><\/div>\s*\$\{hodlSeedMetaRowMarkup\("entropy-meta",!0\)\}\s*\$\{base64Keyboard\}\s*\$\{entropyPad\}/);
   assert.match(app, /<textarea id="seed"[^>]*><\/textarea><\/div><p class="muted" id="seed-meta"[^>]*><\/p>\$\{hodlSeedKeyboardMarkup\(\)\}/);
   assert.match(app, /<textarea id="key"[^>]*><\/textarea><\/div><p class="muted" id="private-key-meta"[^>]*><\/p>/);
+});
+
+test("Number bases offers exact Base 2, 4, 8, 16, Crockford Base32, and Base64-alphabet input", () => {
+  assert.match(template, />Number bases<\/button>/);
+  assert.doesNotMatch(template, />Hex or binary<\/button>/);
+  assert.ok(app.includes('formatChoices=["bin","base4","base8","hex","base32","base64"]'));
+  assert.match(app, /name="entropy-format" value="\$\{id\}"/);
+  for (const label of ["Binary (Base 2)", "Base 4", "Octal (Base 8)", "Hexadecimal (Base 16)", "Crockford Base32", "Base64 (RFC 4648 alphabet)"]) {
+    assert.ok(app.includes(`label:"${label}"`), label);
+  }
+  assert.match(app, /alphabet:"0123456789ABCDEFGHJKMNPQRSTVWXYZ"/);
+  assert.match(app, /alphabet:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789\+\/"/);
+  assert.match(app, /function hodlNumberBaseEntropy\(value,format,targetWords=Pt\)/);
+  assert.match(app, /function hodlNumberBasePreviewWords\(value,format,targetWords=Pt\)/);
+  assert.match(app, /function hodlNumberBaseValueFromBytes\(bytes,format,targetWords=Pt\)/);
+  assert.match(app, /id="sync-number-bases"/);
+  assert.match(app, /id="number-base-sync-status"[^>]*hidden>\$\{hodlCopiedIconMarkup\(\)\}<span>Synced<\/span>/);
+  assert.match(app, /syncNumberBases:!1/);
+  assert.match(app, /entropyFormat:"bin"/);
+  assert.ok(app.includes('function hodlNormalizeEntropyFormat(format){return Object.hasOwn(hodlEntropyFormats,String(format??""))?String(format):"bin"}'));
+  assert.match(css, /\.number-base-sync-status \{[\s\S]*?color: var\(--ok\)/);
+  assert.match(app, /fields:\{[^}]*base4:"",base8:"",base32:"",base64:""/);
+  assert.match(app, /function hodlBase64KeyboardMarkup\(\)\{return hodlKeyboardMarkup\(!0,"Base64 entropy","base64-keyboard"\)\}/);
+  assert.match(app, /function hodlBindBase64Keyboard\(input\)/);
+  assert.match(app, /coin flip \$\{Math\.min\(definition\.remainderBits,coinFlipsEntered\+1\)\} of \$\{definition\.remainderBits\}/);
+  assert.match(app, /Heads \(0\) or Tails \(1\)/);
+  assert.match(css, /\.dice-input-pad\.entropy-keypad \{ grid-template-columns: repeat\(8[^}]*grid-auto-flow: row;/);
+  assert.match(css, /\.dice-input-pad\.entropy-keypad\.coin-phase \{ grid-template-columns: repeat\(2/);
+  assert.match(css, /\.dice-input-pad\.entropy-keypad-bin \{ grid-template-columns: repeat\(2/);
+  assert.match(css, /\.dice-input-pad\.entropy-keypad-base4 \{ grid-template-columns: repeat\(4/);
+  assert.doesNotMatch(css, /\.entropy-keypad-(?:base8|hex|base32)[^}]*grid-template-columns/);
 });
 
 test("dealt playing cards use theme-appropriate surfaces", () => {

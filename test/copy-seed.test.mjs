@@ -43,13 +43,19 @@ test("copy text is space-separated BIP39 words when the grid is complete", () =>
   assert.equal(hodlSeedPhraseCopyText(TWELVE, 12), TWELVE.join(" "));
 });
 
-test("copy text is empty when any slot is missing", () => {
-  assert.equal(hodlSeedPhraseCopyText(TWELVE.slice(0, 11), 12), "");
-  assert.equal(hodlSeedPhraseCopyText([...TWELVE.slice(0, 11), ""], 12), "");
+test("copy text includes a contiguous partial seed phrase", () => {
+  assert.equal(hodlSeedPhraseCopyText(TWELVE.slice(0, 1), 12), TWELVE[0]);
+  assert.equal(hodlSeedPhraseCopyText(TWELVE.slice(0, 5), 12), TWELVE.slice(0, 5).join(" "));
+  assert.equal(hodlSeedPhraseCopyText([...TWELVE.slice(0, 11), ""], 12), TWELVE.slice(0, 11).join(" "));
+});
+
+test("copy text remains unavailable for an empty or discontinuous grid", () => {
   assert.equal(hodlSeedPhraseCopyText([], 24), "");
+  assert.equal(hodlSeedPhraseCopyText(["abandon", "", "able"], 12), "");
 });
 
 test("copy control markup starts disabled", () => {
   assert.match(app, /data-copy-seed-phrase disabled/);
   assert.match(app, /function hodlSeedMetaRowMarkup/);
+  assert.match(app, /container\.closest\("#form"\)\?\.querySelector\("\[data-copy-seed-phrase\]"\)/);
 });
