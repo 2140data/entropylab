@@ -157,6 +157,15 @@ textarea { display: block; min-height: 96px; letter-spacing: 0.08em; }
   border: 1px solid var(--border); border-radius: 12px; background: var(--bg);
 }
 .seed-keyboard[hidden] { display: none; }
+.seed-keyboard.private-key-initial-options { width: fit-content; }
+.seed-keyboard-initial-row { display: flex; justify-content: flex-start; gap: 4px; }
+.seed-keyboard-initial-row .seed-keyboard-key { flex-basis: clamp(48px, 10vw, 64px); width: clamp(48px, 10vw, 64px); }
+.private-key-hex-keypad { display: grid; gap: 4px; }
+.private-key-hex-row { display: flex; justify-content: flex-start; gap: 3px; }
+.seed-keyboard-initial-row[hidden],
+.private-key-hex-keypad[hidden],
+.seed-keyboard-row[hidden],
+.seed-keyboard-space-row[hidden] { display: none; }
 .seed-keyboard-row { display: flex; justify-content: center; gap: 3px; }
 .seed-keyboard-key,
 .seed-keyboard-space,
@@ -4431,13 +4440,15 @@ function hodlPassphraseKeyboardToggleMarkup(){return hodlKeyboardToggleMarkup("p
 function hodlPrivateKeyKeyboardToggleMarkup(){return`<div class="passphrase-keyboard-tools">${hodlKeyboardToggleMarkup("private-keyboard-toggle","on-screen private key keyboard")}</div>`}
 function hodlBase64KeyboardToggleMarkup(){return hodlKeyboardToggleMarkup("base64-keyboard-toggle","on-screen Base64 keyboard","base64-keyboard")}
 var hodlSeedKeyboardLayouts={lower:["abcdefghij","klmnopqrs","tuvwxyz"],upper:["ABCDEFGHIJ","KLMNOPQRS","TUVWXYZ"],number:["1234567890","!@#$%^&*()","-_+=/?\\"]};
-function hodlKeyboardMarkup(passphraseOnly=!1,inputName=passphraseOnly?"passphrase":"seed phrase",keyboardId="seed-keyboard"){
+function hodlKeyboardMarkup(passphraseOnly=!1,inputName=passphraseOnly?"passphrase":"seed phrase",keyboardId="seed-keyboard",privateInitialOptions=!1){
   let letters=hodlSeedKeyboardLayouts.lower.map((row,index)=>`<div class="seed-keyboard-row" data-seed-keyboard-row="${index+1}">${Array.from({length:hodlSeedKeyboardLayouts.number[index].length},(_,keyIndex)=>{let letter=row[keyIndex];return`<button type="button" class="seed-keyboard-key" data-seed-character-key${letter?` data-seed-key="${letter}" aria-label="Enter ${letter}"`:` hidden disabled aria-hidden="true"`}>${letter||""}</button>`}).join("")}${index===2?`<button type="button" class="seed-keyboard-key seed-keyboard-delete" data-seed-delete aria-label="Delete previous character"><svg viewBox="0 0 24 18" aria-hidden="true" focusable="false"><path d="M9 2h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9L2 9l7-7Z"/><path d="m12 6 6 6m0-6-6 6"/></svg></button>`:""}</div>`).join("");
-  return`<div class="seed-keyboard" id="${keyboardId}" data-on-screen-keyboard role="group" aria-label="On-screen lowercase ${inputName} keyboard" data-seed-keyboard-layout="lower"${hodlOnScreenKeyboardOpen?"":" hidden"}>${letters}<div class="seed-keyboard-space-row"><button type="button" class="seed-keyboard-mode" data-seed-keyboard-mode="lower" aria-label="${passphraseOnly?`Change ${inputName} character mode`:"Character mode switching is available for the passphrase"}"${passphraseOnly?"":" disabled"}>aA1</button><button type="button" class="seed-keyboard-space" data-seed-key=" " aria-label="Enter space">space</button></div></div>`
+  let initialOptions=privateInitialOptions?`<div class="seed-keyboard-initial-row" data-private-key-initial-row aria-label="Valid first characters" hidden>${Array.from({length:3},()=>`<button type="button" class="seed-keyboard-key" data-seed-character-key data-private-key-initial disabled hidden></button>`).join("")}</div>`:"";
+  let hexKeypad=privateInitialOptions?`<div class="private-key-hex-keypad" data-private-key-hex-keypad aria-label="Hexadecimal keypad" hidden><div class="private-key-hex-row" aria-label="Hexadecimal numbers">${[..."0123456789"].map(character=>`<button type="button" class="seed-keyboard-key" data-seed-character-key data-private-key-hex-character data-seed-key="${character}" aria-label="Enter ${character}">${character}</button>`).join("")}</div><div class="private-key-hex-row" aria-label="Hexadecimal letters">${[..."abcdef"].map(character=>`<button type="button" class="seed-keyboard-key" data-seed-character-key data-private-key-hex-character data-seed-key="${character}" aria-label="Enter ${character}">${character}</button>`).join("")}<button type="button" class="seed-keyboard-key seed-keyboard-delete" data-seed-delete data-private-key-hex-delete aria-label="Delete previous character"><svg viewBox="0 0 24 18" aria-hidden="true" focusable="false"><path d="M9 2h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9L2 9l7-7Z"/><path d="m12 6 6 6m0-6-6 6"/></svg></button></div></div>`:"";
+  return`<div class="seed-keyboard" id="${keyboardId}" data-on-screen-keyboard role="group" aria-label="On-screen lowercase ${inputName} keyboard" data-seed-keyboard-layout="lower"${hodlOnScreenKeyboardOpen?"":" hidden"}>${initialOptions}${letters}${hexKeypad}<div class="seed-keyboard-space-row"><button type="button" class="seed-keyboard-mode" data-seed-keyboard-mode="lower" aria-label="${passphraseOnly?`Change ${inputName} character mode`:"Character mode switching is available for the passphrase"}"${passphraseOnly?"":" disabled"}>aA1</button><button type="button" class="seed-keyboard-space" data-seed-key=" " aria-label="Enter space">space</button></div></div>`
 }
 function hodlSeedKeyboardMarkup(){return hodlKeyboardMarkup(!1)}
 function hodlPassphraseKeyboardMarkup(){return hodlKeyboardMarkup(!0)}
-function hodlPrivateKeyKeyboardMarkup(){return hodlKeyboardMarkup(!0,"private key")}
+function hodlPrivateKeyKeyboardMarkup(){return hodlKeyboardMarkup(!0,"private key","seed-keyboard",!0)}
 function hodlBase64KeyboardMarkup(){return hodlKeyboardMarkup(!0,"Base64 entropy","base64-keyboard")}
 function hodlSetOnScreenKeyboardOpen(open){
   hodlOnScreenKeyboardOpen=Boolean(open);document.querySelectorAll("[data-on-screen-keyboard-toggle]").forEach(toggle=>{toggle.setAttribute("aria-expanded",String(hodlOnScreenKeyboardOpen));let target=toggle.id==="passphrase-keyboard-toggle"?"passphrase":toggle.id==="private-keyboard-toggle"?"private key":toggle.id==="base64-keyboard-toggle"?"Base64":"seed";toggle.setAttribute("aria-label",`${hodlOnScreenKeyboardOpen?"Hide":"Show"} on-screen ${target} keyboard`)});document.querySelectorAll("[data-on-screen-keyboard]").forEach(keyboard=>{keyboard.hidden=!hodlOnScreenKeyboardOpen})
@@ -4516,10 +4527,24 @@ function hodlPrivateKeyboardCanEnterCharacter(input,key){
   let candidate=hodlKeyboardValueAfterInsert(input,key),kind=hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value,input.value);if(kind==="brain")return!0;if(kind==="minikey")return hodlMiniPrivateKeyPrefix(candidate);if(kind==="hex-key")return hodlHexPrivateKeyPrefix(candidate);
   return hodlWifPrivateKeyPrefix(candidate,hodlSelectedNetwork(document.getElementById("network")))
 }
+function hodlPrivateKeyInitialCharacters(kind,network){
+  if(kind==="wif")return network==="testnet"?["9","c"]:["5","K","L"];
+  if(kind==="minikey")return["S"];
+  return[]
+}
+function hodlUpdatePrivateKeyInitialKeys(keyboard,input,kind,network){
+  let row=keyboard.querySelector("[data-private-key-initial-row]");if(!row)return!1;let options=input.value.length?[]:hodlPrivateKeyInitialCharacters(kind,network),show=options.length>0,wasShowing=keyboard.classList.contains("private-key-initial-options"),modeButton=keyboard.querySelector("[data-seed-keyboard-mode]");
+  if(!show&&wasShowing&&input.value&&modeButton){let first=input.value[0],layout=/^[A-Z]$/.test(first)?"upper":/^[0-9]$/.test(first)?"number":"lower";if(modeButton.dataset.seedKeyboardMode!==layout)hodlSetSeedKeyboardLayout(keyboard,modeButton,layout)}
+  row.hidden=!show;keyboard.classList.toggle("private-key-initial-options",show);keyboard.querySelectorAll("[data-seed-keyboard-row],.seed-keyboard-space-row").forEach(section=>{section.hidden=show});
+  row.querySelectorAll("[data-private-key-initial]").forEach((button,index)=>{let character=options[index]||"";button.hidden=!character;button.disabled=!character;if(character){button.setAttribute("data-seed-character-key","");button.dataset.seedKey=character;button.textContent=character;button.setAttribute("aria-label",`Enter ${character}`);button.removeAttribute("aria-hidden")}else{button.removeAttribute("data-seed-character-key");delete button.dataset.seedKey;button.textContent="";button.removeAttribute("aria-label");button.setAttribute("aria-hidden","true")}});
+  if(show)keyboard.setAttribute("aria-label",`Choose the first ${kind==="wif"?"WIF":"Mini key"} character`);return show
+}
 function hodlUpdatePrivateKeyKeyboardKeys(input){
-  let keyboard=document.getElementById("seed-keyboard");if(!keyboard||!input)return;let kind=hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value,input.value);
-  keyboard.querySelectorAll("[data-seed-character-key]").forEach(button=>{button.disabled=!hodlPrivateKeyboardCanEnterCharacter(input,button.dataset.seedKey)});let space=keyboard.querySelector(".seed-keyboard-space");if(space)space.disabled=kind!=="brain";
-  let remove=keyboard.querySelector("[data-seed-delete]"),start=input.selectionStart??input.value.length,end=input.selectionEnd??start;if(remove)remove.disabled=start===end&&start===0
+  let keyboard=document.getElementById("seed-keyboard");if(!keyboard||!input)return;let kind=hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value,input.value),network=hodlSelectedNetwork(document.getElementById("network")),initialOnly=hodlUpdatePrivateKeyInitialKeys(keyboard,input,kind,network);
+  let hexKeypad=keyboard.querySelector("[data-private-key-hex-keypad]"),hexOnly=kind==="hex-key";if(hexKeypad)hexKeypad.hidden=!hexOnly;keyboard.classList.toggle("private-key-hex-options",hexOnly);if(hexOnly)keyboard.querySelectorAll("[data-seed-keyboard-row],.seed-keyboard-space-row").forEach(section=>{section.hidden=!0});else if(!initialOnly)keyboard.querySelectorAll("[data-seed-keyboard-row],.seed-keyboard-space-row").forEach(section=>{section.hidden=!1});
+  keyboard.querySelectorAll("[data-seed-keyboard-row] [data-seed-character-key],[data-private-key-hex-character]").forEach(button=>{button.disabled=!hodlPrivateKeyboardCanEnterCharacter(input,button.dataset.seedKey)});let space=keyboard.querySelector(".seed-keyboard-space");if(space)space.disabled=kind!=="brain";
+  let start=input.selectionStart??input.value.length,end=input.selectionEnd??start;keyboard.querySelectorAll("[data-seed-delete]").forEach(remove=>{remove.disabled=start===end&&start===0});
+  if(hexOnly)keyboard.setAttribute("aria-label","On-screen hexadecimal private key keyboard");else if(!initialOnly)keyboard.setAttribute("aria-label",`On-screen ${keyboard.dataset.seedKeyboardLayout||"lower"} private key keyboard`)
 }
 function hodlApplySeedKeyboardKey(input,key,deleteBackward=!1){
   if(!input)return;let start=input.selectionStart??input.value.length,end=input.selectionEnd??start,inputType="insertText",data=key;
@@ -4540,18 +4565,18 @@ function hodlBindSeedKeyboard(input,targetWords=Pt){
   let activate=target=>{activeInput=target;let pass=isPassphrase();if(modeButton){if(!pass&&modeButton.dataset.seedKeyboardMode!=="lower")hodlSetSeedKeyboardLayout(keyboard,modeButton,"lower");modeButton.disabled=!pass;modeButton.setAttribute("aria-label",pass?"Change passphrase character mode":"Character mode switching is available for the passphrase")}keyboard.setAttribute("aria-label",pass?`On-screen ${keyboard.dataset.seedKeyboardLayout||"lower"} passphrase keyboard`:"On-screen lowercase seed phrase keyboard");refresh()};
   toggle.onclick=()=>{hodlSetOnScreenKeyboardOpen(!hodlOnScreenKeyboardOpen);refresh()};
   keyboard.querySelectorAll("button").forEach(button=>{button.addEventListener("pointerdown",event=>{event.preventDefault();activeInput.focus({preventScroll:!0})})});
-  keyboard.querySelectorAll("[data-seed-character-key],.seed-keyboard-space").forEach(button=>{button.onclick=()=>hodlApplySeedKeyboardKey(activeInput,button.dataset.seedKey||"")});hodlBindSeedKeyboardDelete(()=>activeInput,keyboard.querySelector("[data-seed-delete]"));if(modeButton)modeButton.onclick=()=>{hodlCycleSeedKeyboardLayout(keyboard,modeButton);keyboard.setAttribute("aria-label",`On-screen ${keyboard.dataset.seedKeyboardLayout} passphrase keyboard`);refresh()};
+  keyboard.querySelectorAll("[data-seed-character-key],.seed-keyboard-space").forEach(button=>{button.onclick=()=>hodlApplySeedKeyboardKey(activeInput,button.dataset.seedKey||"")});keyboard.querySelectorAll("[data-seed-delete]").forEach(button=>hodlBindSeedKeyboardDelete(()=>activeInput,button));if(modeButton)modeButton.onclick=()=>{hodlCycleSeedKeyboardLayout(keyboard,modeButton);keyboard.setAttribute("aria-label",`On-screen ${keyboard.dataset.seedKeyboardLayout} passphrase keyboard`);refresh()};
   [input,...(passphrase?[passphrase]:[])].forEach(field=>{field.addEventListener("focus",()=>activate(field));["input","click","keyup","select"].forEach(type=>field.addEventListener(type,refresh))});activate(input)
 }
 function hodlBindPassphraseKeyboard(inputId="pass",toggleId="passphrase-keyboard-toggle",inputName="passphrase"){
   let toggle=document.getElementById(toggleId),keyboard=document.getElementById("seed-keyboard"),input=document.getElementById(inputId),modeButton=keyboard?.querySelector("[data-seed-keyboard-mode]");if(!toggle||!keyboard||!input)return;
   let privateKey=inputId==="key",refresh=()=>privateKey?hodlUpdatePrivateKeyKeyboardKeys(input):hodlUpdatePassphraseKeyboardKeys(input);toggle.onclick=()=>{hodlSetOnScreenKeyboardOpen(!hodlOnScreenKeyboardOpen);refresh()};keyboard.querySelectorAll("button").forEach(button=>{button.addEventListener("pointerdown",event=>{event.preventDefault();input.focus({preventScroll:!0})})});
-  keyboard.querySelectorAll("[data-seed-character-key],.seed-keyboard-space").forEach(button=>{button.onclick=()=>hodlApplySeedKeyboardKey(input,button.dataset.seedKey||"")});hodlBindSeedKeyboardDelete(()=>input,keyboard.querySelector("[data-seed-delete]"));if(modeButton){modeButton.disabled=!1;modeButton.onclick=()=>{hodlCycleSeedKeyboardLayout(keyboard,modeButton);keyboard.setAttribute("aria-label",`On-screen ${keyboard.dataset.seedKeyboardLayout} ${inputName} keyboard`);refresh()}};
+  keyboard.querySelectorAll("[data-seed-character-key],.seed-keyboard-space").forEach(button=>{button.onclick=()=>hodlApplySeedKeyboardKey(input,button.dataset.seedKey||"")});keyboard.querySelectorAll("[data-seed-delete]").forEach(button=>hodlBindSeedKeyboardDelete(()=>input,button));if(modeButton){modeButton.disabled=!1;modeButton.onclick=()=>{hodlCycleSeedKeyboardLayout(keyboard,modeButton);keyboard.setAttribute("aria-label",`On-screen ${keyboard.dataset.seedKeyboardLayout} ${inputName} keyboard`);refresh()}};
   ["input","focus","click","keyup","select"].forEach(type=>input.addEventListener(type,refresh));if(privateKey){document.querySelectorAll('input[name="kk"]').forEach(radio=>radio.addEventListener("change",refresh));document.getElementById("network")?.addEventListener("change",refresh)}refresh()
 }
 function hodlBindBase64Keyboard(input){
   let toggle=document.getElementById("base64-keyboard-toggle"),keyboard=document.getElementById("base64-keyboard"),modeButton=keyboard?.querySelector("[data-seed-keyboard-mode]");if(!toggle||!keyboard||!input)return;let refresh=()=>hodlUpdateBase64KeyboardKeys(input);
-  toggle.onclick=()=>{hodlSetOnScreenKeyboardOpen(!hodlOnScreenKeyboardOpen);refresh()};keyboard.querySelectorAll("button").forEach(button=>{button.addEventListener("pointerdown",event=>{event.preventDefault();input.focus({preventScroll:!0})})});keyboard.querySelectorAll("[data-seed-character-key],.seed-keyboard-space").forEach(button=>{button.onclick=()=>hodlApplySeedKeyboardKey(input,button.dataset.seedKey||"")});hodlBindSeedKeyboardDelete(()=>input,keyboard.querySelector("[data-seed-delete]"));if(modeButton){modeButton.disabled=!1;modeButton.onclick=()=>{hodlCycleSeedKeyboardLayout(keyboard,modeButton);keyboard.setAttribute("aria-label",`On-screen ${keyboard.dataset.seedKeyboardLayout} Base64 entropy keyboard`);refresh()}};
+  toggle.onclick=()=>{hodlSetOnScreenKeyboardOpen(!hodlOnScreenKeyboardOpen);refresh()};keyboard.querySelectorAll("button").forEach(button=>{button.addEventListener("pointerdown",event=>{event.preventDefault();input.focus({preventScroll:!0})})});keyboard.querySelectorAll("[data-seed-character-key],.seed-keyboard-space").forEach(button=>{button.onclick=()=>hodlApplySeedKeyboardKey(input,button.dataset.seedKey||"")});keyboard.querySelectorAll("[data-seed-delete]").forEach(button=>hodlBindSeedKeyboardDelete(()=>input,button));if(modeButton){modeButton.disabled=!1;modeButton.onclick=()=>{hodlCycleSeedKeyboardLayout(keyboard,modeButton);keyboard.setAttribute("aria-label",`On-screen ${keyboard.dataset.seedKeyboardLayout} Base64 entropy keyboard`);refresh()}};
   ["input","focus","click","keyup","select"].forEach(type=>input.addEventListener(type,refresh));refresh()
 }
 function hodlRenderPassphraseKeyboard(){
@@ -4907,7 +4932,10 @@ function hodlRenderPrivateKeyInputState(input){
 function hodlBindKeyFields(){
   let dice=document.getElementById("dice");if(dice){dice.setAttribute("inputmode",ge==="dplus"?"text":"numeric");dice.setAttribute("autocapitalize",ge==="dplus"?"characters":"off");dice.setAttribute("autocomplete","off");dice.setAttribute("spellcheck","false");dice.onbeforeinput=event=>{if(ge==="dplus")hodlHandleGroupedSeparatorDelete(dice,event);else hodlRememberDiceBeforeInput(dice,event)}}
   let format=hodlNormalizeEntropyFormat(hodlEntropyFormat),entropy=document.getElementById(format);if(entropy){let definition=hodlEntropyFormats[format],update=(syncContext="edit")=>{hodlApplyFilteredInput(entropy,value=>hodlFilterNumberBase(value,format));if(format==="bin")hodlFormatBinaryInput(entropy);hodlUpdateEntropyInput(entropy,format,Pt,syncContext)};entropy.setAttribute("inputmode",definition.base<=10?"numeric":"text");entropy.setAttribute("spellcheck","false");if(format==="bin")entropy.onbeforeinput=event=>hodlHandleBinarySeparatorDelete(entropy,event);entropy.oninput=()=>update(entropy.hodlRestoring?"restore":"edit");entropy.onscroll=()=>hodlSyncDiceHighlight(entropy);update("")}
-  let key=document.getElementById("key");if(key){let apply=event=>{let selected=document.querySelector("input[name=kk]:checked"),kind=hodlNormalizePrivateKeyKind(selected?.value,key.value),pasted=event?.inputType==="insertFromPaste";if(pasted&&kind!=="brain"){let detected=hodlDetectPrivateKeyKind(key.value);if(detected&&detected!==kind){let radio=document.querySelector(`input[name="kk"][value="${detected}"]`);if(radio){radio.checked=!0;kind=detected}}}if(kind!=="brain")key.value=hodlFilterKey(key.value,kind);hodlUpdatePrivateKeyInputPresentation();hodlRenderPrivateKeyInputState(key);hodlUpdatePrivateKeyKeyboardKeys(key)};key.oninput=apply;key.onscroll=()=>hodlSyncDiceHighlight(key);document.querySelectorAll("input[name=kk]").forEach(radio=>radio.addEventListener("change",apply));document.getElementById("network")?.addEventListener("change",apply);apply()}
+  let key=document.getElementById("key");if(key){let state=hodlKeys[hodlActiveKey],values=hodlPrivateKeyValues(state?.fields||{}),selected=document.querySelector("input[name=kk]:checked"),initialKind=hodlNormalizePrivateKeyKind(selected?.value,"");key.dataset.privateKeyKind=initialKind;key.value=values[initialKind]||"";
+    let apply=event=>{let selected=document.querySelector("input[name=kk]:checked"),kind=hodlNormalizePrivateKeyKind(selected?.value,key.value),pasted=event?.inputType==="insertFromPaste";if(pasted&&kind!=="brain"){let detected=hodlDetectPrivateKeyKind(key.value);if(detected&&detected!==kind){let radio=document.querySelector(`input[name="kk"][value="${detected}"]`);if(radio){radio.checked=!0;kind=detected}}}if(kind!=="brain")key.value=hodlFilterKey(key.value,kind);key.dataset.privateKeyKind=kind;values[kind]=key.value;if(state){state.fields.keyKind=kind;state.fields.key=""}hodlUpdatePrivateKeyInputPresentation();hodlRenderPrivateKeyInputState(key);hodlUpdatePrivateKeyKeyboardKeys(key)};
+    let change=event=>{if(!event.currentTarget.checked)return;let previousKind=hodlNormalizePrivateKeyKind(key.dataset.privateKeyKind||"wif",key.value),nextKind=hodlNormalizePrivateKeyKind(event.currentTarget.value,"");values[previousKind]=key.value;key.dataset.privateKeyKind=nextKind;key.value=values[nextKind]||"";apply();key.setSelectionRange(key.value.length,key.value.length)};
+    key.oninput=apply;key.onscroll=()=>hodlSyncDiceHighlight(key);document.querySelectorAll("input[name=kk]").forEach(radio=>{radio.addEventListener("input",change);radio.addEventListener("change",change)});document.getElementById("network")?.addEventListener("change",apply);apply()}
 }
 function hodlSelectedEntropy(targetWords=Pt){
   let format=hodlNormalizeEntropyFormat(hodlEntropyFormat),value=document.getElementById(format)?.value.trim()||"";
@@ -5552,14 +5580,21 @@ function hodlRenderPsbt(psbt){
 }
 var hodlAccountId="bip84",hodlNextKeyId=1,hodlNextKeyNumber=1,hodlKeys=[],hodlActiveKey=-1;
 function hodlKeyColor(id){let hue=Math.round((Number(id)*137.508+19)%360);return`oklch(61% 0.08 ${hue})`}
-function hodlNewKeyState(name,keyId,keyNumber){let id=keyId??hodlNextKeyId++,number=keyNumber??hodlNextKeyNumber++;return{id,number,color:hodlKeyColor(id),name:name||hodlDefaultKeyName(number),mode:"dice",diceMethod:"coldcard",entropyFormat:"bin",syncNumberBases:!1,numberBaseSyncSource:"",numberBasesSynced:!1,seedAutocomplete:!1,dplusNumberedD16:!1,showCards:!1,targetWords:24,diceCoinPositions:[],lastWord:"",dplusLastWord:"",result:null,reveal:!1,accountId:"bip84",error:"",fields:{pass:"",script:"bip84",network:"mainnet",account:"0",count:"5",dice:"",dplusDice:"",hex:"",bin:"",base4:"",base8:"",base32:"",base64:"",cards:"",seed:"",key:"",keyKind:"wif"}}}
+var hodlPrivateKeyKinds=["wif","hex-key","minikey","brain"];
+function hodlPrivateKeyValues(fields){
+  if(!fields.privateKeys||typeof fields.privateKeys!=="object")fields.privateKeys={};
+  hodlPrivateKeyKinds.forEach(kind=>{if(typeof fields.privateKeys[kind]!=="string")fields.privateKeys[kind]=""});
+  let legacy=String(fields.key??"");if(legacy){let kind=hodlNormalizePrivateKeyKind(fields.keyKind,legacy);if(!fields.privateKeys[kind])fields.privateKeys[kind]=legacy;fields.key=""}
+  return fields.privateKeys
+}
+function hodlNewKeyState(name,keyId,keyNumber){let id=keyId??hodlNextKeyId++,number=keyNumber??hodlNextKeyNumber++;return{id,number,color:hodlKeyColor(id),name:name||hodlDefaultKeyName(number),mode:"dice",diceMethod:"coldcard",entropyFormat:"bin",syncNumberBases:!1,numberBaseSyncSource:"",numberBasesSynced:!1,seedAutocomplete:!1,dplusNumberedD16:!1,showCards:!1,targetWords:24,diceCoinPositions:[],lastWord:"",dplusLastWord:"",result:null,reveal:!1,accountId:"bip84",error:"",fields:{pass:"",script:"bip84",network:"mainnet",account:"0",count:"5",dice:"",dplusDice:"",hex:"",bin:"",base4:"",base8:"",base32:"",base64:"",cards:"",seed:"",key:"",keyKind:"wif",privateKeys:{wif:"","hex-key":"",minikey:"",brain:""}}}}
 function hodlRestoreFormFields(state){
   if(!state)return;
-  let restoredKeyKind=hodlNormalizePrivateKeyKind(state.fields.keyKind,state.fields.key);state.fields.keyKind=restoredKeyKind;document.querySelectorAll("input[name=kk]").forEach(input=>{input.checked=input.value===restoredKeyKind});
+  let privateKeys=hodlPrivateKeyValues(state.fields),restoredKeyKind=hodlNormalizePrivateKeyKind(state.fields.keyKind,privateKeys[state.fields.keyKind]||"");state.fields.keyKind=restoredKeyKind;document.querySelectorAll("input[name=kk]").forEach(input=>{input.checked=input.value===restoredKeyKind});
   let syncNumberBases=document.getElementById("sync-number-bases");if(syncNumberBases)syncNumberBases.checked=Boolean(state.syncNumberBases);
   let seedAutocomplete=document.getElementById("seed-autocomplete");if(seedAutocomplete)seedAutocomplete.checked=Boolean(state.seedAutocomplete);
   let dplusToggle=document.getElementById("dplus-numbered-d16");if(dplusToggle)dplusToggle.checked=Boolean(state.dplusNumberedD16);
-  ["dice","hex","bin","base4","base8","base32","base64","seed","key","cards"].forEach(id=>{let el=document.getElementById(id);if(el){el.value=id==="dice"&&ge==="dplus"?state.fields.dplusDice||"":state.fields[id]||"";if(id==="dice"){el.dataset.previousValue=el.value;el.setSelectionRange(el.value.length,el.value.length)}el.hodlRestoring=!0;el.dispatchEvent(new Event("input"));delete el.hodlRestoring}});
+  ["dice","hex","bin","base4","base8","base32","base64","seed","key","cards"].forEach(id=>{let el=document.getElementById(id);if(el){el.value=id==="dice"&&ge==="dplus"?state.fields.dplusDice||"":id==="key"?privateKeys[restoredKeyKind]||"":state.fields[id]||"";if(id==="key")el.dataset.privateKeyKind=restoredKeyKind;if(id==="dice"){el.dataset.previousValue=el.value;el.setSelectionRange(el.value.length,el.value.length)}el.hodlRestoring=!0;el.dispatchEvent(new Event("input"));delete el.hodlRestoring}});
 }
 function hodlSetMode(mode){
   hodlCaptureKey();
@@ -5568,11 +5603,11 @@ function hodlSetMode(mode){
   hodlRenderKeyForm();hodlRestoreFormFields(state);hodlUpdateSeedLengthControl();hodlUpdateDerivationPathPreview();hodlQueueSegmentedControlSync();
 }
 function hodlKeyStateNeedsClear(state){
-  if(!state)return!1;let fields=state.fields||{},hasText=id=>String(fields[id]??"").length>0;
+  if(!state)return!1;let fields=state.fields||{},privateKeys=hodlPrivateKeyValues(fields),hasText=id=>String(fields[id]??"").length>0;
   return String(state.mode??"dice")!=="dice"||String(state.diceMethod??"coldcard")!=="coldcard"||String(state.entropyFormat??"bin")!=="bin"||Boolean(state.syncNumberBases)||Boolean(state.seedAutocomplete)||Boolean(state.dplusNumberedD16)||Boolean(state.showCards)||Number(state.targetWords??24)!==24||
     (Array.isArray(state.diceCoinPositions)&&state.diceCoinPositions.length>0)||String(state.lastWord??"").length>0||String(state.dplusLastWord??"").length>0||Boolean(state.result)||Boolean(state.reveal)||String(state.error??"").length>0||
     String(state.accountId??"bip84")!=="bip84"||String(fields.script??"bip84")!=="bip84"||String(fields.network??"mainnet")!=="mainnet"||String(fields.account??"0")!=="0"||String(fields.count??"5")!=="5"||
-    hodlNormalizePrivateKeyKind(fields.keyKind,fields.key)!=="wif"||["pass","dice","dplusDice","hex","bin","base4","base8","base32","base64","cards","seed","key"].some(hasText)
+    hodlNormalizePrivateKeyKind(fields.keyKind,privateKeys[fields.keyKind]||"")!=="wif"||["pass","dice","dplusDice","hex","bin","base4","base8","base32","base64","cards","seed","key"].some(hasText)||hodlPrivateKeyKinds.some(kind=>privateKeys[kind].length>0)
 }
 function hodlSyncKeyClearButton(capture=!1){
   if(capture)hodlCaptureKey();let button=document.getElementById("wipe");if(!button)return;
@@ -5587,9 +5622,9 @@ function hodlCaptureKey(){
   let state=hodlKeys[hodlActiveKey];
   state.mode=Ne;state.diceMethod=ge;state.entropyFormat=hodlEntropyFormat;let syncNumberBases=document.getElementById("sync-number-bases");if(syncNumberBases)state.syncNumberBases=syncNumberBases.checked;let seedAutocomplete=document.getElementById("seed-autocomplete");if(seedAutocomplete)state.seedAutocomplete=seedAutocomplete.checked;let dplusToggle=document.getElementById("dplus-numbered-d16");if(dplusToggle)hodlDPlusNumberedD16=dplusToggle.checked;state.dplusNumberedD16=Boolean(hodlDPlusNumberedD16);let showCards=document.getElementById("show-cards");if(showCards)state.showCards=showCards.checked;state.targetWords=Pt;state.diceCoinPositions=hodlDiceCoinPositions.slice();if(ge==="dplus")state.dplusLastWord=ft;else if(ge==="bitbox")state.lastWord=ft;state.result=re;state.reveal=Ge;state.accountId=hodlSelectedScriptType();state.fields.script=state.accountId;
   state.error=document.getElementById("error")?.textContent||"";
-  ["pass","account","count","hex","bin","base4","base8","base32","base64","seed","key","cards"].forEach(id=>{let el=document.getElementById(id);if(el)state.fields[id]=el.value});state.fields.network=hodlSelectedNetwork(document.getElementById("network"));
+  ["pass","account","count","hex","bin","base4","base8","base32","base64","seed","cards"].forEach(id=>{let el=document.getElementById(id);if(el)state.fields[id]=el.value});state.fields.network=hodlSelectedNetwork(document.getElementById("network"));
   let dice=document.getElementById("dice");if(dice)state.fields[ge==="dplus"?"dplusDice":"dice"]=dice.value;
-  state.fields.keyKind=hodlNormalizePrivateKeyKind(document.querySelector("input[name=kk]:checked")?.value||state.fields.keyKind,state.fields.key);
+  let key=document.getElementById("key"),privateKeys=hodlPrivateKeyValues(state.fields),checkedKeyKind=document.querySelector("input[name=kk]:checked")?.value||state.fields.keyKind,keyKind=hodlNormalizePrivateKeyKind(key?.dataset.privateKeyKind||checkedKeyKind,key?.value||"");if(key)privateKeys[keyKind]=key.value;state.fields.keyKind=keyKind;state.fields.key="";
 }
 function hodlSyncSelect(select,value){
   if(!select)return;

@@ -155,6 +155,15 @@ textarea { display: block; min-height: 96px; letter-spacing: 0.08em; }
   border: 1px solid var(--border); border-radius: 12px; background: var(--bg);
 }
 .seed-keyboard[hidden] { display: none; }
+.seed-keyboard.private-key-initial-options { width: fit-content; }
+.seed-keyboard-initial-row { display: flex; justify-content: flex-start; gap: 4px; }
+.seed-keyboard-initial-row .seed-keyboard-key { flex-basis: clamp(48px, 10vw, 64px); width: clamp(48px, 10vw, 64px); }
+.private-key-hex-keypad { display: grid; gap: 4px; }
+.private-key-hex-row { display: flex; justify-content: flex-start; gap: 3px; }
+.seed-keyboard-initial-row[hidden],
+.private-key-hex-keypad[hidden],
+.seed-keyboard-row[hidden],
+.seed-keyboard-space-row[hidden] { display: none; }
 .seed-keyboard-row { display: flex; justify-content: center; gap: 3px; }
 .seed-keyboard-key,
 .seed-keyboard-space,
