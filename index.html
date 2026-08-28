@@ -216,6 +216,41 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
     grid-template-rows: minmax(48px, auto);
   }
 }
+.card-suit-pad { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: var(--space-control); }
+.card-suit-pad button {
+  min-height: 48px; font-size: 22px; line-height: 1;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); color: var(--fg);
+}
+.card-suit-pad button.is-red { color: var(--danger); }
+.card-suit-pad button.active {
+  background: var(--selection-accent); color: var(--selection-fg); border-color: var(--selection-accent);
+}
+.card-rank-pad { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+@media (min-width: 640px) {
+  .card-rank-pad { grid-template-columns: repeat(13, minmax(0, 1fr)); }
+}
+.card-rank-pad button { font-size: 15px; }
+.dealt-cards { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; min-height: 60px; }
+.dealt-shuffle-label {
+  flex: 1 0 100%; margin: 4px 0 0; color: var(--muted);
+  font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.cards-reshuffle {
+  margin-top: 12px; padding: 12px 14px; border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--accent) 55%, var(--border));
+  background: color-mix(in oklab, var(--accent) 14%, var(--bg));
+  color: var(--fg); font-size: 14px; line-height: 1.5;
+}
+.cards-reshuffle[hidden] { display: none; }
+.cards-reshuffle strong { color: var(--accent); }
+.dealt-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 44px; height: 60px; border-radius: 6px; background: var(--paper); color: #111;
+  font-family: var(--mono); font-weight: 700; line-height: 1.05;
+}
+.dealt-card.is-red { color: #b42318; }
+.dealt-card .dealt-rank { font-size: 13px; }
+.dealt-card .dealt-suit { font-size: 16px; }
 .wordlist {
   display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 16px;
   font-family: var(--mono); font-size: 13px; margin-top: 12px;
@@ -824,7 +859,7 @@ online.</p>
     </section>
     <section class="card no-print" id="calc-card" role="tabpanel" hidden>
       <div class="key-panel-head">
-        <div class="row segmented-control" id="modes"><button class="tab active" aria-pressed="true">Dice rolls</button><button class="tab" aria-pressed="false">Hex or binary</button><button class="tab" aria-pressed="false">Seed phrase</button><button class="tab" aria-pressed="false">Private key</button></div>
+        <div class="row segmented-control" id="modes"><button class="tab active" aria-pressed="true">Dice rolls</button><button class="tab" aria-pressed="false">Cards</button><button class="tab" aria-pressed="false">Hex or binary</button><button class="tab" aria-pressed="false">Seed phrase</button><button class="tab" aria-pressed="false">Private key</button></div>
         <button class="btn delete-key" id="delete-key" type="button" aria-label="Delete current key" disabled>Delete Key</button>
       </div>
       <section class="seed-length-control" id="seed-length" aria-labelledby="seed-length-label">
@@ -3263,7 +3298,7 @@ zoo`.split(`
       <p>D++ D8 &amp; D16 method: <a href="https://thesimplestbitcoinbook.net/wp-content/uploads/2023/09/Roll-Your-Own-Seed-Phrase-PDF.pdf">Roll Your Own Bitcoin Seed Phrase</a> \u2014 the published 24-word workflow uses one D8 and two D16 rolls per word, then a final D8.</p>
     </section>
   </div>
-`;if(/^(www\.)?entropylab\.online$/i.test(location.hostname))document.getElementById("online-warning")?.removeAttribute("hidden");var Ne="dice",ge="coldcard",Pt=24,hodlEntropyFormat="hex",hodlDiceCoinPositions=[],hodlDPlusNumberedD16=!1,ft="",re=null,Ge=!1,Zs=W("#modes"),at=W("#form"),dr=W("#out");["dice","hex","seed","key"].forEach(e=>{let t=document.createElement("button"),active=e===Ne;t.type="button";t.className="tab"+(active?" active":"");t.setAttribute("aria-pressed",String(active));t.textContent=e==="dice"?"Dice rolls":e==="hex"?"Hex or binary":e==="seed"?"Seed phrase":"Private key";t.onclick=()=>hodlSetMode(e);Zs.appendChild(t)});document.querySelectorAll("#seed-length [data-seed-words]").forEach(button=>{button.onclick=()=>hodlSetSeedLength(Number(button.dataset.seedWords))});W("#go").onclick=hodlCalculateKey;W("#wipe").onclick=hodlWipeActiveKey;function W(e){let t=e.startsWith("#")?e.slice(1):e,r=document.getElementById(t);if(!r)throw new Error(t);return r}function lr(){if(Ne==="dice"){at.innerHTML=`
+`;if(/^(www\.)?entropylab\.online$/i.test(location.hostname))document.getElementById("online-warning")?.removeAttribute("hidden");var hodlKeyModes=["dice","cards","hex","seed","key"],hodlCardRanks=["A","2","3","4","5","6","7","8","9","T","J","Q","K"],hodlCardSuits=[{code:"S",symbol:"\u2660",label:"Spades",red:!1},{code:"H",symbol:"\u2665",label:"Hearts",red:!0},{code:"D",symbol:"\u2666",label:"Diamonds",red:!0},{code:"C",symbol:"\u2663",label:"Clubs",red:!1}],hodlCardSuit="S",Ne="dice",ge="coldcard",Pt=24,hodlEntropyFormat="hex",hodlDiceCoinPositions=[],hodlDPlusNumberedD16=!1,ft="",re=null,Ge=!1,Zs=W("#modes"),at=W("#form"),dr=W("#out");hodlKeyModes.forEach(e=>{let t=document.createElement("button"),active=e===Ne;t.type="button";t.className="tab"+(active?" active":"");t.setAttribute("aria-pressed",String(active));t.textContent=e==="dice"?"Dice rolls":e==="cards"?"Cards":e==="hex"?"Hex or binary":e==="seed"?"Seed phrase":"Private key";t.onclick=()=>hodlSetMode(e);Zs.appendChild(t)});document.querySelectorAll("#seed-length [data-seed-words]").forEach(button=>{button.onclick=()=>hodlSetSeedLength(Number(button.dataset.seedWords))});W("#go").onclick=hodlCalculateKey;W("#wipe").onclick=hodlWipeActiveKey;function W(e){let t=e.startsWith("#")?e.slice(1):e,r=document.getElementById(t);if(!r)throw new Error(t);return r}function lr(){if(Ne==="dice"){at.innerHTML=`
       <p class="label">How to turn rolls into a seed</p>
       <label class="choice"><input type="radio" name="dm" value="coldcard" ${ge==="coldcard"?"checked":""} />
         <span><strong>Hashed rolls / Base 10 [0-9] (recommended)</strong>
@@ -4111,6 +4146,103 @@ function hodlBinaryEntropy(value,targetWords=Pt){
   notes.push(`${compact.length} coin-flip bits.`);
   return hodlBitsToTargetEntropy(compact,compact.length,"binary",notes,warnings,config.words,!1)
 }
+function hodlCardNeeded(targetWords=Pt){
+  let bits=hodlSeedConfig(targetWords).bits;
+  if(bits<=128)return{first:25,extra:0};
+  if(bits<=192)return{first:39,extra:0};
+  return{first:52,extra:6}
+}
+function hodlCardWithoutReplacementBits(count){
+  let bits=0,n=Math.min(Math.max(0,Number(count)||0),52);
+  for(let i=0;i<n;i++)bits+=Math.log2(52-i);
+  return bits
+}
+function hodlNormalizeCardToken(token){
+  let value=String(token??"").trim().toUpperCase().replace(/\u2660/g,"S").replace(/\u2665/g,"H").replace(/\u2666/g,"D").replace(/\u2663/g,"C");
+  if(value.startsWith("10"))value="T"+value.slice(2);
+  return/^[A2-9TJQK][CDHS]$/.test(value)?value:""
+}
+function hodlParseCards(raw,targetWords=Pt){
+  let needed=hodlCardNeeded(targetWords),text=String(raw??"").toUpperCase().replace(/\u2660/g,"S").replace(/\u2665/g,"H").replace(/\u2666/g,"D").replace(/\u2663/g,"C");
+  let tokens=text.split(/[\s,.;:_|/-]+/).filter(Boolean),cards=[],invalid=[],duplicates=[];
+  for(let token of tokens){
+    let card=hodlNormalizeCardToken(token);
+    if(!card){invalid.push(token);continue}
+    let pool=cards.length<needed.first?cards:cards.slice(needed.first);
+    if(pool.includes(card))duplicates.push(card);
+    else cards.push(card)
+  }
+  let firstCount=Math.min(cards.length,needed.first),extraCount=Math.max(0,cards.length-needed.first);
+  let bits=hodlCardWithoutReplacementBits(firstCount);
+  for(let i=0;i<extraCount;i++)bits+=Math.log2(52-i);
+  return{cards,invalid,duplicates,bits,needed,hashInput:cards.join(" ")}
+}
+function hodlCardSuitMeta(code){
+  return hodlCardSuits.find(suit=>suit.code===code)||hodlCardSuits[0]
+}
+function hodlDealtCardMarkup(card){
+  let rank=card.slice(0,-1),suit=hodlCardSuitMeta(card.slice(-1));
+  return`<span class="dealt-card${suit.red?" is-red":""}" title="${rank} of ${suit.label}"><span class="dealt-rank">${$t(rank==="T"?"10":rank)}</span><span class="dealt-suit">${suit.symbol}</span></span>`
+}
+function hodlCardsEntropy(value,targetWords=Pt){
+  let config=hodlSeedConfig(targetWords),notes=[],warnings=[],parsed=hodlParseCards(value,config.words);
+  if(parsed.invalid.length)return{ok:!1,error:`Cards use rank then suit, like AS, 10H, or TD. Ignored: ${parsed.invalid.slice(0,8).join(" ")}`,notes,warnings,parsed};
+  if(parsed.duplicates.length)return{ok:!1,error:`Do not repeat a card in the same shuffle. Repeated: ${parsed.duplicates[0]}.`,notes,warnings,parsed};
+  if(!parsed.cards.length)return{ok:!1,error:"Deal at least one card from a shuffled deck.",notes,warnings,parsed};
+  let required=parsed.needed.first+parsed.needed.extra;
+  notes.push(`${parsed.cards.length} card${parsed.cards.length===1?"":"s"} \u2248 ${parsed.bits.toFixed(1)} bits.`);
+  notes.push("SHA-256 hashes the ASCII transcript (AS 2C TD), then the first "+config.bits+" bits become the selected "+config.words+"-word seed. One shuffled deck is about 225.6 bits.");
+  if(parsed.bits<config.bits)return{ok:!1,error:config.words===24?`A 24-word seed needs 256 bits. Deal all 52 unique cards, shuffle again, then deal 6 more (${parsed.cards.length} of ${required}).`:`A ${config.words}-word seed needs ${config.bits} bits. Deal ${parsed.needed.first} unique cards without putting them back (${parsed.cards.length} of ${parsed.needed.first}).`,notes,warnings,parsed};
+  if(parsed.cards.length>required)notes.push(`All ${parsed.cards.length} cards, including extras, are included in the hash.`);
+  let digest=Z(new TextEncoder().encode(parsed.hashInput)),bytes=digest.slice(0,config.bytes);
+  return{ok:!0,bytes,hex:M.encode(bytes),bits:config.bits,sourceBits:parsed.bits,method:"cards-sha256",notes,warnings,parsed}
+}
+function hodlUpdateCards(){
+  let input=document.getElementById("cards");if(!input)return;
+  let config=hodlSeedConfig(),parsed=hodlParseCards(input.value,config.words),required=parsed.needed.first+parsed.needed.extra,entropy=hodlCardsEntropy(input.value,config.words);
+  let dealt=document.getElementById("dealt-cards");
+  if(dealt){
+    if(!parsed.cards.length)dealt.innerHTML=`<span class="muted">No cards yet.</span>`;
+    else if(config.words===24){
+      let first=parsed.cards.slice(0,52),extra=parsed.cards.slice(52);
+      dealt.innerHTML=`<p class="dealt-shuffle-label">First shuffle \u00b7 ${first.length} of 52</p>${first.map(hodlDealtCardMarkup).join("")}`+(first.length>=52?`<p class="dealt-shuffle-label">Second shuffle \u00b7 ${extra.length} of 6</p>${extra.map(hodlDealtCardMarkup).join("")}`:"")
+    }else dealt.innerHTML=parsed.cards.map(hodlDealtCardMarkup).join("")
+  }
+  let reshuffle=document.getElementById("cards-reshuffle");
+  if(reshuffle){
+    let needSecond=config.words===24&&parsed.cards.length>=52&&parsed.cards.length<required&&!parsed.invalid.length&&!parsed.duplicates.length;
+    reshuffle.hidden=!needSecond;
+    let left=Math.max(0,required-parsed.cards.length);
+    if(needSecond)reshuffle.innerHTML=parsed.cards.length===52?`<strong>Shuffle the deck again now.</strong> Then deal 6 more cards. Repeats from the first 52 are fine.`:`<strong>Second shuffle.</strong> Deal ${left} more card${left===1?"":"s"}. Repeats from the first shuffle are fine.`
+  }
+  let wordsBox=document.getElementById("dice-words"),preview=[];
+  try{if(parsed.cards.length)preview=_n(Z(new TextEncoder().encode(parsed.hashInput)).slice(0,config.bytes)).split(" ")}catch{}
+  hodlRenderDiceWordGrid(wordsBox,preview,config.words,!entropy.ok);
+  let meta=W("#cards-meta"),missing=Math.max(0,required-parsed.cards.length),status="";
+  if(parsed.invalid.length)status=`${parsed.invalid.length} invalid token${parsed.invalid.length===1?"":"s"} \u00b7 use AS, 10H, or TD`;
+  else if(parsed.duplicates.length)status=`Repeated ${parsed.duplicates[0]} in this shuffle \u00b7 deal a different card`;
+  else if(!parsed.cards.length)status=`0 of ${required} cards \u00b7 0.0 bits \u00b7 ${config.words}-word seed`;
+  else if(config.words===24&&parsed.cards.length>=52&&parsed.cards.length<required)status=parsed.cards.length===52?`52 of 52 first shuffle \u00b7 ${parsed.bits.toFixed(1)} bits \u00b7 shuffle again, then deal 6 more`:`Second shuffle \u00b7 ${parsed.cards.length-52} of 6 \u00b7 ${parsed.bits.toFixed(1)} bits \u00b7 ${required-parsed.cards.length} remaining`;
+  else if(missing)status=`${parsed.cards.length} of ${required} unique cards \u00b7 ${parsed.bits.toFixed(1)} bits \u00b7 ${missing} remaining`;
+  else status=`${parsed.cards.length} card${parsed.cards.length===1?"":"s"} \u00b7 ${parsed.bits.toFixed(1)} bits \u00b7 ready to derive`;
+  meta.textContent=status;meta.className="muted"+(entropy.ok?" ok":parsed.invalid.length||parsed.duplicates.length?" err":"");
+  document.querySelectorAll("[data-card-suit]").forEach(button=>{let active=button.getAttribute("data-card-suit")===hodlCardSuit;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});
+  let used=new Set(parsed.cards.length<parsed.needed.first?parsed.cards:parsed.cards.slice(parsed.needed.first));
+  document.querySelectorAll("[data-card-rank]").forEach(button=>{let card=button.getAttribute("data-card-rank")+hodlCardSuit;button.disabled=used.has(card)});
+  let undo=document.getElementById("card-undo");if(undo)undo.disabled=!parsed.cards.length&&!String(input.value||"").trim();
+  hodlQueueMasterFingerprintPreview()
+}
+function hodlAppendCard(rank){
+  let input=document.getElementById("cards");if(!input)return;
+  let card=hodlNormalizeCardToken(rank+hodlCardSuit);if(!card)return;
+  input.value=input.value.trim()?`${input.value.trim()} ${card}`:card;
+  input.dispatchEvent(new Event("input"))
+}
+function hodlUndoCard(){
+  let input=document.getElementById("cards");if(!input)return;
+  input.value=input.value.trim().split(/[\s,]+/).slice(0,-1).join(" ");
+  input.dispatchEvent(new Event("input"))
+}
 function hodlSeedCountStatus(count,targetWords=Pt){
   let config=hodlSeedConfig(targetWords),entered=Math.max(0,Number(count)||0);
   return entered<=config.words?`${entered} of ${config.words} BIP39 words entered`:`${entered} entered \u00b7 ${config.words} required BIP39 words`
@@ -4379,7 +4511,7 @@ function hodlUpdateSeedLengthControl(){
   let section=document.getElementById("seed-length");if(!section)return;let config=hodlSeedConfig();section.hidden=Ne==="key";
   section.querySelectorAll("[data-seed-words]").forEach(button=>{let active=Number(button.dataset.seedWords)===config.words;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});
   let help=document.getElementById("seed-length-help");if(!help)return;
-  help.textContent=Ne==="hex"?(hodlEntropyFormat==="bin"?`${config.words} words require exactly ${config.bits} binary digits.`:`${config.words} words require exactly ${config.hexChars} hexadecimal characters.`):Ne==="seed"?`Enter exactly ${config.words} BIP39 words. Extended keys ignore this selection.`:`${config.words} words use ${config.bits} bits of BIP39 entropy.`
+  help.textContent=Ne==="hex"?(hodlEntropyFormat==="bin"?`${config.words} words require exactly ${config.bits} binary digits.`:`${config.words} words require exactly ${config.hexChars} hexadecimal characters.`):Ne==="seed"?`Enter exactly ${config.words} BIP39 words. Extended keys ignore this selection.`:Ne==="cards"?config.words===24?"24 words need 256 bits. One deck is about 225.6 bits, so deal 52 unique cards, shuffle again, then deal 6 more.":`${config.words} words need ${config.bits} bits. Deal ${hodlCardNeeded(config.words).first} unique cards from one shuffled deck.`:`${config.words} words use ${config.bits} bits of BIP39 entropy.`
 }
 function hodlInvalidateActiveKeyOutput(){
   re=null;Ge=!1;ft="";dr.innerHTML="";let error=document.getElementById("error");if(error)error.textContent="";
@@ -4441,6 +4573,31 @@ function hodlRenderKeyForm(){
     }});
     hodlBindKeyFields();hodlRenderPassphraseKeyboard();return
   }
+  if(Ne==="cards"){
+    let needed=hodlCardNeeded(config.words),suitPad=hodlCardSuits.map(suit=>`<button type="button" class="card-suit${suit.red?" is-red":""}${suit.code===hodlCardSuit?" active":""}" data-card-suit="${suit.code}" aria-label="${suit.label}" aria-pressed="${suit.code===hodlCardSuit}">${suit.symbol}</button>`).join("");
+    let rankPad=hodlCardRanks.map(rank=>`<button type="button" data-card-rank="${rank}" aria-label="${rank==="T"?"10":rank}">${rank==="T"?"10":rank}</button>`).join("");
+    at.innerHTML=`
+      <p class="label">Playing cards</p>
+      <p class="muted" id="cards-help">${config.words===24?"Shuffle thoroughly, deal all 52 unique cards, then shuffle again and deal 6 more. SHA-256 of the ASCII transcript becomes the 24-word seed.":`Shuffle thoroughly and deal ${needed.first} unique cards without putting them back. SHA-256 of the ASCII transcript (AS 2C TD) becomes the ${config.words}-word seed.`}</p>
+      <div class="card-suit-pad" role="group" aria-label="Suit">${suitPad}</div>
+      <div class="card-rank-pad dice-input-pad" role="group" aria-label="Rank">${rankPad}</div>
+      <div class="dealt-cards" id="dealt-cards" aria-live="polite"></div>
+      <aside class="cards-reshuffle" id="cards-reshuffle" hidden></aside>
+      <label class="field">Card transcript
+        <textarea id="cards" placeholder="AS 2C 10H TD\u2026" autocomplete="off" spellcheck="false" aria-describedby="cards-help cards-meta"></textarea>
+      </label>
+      <div class="row" style="margin-top:8px"><button class="btn secondary" id="card-undo" type="button" disabled>Undo last card</button></div>
+      <p class="muted" id="cards-meta"></p>
+      <div id="dice-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div>
+    `;
+    let input=document.getElementById("cards");
+    input.oninput=()=>hodlUpdateCards();
+    at.querySelectorAll("[data-card-suit]").forEach(button=>{button.onclick=()=>{hodlCardSuit=button.getAttribute("data-card-suit");hodlUpdateCards()}});
+    at.querySelectorAll("[data-card-rank]").forEach(button=>{button.onclick=()=>hodlAppendCard(button.getAttribute("data-card-rank"))});
+    document.getElementById("card-undo").onclick=hodlUndoCard;
+    hodlBindKeyFields();hodlUpdateCards();return
+  }
+
   if(Ne==="hex"){
     let binary=hodlEntropyFormat==="bin",inputId=binary?"bin":"hex",entropyCharacters=binary?["0","1"]:[..."0123456789ABCDEF"],entropyPad=`<div class="dice-input-pad dplus entropy-keypad${binary?" binary-keypad":""}" role="group" aria-label="${binary?"Binary":"Hexadecimal"} keypad">${entropyCharacters.map(character=>`<button type="button"${binary?' class="coin-button"':""} data-entropy-digit="${character}" aria-label="${binary?character==="0"?"Enter Heads as binary 0":"Enter Tails as binary 1":`Enter hexadecimal ${character}`}">${binary?character==="0"?"Heads (0)":"Tails (1)":character}</button>`).join("")}</div>`;
     at.innerHTML=`
@@ -4598,6 +4755,7 @@ function hodlCanDeriveCurrentKey(){
       }
       return hodlDiceEntropy(input.value,ge,Pt).ok
     }
+    if(Ne==="cards"){let input=document.getElementById("cards");return input?hodlCardsEntropy(input.value,Pt).ok:!1}
     if(Ne==="hex")return hodlSelectedEntropy().ok;
     if(Ne==="seed"){
       let value=document.getElementById("seed")?.value.trim()||"";if(!value)return!1;
@@ -4629,6 +4787,7 @@ function hodlFingerprintMnemonic(){
       if(hodlAnalyzeDiceInput(input.value,ge,Pt).coinDerivedCount)return null;
       let entropy=hodlDiceEntropy(input.value,ge,Pt);return entropy.ok?_n(entropy.bytes):null
     }
+    if(Ne==="cards"){let input=document.getElementById("cards");if(!input)return null;let entropy=hodlCardsEntropy(input.value,Pt);return entropy.ok?_n(entropy.bytes):null}
     if(Ne==="hex"){
       let entropy=hodlSelectedEntropy();return entropy.ok?_n(entropy.bytes):null
     }
@@ -4669,7 +4828,7 @@ function hodlInvalidateLiveKeyResult(){
 function hodlInitMasterFingerprintPreview(){
   let panel=document.getElementById("calc-card"),pass=document.getElementById("pass");if(!panel||!pass)return;
   panel.addEventListener("input",event=>{
-    let id=event.target?.id;if(!["pass","dice","hex","bin","seed"].includes(id))return;
+    let id=event.target?.id;if(!["pass","dice","hex","bin","seed","cards"].includes(id))return;
     if(id==="pass"){let state=hodlKeys[hodlActiveKey];if(state)state.fields.pass=pass.value}
     hodlInvalidateLiveKeyResult();hodlQueueMasterFingerprintPreview()
   });
@@ -4678,7 +4837,7 @@ function hodlInitMasterFingerprintPreview(){
     hodlInvalidateLiveKeyResult();hodlQueueMasterFingerprintPreview()
   });
   panel.addEventListener("click",event=>{
-    let target=event.target instanceof Element?event.target.closest("#modes button, [data-seed-words], [data-d], [data-lw]"):null;if(!target)return;
+    let target=event.target instanceof Element?event.target.closest("#modes button, [data-seed-words], [data-d], [data-lw], [data-card-suit], [data-card-rank], #card-undo"):null;if(!target)return;
     hodlInvalidateLiveKeyResult();hodlQueueMasterFingerprintPreview()
   });
   hodlQueueMasterFingerprintPreview(0)
@@ -4703,6 +4862,8 @@ function hodlCalculateKey(){
         let possible=hodlTargetLastWords(parsed.words.join(" "),Pt);if(!ft||!possible?.candidates.includes(ft))throw new Error(`Choose one of the ${hodlSeedConfig().candidates} valid final checksum words before deriving the wallet.`);
         let phrase=[...parsed.words,ft].join(" "),validation=hodlValidateTargetMnemonic(phrase,Pt);if(!validation.ok)throw new Error(validation.error);re=ar(phrase,passphrase,network,count,{notes:parsed.notes,warnings:parsed.warnings},account)
       }else{let diceValue=document.getElementById("dice").value;if(hodlAnalyzeDiceInput(diceValue,ge,Pt).coinDerivedCount)throw new Error("Coin-button digits are entropy-equivalent only in BitBox mode. Clear them and enter fair die rolls for this conversion method.");let entropy=hodlDiceEntropy(diceValue,ge,Pt);if(!entropy.ok)throw new Error(entropy.error);re=on(entropy,passphrase,network,count,account)}
+    }else if(Ne==="cards"){
+      let entropy=hodlCardsEntropy(document.getElementById("cards").value,Pt);if(!entropy.ok)throw new Error(entropy.error);re=on(entropy,passphrase,network,count,account)
     }else if(Ne==="hex"){
       let entropy=hodlSelectedEntropy();if(!entropy.ok)throw new Error(entropy.error);re=on(entropy,passphrase,network,count,account)
     }else if(Ne==="seed"){
@@ -5188,18 +5349,18 @@ function hodlRenderPsbt(psbt){
 }
 var hodlAccountId="bip84",hodlNextKeyId=1,hodlNextKeyNumber=1,hodlKeys=[],hodlActiveKey=-1;
 function hodlKeyColor(id){let hue=Math.round((Number(id)*137.508+19)%360);return`oklch(61% 0.08 ${hue})`}
-function hodlNewKeyState(name,keyId,keyNumber){let id=keyId??hodlNextKeyId++,number=keyNumber??hodlNextKeyNumber++;return{id,number,color:hodlKeyColor(id),name:name||hodlDefaultKeyName(number),mode:"dice",diceMethod:"coldcard",entropyFormat:"hex",seedAutocomplete:!1,dplusNumberedD16:!1,targetWords:24,diceCoinPositions:[],lastWord:"",dplusLastWord:"",result:null,reveal:!1,accountId:"bip84",error:"",fields:{pass:"",script:"bip84",network:"mainnet",account:"0",count:"5",dice:"",dplusDice:"",hex:"",bin:"",seed:"",key:"",keyKind:"wif"}}}
+function hodlNewKeyState(name,keyId,keyNumber){let id=keyId??hodlNextKeyId++,number=keyNumber??hodlNextKeyNumber++;return{id,number,color:hodlKeyColor(id),name:name||hodlDefaultKeyName(number),mode:"dice",diceMethod:"coldcard",entropyFormat:"hex",seedAutocomplete:!1,dplusNumberedD16:!1,targetWords:24,diceCoinPositions:[],lastWord:"",dplusLastWord:"",result:null,reveal:!1,accountId:"bip84",error:"",fields:{pass:"",script:"bip84",network:"mainnet",account:"0",count:"5",dice:"",dplusDice:"",hex:"",bin:"",cards:"",seed:"",key:"",keyKind:"wif"}}}
 function hodlRestoreFormFields(state){
   if(!state)return;
   let restoredKeyKind=hodlNormalizePrivateKeyKind(state.fields.keyKind,state.fields.key);state.fields.keyKind=restoredKeyKind;document.querySelectorAll("input[name=kk]").forEach(input=>{input.checked=input.value===restoredKeyKind});
   let seedAutocomplete=document.getElementById("seed-autocomplete");if(seedAutocomplete)seedAutocomplete.checked=Boolean(state.seedAutocomplete);
   let dplusToggle=document.getElementById("dplus-numbered-d16");if(dplusToggle)dplusToggle.checked=Boolean(state.dplusNumberedD16);
-  ["dice","hex","bin","seed","key"].forEach(id=>{let el=document.getElementById(id);if(el){el.value=id==="dice"&&ge==="dplus"?state.fields.dplusDice||"":state.fields[id]||"";if(id==="dice"){el.dataset.previousValue=el.value;el.setSelectionRange(el.value.length,el.value.length)}el.dispatchEvent(new Event("input"))}});
+  ["dice","hex","bin","seed","key","cards"].forEach(id=>{let el=document.getElementById(id);if(el){el.value=id==="dice"&&ge==="dplus"?state.fields.dplusDice||"":state.fields[id]||"";if(id==="dice"){el.dataset.previousValue=el.value;el.setSelectionRange(el.value.length,el.value.length)}el.dispatchEvent(new Event("input"))}});
 }
 function hodlSetMode(mode){
   hodlCaptureKey();
   let state=hodlKeys[hodlActiveKey];if(state)state.mode=mode;
-  Ne=mode;hodlEntropyFormat=state?.entropyFormat==="bin"?"bin":"hex";[...Zs.children].forEach((button,index)=>{let active=["dice","hex","seed","key"][index]===Ne;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});
+  Ne=mode;hodlEntropyFormat=state?.entropyFormat==="bin"?"bin":"hex";[...Zs.children].forEach((button,index)=>{let active=hodlKeyModes[index]===Ne;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});
   hodlRenderKeyForm();hodlRestoreFormFields(state);hodlUpdateSeedLengthControl();hodlUpdateDerivationPathPreview();hodlQueueSegmentedControlSync();
 }
 function hodlKeyStateNeedsClear(state){
@@ -5207,7 +5368,7 @@ function hodlKeyStateNeedsClear(state){
   return String(state.mode??"dice")!=="dice"||String(state.diceMethod??"coldcard")!=="coldcard"||String(state.entropyFormat??"hex")!=="hex"||Boolean(state.seedAutocomplete)||Boolean(state.dplusNumberedD16)||Number(state.targetWords??24)!==24||
     (Array.isArray(state.diceCoinPositions)&&state.diceCoinPositions.length>0)||String(state.lastWord??"").length>0||String(state.dplusLastWord??"").length>0||Boolean(state.result)||Boolean(state.reveal)||String(state.error??"").length>0||
     String(state.accountId??"bip84")!=="bip84"||String(fields.script??"bip84")!=="bip84"||String(fields.network??"mainnet")!=="mainnet"||String(fields.account??"0")!=="0"||String(fields.count??"5")!=="5"||
-    hodlNormalizePrivateKeyKind(fields.keyKind,fields.key)!=="wif"||["pass","dice","dplusDice","hex","bin","seed","key"].some(hasText)
+    hodlNormalizePrivateKeyKind(fields.keyKind,fields.key)!=="wif"||["pass","dice","dplusDice","hex","bin","cards","seed","key"].some(hasText)
 }
 function hodlSyncKeyClearButton(capture=!1){
   if(capture)hodlCaptureKey();let button=document.getElementById("wipe");if(!button)return;
@@ -5222,7 +5383,7 @@ function hodlCaptureKey(){
   let state=hodlKeys[hodlActiveKey];
   state.mode=Ne;state.diceMethod=ge;state.entropyFormat=hodlEntropyFormat;let seedAutocomplete=document.getElementById("seed-autocomplete");if(seedAutocomplete)state.seedAutocomplete=seedAutocomplete.checked;let dplusToggle=document.getElementById("dplus-numbered-d16");if(dplusToggle)hodlDPlusNumberedD16=dplusToggle.checked;state.dplusNumberedD16=Boolean(hodlDPlusNumberedD16);state.targetWords=Pt;state.diceCoinPositions=hodlDiceCoinPositions.slice();if(ge==="dplus")state.dplusLastWord=ft;else if(ge==="bitbox")state.lastWord=ft;state.result=re;state.reveal=Ge;state.accountId=hodlSelectedScriptType();state.fields.script=state.accountId;
   state.error=document.getElementById("error")?.textContent||"";
-  ["pass","account","count","hex","bin","seed","key"].forEach(id=>{let el=document.getElementById(id);if(el)state.fields[id]=el.value});state.fields.network=hodlSelectedNetwork(document.getElementById("network"));
+  ["pass","account","count","hex","bin","seed","key","cards"].forEach(id=>{let el=document.getElementById(id);if(el)state.fields[id]=el.value});state.fields.network=hodlSelectedNetwork(document.getElementById("network"));
   let dice=document.getElementById("dice");if(dice)state.fields[ge==="dplus"?"dplusDice":"dice"]=dice.value;
   state.fields.keyKind=hodlNormalizePrivateKeyKind(document.querySelector("input[name=kk]:checked")?.value||state.fields.keyKind,state.fields.key);
 }
@@ -5244,7 +5405,7 @@ function hodlRestoreKey(){
     W("#error").textContent="";dr.innerHTML="";document.getElementById("calc-card").hidden=!0;hodlQueueMasterFingerprintPreview(0);hodlUpdateDerivationPathPreview();hodlSyncKeyClearButton();hodlSyncDeriveButton();return
   }
   Ne=state.mode;ge=state.diceMethod;hodlEntropyFormat=state.entropyFormat==="bin"?"bin":"hex";hodlDPlusNumberedD16=Boolean(state.dplusNumberedD16);Pt=hodlSeedLengths[Number(state.targetWords)]?Number(state.targetWords):24;hodlDiceCoinPositions=hodlNormalizeDiceCoinPositions(state.diceCoinPositions);ft=ge==="dplus"?state.dplusLastWord||"":ge==="bitbox"?state.lastWord||"":"";
-  [...Zs.children].forEach((button,index)=>{let active=["dice","hex","seed","key"][index]===Ne;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});
+  [...Zs.children].forEach((button,index)=>{let active=hodlKeyModes[index]===Ne;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});
   hodlRenderKeyForm();
   let pass=document.getElementById("pass");if(pass)pass.value=state.fields.pass||"";
   hodlAccountId=state.accountId||state.fields.script||"bip84";
@@ -5472,7 +5633,7 @@ function hodlInitSegmentedControls(){
 }
 function hodlInitSecretFieldAutoClear(){
   let clearSecretFields=()=>{
-    for(let id of["dice","hex","bin","seed","key","pass"]){let field=document.getElementById(id);if(field)field.value=""}
+    for(let id of["dice","hex","bin","seed","key","pass","cards"]){let field=document.getElementById(id);if(field)field.value=""}
     hodlInvalidateActiveKeyOutput();let out=document.getElementById("out");if(out)out.innerHTML="";let error=document.getElementById("error");if(error)error.textContent=""
   };
   addEventListener("pagehide",clearSecretFields);

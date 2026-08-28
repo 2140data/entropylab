@@ -214,6 +214,41 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
     grid-template-rows: minmax(48px, auto);
   }
 }
+.card-suit-pad { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: var(--space-control); }
+.card-suit-pad button {
+  min-height: 48px; font-size: 22px; line-height: 1;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); color: var(--fg);
+}
+.card-suit-pad button.is-red { color: var(--danger); }
+.card-suit-pad button.active {
+  background: var(--selection-accent); color: var(--selection-fg); border-color: var(--selection-accent);
+}
+.card-rank-pad { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+@media (min-width: 640px) {
+  .card-rank-pad { grid-template-columns: repeat(13, minmax(0, 1fr)); }
+}
+.card-rank-pad button { font-size: 15px; }
+.dealt-cards { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; min-height: 60px; }
+.dealt-shuffle-label {
+  flex: 1 0 100%; margin: 4px 0 0; color: var(--muted);
+  font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.cards-reshuffle {
+  margin-top: 12px; padding: 12px 14px; border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--accent) 55%, var(--border));
+  background: color-mix(in oklab, var(--accent) 14%, var(--bg));
+  color: var(--fg); font-size: 14px; line-height: 1.5;
+}
+.cards-reshuffle[hidden] { display: none; }
+.cards-reshuffle strong { color: var(--accent); }
+.dealt-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 44px; height: 60px; border-radius: 6px; background: var(--paper); color: #111;
+  font-family: var(--mono); font-weight: 700; line-height: 1.05;
+}
+.dealt-card.is-red { color: #b42318; }
+.dealt-card .dealt-rank { font-size: 13px; }
+.dealt-card .dealt-suit { font-size: 16px; }
 .wordlist {
   display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 16px;
   font-family: var(--mono); font-size: 13px; margin-top: 12px;
