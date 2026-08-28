@@ -319,8 +319,11 @@
     input(passphrase, "");
     input(privateKey, "");
     document.querySelector('input[name="kk"][value="hex-key"]').click();
+    const privateMeta = document.getElementById("private-key-meta");
+    const privateHighlight = document.getElementById("private-key-highlight");
     keyboard.querySelector('[data-seed-key="a"]').click();
     equal(privateKey.value, "a");
+    assert(privateMeta.textContent.includes("1 of 64 hexadecimal characters entered") && privateMeta.textContent.includes("63 remaining"), "Hex progress did not report entered and remaining characters");
     equal(passphrase.value, "");
     const mode = keyboard.querySelector("[data-seed-keyboard-mode]");
     assert(!mode.disabled, "Private-key keyboard mode is disabled");
@@ -331,6 +334,14 @@
     assert(!keyboard.querySelector('[data-seed-key="A"]').disabled, "A hexadecimal letter was disabled");
     assert(keyboard.querySelector('[data-seed-key="G"]').disabled && keyboard.querySelector('[data-seed-key="K"]').disabled, "A non-hexadecimal letter was enabled for Hex");
     assert(keyboard.querySelector(".seed-keyboard-space").disabled, "Space was enabled for Hex");
+    input(privateKey, "0".repeat(63) + "g");
+    assert(privateMeta.textContent.includes("63 of 64 hexadecimal characters entered") && privateMeta.textContent.includes("1 invalid character highlighted"), "Invalid Hex progress was not descriptive");
+    equal(privateHighlight.querySelector(".dice-roll-invalid")?.textContent, "g");
+    input(privateKey, "1".repeat(65));
+    assert(privateMeta.textContent.includes("65 hexadecimal characters entered") && privateMeta.textContent.includes("1 extra highlighted"), "Excess Hex progress was not descriptive");
+    equal(privateHighlight.querySelector(".dice-roll-invalid")?.textContent, "1");
+    input(privateKey, "0".repeat(63) + "1");
+    assert(privateMeta.classList.contains("ok") && privateMeta.textContent.includes("ready to derive"), "Complete Hex progress did not report ready");
     document.querySelector('input[name="kk"][value="wif"]').click();
     privateKey.value = "0".repeat(63) + "1";
     privateKey.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertFromPaste", data: privateKey.value }));
