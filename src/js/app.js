@@ -162,7 +162,7 @@ var vr=[16,20,24,28,32],Rc={0:"00",1:"01",2:"10",3:"11",4:"0",5:"1"};function kr
     <section class="card no-print" id="psbt-card" role="tabpanel" hidden>
       <div class="kicker">Inspect first. Sign elsewhere.</div>
       <h2>Read a PSBT. Check its ECDSA nonces.</h2>
-      <p class="muted psbt-intro">Inspecting a PSBT v0 does not require a private key. EntropyLab can show outputs, PSBT-provided input amounts and fees, signatures, and repeated ECDSA nonce values. Loading a matching key additionally checks whether supported signatures match plain RFC 6979 or Bitcoin Core-style low-r grinding; a mismatch alone is not evidence of a compromised signer.</p>
+      <p class="muted psbt-intro">Inspecting a PSBT v0 does not require a private key. EntropyLab can show outputs, PSBT-provided input amounts and fees, signatures, and repeated ECDSA nonce values. Optional Jade anti-exfil transcripts (host nonce ρ and signer opening R) are checked without a key. Loading a matching key additionally checks whether supported signatures match plain RFC 6979 or Bitcoin Core-style low-r grinding; a mismatch alone is not evidence of a compromised signer.</p>
       <label class="field">PSBT v0 (base64 or hex)
         <textarea id="psbt-text" placeholder="cHNidP8B..." spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
       </label>
@@ -179,6 +179,10 @@ var vr=[16,20,24,28,32],Rc={0:"00",1:"01",2:"10",3:"11",4:"0",5:"1"};function kr
           </label>
         </div>
       </div>
+      <label class="field">Optional Jade anti-exfil transcript
+        <textarea id="psbt-ax-transcript" placeholder="32-byte host nonce ρ, then 33-byte compressed opening R, as hex" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+        <span class="field-note">USB Jade only (Green host nonce + opening). QR / sign_psbt does not run anti-exfil yet. BitBox anti-klepto is a different mix — do not paste it here.</span>
+      </label>
       <div class="row psbt-actions">
         <button class="btn primary" id="psbt-go" type="button">Inspect PSBT</button>
         <button class="btn secondary" id="psbt-use-calc" type="button">Use active key this session</button>
@@ -196,6 +200,7 @@ var vr=[16,20,24,28,32],Rc={0:"00",1:"01",2:"10",3:"11",4:"0",5:"1"};function kr
       <p>bitaddress.org: <a href="https://github.com/pointbiz/bitaddress.org" target="_blank" rel="noopener noreferrer">github.com/pointbiz/bitaddress.org</a> \u2014 pull <code>bitaddress.org.html</code>, or <code>src/ninja.key.js</code>, <code>ninja.detailwallet.js</code>, <code>ninja.paperwallet.js</code>, <code>bitcoinjs-lib.eckey.js</code>.</p>
       <p>BitBox02 diceware: <a href="https://blog.bitbox.swiss/en/roll-the-dice-generate-your-own-seed/" target="_blank" rel="noopener noreferrer">roll-the-dice-generate-your-own-seed</a> \u2014 lookup table is the BIP39 English list in order.</p>
       <p>D++ D8 &amp; D16 method: <a href="https://thesimplestbitcoinbook.net/wp-content/uploads/2023/09/Roll-Your-Own-Seed-Phrase-PDF.pdf" target="_blank" rel="noopener noreferrer">Roll Your Own Bitcoin Seed Phrase</a> \u2014 the published 24-word workflow uses one D8 and two D16 rolls per word, then a final D8.</p>
+      <p>Jade anti-exfil (sign-to-contract): <a href="https://blog.blockstream.com/anti-exfil-stopping-key-exfiltration/" target="_blank" rel="noopener noreferrer">Anti-Exfil: Stopping Key Exfiltration</a> \u2014 secp256k1-zkp <code>ecdsa_s2c</code> / <code>anti_exfil_host_verify</code>.</p>
     </section>
   </div>
 `;if(/^(www\.)?entropylab\.online$/i.test(location.hostname))document.getElementById("online-warning")?.removeAttribute("hidden");var hodlKeyModes=["dice","cards","hex","seed","key"],hodlCardRanks=["A","2","3","4","5","6","7","8","9","T","J","Q","K"],hodlCardSuits=[{code:"S",symbol:"\u2660",label:"Spades",red:!1},{code:"H",symbol:"\u2665",label:"Hearts",red:!0},{code:"D",symbol:"\u2666",label:"Diamonds",red:!0},{code:"C",symbol:"\u2663",label:"Clubs",red:!1}],hodlCardSuit="S",Ne="dice",ge="coldcard",Pt=24,hodlEntropyFormat="hex",hodlDiceCoinPositions=[],hodlDPlusNumberedD16=!1,ft="",re=null,Ge=!1,Zs=W("#modes"),at=W("#form"),dr=W("#out");hodlKeyModes.forEach(e=>{let t=document.createElement("button"),active=e===Ne;t.type="button";t.className="tab"+(active?" active":"");t.setAttribute("aria-pressed",String(active));t.textContent=e==="dice"?"Dice rolls":e==="cards"?"Cards":e==="hex"?"Number bases":e==="seed"?"Seed phrase":"Private key";t.onclick=()=>hodlSetMode(e);Zs.appendChild(t)});document.querySelectorAll("#seed-length [data-seed-words]").forEach(button=>{button.onclick=()=>hodlSetSeedLength(Number(button.dataset.seedWords))});W("#go").onclick=hodlCalculateKey;W("#wipe").onclick=hodlWipeActiveKey;function W(e){let t=e.startsWith("#")?e.slice(1):e,r=document.getElementById(t);if(!r)throw new Error(t);return r}function lr(){if(Ne==="dice"){at.innerHTML=`
@@ -2342,12 +2347,34 @@ function hodlUseActiveKeyForPsbt(){
 function hodlInitPsbt(){
   let go=document.getElementById("psbt-go");if(!go)return;go.onclick=hodlRunPsbt;
   document.getElementById("psbt-use-calc").onclick=()=>{let error=document.getElementById("psbt-error");error.textContent="";try{hodlUseActiveKeyForPsbt();document.getElementById("psbt-key").value="";document.getElementById("psbt-pass").value="";document.getElementById("psbt-session").textContent=hodlPsbtNote}catch(exception){error.textContent=exception.message||String(exception)}};
-  document.getElementById("psbt-wipe").onclick=()=>{hodlPsbtWipeMem();document.getElementById("psbt-key").value="";document.getElementById("psbt-pass").value="";document.getElementById("psbt-text").value="";document.getElementById("psbt-out").innerHTML="";document.getElementById("psbt-error").textContent="";document.getElementById("psbt-session").textContent="Session ended and accessible fields were cleared (best effort)."};
+  document.getElementById("psbt-wipe").onclick=()=>{hodlPsbtWipeMem();document.getElementById("psbt-key").value="";document.getElementById("psbt-pass").value="";document.getElementById("psbt-text").value="";let ax=document.getElementById("psbt-ax-transcript");if(ax)ax.value="";document.getElementById("psbt-out").innerHTML="";document.getElementById("psbt-error").textContent="";document.getElementById("psbt-session").textContent="Session ended and accessible fields were cleared (best effort)."};
   let clearSecretFields=()=>{hodlPsbtWipeMem();let key=document.getElementById("psbt-key"),pass=document.getElementById("psbt-pass");if(key)key.value="";if(pass)pass.value=""};addEventListener("pagehide",clearSecretFields);addEventListener("pageshow",event=>{if(event.persisted)clearSecretFields()})
 }
 function hodlRunPsbt(){
   let error=document.getElementById("psbt-error"),output=document.getElementById("psbt-out"),manual=document.getElementById("psbt-key").value;error.textContent="";output.innerHTML="";
   try{if(manual.trim()){hodlLoadPsbtKey(manual,document.getElementById("psbt-pass").value);document.getElementById("psbt-key").value="";document.getElementById("psbt-pass").value=""}document.getElementById("psbt-session").textContent=hodlPsbtNote;let psbt=hodlParsePsbt(hodlPsbtBytes(document.getElementById("psbt-text").value));output.innerHTML=hodlRenderPsbt(psbt)}catch(exception){error.textContent=exception instanceof Error?exception.message:String(exception)}
+}
+function hodlTaggedSha256(tag,...chunks){let tagHash=Z(new TextEncoder().encode(tag)),total=64;for(let chunk of chunks)total+=chunk.length;let bytes=new Uint8Array(total);bytes.set(tagHash,0);bytes.set(tagHash,32);let offset=64;for(let chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length}return Z(bytes)}
+function hodlBytesToBig(bytes){return BigInt("0x"+M.encode(bytes))}
+function hodlPointFrom(bytes){let Point=xe.Point;if(typeof Point.fromBytes==="function")return Point.fromBytes(bytes);if(typeof Point.fromHex==="function")return Point.fromHex(M.encode(bytes));throw new Error("Unsupported curve point parsing.")}
+function hodlPointBytes(point,compressed=!0){if(typeof point.toBytes==="function")return point.toBytes(compressed);if(typeof point.toRawBytes==="function")return point.toRawBytes(compressed);throw new Error("Unsupported curve point encoding.")}
+function hodlParseAntiExfil(raw){
+  if(!raw||!String(raw).trim())return null;
+  let text=String(raw).replace(/0x/gi,""),tokens=text.split(/[^0-9a-fA-F]+/).filter(token=>token.length),host=null,openings=[];
+  for(let token of tokens){
+    if(token.length===64){if(host)throw new Error("Paste one 32-byte Jade host nonce.");host=M.decode(token.toLowerCase())}
+    else if(token.length===66){let opening=M.decode(token.toLowerCase());if(opening[0]!==2&&opening[0]!==3)throw new Error("Jade opening R must be a compressed secp256k1 point.");openings.push(opening)}
+    else if(token.length===130){if(host||openings.length)throw new Error("Paste the host nonce and opening once, or as separate hex values.");host=M.decode(token.slice(0,64).toLowerCase());let opening=M.decode(token.slice(64).toLowerCase());if(opening[0]!==2&&opening[0]!==3)throw new Error("Jade opening R must be a compressed secp256k1 point.");openings.push(opening)}
+    else if(token.length<64)continue;else throw new Error("Jade anti-exfil transcript wants a 32-byte host nonce ρ and a 33-byte compressed opening R, as hex.")
+  }
+  if(!host||!openings.length)throw new Error("Jade anti-exfil needs both the host nonce ρ and the signer opening R.");
+  return{host,openings}
+}
+function hodlAntiExfilCommitOk(r,opening,host){
+  const n=0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141n;
+  let tweak=hodlTaggedSha256("s2c/ecdsa/point",opening,host),tweakInt=hodlBytesToBig(tweak);if(tweakInt>=n||tweakInt===0n)return!1;
+  let committed=hodlPointFrom(opening).add(xe.Point.BASE.multiply(tweakInt)),xBytes=hodlPointBytes(committed,!0).slice(1);
+  return hodlBytesToBig(r)%n===hodlBytesToBig(xBytes)%n
 }
 function hodlLe32Counter(n){let b=new Uint8Array(32);b[0]=n&255;b[1]=(n>>>8)&255;b[2]=(n>>>16)&255;b[3]=(n>>>24)&255;return b}
 function hodlIsLowR(r){return !!(r&&r.length&&r[0]<0x80)}
@@ -2371,7 +2398,7 @@ function hodlRfc6979Compare(sighash,privateKey,r){
   return {ok:!1,className:"psbt-warn",message:"Does not match plain RFC 6979 or Bitcoin Core-style low-r grind. Honest signers may add other auxiliary randomness. A mismatch alone is not evidence of compromise. Reused r on two different messages is the real alarm."};
 }
 function hodlRenderPsbt(psbt){
-  let network=hodlSelectedNetwork(document.getElementById("psbt-network")),tx=psbt.tx,inputSum=0n,knownInputs=0,html=[],rValues=[],rows=[],tapSignatureCount=0;
+  let network=hodlSelectedNetwork(document.getElementById("psbt-network")),transcript=hodlParseAntiExfil(document.getElementById("psbt-ax-transcript")?.value||""),tx=psbt.tx,inputSum=0n,knownInputs=0,html=[],rValues=[],rows=[],tapSignatureCount=0,ecdsaIndex=0;
   html.push("<p class='label'>Where this transaction sends bitcoin</p>");tx.outputs.forEach((output,index)=>{html.push("<p class='psbt-kv'><strong>Output "+index+"</strong> · "+hodlSats(output.amount)+" BTC<br>"+$t(hodlAddr(output.script,network))+"</p>")});
   psbt.inputs.forEach((entries,index)=>{
     let witnessUtxo=hodlWitUtxo(entries);if(witnessUtxo){inputSum+=witnessUtxo.amount;knownInputs++}let previous=tx.inputs[index],destination=witnessUtxo?hodlAddr(witnessUtxo.script,network):"(previous output details unavailable)",signatures=hodlPartialSigs(entries),tapSignatures=hodlTapSigs(entries),finalized=hodlFinalized(entries);tapSignatureCount+=tapSignatures.length;
@@ -2379,7 +2406,8 @@ function hodlRenderPsbt(psbt){
     signatures.forEach(signature=>{
       let parts=hodlSigParts(signature.der),scriptCode=hodlInputScriptCode(entries,witnessUtxo),sighash=witnessUtxo&&scriptCode?hodlBip143(tx,index,scriptCode,witnessUtxo.amount,signature.sighash):null,signatureValid=parts&&sighash?xe.verify(signature.der,sighash,signature.pubkey,{prehash:!1,format:"der",lowS:!1}):null,privateKey=hodlPrivForPub(signature.pubkey)||hodlPrivFromPath(entries,signature.pubkey),message="Need the matching key in this session to check RFC 6979 and low-r grind.",className="muted";
       if(!parts){message="Signature is not strict DER and its nonce cannot be inspected.";className="psbt-warn"}
-      else{rValues.push({input:index,r:parts.r,s:parts.s,hex:M.encode(parts.r),pubkey:signature.pubkey,sighash,valid:signatureValid});if(signatureValid===!1){message="This signature does not verify against the reconstructed input digest.";className="psbt-warn"}else if(privateKey&&sighash)try{let cmp=hodlRfc6979Compare(sighash,privateKey,parts.r);message=cmp.message;className=cmp.className}catch(exception){message="Could not recompute this signature: "+(exception.message||String(exception));className="psbt-warn"}else if(privateKey&&signature.sighash!==1){message="Matching key found, but this check currently supports SIGHASH_ALL without ANYONECANPAY only.";className="psbt-warn"}else if(privateKey&&!scriptCode){message="Matching key found, but this input script is not yet supported for RFC 6979 comparison.";className="psbt-warn"}}
+      else{rValues.push({input:index,r:parts.r,s:parts.s,hex:M.encode(parts.r),pubkey:signature.pubkey,sighash,valid:signatureValid});if(signatureValid===!1){message="This signature does not verify against the reconstructed input digest.";className="psbt-warn"}else if(transcript){let opening=transcript.openings.length===1?transcript.openings[0]:transcript.openings[ecdsaIndex];if(!opening){message="No Jade opening R was provided for this signature.";className="psbt-warn"}else try{if(hodlAntiExfilCommitOk(parts.r,opening,transcript.host)){message="Matches Jade anti-exfil (sign-to-contract). Host entropy mixed into the nonce. Not a leak.";className="psbt-ok"}else{message="Does not match this Jade anti-exfil transcript. Signature r is not R + H(R||ρ)G.";className="psbt-warn";if(privateKey&&sighash)try{let cmp=hodlRfc6979Compare(sighash,privateKey,parts.r);if(cmp.ok){message+=" "+cmp.message;className=cmp.className}else message+=" Also does not match RFC 6979 or low-r grind."}catch(exception){message+=" "+(exception.message||String(exception))}}}catch(exception){message="Could not verify Jade anti-exfil: "+(exception.message||String(exception));className="psbt-warn"}}else if(privateKey&&sighash)try{let cmp=hodlRfc6979Compare(sighash,privateKey,parts.r);message=cmp.message;className=cmp.className}catch(exception){message="Could not recompute this signature: "+(exception.message||String(exception));className="psbt-warn"}else if(privateKey&&signature.sighash!==1){message="Matching key found, but this check currently supports SIGHASH_ALL without ANYONECANPAY only.";className="psbt-warn"}else if(privateKey&&!scriptCode){message="Matching key found, but this input script is not yet supported for RFC 6979 comparison.";className="psbt-warn"}}
+      ecdsaIndex+=1;
       rows.push({input:index,message,className,pubkey:M.encode(signature.pubkey)})
     })
   });
@@ -2394,7 +2422,7 @@ function hodlRenderPsbt(psbt){
   if(rValues.length)html.push("<p class='psbt-kv'>r values:<br>"+rValues.map(value=>$t(value.hex)+" (input "+value.input+")").join("<br>")+"</p>");
   rows.forEach(row=>html.push("<p class='"+row.className+"'><strong>Input "+row.input+"</strong> pubkey "+$t(row.pubkey.slice(0,18))+"… — "+$t(row.message)+"</p>"));
   if(tapSignatureCount)html.push("<p class='muted'>This PSBT also contains "+tapSignatureCount+" Taproot / Schnorr signature(s). They are counted but their BIP340 nonces are not analyzed in this version.</p>");
-  html.push("<p class='muted'>RFC 6979 comparison currently covers SegWit v0 P2WPKH and P2WSH signatures using SIGHASH_ALL, including Bitcoin Core-style low-r grinding. Nonce reuse detection compares strict DER ECDSA signatures from the same public key.</p>");return html.join("")
+  html.push("<p class='muted'>RFC 6979 comparison currently covers SegWit v0 P2WPKH and P2WSH signatures using SIGHASH_ALL, including Bitcoin Core-style low-r grinding. Jade anti-exfil is secp256k1-zkp sign-to-contract and needs the USB host nonce plus signer opening; QR / sign_psbt Jade does not run it yet. BitBox anti-klepto is a different construction. Nonce reuse detection compares strict DER ECDSA signatures from the same public key.</p>");return html.join("")
 }
 var hodlAccountId="bip84",hodlNextKeyId=1,hodlNextKeyNumber=1,hodlKeys=[],hodlActiveKey=-1;
 function hodlKeyColor(id){let hue=Math.round((Number(id)*137.508+19)%360);return`oklch(61% 0.08 ${hue})`}
