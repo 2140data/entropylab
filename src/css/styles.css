@@ -98,6 +98,54 @@ textarea { display: block; min-height: 96px; letter-spacing: 0.08em; }
 }
 .seed-autocomplete-toggle input { margin: 0; }
 .seed-autocomplete-note { color: var(--muted); font-weight: 400; }
+.seed-entry-tools { display: flex; align-items: stretch; gap: var(--space-control); margin-top: var(--space-component); }
+.seed-entry-tools .seed-autocomplete-toggle { flex: 1 1 auto; margin-top: 0; }
+.passphrase-keyboard-tools { display: flex; margin-top: var(--space-component); }
+.passphrase-input-row { display: flex; align-items: stretch; gap: var(--space-control); margin-top: var(--space-control); }
+#passphrase-field .passphrase-input-row input { flex: 1 1 auto; min-width: 0; margin-top: 0; }
+.passphrase-keyboard-toggle-host { display: flex; align-items: stretch; }
+.passphrase-keyboard-toggle-host[hidden] { display: none; }
+.passphrase-keyboard-toggle-host .seed-keyboard-toggle { align-self: stretch; min-height: 0; height: auto; }
+.passphrase-keyboard-host .seed-keyboard { margin-top: var(--space-control); margin-right: auto; margin-left: 0; }
+.seed-keyboard-toggle {
+  display: grid; place-items: center; flex: 0 0 44px; width: 44px; min-height: 44px; height: auto; padding: 5px;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); color: var(--muted);
+}
+.seed-keyboard-toggle:hover { color: var(--fg); border-color: var(--faint); }
+.seed-keyboard-toggle[aria-expanded="true"] { color: var(--selection-accent); border-color: var(--selection-accent); }
+.seed-keyboard-toggle:focus-visible { outline: 2px solid var(--selection-accent); outline-offset: 2px; }
+.seed-keyboard-toggle svg { display: block; width: 30px; height: 22px; }
+.seed-keyboard-icon-case { fill: none; stroke: currentColor; stroke-width: 2.5; }
+.seed-keyboard-icon-keys { fill: currentColor; }
+.seed-keyboard {
+  --seed-key-size: calc(10% - 2.7px);
+  display: grid; gap: 4px; max-width: 640px; margin: var(--space-control) auto 0 0; padding: 7px 8px;
+  border: 1px solid var(--border); border-radius: 12px; background: var(--bg);
+}
+.seed-keyboard[hidden] { display: none; }
+.seed-keyboard-row { display: flex; justify-content: center; gap: 3px; }
+.seed-keyboard-key,
+.seed-keyboard-space,
+.seed-keyboard-mode {
+  min-height: 42px; padding: 0; border: 1px solid var(--border); border-radius: 7px;
+  background: var(--surface-2); color: var(--fg); font-family: var(--mono); font-size: 15px;
+}
+.seed-keyboard-key { flex: 0 0 var(--seed-key-size); width: var(--seed-key-size); }
+.seed-keyboard-key[hidden] { display: none; }
+.seed-keyboard-key:not(:disabled):hover,
+.seed-keyboard-space:not(:disabled):hover,
+.seed-keyboard-mode:not(:disabled):hover { border-color: var(--selection-accent); background: color-mix(in oklab, var(--selection-accent) 12%, var(--surface-2)); }
+.seed-keyboard-key:focus-visible,
+.seed-keyboard-space:focus-visible,
+.seed-keyboard-mode:focus-visible { outline: 2px solid var(--selection-accent); outline-offset: 1px; }
+.seed-keyboard-delete { display: grid; place-items: center; color: var(--muted); }
+.seed-keyboard-delete svg { width: 20px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.seed-keyboard-space-row { display: flex; justify-content: center; gap: 4px; }
+.seed-keyboard-mode { flex: 0 0 clamp(42px, 10vw, 64px); padding-inline: 6px; letter-spacing: -.08em; }
+.seed-keyboard-mode:disabled { cursor: not-allowed; opacity: .42; color: var(--muted); }
+.seed-keyboard-space { width: min(46%, 250px); padding-inline: 14px; color: var(--muted); font-size: 13px; }
+.seed-keyboard-key:disabled,
+.seed-keyboard-space:disabled { cursor: not-allowed; opacity: .3; color: var(--muted); }
 input[type="radio"], input[type="checkbox"] {
   appearance: auto;
   width: 16px;

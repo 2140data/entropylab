@@ -100,6 +100,54 @@ textarea { display: block; min-height: 96px; letter-spacing: 0.08em; }
 }
 .seed-autocomplete-toggle input { margin: 0; }
 .seed-autocomplete-note { color: var(--muted); font-weight: 400; }
+.seed-entry-tools { display: flex; align-items: stretch; gap: var(--space-control); margin-top: var(--space-component); }
+.seed-entry-tools .seed-autocomplete-toggle { flex: 1 1 auto; margin-top: 0; }
+.passphrase-keyboard-tools { display: flex; margin-top: var(--space-component); }
+.passphrase-input-row { display: flex; align-items: stretch; gap: var(--space-control); margin-top: var(--space-control); }
+#passphrase-field .passphrase-input-row input { flex: 1 1 auto; min-width: 0; margin-top: 0; }
+.passphrase-keyboard-toggle-host { display: flex; align-items: stretch; }
+.passphrase-keyboard-toggle-host[hidden] { display: none; }
+.passphrase-keyboard-toggle-host .seed-keyboard-toggle { align-self: stretch; min-height: 0; height: auto; }
+.passphrase-keyboard-host .seed-keyboard { margin-top: var(--space-control); margin-right: auto; margin-left: 0; }
+.seed-keyboard-toggle {
+  display: grid; place-items: center; flex: 0 0 44px; width: 44px; min-height: 44px; height: auto; padding: 5px;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); color: var(--muted);
+}
+.seed-keyboard-toggle:hover { color: var(--fg); border-color: var(--faint); }
+.seed-keyboard-toggle[aria-expanded="true"] { color: var(--selection-accent); border-color: var(--selection-accent); }
+.seed-keyboard-toggle:focus-visible { outline: 2px solid var(--selection-accent); outline-offset: 2px; }
+.seed-keyboard-toggle svg { display: block; width: 30px; height: 22px; }
+.seed-keyboard-icon-case { fill: none; stroke: currentColor; stroke-width: 2.5; }
+.seed-keyboard-icon-keys { fill: currentColor; }
+.seed-keyboard {
+  --seed-key-size: calc(10% - 2.7px);
+  display: grid; gap: 4px; max-width: 640px; margin: var(--space-control) auto 0 0; padding: 7px 8px;
+  border: 1px solid var(--border); border-radius: 12px; background: var(--bg);
+}
+.seed-keyboard[hidden] { display: none; }
+.seed-keyboard-row { display: flex; justify-content: center; gap: 3px; }
+.seed-keyboard-key,
+.seed-keyboard-space,
+.seed-keyboard-mode {
+  min-height: 42px; padding: 0; border: 1px solid var(--border); border-radius: 7px;
+  background: var(--surface-2); color: var(--fg); font-family: var(--mono); font-size: 15px;
+}
+.seed-keyboard-key { flex: 0 0 var(--seed-key-size); width: var(--seed-key-size); }
+.seed-keyboard-key[hidden] { display: none; }
+.seed-keyboard-key:not(:disabled):hover,
+.seed-keyboard-space:not(:disabled):hover,
+.seed-keyboard-mode:not(:disabled):hover { border-color: var(--selection-accent); background: color-mix(in oklab, var(--selection-accent) 12%, var(--surface-2)); }
+.seed-keyboard-key:focus-visible,
+.seed-keyboard-space:focus-visible,
+.seed-keyboard-mode:focus-visible { outline: 2px solid var(--selection-accent); outline-offset: 1px; }
+.seed-keyboard-delete { display: grid; place-items: center; color: var(--muted); }
+.seed-keyboard-delete svg { width: 20px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.seed-keyboard-space-row { display: flex; justify-content: center; gap: 4px; }
+.seed-keyboard-mode { flex: 0 0 clamp(42px, 10vw, 64px); padding-inline: 6px; letter-spacing: -.08em; }
+.seed-keyboard-mode:disabled { cursor: not-allowed; opacity: .42; color: var(--muted); }
+.seed-keyboard-space { width: min(46%, 250px); padding-inline: 14px; color: var(--muted); font-size: 13px; }
+.seed-keyboard-key:disabled,
+.seed-keyboard-space:disabled { cursor: not-allowed; opacity: .3; color: var(--muted); }
 input[type="radio"], input[type="checkbox"] {
   appearance: auto;
   width: 16px;
@@ -822,7 +870,7 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
       <div id="last-words" class="row" style="margin-top:8px"></div>
     </div>
       <label class="field" id="passphrase-field">Optional BIP39 passphrase
-        <input id="pass" autocomplete="off" placeholder="Leave blank unless you set one">
+        <span class="passphrase-input-row"><span class="passphrase-keyboard-toggle-host" id="passphrase-keyboard-toggle-host" hidden></span><input id="pass" autocomplete="off" placeholder="Leave blank unless you set one"></span>
       </label>
       <div class="master-fingerprint-preview" id="master-fingerprint-preview" role="status" aria-live="polite" aria-atomic="true">
         <div class="master-fingerprint-card is-disabled" id="base-master-fingerprint-card" role="group" data-state="unavailable" aria-label="Base seed Master Fingerprint unavailable">
@@ -835,6 +883,7 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
           <code class="master-fingerprint-value" id="passphrase-master-fingerprint"></code>
         </div>
       </div>
+      <div class="passphrase-keyboard-host" id="passphrase-keyboard-host" hidden></div>
       <div class="key-settings" id="key-settings">
         <div class="key-settings-row">
           <label class="field" id="script-type-field">Script type
@@ -3068,7 +3117,7 @@ zoo`.split(`
       </section>
       <div id="form" class="key-form"></div>
       <label class="field" id="passphrase-field">Optional BIP39 passphrase
-        <input id="pass" autocomplete="off" placeholder="Leave blank unless you set one" />
+        <span class="passphrase-input-row"><span class="passphrase-keyboard-toggle-host" id="passphrase-keyboard-toggle-host" hidden></span><input id="pass" autocomplete="off" placeholder="Leave blank unless you set one" /></span>
       </label>
       <div class="master-fingerprint-preview" id="master-fingerprint-preview" role="status" aria-live="polite" aria-atomic="true">
         <div class="master-fingerprint-card is-disabled" id="base-master-fingerprint-card" role="group" data-state="unavailable" aria-label="Base seed Master Fingerprint unavailable">
@@ -3081,6 +3130,7 @@ zoo`.split(`
           <code class="master-fingerprint-value" id="passphrase-master-fingerprint"></code>
         </div>
       </div>
+      <div class="passphrase-keyboard-host" id="passphrase-keyboard-host" hidden></div>
       <div class="key-settings" id="key-settings">
         <div class="key-settings-row">
           <label class="field" id="script-type-field">Script type
@@ -3255,8 +3305,9 @@ zoo`.split(`
     `;let e=document.getElementById("seed"),t=()=>{let r=Mt(e.value),n=Tr(e.value);n&&!n.error?(W("#seed-meta").textContent=n.partialCount===23?"BitBox-style: pick the 24th checksum word":`${n.candidates.length} valid last words \u2014 type the one you confirmed on the device, then Calculate`,W("#seed-meta").className="muted ok",n.candidates.length<=16?(W("#last-words").innerHTML=n.candidates.map(o=>`<button type="button" class="tab" data-lw="${o}">${o}</button>`).join(" "),W("#last-words").querySelectorAll("[data-lw]").forEach(o=>{o.onclick=()=>{e.value=`${e.value.trim()} ${o.dataset.lw}`,t()}})):W("#last-words").innerHTML=""):(W("#last-words").innerHTML="",W("#seed-meta").textContent=e.value.trim()?r.ok?`${r.words.length} words, checksum valid`:r.error??"":"",W("#seed-meta").className="muted "+(r.ok?"ok":"err"))};e.oninput=()=>{e.value=hodlFilterSeed(e.value);t()};hodlBindFields();}else at.innerHTML=`
       <p class="label">Your Bitcoin Core private key</p>
       <p class="muted">WIF, hex, mini key, or a brain-wallet passphrase (unsafe \u2014 recovery only).</p>
-      <textarea id="key" placeholder="K\u2026 / L\u2026 / 5\u2026 / hex"></textarea>
-      <label class="choice"><input type="radio" name="kk" value="wif-or-hex" checked /><span><strong>WIF / hex</strong><span class="desc">Normal Bitcoin Core private key.</span></span></label>
+      <textarea id="key" placeholder="5\u2026 / K\u2026 / L\u2026"></textarea>
+      <label class="choice"><input type="radio" name="kk" value="wif" checked /><span><strong>WIF</strong><span class="desc">Bitcoin wallet import format (Base58Check).</span></span></label>
+      <label class="choice"><input type="radio" name="kk" value="hex-key" /><span><strong>Hex</strong><span class="desc">Raw 32-byte private key as 64 hexadecimal characters.</span></span></label>
       <label class="choice"><input type="radio" name="kk" value="minikey" /><span><strong>Mini key</strong><span class="desc">Casascius-style short key.</span></span></label>
       <label class="choice"><input type="radio" name="kk" value="brain" /><span><strong>Brain wallet</strong><span class="desc">Unsafe. Use only to recover an old passphrase wallet.</span></span></label>
     `;hodlBindFields()}function At(){let e=document.getElementById("dice");if(!e)return;hodlRenderDiceInputState(e);let t=document.getElementById("bitbox-words"),r=document.getElementById("last-words");if(ge==="bitbox"){let o=Sr(e.value,Pt),i=o.waiting==="last-word"?`${o.words.length} words \xB7 pick the checksum word`:o.waiting==="coin"?`Word ${o.words.length+1} of ${o.neededPartial} \xB7 coin / 6th die`:`Word ${o.words.length+1} of ${o.neededPartial} \xB7 die ${o.diceInWord+1} of 5 (faces 1\u20134)`;W("#dice-meta").textContent=i,t&&(t.innerHTML=o.words.length?o.words.map((c,a)=>`<div><span>${a+1}.</span>${c}</div>`).join(""):"");let s=o.waiting==="last-word"?Tr(o.words.join(" ")):null;r&&s&&!s.error&&s.candidates.length<=16?(r.innerHTML=s.candidates.map(c=>`<button type="button" class="tab${c===ft?" active":""}" data-lw="${c}">${c}</button>`).join(""),r.querySelectorAll("[data-lw]").forEach(c=>{c.onclick=()=>{ft=c.dataset.lw??"",At()}})):r&&(r.innerHTML="");return}t&&(t.innerHTML=""),r&&(r.innerHTML="");let{rolls:n}=Br(e.value);W("#dice-meta").textContent=`${n.length} rolls \xB7 ${kr(n.length).toFixed(1)} bits \xB7 99 rolls for 256-bit 24-word seed`;hodlDiceCompare()}function Ff(){W("#error").textContent="";try{let e=document.getElementById("network").value,t=Number(document.getElementById("count").value),r=document.getElementById("pass").value;if(Ne==="dice")if(ge==="bitbox"){let n=Sr(document.getElementById("dice").value,Pt);if(n.leftover)throw new Error(`Invalid characters: ${n.leftover}`);if(n.waiting!=="last-word")throw new Error(`Need ${n.neededPartial} lookup-table words. You have ${n.words.length}.`);if(!ft)throw new Error("Pick one of the checksum words, then Calculate.");re=ar([...n.words,ft].join(" "),r,e,t,{notes:n.notes,warnings:n.warnings})}else{let n=$n(document.getElementById("dice").value,ge);if(!n.ok)throw new Error(n.error);re=on(n,r,e,t)}else if(Ne==="hex"){let n=document.getElementById("hex").value.trim(),o=document.getElementById("bin").value.trim(),i=n?In(n):On(o);if(!i.ok)throw new Error(i.error);re=on(i,r,e,t)}else if(Ne==="seed"){let n=document.getElementById("seed").value.trim();re=/^[xtyYzZvVun][A-Za-z0-9]+$/.test(n)&&n.length>80?Po(n,e,t):ar(n,r,e,t)}else{let n=document.querySelector("input[name=kk]:checked")?.value||"wif-or-hex";re=Io(document.getElementById("key").value,e,n)}Ge=!1,hodlAccountId=null,tc()}catch(e){re=null,hodlAccountId=null,W("#error").textContent=e instanceof Error?e.message:"Could not calculate",dr.innerHTML=""}}function tc(){if(!re){dr.innerHTML="";return}if(re.kind==="single"){let t=re;dr.innerHTML=hodlSingleWalletData(t)}else{let t=re,r=t.accounts.find(o=>o.def.id===hodlAccountId)??t.accounts.find(o=>o.def.id==="bip84")??t.accounts[0];dr.innerHTML=`
@@ -3802,6 +3853,7 @@ var hodlSeedLengths=Object.freeze({
   24:Object.freeze({words:24,bits:256,bytes:32,hexChars:64,hashRolls:99,partialWords:23,candidates:8})
 });
 var hodlBip39WordSet=new Set(Ae);
+var hodlOnScreenKeyboardOpen=!1;
 function hodlSeedConfig(words=Pt){return hodlSeedLengths[Number(words)]||hodlSeedLengths[24]}
 function hodlLooksExtendedKey(value){return/^[xtyzuvYZUV][A-Za-z0-9]+$/.test(value.trim())&&value.trim().length>80}
 function hodlSinglesigImportStatus(value,network){
@@ -4097,12 +4149,134 @@ function hodlApplyFilteredInput(input,filter){
   let value=input.value,clean=filter(value);if(clean===value)return!1;let start=input.selectionStart??value.length,end=input.selectionEnd??start,direction=input.selectionDirection||"none";
   input.value=clean;input.setSelectionRange(filter(value.slice(0,start)).length,filter(value.slice(0,end)).length,direction);return!0
 }
-function hodlAutocompleteSeedInput(input,event){
-  let toggle=document.getElementById("seed-autocomplete");if(!toggle?.checked||event?.inputType!=="insertText"||event.isComposing||input.selectionStart!==input.selectionEnd)return!1;
+function hodlAutocompleteSeedInput(input,event,completeExisting=!1){
+  let toggle=document.getElementById("seed-autocomplete");if(!toggle?.checked||!completeExisting&&(event?.inputType!=="insertText"||event.isComposing)||input.selectionStart!==input.selectionEnd)return!1;
   let caret=input.selectionStart??input.value.length,suffix=input.value.slice(caret);if(suffix&&!/^\s/.test(suffix))return!1;
   let match=input.value.slice(0,caret).match(/([A-Za-z]+)$/);if(!match)return!1;let prefix=match[1].toLowerCase(),start=caret-match[1].length,finalContext=hodlSeedFinalWordContext(input.value,Pt),isFinalPrefix=Boolean(finalContext?.finalToken&&finalContext.finalToken.start===start&&finalContext.finalToken.end===caret),options=isFinalPrefix?finalContext.candidates:Ae,minimumLength=isFinalPrefix?1:2;
   if(prefix.length<minimumLength)return!1;let matches=options.filter(word=>word.startsWith(prefix));if(matches.length!==1)return!1;
   let replacement=matches[0]+(suffix?"":" ");input.setRangeText(replacement,start,caret,"end");return!0
+}
+function hodlKeyboardToggleMarkup(id,label){
+  return`<button type="button" class="seed-keyboard-toggle" id="${id}" data-on-screen-keyboard-toggle aria-label="${hodlOnScreenKeyboardOpen?`Hide ${label}`:`Show ${label}`}" aria-controls="seed-keyboard" aria-expanded="${hodlOnScreenKeyboardOpen}"><svg viewBox="0 0 64 44" aria-hidden="true" focusable="false"><rect class="seed-keyboard-icon-case" x="3" y="6" width="58" height="32" rx="4"/><g class="seed-keyboard-icon-keys"><rect x="9" y="10" width="4" height="5" rx=".5"/><rect x="15" y="10" width="4" height="5" rx=".5"/><rect x="21" y="10" width="4" height="5" rx=".5"/><rect x="27" y="10" width="4" height="5" rx=".5"/><rect x="33" y="10" width="4" height="5" rx=".5"/><rect x="39" y="10" width="4" height="5" rx=".5"/><rect x="45" y="10" width="4" height="5" rx=".5"/><rect x="51" y="10" width="4" height="5" rx=".5"/><rect x="12" y="18" width="4" height="5" rx=".5"/><rect x="18" y="18" width="4" height="5" rx=".5"/><rect x="24" y="18" width="4" height="5" rx=".5"/><rect x="30" y="18" width="4" height="5" rx=".5"/><rect x="36" y="18" width="4" height="5" rx=".5"/><rect x="42" y="18" width="4" height="5" rx=".5"/><rect x="48" y="18" width="4" height="5" rx=".5"/><rect x="17" y="28" width="30" height="5" rx=".75"/></g></svg></button>`
+}
+function hodlSeedKeyboardToggleMarkup(){return hodlKeyboardToggleMarkup("seed-keyboard-toggle","on-screen seed keyboard")}
+function hodlPassphraseKeyboardToggleMarkup(){return hodlKeyboardToggleMarkup("passphrase-keyboard-toggle","on-screen passphrase keyboard")}
+function hodlPrivateKeyKeyboardToggleMarkup(){return`<div class="passphrase-keyboard-tools">${hodlKeyboardToggleMarkup("private-keyboard-toggle","on-screen private key keyboard")}</div>`}
+var hodlSeedKeyboardLayouts={lower:["abcdefghij","klmnopqrs","tuvwxyz"],upper:["ABCDEFGHIJ","KLMNOPQRS","TUVWXYZ"],number:["1234567890","!@#$%^&*()","-_+=/?\\"]};
+function hodlKeyboardMarkup(passphraseOnly=!1,inputName=passphraseOnly?"passphrase":"seed phrase"){
+  let letters=hodlSeedKeyboardLayouts.lower.map((row,index)=>`<div class="seed-keyboard-row" data-seed-keyboard-row="${index+1}">${Array.from({length:hodlSeedKeyboardLayouts.number[index].length},(_,keyIndex)=>{let letter=row[keyIndex];return`<button type="button" class="seed-keyboard-key" data-seed-character-key${letter?` data-seed-key="${letter}" aria-label="Enter ${letter}"`:` hidden disabled aria-hidden="true"`}>${letter||""}</button>`}).join("")}${index===2?`<button type="button" class="seed-keyboard-key seed-keyboard-delete" data-seed-delete aria-label="Delete previous character"><svg viewBox="0 0 24 18" aria-hidden="true" focusable="false"><path d="M9 2h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9L2 9l7-7Z"/><path d="m12 6 6 6m0-6-6 6"/></svg></button>`:""}</div>`).join("");
+  return`<div class="seed-keyboard" id="seed-keyboard" data-on-screen-keyboard role="group" aria-label="On-screen lowercase ${inputName} keyboard" data-seed-keyboard-layout="lower"${hodlOnScreenKeyboardOpen?"":" hidden"}>${letters}<div class="seed-keyboard-space-row"><button type="button" class="seed-keyboard-mode" data-seed-keyboard-mode="lower" aria-label="${passphraseOnly?`Change ${inputName} character mode`:"Character mode switching is available for the passphrase"}"${passphraseOnly?"":" disabled"}>aA1</button><button type="button" class="seed-keyboard-space" data-seed-key=" " aria-label="Enter space">space</button></div></div>`
+}
+function hodlSeedKeyboardMarkup(){return hodlKeyboardMarkup(!1)}
+function hodlPassphraseKeyboardMarkup(){return hodlKeyboardMarkup(!0)}
+function hodlPrivateKeyKeyboardMarkup(){return hodlKeyboardMarkup(!0,"private key")}
+function hodlSetOnScreenKeyboardOpen(open){
+  hodlOnScreenKeyboardOpen=Boolean(open);document.querySelectorAll("[data-on-screen-keyboard-toggle]").forEach(toggle=>{toggle.setAttribute("aria-expanded",String(hodlOnScreenKeyboardOpen));let target=toggle.id==="passphrase-keyboard-toggle"?"passphrase":toggle.id==="private-keyboard-toggle"?"private key":"seed";toggle.setAttribute("aria-label",`${hodlOnScreenKeyboardOpen?"Hide":"Show"} on-screen ${target} keyboard`)});document.querySelectorAll("[data-on-screen-keyboard]").forEach(keyboard=>{keyboard.hidden=!hodlOnScreenKeyboardOpen})
+}
+function hodlSetSeedKeyboardLayout(keyboard,button,next){
+  if(!keyboard||!button||!hodlSeedKeyboardLayouts[next])return;let layout=hodlSeedKeyboardLayouts[next];
+  keyboard.querySelectorAll("[data-seed-keyboard-row]").forEach((row,index)=>{let keys=row.querySelectorAll("[data-seed-character-key]"),characters=[...layout[index]];keys.forEach((key,keyIndex)=>{let character=characters[keyIndex];key.hidden=!character;if(character){key.dataset.seedKey=character;key.textContent=character;key.setAttribute("aria-label",`Enter ${character}`);key.removeAttribute("aria-hidden")}else{delete key.dataset.seedKey;key.textContent="";key.disabled=!0;key.removeAttribute("aria-label");key.setAttribute("aria-hidden","true")}})});
+  button.dataset.seedKeyboardMode=next;keyboard.dataset.seedKeyboardLayout=next;keyboard.setAttribute("aria-label",next==="lower"?"On-screen lowercase seed phrase keyboard":next==="upper"?"On-screen uppercase keyboard":"On-screen number and symbol keyboard")
+}
+function hodlCycleSeedKeyboardLayout(keyboard,button){
+  if(!keyboard||!button)return;let order=["lower","upper","number"],current=button.dataset.seedKeyboardMode||"lower",next=order[(order.indexOf(current)+1)%order.length];hodlSetSeedKeyboardLayout(keyboard,button,next)
+}
+function hodlSeedKeyboardCanEnterCharacter(input,key,targetWords=Pt){
+  let character=String(key??"").toLowerCase();if(!/^[a-z]$/.test(character))return!1;
+  let start=input.selectionStart??input.value.length,end=input.selectionEnd??start,value=input.value.slice(0,start)+character+input.value.slice(end),caret=start+character.length,config=hodlSeedConfig(targetWords);
+  if(hodlLooksExtendedKey(value))return!1;
+  let tokens=[...value.matchAll(/\S+/g)].map(match=>({word:match[0].toLowerCase(),start:match.index,end:match.index+match[0].length}));if(tokens.length>config.words)return!1;
+  let tokenIndex=tokens.findIndex(token=>token.start<caret&&caret<=token.end);if(tokenIndex<0||tokenIndex>=config.words||tokens.slice(0,tokenIndex).some(token=>!hodlBip39WordSet.has(token.word)))return!1;
+  let token=tokens[tokenIndex],options=Ae;if(tokenIndex===config.partialWords){let context=hodlSeedFinalWordContext(value,config.words);if(!context)return!1;options=context.candidates}
+  return options.some(word=>word.startsWith(token.word))
+}
+function hodlSeedKeyboardCanEnterSpace(input,targetWords=Pt){
+  let start=input.selectionStart??input.value.length,end=input.selectionEnd??start,config=hodlSeedConfig(targetWords);if(start!==end||end!==input.value.length||!end||/\s$/.test(input.value))return!1;
+  let words=input.value.trim().toLowerCase().split(/\s+/).filter(Boolean);return words.length<config.words&&words.every(word=>hodlBip39WordSet.has(word))
+}
+function hodlUpdateSeedKeyboardKeys(input,targetWords=Pt){
+  let keyboard=document.getElementById("seed-keyboard");if(!keyboard||!input)return;
+  keyboard.querySelectorAll("[data-seed-character-key]").forEach(button=>{button.disabled=!hodlSeedKeyboardCanEnterCharacter(input,button.dataset.seedKey,targetWords)});
+  let space=keyboard.querySelector(".seed-keyboard-space");if(space)space.disabled=!hodlSeedKeyboardCanEnterSpace(input,targetWords);
+  let remove=keyboard.querySelector("[data-seed-delete]"),start=input.selectionStart??input.value.length,end=input.selectionEnd??start;if(remove)remove.disabled=start===end&&start===0
+}
+function hodlUpdatePassphraseKeyboardKeys(input){
+  let keyboard=document.getElementById("seed-keyboard");if(!keyboard||!input)return;keyboard.querySelectorAll("[data-seed-character-key]").forEach(button=>{button.disabled=!1});
+  let space=keyboard.querySelector(".seed-keyboard-space");if(space)space.disabled=!1;let remove=keyboard.querySelector("[data-seed-delete]"),start=input.selectionStart??input.value.length,end=input.selectionEnd??start;if(remove)remove.disabled=start===end&&start===0
+}
+function hodlKeyboardValueAfterInsert(input,key){let start=input.selectionStart??input.value.length,end=input.selectionEnd??start;return input.value.slice(0,start)+String(key??"")+input.value.slice(end)}
+function hodlHexPrivateKeyPrefix(value){
+  let candidate=String(value??""),prefixed=/^0[xX]/.test(candidate),body=prefixed?candidate.slice(2):candidate;if(!prefixed&&/[xX]/.test(candidate)||!/^[0-9a-fA-F]*$/.test(body)||body.length>64)return!1;if(body.length<64)return!0;
+  try{hf(M.decode(body.toLowerCase()));return!0}catch{return!1}
+}
+function hodlWifPrivateKeyPrefix(value,network){
+  let candidate=String(value??""),first=candidate[0]||"",prefixes=network==="testnet"?["9","c"]:["5","K","L"];if(!prefixes.includes(first)||!/^[1-9A-HJ-NP-Za-km-z]+$/.test(candidate))return!1;
+  let expected=first==="5"||first==="9"?51:52;if(candidate.length>expected)return!1;if(candidate.length<expected)return!0;
+  try{let decoded=Ls(candidate);return decoded.network===network&&Boolean(decoded.priv)}catch{return!1}
+}
+function hodlMiniPrivateKeyPrefix(value){
+  let candidate=String(value??"");if(candidate.length>30||!/^S[1-9A-HJ-NP-Za-km-z]*$/.test(candidate))return!1;if(candidate.length<30)return!0;return $o(candidate)
+}
+function hodlDetectPrivateKeyKind(value){
+  let candidate=String(value??"").trim(),compact=candidate.replace(/\s/g,"").replace(/^0x/i,"");
+  if(/^S(?:[1-9A-HJ-NP-Za-km-z]{21}|[1-9A-HJ-NP-Za-km-z]{29})$/.test(candidate))return"minikey";
+  if(/^[5KL9c][1-9A-HJ-NP-Za-km-z]{50,51}$/.test(candidate))return"wif";
+  if(/^[0-9a-fA-F]{64}$/.test(compact))return"hex-key";
+  return null
+}
+function hodlNormalizePrivateKeyKind(kind,value=""){
+  if(["wif","hex-key","minikey","brain"].includes(kind))return kind;
+  if(kind==="wif-or-hex")return hodlDetectPrivateKeyKind(value)==="hex-key"?"hex-key":"wif";
+  return"wif"
+}
+function hodlPrivateKeyPlaceholder(kind,network="mainnet"){
+  if(kind==="hex-key")return"64 hexadecimal characters";
+  if(kind==="minikey")return"S… (22 or 30 Base58 characters)";
+  if(kind==="brain")return"Recovery passphrase";
+  return network==="testnet"?"9… / c…":"5… / K… / L…"
+}
+function hodlUpdatePrivateKeyInputPresentation(){
+  let input=document.getElementById("key");if(!input)return;let kind=hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value,input.value),network=hodlSelectedNetwork(document.getElementById("network"));input.placeholder=hodlPrivateKeyPlaceholder(kind,network);input.setAttribute("inputmode",kind==="hex-key"?"text":"text");input.setAttribute("autocapitalize","off");input.setAttribute("autocomplete","off");input.setAttribute("spellcheck","false")
+}
+function hodlPrivateKeyboardCanEnterCharacter(input,key){
+  let candidate=hodlKeyboardValueAfterInsert(input,key),kind=hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value,input.value);if(kind==="brain")return!0;if(kind==="minikey")return hodlMiniPrivateKeyPrefix(candidate);if(kind==="hex-key")return hodlHexPrivateKeyPrefix(candidate);
+  return hodlWifPrivateKeyPrefix(candidate,hodlSelectedNetwork(document.getElementById("network")))
+}
+function hodlUpdatePrivateKeyKeyboardKeys(input){
+  let keyboard=document.getElementById("seed-keyboard");if(!keyboard||!input)return;let kind=hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value,input.value);
+  keyboard.querySelectorAll("[data-seed-character-key]").forEach(button=>{button.disabled=!hodlPrivateKeyboardCanEnterCharacter(input,button.dataset.seedKey)});let space=keyboard.querySelector(".seed-keyboard-space");if(space)space.disabled=kind!=="brain";
+  let remove=keyboard.querySelector("[data-seed-delete]"),start=input.selectionStart??input.value.length,end=input.selectionEnd??start;if(remove)remove.disabled=start===end&&start===0
+}
+function hodlApplySeedKeyboardKey(input,key,deleteBackward=!1){
+  if(!input)return;let start=input.selectionStart??input.value.length,end=input.selectionEnd??start,inputType="insertText",data=key;
+  if(deleteBackward){inputType="deleteContentBackward";data=null;if(start===end&&start>0)start-=1;input.setRangeText("",start,end,"end")}else input.setRangeText(String(key??""),start,end,"end");
+  let event=typeof InputEvent==="function"?new InputEvent("input",{bubbles:!0,inputType,data}):new Event("input",{bubbles:!0});input.dispatchEvent(event);input.focus({preventScroll:!0})
+}
+function hodlBindSeedKeyboardDelete(getInput,button){
+  if(typeof getInput!=="function"||!button)return;let holdTimer=null,repeatTimer=null,repeated=!1,pointerId=null;
+  let stop=()=>{if(holdTimer!==null){clearTimeout(holdTimer);holdTimer=null}if(repeatTimer!==null){clearInterval(repeatTimer);repeatTimer=null}let captured=pointerId;pointerId=null;try{if(captured!==null&&button.hasPointerCapture?.(captured))button.releasePointerCapture(captured)}catch{}};
+  let remove=()=>{let input=getInput();if(!input||button.disabled){stop();return}hodlApplySeedKeyboardKey(input,"",!0)};
+  button.addEventListener("pointerdown",event=>{if(event.button!==0||button.disabled)return;stop();repeated=!1;pointerId=event.pointerId;try{button.setPointerCapture?.(event.pointerId)}catch{}holdTimer=setTimeout(()=>{holdTimer=null;repeated=!0;remove();if(!button.disabled)repeatTimer=setInterval(remove,69)},420)});
+  ["pointerup","pointercancel","pointerleave","lostpointercapture"].forEach(type=>button.addEventListener(type,stop));
+  button.addEventListener("click",event=>{if(repeated){event.preventDefault();repeated=!1;return}remove()})
+}
+function hodlBindSeedKeyboard(input,targetWords=Pt){
+  let toggle=document.getElementById("seed-keyboard-toggle"),keyboard=document.getElementById("seed-keyboard"),modeButton=keyboard?.querySelector("[data-seed-keyboard-mode]"),passphrase=document.getElementById("pass");if(!toggle||!keyboard||!input)return;
+  let activeInput=input,isPassphrase=()=>Boolean(passphrase&&activeInput===passphrase),refresh=()=>{if(isPassphrase())hodlUpdatePassphraseKeyboardKeys(activeInput);else hodlUpdateSeedKeyboardKeys(input,targetWords)};
+  let activate=target=>{activeInput=target;let pass=isPassphrase();if(modeButton){if(!pass&&modeButton.dataset.seedKeyboardMode!=="lower")hodlSetSeedKeyboardLayout(keyboard,modeButton,"lower");modeButton.disabled=!pass;modeButton.setAttribute("aria-label",pass?"Change passphrase character mode":"Character mode switching is available for the passphrase")}keyboard.setAttribute("aria-label",pass?`On-screen ${keyboard.dataset.seedKeyboardLayout||"lower"} passphrase keyboard`:"On-screen lowercase seed phrase keyboard");refresh()};
+  toggle.onclick=()=>{hodlSetOnScreenKeyboardOpen(!hodlOnScreenKeyboardOpen);refresh()};
+  keyboard.querySelectorAll("button").forEach(button=>{button.addEventListener("pointerdown",event=>{event.preventDefault();activeInput.focus({preventScroll:!0})})});
+  keyboard.querySelectorAll("[data-seed-character-key],.seed-keyboard-space").forEach(button=>{button.onclick=()=>hodlApplySeedKeyboardKey(activeInput,button.dataset.seedKey||"")});hodlBindSeedKeyboardDelete(()=>activeInput,keyboard.querySelector("[data-seed-delete]"));if(modeButton)modeButton.onclick=()=>{hodlCycleSeedKeyboardLayout(keyboard,modeButton);keyboard.setAttribute("aria-label",`On-screen ${keyboard.dataset.seedKeyboardLayout} passphrase keyboard`);refresh()};
+  [input,...(passphrase?[passphrase]:[])].forEach(field=>{field.addEventListener("focus",()=>activate(field));["input","click","keyup","select"].forEach(type=>field.addEventListener(type,refresh))});activate(input)
+}
+function hodlBindPassphraseKeyboard(inputId="pass",toggleId="passphrase-keyboard-toggle",inputName="passphrase"){
+  let toggle=document.getElementById(toggleId),keyboard=document.getElementById("seed-keyboard"),input=document.getElementById(inputId),modeButton=keyboard?.querySelector("[data-seed-keyboard-mode]");if(!toggle||!keyboard||!input)return;
+  let privateKey=inputId==="key",refresh=()=>privateKey?hodlUpdatePrivateKeyKeyboardKeys(input):hodlUpdatePassphraseKeyboardKeys(input);toggle.onclick=()=>{hodlSetOnScreenKeyboardOpen(!hodlOnScreenKeyboardOpen);refresh()};keyboard.querySelectorAll("button").forEach(button=>{button.addEventListener("pointerdown",event=>{event.preventDefault();input.focus({preventScroll:!0})})});
+  keyboard.querySelectorAll("[data-seed-character-key],.seed-keyboard-space").forEach(button=>{button.onclick=()=>hodlApplySeedKeyboardKey(input,button.dataset.seedKey||"")});hodlBindSeedKeyboardDelete(()=>input,keyboard.querySelector("[data-seed-delete]"));if(modeButton){modeButton.disabled=!1;modeButton.onclick=()=>{hodlCycleSeedKeyboardLayout(keyboard,modeButton);keyboard.setAttribute("aria-label",`On-screen ${keyboard.dataset.seedKeyboardLayout} ${inputName} keyboard`);refresh()}};
+  ["input","focus","click","keyup","select"].forEach(type=>input.addEventListener(type,refresh));if(privateKey){document.querySelectorAll('input[name="kk"]').forEach(radio=>radio.addEventListener("change",refresh));document.getElementById("network")?.addEventListener("change",refresh)}refresh()
+}
+function hodlRenderPassphraseKeyboard(){
+  let host=document.getElementById("passphrase-keyboard-host"),toggleHost=document.getElementById("passphrase-keyboard-toggle-host"),privateKey=Ne==="key",passphrase=Ne==="dice"||Ne==="hex",enabled=passphrase||privateKey;if(toggleHost){toggleHost.hidden=!passphrase;toggleHost.innerHTML=passphrase?hodlPassphraseKeyboardToggleMarkup():""}if(!host)return;host.hidden=!enabled;host.innerHTML=enabled?(privateKey?hodlPrivateKeyKeyboardMarkup():hodlPassphraseKeyboardMarkup()):"";if(enabled)hodlBindPassphraseKeyboard(privateKey?"key":"pass",privateKey?"private-keyboard-toggle":"passphrase-keyboard-toggle",privateKey?"private key":"passphrase")
 }
 function hodlReplaceSeedFinalWord(input,context,word){
   if(!input||!context)return;input.value=[...context.baseWords,...(word?[word]:[])].join(" ");input.setSelectionRange(input.value.length,input.value.length);
@@ -4207,7 +4381,7 @@ function hodlSetSeedLength(words){
   hodlRenderKeyForm();hodlRestoreFormFields(state);hodlUpdateSeedLengthControl();hodlQueueMasterFingerprintPreview(0)
 }
 function hodlRenderKeyForm(){
-  let config=hodlSeedConfig();hodlUpdateSeedLengthControl();
+  let config=hodlSeedConfig(),keyboardHost=document.getElementById("passphrase-keyboard-host"),toggleHost=document.getElementById("passphrase-keyboard-toggle-host");if(keyboardHost){keyboardHost.hidden=!0;keyboardHost.innerHTML=""}if(toggleHost){toggleHost.hidden=!0;toggleHost.innerHTML=""}hodlUpdateSeedLengthControl();
   if(Ne==="dice"){
     let dplusFaces=["1","2","3","4","5","6","7","8","9","A","B","C","D","E","F",hodlDPlusNumberedD16?"G":"0"],dplusPad=dplusFaces.map(face=>{let decimal=face==="G"?16:Number.parseInt(face,16),label=decimal>=10?`${decimal} (${face})`:face,aria=face==="G"?"Numbered D16 face 16, entered as G":`D16 face ${face}${decimal>=10?`, decimal ${decimal}`:""}`;return`<button type="button" data-d="${face}" aria-label="${aria}">${label}</button>`}).join("");
     let diceLabel=ge==="dplus"?(config.words===24?"D++ rolls (D8, D16, D16; then a final D8)":"D++ rolls (D8, D16, D16)"):ge==="bitbox"?"Dice rolls (1–4, then coin / 6th die)":"Dice rolls (faces 1–6 only)";
@@ -4254,7 +4428,7 @@ function hodlRenderKeyForm(){
       if(replacement){replacement.value=replacementValue;replacement.dataset.previousValue=replacementValue;replacement.setSelectionRange(replacementValue.length,replacementValue.length);hodlSanitizeDiceInput(replacement)}
       hodlUpdateDice();hodlQueueMasterFingerprintPreview(0)
     }});
-    hodlBindKeyFields();return
+    hodlBindKeyFields();hodlRenderPassphraseKeyboard();return
   }
   if(Ne==="hex"){
     let binary=hodlEntropyFormat==="bin",inputId=binary?"bin":"hex",entropyCharacters=binary?["0","1"]:[..."0123456789ABCDEF"],entropyPad=`<div class="dice-input-pad dplus entropy-keypad${binary?" binary-keypad":""}" role="group" aria-label="${binary?"Binary":"Hexadecimal"} keypad">${entropyCharacters.map(character=>`<button type="button"${binary?' class="coin-button"':""} data-entropy-digit="${character}" aria-label="${binary?character==="0"?"Enter Heads as binary 0":"Enter Tails as binary 1":`Enter hexadecimal ${character}`}">${binary?character==="0"?"Heads (0)":"Tails (1)":character}</button>`).join("")}</div>`;
@@ -4280,11 +4454,11 @@ function hodlRenderKeyForm(){
       hodlInvalidateLiveKeyResult();let error=document.getElementById("error");if(error)error.textContent="";
       hodlRenderKeyForm();hodlRestoreFormFields(state);hodlUpdateSeedLengthControl();hodlQueueMasterFingerprintPreview(0)
     }});
-    hodlBindKeyFields();let entropyInput=document.getElementById(inputId);if(entropyInput)at.querySelectorAll("[data-entropy-digit]").forEach(button=>{button.onclick=()=>hodlInsertEntropyControl(entropyInput,button)});return
+    hodlBindKeyFields();let entropyInput=document.getElementById(inputId);if(entropyInput)at.querySelectorAll("[data-entropy-digit]").forEach(button=>{button.onclick=()=>hodlInsertEntropyControl(entropyInput,button)});hodlRenderPassphraseKeyboard();return
   }
   if(Ne==="seed"){
     let autocompleteEnabled=Boolean(hodlKeys[hodlActiveKey]?.seedAutocomplete);
-    at.innerHTML=`<p class="label">Your ${config.words}-word seed phrase</p><p class="muted" id="seed-help">Enter exactly ${config.words} English BIP39 words. You can also paste an extended key here; the selected phrase length does not apply to extended keys. With ${config.partialWords} compatible diceware words, choose the final checksum word below.</p><label class="seed-autocomplete-toggle"><input type="checkbox" id="seed-autocomplete" ${autocompleteEnabled?"checked":""} /><span>Autocomplete BIP39 words <span class="seed-autocomplete-note">(2+ letters normally; 1+ for a unique checksum word)</span></span></label><div class="dice-input-shell seed-input-shell"><pre class="dice-input-highlight" id="seed-highlight" aria-hidden="true"></pre><textarea id="seed" placeholder="Enter exactly ${config.words} BIP39 words" aria-describedby="seed-help seed-meta" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div><p class="muted" id="seed-meta" aria-live="polite"></p><div id="last-words" class="row" style="margin-top:8px"></div>`;
+    at.innerHTML=`<p class="label">Your ${config.words}-word seed phrase</p><p class="muted" id="seed-help">Enter exactly ${config.words} English BIP39 words. You can also paste an extended key here; the selected phrase length does not apply to extended keys. With ${config.partialWords} compatible diceware words, choose the final checksum word below.</p><div class="seed-entry-tools">${hodlSeedKeyboardToggleMarkup()}<label class="seed-autocomplete-toggle"><input type="checkbox" id="seed-autocomplete" ${autocompleteEnabled?"checked":""} /><span>Autocomplete BIP39 words <span class="seed-autocomplete-note">(2+ letters normally; 1+ for a unique checksum word)</span></span></label></div><div class="dice-input-shell seed-input-shell"><pre class="dice-input-highlight" id="seed-highlight" aria-hidden="true"></pre><textarea id="seed" placeholder="Enter exactly ${config.words} BIP39 words" aria-describedby="seed-help seed-meta" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div><p class="muted" id="seed-meta" aria-live="polite"></p>${hodlSeedKeyboardMarkup()}<div id="last-words" class="row" style="margin-top:8px"></div>`;
     let input=document.getElementById("seed"),update=()=>{
       let rawValue=input.value,value=rawValue.trim(),meta=W("#seed-meta"),picker=W("#last-words"),analysis=hodlRenderSeedInputState(input,config.words);
       if(hodlLooksExtendedKey(value)){let status=hodlSinglesigImportStatus(value,hodlSelectedNetwork(document.getElementById("network")));picker.innerHTML="";meta.textContent=status.message;meta.className="muted "+(status.ok?"ok":"err");return}
@@ -4302,20 +4476,22 @@ function hodlRenderKeyForm(){
       if(validation.ok){meta.textContent=`${progress} \u00b7 checksum valid \u00b7 ready to derive`;meta.className="muted ok";return}
       meta.textContent=`${progress} \u00b7 ${remaining} remaining`;meta.className="muted"
     };
-    let toggle=document.getElementById("seed-autocomplete");toggle.onchange=()=>{let state=hodlKeys[hodlActiveKey];if(state)state.seedAutocomplete=toggle.checked};
-    input.oninput=event=>{hodlApplyFilteredInput(input,hodlFilterSeed);hodlAutocompleteSeedInput(input,event);update()};input.onscroll=()=>hodlSyncDiceHighlight(input);input.onfocus=update;input.onblur=update;hodlBindKeyFields();update();return
+    let toggle=document.getElementById("seed-autocomplete");toggle.onchange=()=>{let state=hodlKeys[hodlActiveKey];if(state)state.seedAutocomplete=toggle.checked;input.focus({preventScroll:!0});if(toggle.checked&&hodlAutocompleteSeedInput(input,null,!0)){let event=typeof InputEvent==="function"?new InputEvent("input",{bubbles:!0,inputType:"insertReplacementText",data:null}):new Event("input",{bubbles:!0});input.dispatchEvent(event)}else update()};
+    input.oninput=event=>{hodlApplyFilteredInput(input,hodlFilterSeed);hodlAutocompleteSeedInput(input,event);update()};input.onscroll=()=>hodlSyncDiceHighlight(input);input.onfocus=update;input.onblur=event=>{if(!event.relatedTarget?.closest?.("#seed-keyboard,.seed-autocomplete-toggle"))update()};hodlBindSeedKeyboard(input,config.words);hodlBindKeyFields();update();return
   }
   at.innerHTML=`
     <p class="label">Private key format</p>
-    <div class="choice-grid three-up">
-    <label class="choice"><input type="radio" name="kk" value="wif-or-hex" checked /><span><strong>WIF / hex</strong><span class="desc">Normal Bitcoin Core private key.</span></span></label>
+    <div class="choice-grid">
+    <label class="choice"><input type="radio" name="kk" value="wif" checked /><span><strong>WIF</strong><span class="desc">Bitcoin wallet import format (Base58Check).</span></span></label>
+    <label class="choice"><input type="radio" name="kk" value="hex-key" /><span><strong>Hex</strong><span class="desc">Raw 32-byte private key as 64 hexadecimal characters.</span></span></label>
     <label class="choice"><input type="radio" name="kk" value="minikey" /><span><strong>Mini key</strong><span class="desc">Casascius-style short key.</span></span></label>
     <label class="choice"><input type="radio" name="kk" value="brain" /><span><strong>Brain wallet</strong><span class="desc">Unsafe. Use only to recover an old passphrase wallet.</span></span></label>
     </div>
     <p class="label" id="private-key-input-label">Private key or recovery passphrase</p>
     <p class="muted" id="private-key-input-help">Enter the value matching the selected format. Brain wallets are for recovery only.</p>
-    <textarea id="key" placeholder="K… / L… / 5… / 64-character hex / mini key" aria-labelledby="private-key-input-label" aria-describedby="private-key-input-help"></textarea>`;
-  hodlBindKeyFields()
+    ${hodlPrivateKeyKeyboardToggleMarkup()}
+    <textarea id="key" placeholder="5… / K… / L…" aria-labelledby="private-key-input-label" aria-describedby="private-key-input-help"></textarea>`;
+  hodlBindKeyFields();hodlRenderPassphraseKeyboard()
 }
 function hodlUpdateDice(){
   let input=document.getElementById("dice");if(!input)return;let wordsBox=document.getElementById("dice-words"),picker=document.getElementById("last-words"),config=hodlSeedConfig(),inputState=hodlRenderDiceInputState(input),invalidStatus=inputState.invalidCount?` \u00b7 ${inputState.invalidCount} invalid input${inputState.invalidCount===1?"":"s"} highlighted`:"";if(ge!=="bitbox"&&inputState.coinDerivedCount)invalidStatus+=` \u00b7 coin-button digits are BitBox-only`;
@@ -4355,7 +4531,7 @@ function hodlBindKeyFields(){
   let dice=document.getElementById("dice");if(dice){dice.setAttribute("inputmode",ge==="dplus"?"text":"numeric");dice.setAttribute("autocapitalize",ge==="dplus"?"characters":"off");dice.setAttribute("autocomplete","off");dice.setAttribute("spellcheck","false");dice.onbeforeinput=event=>{if(ge==="dplus")hodlHandleGroupedSeparatorDelete(dice,event);else hodlRememberDiceBeforeInput(dice,event)}}
   let hex=document.getElementById("hex");if(hex){hex.setAttribute("spellcheck","false");hex.oninput=()=>{hodlApplyFilteredInput(hex,hodlFilterHex);hodlUpdateEntropyInput(hex,"hex")};hex.onscroll=()=>hodlSyncDiceHighlight(hex);hex.oninput()}
   let binary=document.getElementById("bin");if(binary){binary.setAttribute("inputmode","numeric");binary.setAttribute("spellcheck","false");binary.onbeforeinput=event=>hodlHandleBinarySeparatorDelete(binary,event);binary.oninput=()=>{hodlFormatBinaryInput(binary);hodlUpdateEntropyInput(binary,"bin")};binary.onscroll=()=>hodlSyncDiceHighlight(binary);binary.oninput()}
-  let key=document.getElementById("key");if(key){let apply=()=>{let kind=document.querySelector("input[name=kk]:checked")?.value||"wif-or-hex";if(kind!=="brain")key.value=hodlFilterKey(key.value,kind);let value=key.value.trim();if(!value){hodlHint(key,!0,"");return}if(kind==="brain"){hodlHint(key,!1,"Brain wallets are unsafe. Recovery only.");return}if(kind==="minikey"){try{Ns(value);hodlHint(key,!0,"Mini key checksum looks valid")}catch(error){hodlHint(key,!1,error.message||"Not a valid mini key")}return}if(/^[0-9a-fA-F]{64}$/.test(value)){hodlHint(key,!0,"64-character hex private key");return}try{let decoded=Ls(value),network=hodlSelectedNetwork(document.getElementById("network"));if(decoded.network!==network)throw new Error(`This WIF is for ${decoded.network}; Network is set to ${network}.`);hodlHint(key,!0,`${network} WIF private key checksum looks valid`)}catch(error){hodlHint(key,!1,error.message||"Not a valid WIF key or 64-character hex")}};key.oninput=apply;document.querySelectorAll("input[name=kk]").forEach(radio=>radio.addEventListener("change",apply))}
+  let key=document.getElementById("key");if(key){let apply=event=>{let selected=document.querySelector("input[name=kk]:checked"),kind=hodlNormalizePrivateKeyKind(selected?.value,key.value),pasted=event?.inputType==="insertFromPaste";if(pasted&&kind!=="brain"){let detected=hodlDetectPrivateKeyKind(key.value);if(detected&&detected!==kind){let radio=document.querySelector(`input[name="kk"][value="${detected}"]`);if(radio){radio.checked=!0;kind=detected}}}if(kind!=="brain")key.value=hodlFilterKey(key.value,kind);hodlUpdatePrivateKeyInputPresentation();let value=key.value.trim();if(!value){hodlHint(key,!0,"");hodlUpdatePrivateKeyKeyboardKeys(key);return}if(kind==="brain"){hodlHint(key,!1,"Brain wallets are unsafe. Recovery only.");hodlUpdatePrivateKeyKeyboardKeys(key);return}try{hodlAssertPrivateKeyKind(value,hodlSelectedNetwork(document.getElementById("network")),kind);let message=kind==="minikey"?"Mini key checksum looks valid":kind==="hex-key"?"64-character hexadecimal private key":`${hodlSelectedNetwork(document.getElementById("network"))} WIF private key checksum looks valid`;hodlHint(key,!0,message)}catch(error){hodlHint(key,!1,error.message||"Invalid private key")}hodlUpdatePrivateKeyKeyboardKeys(key)};key.oninput=apply;document.querySelectorAll("input[name=kk]").forEach(radio=>radio.addEventListener("change",apply));document.getElementById("network")?.addEventListener("change",apply);hodlUpdatePrivateKeyInputPresentation()}
 }
 function hodlSelectedEntropy(targetWords=Pt){
   let format=hodlEntropyFormat==="bin"?"bin":"hex",value=document.getElementById(format)?.value.trim()||"";
@@ -4363,14 +4539,8 @@ function hodlSelectedEntropy(targetWords=Pt){
 }
 function hodlPrivateKeyInputIsValid(){
   let input=document.getElementById("key"),value=input?.value.trim()||"";if(!value)return!1;
-  let kind=document.querySelector("input[name=kk]:checked")?.value||"wif-or-hex";
-  try{
-    if(kind==="brain")return!0;
-    if(kind==="minikey"){hf(Ns(value));return!0}
-    let compact=value.replace(/\s/g,"").replace(/^0x/i,"");
-    if(/^[0-9a-fA-F]{64}$/.test(compact)){hf(M.decode(compact.toLowerCase()));return!0}
-    let decoded=Ls(value);if(decoded.network!==hodlSelectedNetwork(document.getElementById("network")))return!1;hf(decoded.priv);return!0
-  }catch{return!1}
+  let kind=hodlNormalizePrivateKeyKind(document.querySelector("input[name=kk]:checked")?.value,value);
+  try{hodlAssertPrivateKeyKind(value,hodlSelectedNetwork(document.getElementById("network")),kind);return!0}catch{return!1}
 }
 function hodlCanDeriveCurrentKey(){
   try{
@@ -4500,15 +4670,25 @@ function hodlCalculateKey(){
       let entropy=hodlSelectedEntropy();if(!entropy.ok)throw new Error(entropy.error);re=on(entropy,passphrase,network,count,account)
     }else if(Ne==="seed"){
       let value=document.getElementById("seed").value.trim();if(hodlLooksExtendedKey(value))re=Po(value,network,count,account);else{let validation=hodlValidateTargetMnemonic(value,Pt);if(!validation.ok)throw new Error(validation.error);re=ar(validation.words.join(" "),passphrase,network,count,undefined,account)}
-    }else{let kind=document.querySelector("input[name=kk]:checked")?.value||"wif-or-hex";re=Io(document.getElementById("key").value,network,kind)}
+    }else{let value=document.getElementById("key").value,kind=hodlNormalizePrivateKeyKind(document.querySelector("input[name=kk]:checked")?.value,value);hodlAssertPrivateKeyKind(value,network,kind);re=Io(value,network,kind)}
     if(re?.network!==network)throw new Error(`The supplied key is for ${re.network}, but Network is set to ${network}.`);
     Ge=!1;hodlSetSelectedScriptType(scriptType);tc();hodlFocusWalletResult();hodlCaptureKey()
   }catch(error){re=null;W("#error").textContent=error instanceof Error?error.message:"Could not derive wallet";dr.innerHTML="";hodlCaptureKey()}
 }
 function hodlFilterHex(e){return e.replace(/[^0-9a-fA-F\s]/g,"")}
 function hodlFilterBin(e){return e.replace(/[^01\s]/g,"")}
-function hodlFilterSeed(e){return e.replace(/[^a-zA-Z0-9\s]/g,"")}
+function hodlFilterSeed(e){let value=String(e??"").replace(/[^a-zA-Z0-9\s]/g,"");return hodlLooksExtendedKey(value)?value:value.toLowerCase()}
 function hodlFilterKey(e,t){return t==="brain"?e:e.replace(/[^0-9A-Za-z\s]/g,"")}
+function hodlDecodeMiniPrivateKey(value){let candidate=String(value??"").trim();if(!/^S(?:[1-9A-HJ-NP-Za-km-z]{21}|[1-9A-HJ-NP-Za-km-z]{29})$/.test(candidate))throw new Error("Mini keys must start with S and contain 22 or 30 Bitcoin Base58 characters.");return Ns(candidate)}
+function hodlAssertPrivateKeyKind(value,network,kind){
+  let candidate=String(value??"").trim(),selected=hodlNormalizePrivateKeyKind(kind,candidate);if(!candidate)throw new Error(selected==="brain"?"Enter the brain-wallet recovery passphrase.":"Enter a private key.");
+  if(selected==="brain")return candidate;
+  if(selected==="minikey"){hf(hodlDecodeMiniPrivateKey(candidate));return candidate}
+  if(selected==="hex-key"){
+    let compact=candidate.replace(/\s/g,"").replace(/^0x/i,"");if(!/^[0-9a-fA-F]{64}$/.test(compact))throw new Error("Enter exactly 64 hexadecimal characters (0–9 and a–f).");hf(M.decode(compact.toLowerCase()));return compact.toLowerCase()
+  }
+  let decoded;try{decoded=Ls(candidate)}catch{throw new Error(`Enter a valid ${network} WIF private key (${network==="testnet"?"9… or c…":"5…, K…, or L…"}).`)}if(decoded.network!==network)throw new Error(`This WIF is for ${decoded.network}; Network is set to ${network}.`);hf(decoded.priv);return candidate
+}
 function hodlFilterXpub(e){return String(e??"").replace(/[^A-Za-z0-9[\]/']/g,"")}
 function hodlNormalizeOriginPath(path){return String(path??"").trim().replace(/^m\//i,"").replace(/'/g,"h").replace(/H/g,"h")}
 function hodlParseKeyOrigin(raw){
@@ -4660,7 +4840,7 @@ function hodlHint(el,ok,msg){if(!el)return;el.classList.toggle("bad",!ok&&!!msg)
 function hodlBindFields(){let d=document.getElementById("dice");if(d){d.setAttribute("inputmode","numeric");d.setAttribute("autocomplete","off");d.setAttribute("spellcheck","false")}
 let hx=document.getElementById("hex");if(hx){hx.setAttribute("spellcheck","false");hx.oninput=()=>{hx.value=hodlFilterHex(hx.value);let n=hx.value.replace(/\s/g,"");let ok=!n||/^[0-9a-fA-F]+$/.test(n)&&(n.length%2===0);let msg=!n?"":n.length===32?"32 hex characters · 12-word seed":n.length===64?"64 hex characters · 24-word seed":n.length<32?"Need 32 hex characters for 12 words (or 64 for 24)":n.length%2?"Hex must be an even number of characters":ok?n.length*4+" bits":"Not hex";hodlHint(hx,ok&&(!n||n.length===32||n.length===40||n.length===48||n.length===56||n.length===64),msg)}}
 let bn=document.getElementById("bin");if(bn){bn.oninput=()=>{bn.value=hodlFilterBin(bn.value);let n=bn.value.replace(/\s/g,"");hodlHint(bn,!n||n.length>=128,n&&n.length<128?"Need at least 128 coin flips":n?n.length+" bits":"")}}
-let ky=document.getElementById("key");if(ky){let apply=()=>{let kind=(document.querySelector("input[name=kk]:checked")||{}).value||"wif-or-hex";if(kind!=="brain")ky.value=hodlFilterKey(ky.value,kind);let v=ky.value.trim();if(!v){hodlHint(ky,!0,"");return}if(kind==="brain"){hodlHint(ky,!1,"Brain wallets are unsafe. Recovery only.");return}if(kind==="minikey"){try{Ns(v);hodlHint(ky,!0,"Mini key checksum looks valid")}catch(err){hodlHint(ky,!1,err.message||"Not a valid mini key")}return}if(/^[0-9a-fA-F]{64}$/.test(v)){hodlHint(ky,!0,"64-character hex private key");return}try{Ls(v);hodlHint(ky,!0,"WIF private key checksum looks valid")}catch(err){hodlHint(ky,!1,"Not a WIF key or 64-character hex")}};ky.oninput=apply;document.querySelectorAll("input[name=kk]").forEach(r=>{r.addEventListener("change",apply)})}}
+let ky=document.getElementById("key");if(ky){let apply=()=>{let kind=(document.querySelector("input[name=kk]:checked")||{}).value||"wif-or-hex";if(kind!=="brain")ky.value=hodlFilterKey(ky.value,kind);let v=ky.value.trim();if(!v){hodlHint(ky,!0,"");return}if(kind==="brain"){hodlHint(ky,!1,"Brain wallets are unsafe. Recovery only.");return}if(kind==="minikey"){try{hodlDecodeMiniPrivateKey(v);hodlHint(ky,!0,"Mini key checksum looks valid")}catch(err){hodlHint(ky,!1,err.message||"Not a valid mini key")}return}if(/^[0-9a-fA-F]{64}$/.test(v)){hodlHint(ky,!0,"64-character hex private key");return}try{Ls(v);hodlHint(ky,!0,"WIF private key checksum looks valid")}catch(err){hodlHint(ky,!1,"Not a WIF key or 64-character hex")}};ky.oninput=apply;document.querySelectorAll("input[name=kk]").forEach(r=>{r.addEventListener("change",apply)})}}
 var hodlWorkspace="calc",hodlWorkspaceScrollFrame=0;
 function hodlReadMsigXpubs(){return[...document.querySelectorAll("#msig-keys textarea")].map(ta=>ta.value)}
 function hodlMergeMsigXpubs(state,values){let cached=Array.isArray(state?.fields?.xpubs)?state.fields.xpubs.slice():[];(values||hodlReadMsigXpubs()).forEach((value,index)=>{cached[index]=value});if(state)state.fields.xpubs=cached;return cached}
@@ -4971,10 +5151,10 @@ function hodlRenderPsbt(psbt){
 }
 var hodlAccountId="bip84",hodlNextKeyId=1,hodlNextKeyNumber=1,hodlKeys=[],hodlActiveKey=-1;
 function hodlKeyColor(id){let hue=Math.round((Number(id)*137.508+19)%360);return`oklch(61% 0.08 ${hue})`}
-function hodlNewKeyState(name,keyId,keyNumber){let id=keyId??hodlNextKeyId++,number=keyNumber??hodlNextKeyNumber++;return{id,number,color:hodlKeyColor(id),name:name||hodlDefaultKeyName(number),mode:"dice",diceMethod:"coldcard",entropyFormat:"hex",seedAutocomplete:!1,dplusNumberedD16:!1,targetWords:24,diceCoinPositions:[],lastWord:"",dplusLastWord:"",result:null,reveal:!1,accountId:"bip84",error:"",fields:{pass:"",script:"bip84",network:"mainnet",account:"0",count:"5",dice:"",dplusDice:"",hex:"",bin:"",seed:"",key:"",keyKind:"wif-or-hex"}}}
+function hodlNewKeyState(name,keyId,keyNumber){let id=keyId??hodlNextKeyId++,number=keyNumber??hodlNextKeyNumber++;return{id,number,color:hodlKeyColor(id),name:name||hodlDefaultKeyName(number),mode:"dice",diceMethod:"coldcard",entropyFormat:"hex",seedAutocomplete:!1,dplusNumberedD16:!1,targetWords:24,diceCoinPositions:[],lastWord:"",dplusLastWord:"",result:null,reveal:!1,accountId:"bip84",error:"",fields:{pass:"",script:"bip84",network:"mainnet",account:"0",count:"5",dice:"",dplusDice:"",hex:"",bin:"",seed:"",key:"",keyKind:"wif"}}}
 function hodlRestoreFormFields(state){
   if(!state)return;
-  document.querySelectorAll("input[name=kk]").forEach(input=>{input.checked=input.value===(state.fields.keyKind||"wif-or-hex")});
+  let restoredKeyKind=hodlNormalizePrivateKeyKind(state.fields.keyKind,state.fields.key);state.fields.keyKind=restoredKeyKind;document.querySelectorAll("input[name=kk]").forEach(input=>{input.checked=input.value===restoredKeyKind});
   let seedAutocomplete=document.getElementById("seed-autocomplete");if(seedAutocomplete)seedAutocomplete.checked=Boolean(state.seedAutocomplete);
   let dplusToggle=document.getElementById("dplus-numbered-d16");if(dplusToggle)dplusToggle.checked=Boolean(state.dplusNumberedD16);
   ["dice","hex","bin","seed","key"].forEach(id=>{let el=document.getElementById(id);if(el){el.value=id==="dice"&&ge==="dplus"?state.fields.dplusDice||"":state.fields[id]||"";if(id==="dice"){el.dataset.previousValue=el.value;el.setSelectionRange(el.value.length,el.value.length)}el.dispatchEvent(new Event("input"))}});
@@ -4990,7 +5170,7 @@ function hodlKeyStateNeedsClear(state){
   return String(state.mode??"dice")!=="dice"||String(state.diceMethod??"coldcard")!=="coldcard"||String(state.entropyFormat??"hex")!=="hex"||Boolean(state.seedAutocomplete)||Boolean(state.dplusNumberedD16)||Number(state.targetWords??24)!==24||
     (Array.isArray(state.diceCoinPositions)&&state.diceCoinPositions.length>0)||String(state.lastWord??"").length>0||String(state.dplusLastWord??"").length>0||Boolean(state.result)||Boolean(state.reveal)||String(state.error??"").length>0||
     String(state.accountId??"bip84")!=="bip84"||String(fields.script??"bip84")!=="bip84"||String(fields.network??"mainnet")!=="mainnet"||String(fields.account??"0")!=="0"||String(fields.count??"5")!=="5"||
-    String(fields.keyKind??"wif-or-hex")!=="wif-or-hex"||["pass","dice","dplusDice","hex","bin","seed","key"].some(hasText)
+    hodlNormalizePrivateKeyKind(fields.keyKind,fields.key)!=="wif"||["pass","dice","dplusDice","hex","bin","seed","key"].some(hasText)
 }
 function hodlSyncKeyClearButton(capture=!1){
   if(capture)hodlCaptureKey();let button=document.getElementById("wipe");if(!button)return;
@@ -5007,7 +5187,7 @@ function hodlCaptureKey(){
   state.error=document.getElementById("error")?.textContent||"";
   ["pass","account","count","hex","bin","seed","key"].forEach(id=>{let el=document.getElementById(id);if(el)state.fields[id]=el.value});state.fields.network=hodlSelectedNetwork(document.getElementById("network"));
   let dice=document.getElementById("dice");if(dice)state.fields[ge==="dplus"?"dplusDice":"dice"]=dice.value;
-  state.fields.keyKind=document.querySelector("input[name=kk]:checked")?.value||state.fields.keyKind||"wif-or-hex";
+  state.fields.keyKind=hodlNormalizePrivateKeyKind(document.querySelector("input[name=kk]:checked")?.value||state.fields.keyKind,state.fields.key);
 }
 function hodlSyncSelect(select,value){
   if(!select)return;

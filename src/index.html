@@ -92,7 +92,7 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
       <div id="last-words" class="row" style="margin-top:8px"></div>
     </div>
       <label class="field" id="passphrase-field">Optional BIP39 passphrase
-        <input id="pass" autocomplete="off" placeholder="Leave blank unless you set one">
+        <span class="passphrase-input-row"><span class="passphrase-keyboard-toggle-host" id="passphrase-keyboard-toggle-host" hidden></span><input id="pass" autocomplete="off" placeholder="Leave blank unless you set one"></span>
       </label>
       <div class="master-fingerprint-preview" id="master-fingerprint-preview" role="status" aria-live="polite" aria-atomic="true">
         <div class="master-fingerprint-card is-disabled" id="base-master-fingerprint-card" role="group" data-state="unavailable" aria-label="Base seed Master Fingerprint unavailable">
@@ -105,6 +105,7 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
           <code class="master-fingerprint-value" id="passphrase-master-fingerprint"></code>
         </div>
       </div>
+      <div class="passphrase-keyboard-host" id="passphrase-keyboard-host" hidden></div>
       <div class="key-settings" id="key-settings">
         <div class="key-settings-row">
           <label class="field" id="script-type-field">Script type
