@@ -228,6 +228,46 @@
     assert(!document.querySelector('img[src="x"]') && window.__browserTestInjected !== true, "Input executed markup");
   });
 
+  await test("cards hide dealt values by default and one valid card enables a testing seed", async () => {
+    await chooseMode("Cards");
+    const cards = await until(() => document.getElementById("cards"), "card transcript input");
+    const dealt = document.getElementById("dealt-cards");
+    const show = document.getElementById("show-cards");
+    const undo = document.getElementById("card-undo");
+    assert(show && !show.checked && dealt.hidden, "Dealt cards were not hidden by default");
+    equal(undo.textContent.trim(), "Undo");
+    assert(Boolean(cards.compareDocumentPosition(document.getElementById("cards-meta")) & Node.DOCUMENT_POSITION_FOLLOWING), "Card status is not below the transcript input");
+    assert(Boolean(document.getElementById("cards-meta").compareDocumentPosition(document.querySelector(".card-suit-pad")) & Node.DOCUMENT_POSITION_FOLLOWING), "Card status is not above the card buttons");
+    assert(Boolean(cards.compareDocumentPosition(document.querySelector(".card-suit-pad")) & Node.DOCUMENT_POSITION_FOLLOWING), "Card buttons are not below the transcript input");
+    assert(Boolean(document.querySelector(".card-rank-pad").compareDocumentPosition(undo) & Node.DOCUMENT_POSITION_FOLLOWING), "Undo is not below the card ranks");
+    assert(Boolean(undo.compareDocumentPosition(show) & Node.DOCUMENT_POSITION_FOLLOWING), "Undo is not left of Show cards");
+    assert(Boolean(show.compareDocumentPosition(dealt) & Node.DOCUMENT_POSITION_FOLLOWING), "Card controls are not above the dealt cards");
+    assert(Boolean(dealt.compareDocumentPosition(document.getElementById("dice-words")) & Node.DOCUMENT_POSITION_FOLLOWING), "Dealt cards are not above the seed words");
+    input(cards, "as");
+    await wait(0);
+    equal(cards.value, "AS");
+    assert(!document.getElementById("go").disabled, "One valid card did not enable derivation");
+    assert(document.getElementById("cards-meta").textContent.includes("seed available for testing"), "One-card warning is missing");
+    equal([...document.querySelectorAll("#dice-words [data-word]")].filter((word) => word.textContent !== "—").length, 24);
+    show.click();
+    assert(!dealt.hidden && dealt.textContent.includes("A"), "Show cards did not reveal the dealt card");
+    input(cards, "AS ZZ");
+    await wait(0);
+    assert(document.querySelector("#cards-highlight .dice-roll-invalid")?.textContent === "ZZ", "Invalid card was not highlighted red");
+    assert(document.getElementById("go").disabled && document.getElementById("cards-meta").classList.contains("err"), "Invalid card did not disable derivation");
+    input(cards, "AS AS");
+    assert(document.querySelector("#cards-highlight .dice-roll-invalid")?.textContent === "AS", "Repeated card was not highlighted red");
+    input(cards, "as, 10♥; td");
+    await wait(0);
+    equal(cards.value, "AS 10H TD");
+    assert(!document.getElementById("go").disabled, "Normalized valid cards did not enable derivation");
+    cards.focus();
+    const disallowed = new InputEvent("beforeinput", { bubbles: true, cancelable: true, inputType: "insertText", data: "B" });
+    assert(cards.dispatchEvent(disallowed) === false, "A character unused by card transcripts was accepted from typing");
+    show.click();
+    input(cards, "");
+  });
+
   await test("pasting a complete seed phrase computes final-word candidates once", async () => {
     await chooseMode("Seed phrase");
     const seed = await until(() => document.getElementById("seed"), "seed input");

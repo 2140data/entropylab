@@ -30,6 +30,8 @@ function loadSlice(name) {
 }
 
 const hodlNormalizeCardToken = new Function(`${loadSlice("hodlNormalizeCardToken")}; return hodlNormalizeCardToken;`)();
+const hodlFilterCards = new Function(`${loadSlice("hodlFilterCards")}; return hodlFilterCards;`)();
+const hodlCardTypedCharactersAllowed = new Function(`${loadSlice("hodlCardTypedCharactersAllowed")}; return hodlCardTypedCharactersAllowed;`)();
 const hodlCardWithoutReplacementBits = new Function(`${loadSlice("hodlCardWithoutReplacementBits")}; return hodlCardWithoutReplacementBits;`)();
 const hodlSeedLengths = {
   12: { words: 12, bits: 128, bytes: 16 },
@@ -46,6 +48,16 @@ const hodlParseCards = new Function(
   "hodlCardWithoutReplacementBits",
   `${loadSlice("hodlParseCards")}; return hodlParseCards;`,
 )(hodlCardNeeded, hodlNormalizeCardToken, hodlCardWithoutReplacementBits);
+const Z = (input) => new Uint8Array(createHash("sha256").update(input).digest());
+const M = { encode: (bytes) => Buffer.from(bytes).toString("hex") };
+const hodlCardsEntropy = new Function(
+  "hodlSeedConfig",
+  "hodlParseCards",
+  "Z",
+  "TextEncoder",
+  "M",
+  `${loadSlice("hodlCardsEntropy")}; return hodlCardsEntropy;`,
+)(hodlSeedConfig, hodlParseCards, Z, TextEncoder, M);
 
 const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"];
 const SUITS = ["S", "H", "D", "C"];
@@ -57,6 +69,13 @@ test("card tokens normalize 10 and suit glyphs to ASCII", () => {
   assert.equal(hodlNormalizeCardToken("A♠"), "AS");
   assert.equal(hodlNormalizeCardToken("Q♦"), "QD");
   assert.equal(hodlNormalizeCardToken("foo"), "");
+});
+
+test("card transcript input normalizes its limited character set", () => {
+  assert.equal(hodlFilterCards("as, 10♥;td"), "AS 10H TD");
+  assert.equal(hodlFilterCards("as <img>"), "AS IMG");
+  assert.equal(hodlCardTypedCharactersAllowed("aS 10♥, TD"), true);
+  assert.equal(hodlCardTypedCharactersAllowed("B"), false);
 });
 
 test("25 unique cards reach 12-word bits; 24 unique do not", () => {
@@ -73,6 +92,13 @@ test("parse rejects a repeated card in the first shuffle", () => {
   const parsed = hodlParseCards("AS 2C AS", 12);
   assert.deepEqual(parsed.duplicates, ["AS"]);
   assert.deepEqual(parsed.cards, ["AS", "2C"]);
+  assert.deepEqual(parsed.duplicateEntries.map(({ start, end }) => [start, end]), [[6, 8]]);
+});
+
+test("parse reports exact ranges for invalid card tokens", () => {
+  const parsed = hodlParseCards("AS ZZ 2C", 12);
+  assert.deepEqual(parsed.invalid, ["ZZ"]);
+  assert.deepEqual(parsed.invalidEntries.map(({ start, end }) => [start, end]), [[3, 5]]);
 });
 
 test("24-word extra cards may repeat the first shuffle", () => {
@@ -89,4 +115,15 @@ test("hashed transcript is SHA-256 of ASCII codes", () => {
   assert.match(app, /Z\(new TextEncoder\(\)\.encode\(parsed\.hashInput\)\)/);
   assert.equal(hodlParseCards(transcript, 12).hashInput, transcript);
   assert.equal(digest.length, 64);
+});
+
+test("one valid card produces a deterministic testing seed", () => {
+  const entropy = hodlCardsEntropy("AS", 24);
+  assert.equal(entropy.ok, true);
+  assert.equal(entropy.bytes.length, 32);
+  assert.equal(entropy.parsed.cards.length, 1);
+  assert.match(entropy.warnings.join(" "), /Only 1 of 58 recommended cards/);
+  assert.match(entropy.warnings.join(" "), /Use only for testing/);
+  assert.equal(hodlCardsEntropy("AS AS", 24).ok, false);
+  assert.equal(hodlCardsEntropy("ZZ", 24).ok, false);
 });

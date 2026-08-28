@@ -30,6 +30,14 @@ test("single-key network selector is half width on wide screens and full width o
   );
 });
 
+test("entropy progress messages sit directly below their inputs and above keypads", () => {
+  assert.match(app, /<textarea id="dice"[^>]*><\/textarea><\/div>\s*\$\{hodlSeedMetaRowMarkup\("dice-meta",!0\)\}\s*\$\{dicePad\}/);
+  assert.match(app, /<textarea id="cards"[^>]*><\/textarea><\/div>\s*\$\{hodlSeedMetaRowMarkup\("cards-meta"\)\}\s*<div class="card-suit-pad"/);
+  assert.match(app, /<textarea id="\$\{inputId\}"[^>]*><\/textarea><\/div>\s*\$\{hodlSeedMetaRowMarkup\("entropy-meta",!0\)\}\s*\$\{entropyPad\}/);
+  assert.match(app, /<textarea id="seed"[^>]*><\/textarea><\/div><p class="muted" id="seed-meta"[^>]*><\/p>\$\{hodlSeedKeyboardMarkup\(\)\}/);
+  assert.match(app, /<textarea id="key"[^>]*><\/textarea><\/div><p class="muted" id="private-key-meta"[^>]*><\/p>/);
+});
+
 test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /function hodlSeedKeyboardToggleMarkup\(\)/);
   assert.match(app, /function hodlPassphraseKeyboardToggleMarkup\(\)/);

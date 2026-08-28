@@ -247,6 +247,9 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
 }
 .card-rank-pad button { font-size: 15px; }
 .dealt-cards { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; min-height: 60px; }
+.dealt-cards[hidden] { display: none; }
+.card-controls-row { align-items: stretch; gap: var(--space-control); margin-top: var(--space-control); }
+.card-controls-row .card-visibility-toggle { margin: 0; }
 .dealt-shuffle-label {
   flex: 1 0 100%; margin: 4px 0 0; color: var(--muted);
   font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;

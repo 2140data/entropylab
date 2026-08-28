@@ -249,6 +249,9 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
 }
 .card-rank-pad button { font-size: 15px; }
 .dealt-cards { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; min-height: 60px; }
+.dealt-cards[hidden] { display: none; }
+.card-controls-row { align-items: stretch; gap: var(--space-control); margin-top: var(--space-control); }
+.card-controls-row .card-visibility-toggle { margin: 0; }
 .dealt-shuffle-label {
   flex: 1 0 100%; margin: 4px 0 0; color: var(--muted);
   font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
@@ -4211,18 +4214,32 @@ function hodlNormalizeCardToken(token){
 }
 function hodlParseCards(raw,targetWords=Pt){
   let needed=hodlCardNeeded(targetWords),text=String(raw??"").toUpperCase().replace(/\u2660/g,"S").replace(/\u2665/g,"H").replace(/\u2666/g,"D").replace(/\u2663/g,"C");
-  let tokens=text.split(/[\s,.;:_|/-]+/).filter(Boolean),cards=[],invalid=[],duplicates=[];
-  for(let token of tokens){
-    let card=hodlNormalizeCardToken(token);
-    if(!card){invalid.push(token);continue}
+  let entries=[...text.matchAll(/[^\s,.;:_|/-]+/g)].map(match=>({token:match[0],start:match.index,end:match.index+match[0].length})),cards=[],invalid=[],duplicates=[],invalidEntries=[],duplicateEntries=[];
+  for(let entry of entries){
+    let card=hodlNormalizeCardToken(entry.token);entry.card=card;
+    if(!card){invalid.push(entry.token);invalidEntries.push(entry);continue}
     let pool=cards.length<needed.first?cards:cards.slice(needed.first);
-    if(pool.includes(card))duplicates.push(card);
+    if(pool.includes(card)){entry.duplicate=!0;duplicates.push(card);duplicateEntries.push(entry)}
     else cards.push(card)
   }
   let firstCount=Math.min(cards.length,needed.first),extraCount=Math.max(0,cards.length-needed.first);
   let bits=hodlCardWithoutReplacementBits(firstCount);
   for(let i=0;i<extraCount;i++)bits+=Math.log2(52-i);
-  return{cards,invalid,duplicates,bits,needed,hashInput:cards.join(" ")}
+  return{cards,invalid,duplicates,entries,invalidEntries,duplicateEntries,bits,needed,hashInput:cards.join(" ")}
+}
+function hodlCardTokenCanContinue(token){return/^(?:[A2-9TJQK]|1|10)$/i.test(String(token??""))}
+function hodlFilterCards(value){
+  return String(value??"").toUpperCase().replace(/\u2660/g,"S").replace(/\u2665/g,"H").replace(/\u2666/g,"D").replace(/\u2663/g,"C").replace(/[^0-9A-Z\s,.;:_|/-]/g,"").replace(/[\s,.;:_|/-]+/g," ")
+}
+function hodlCardTypedCharactersAllowed(value){return[...String(value??"")].every(character=>/[A2-9TJQKCDHS10\s,.;:_|/\-\u2660\u2663\u2665\u2666]/i.test(character))}
+function hodlAnalyzeCardInput(input,targetWords=Pt){
+  let parsed=hodlParseCards(input?.value??"",targetWords),pending=null,lastInvalid=parsed.invalidEntries.at(-1),caret=input?.selectionStart??-1;
+  if(lastInvalid&&document.activeElement===input&&input.selectionStart===input.selectionEnd&&caret===lastInvalid.end&&!/[\s,.;:_|/-]$/.test(input.value)&&hodlCardTokenCanContinue(lastInvalid.token))pending=lastInvalid;
+  let invalidRanges=[...parsed.invalidEntries.filter(entry=>entry!==pending),...parsed.duplicateEntries].map(entry=>[entry.start,entry.end]);
+  return{...parsed,pending,invalidRanges}
+}
+function hodlRenderCardInputState(input,targetWords=Pt){
+  let analysis=hodlAnalyzeCardInput(input,targetWords),invalid=analysis.invalidRanges.length>0;input.classList.toggle("bad",invalid);input.setAttribute("aria-invalid",String(invalid));hodlRenderInputHighlight(input,analysis.invalidRanges);return analysis
 }
 function hodlCardSuitMeta(code){
   return hodlCardSuits.find(suit=>suit.code===code)||hodlCardSuits[0]
@@ -4239,16 +4256,17 @@ function hodlCardsEntropy(value,targetWords=Pt){
   let required=parsed.needed.first+parsed.needed.extra;
   notes.push(`${parsed.cards.length} card${parsed.cards.length===1?"":"s"} \u2248 ${parsed.bits.toFixed(1)} bits.`);
   notes.push("SHA-256 hashes the ASCII transcript (AS 2C TD), then the first "+config.bits+" bits become the selected "+config.words+"-word seed. One shuffled deck is about 225.6 bits.");
-  if(parsed.bits<config.bits)return{ok:!1,error:config.words===24?`A 24-word seed needs 256 bits. Deal all 52 unique cards, shuffle again, then deal 6 more (${parsed.cards.length} of ${required}).`:`A ${config.words}-word seed needs ${config.bits} bits. Deal ${parsed.needed.first} unique cards without putting them back (${parsed.cards.length} of ${parsed.needed.first}).`,notes,warnings,parsed};
+  if(parsed.cards.length<required)warnings.push(`Only ${parsed.cards.length} of ${required} recommended cards were entered. The ${config.words}-word phrase is deterministic, but its security cannot exceed the approximately ${parsed.bits.toFixed(1)} bits supplied. Use only for testing until the recommendation is met.`);
   if(parsed.cards.length>required)notes.push(`All ${parsed.cards.length} cards, including extras, are included in the hash.`);
   let digest=Z(new TextEncoder().encode(parsed.hashInput)),bytes=digest.slice(0,config.bytes);
   return{ok:!0,bytes,hex:M.encode(bytes),bits:config.bits,sourceBits:parsed.bits,method:"cards-sha256",notes,warnings,parsed}
 }
 function hodlUpdateCards(){
   let input=document.getElementById("cards");if(!input)return;
-  let config=hodlSeedConfig(),parsed=hodlParseCards(input.value,config.words),required=parsed.needed.first+parsed.needed.extra,entropy=hodlCardsEntropy(input.value,config.words);
+  let config=hodlSeedConfig(),parsed=hodlRenderCardInputState(input,config.words),required=parsed.needed.first+parsed.needed.extra,entropy=hodlCardsEntropy(input.value,config.words),showCards=document.getElementById("show-cards")?.checked===!0;
   let dealt=document.getElementById("dealt-cards");
   if(dealt){
+    dealt.hidden=!showCards;
     if(!parsed.cards.length)dealt.innerHTML=`<span class="muted">No cards yet.</span>`;
     else if(config.words===24){
       let first=parsed.cards.slice(0,52),extra=parsed.cards.slice(52);
@@ -4263,16 +4281,14 @@ function hodlUpdateCards(){
     if(needSecond)reshuffle.innerHTML=parsed.cards.length===52?`<strong>Shuffle the deck again now.</strong> Then deal 6 more cards. Repeats from the first 52 are fine.`:`<strong>Second shuffle.</strong> Deal ${left} more card${left===1?"":"s"}. Repeats from the first shuffle are fine.`
   }
   let wordsBox=document.getElementById("dice-words"),preview=[];
-  try{if(parsed.cards.length)preview=_n(Z(new TextEncoder().encode(parsed.hashInput)).slice(0,config.bytes)).split(" ")}catch{}
-  hodlRenderDiceWordGrid(wordsBox,preview,config.words,!entropy.ok);
-  let meta=W("#cards-meta"),missing=Math.max(0,required-parsed.cards.length),status="";
-  if(parsed.invalid.length)status=`${parsed.invalid.length} invalid token${parsed.invalid.length===1?"":"s"} \u00b7 use AS, 10H, or TD`;
-  else if(parsed.duplicates.length)status=`Repeated ${parsed.duplicates[0]} in this shuffle \u00b7 deal a different card`;
-  else if(!parsed.cards.length)status=`0 of ${required} cards \u00b7 0.0 bits \u00b7 ${config.words}-word seed`;
-  else if(config.words===24&&parsed.cards.length>=52&&parsed.cards.length<required)status=parsed.cards.length===52?`52 of 52 first shuffle \u00b7 ${parsed.bits.toFixed(1)} bits \u00b7 shuffle again, then deal 6 more`:`Second shuffle \u00b7 ${parsed.cards.length-52} of 6 \u00b7 ${parsed.bits.toFixed(1)} bits \u00b7 ${required-parsed.cards.length} remaining`;
-  else if(missing)status=`${parsed.cards.length} of ${required} unique cards \u00b7 ${parsed.bits.toFixed(1)} bits \u00b7 ${missing} remaining`;
-  else status=`${parsed.cards.length} card${parsed.cards.length===1?"":"s"} \u00b7 ${parsed.bits.toFixed(1)} bits \u00b7 ready to derive`;
-  meta.textContent=status;meta.className="muted"+(entropy.ok?" ok":parsed.invalid.length||parsed.duplicates.length?" err":"");
+  try{if(parsed.cards.length&&!parsed.invalid.length&&!parsed.duplicates.length&&!parsed.pending)preview=_n(Z(new TextEncoder().encode(parsed.hashInput)).slice(0,config.bytes)).split(" ")}catch{}
+  hodlRenderDiceWordGrid(wordsBox,preview,config.words,parsed.cards.length<required);
+  let meta=W("#cards-meta"),missing=Math.max(0,required-parsed.cards.length),extra=Math.max(0,parsed.cards.length-required),status=!parsed.cards.length?`0 of ${required} recommended cards \u00b7 0.0 bits estimated \u00b7 Hashed card transcript`:missing?`${parsed.cards.length} of ${required} recommended cards \u00b7 ${parsed.bits.toFixed(1)} bits estimated \u00b7 seed available for testing \u00b7 ${missing} more recommended`:`${parsed.cards.length} card${parsed.cards.length===1?"":"s"} \u00b7 ${parsed.bits.toFixed(1)} bits estimated \u00b7 ready to derive${extra?` \u00b7 all ${extra} extra card${extra===1?" is":"s are"} included`:""}`;
+  if(config.words===24&&parsed.cards.length>=52&&missing)status+=parsed.cards.length===52?` \u00b7 shuffle again, then deal 6 more`:` \u00b7 second shuffle ${parsed.cards.length-52} of 6`;
+  if(parsed.pending)status+=` \u00b7 finish ${parsed.pending.token} with a suit`;
+  if(parsed.invalidEntries.length-(parsed.pending?1:0)>0){let count=parsed.invalidEntries.length-(parsed.pending?1:0);status+=` \u00b7 ${count} invalid card${count===1?"":"s"} highlighted \u00b7 use AS, 10H, or TD`}
+  if(parsed.duplicateEntries.length)status+=` \u00b7 repeated ${parsed.duplicateEntries[0].card} highlighted \u00b7 deal a different card`;
+  let invalid=parsed.invalidRanges.length>0;meta.textContent=status;meta.className="muted"+(invalid?" err":!missing&&entropy.ok?" ok":"");
   document.querySelectorAll("[data-card-suit]").forEach(button=>{let active=button.getAttribute("data-card-suit")===hodlCardSuit;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active))});
   let used=new Set(parsed.cards.length<parsed.needed.first?parsed.cards:parsed.cards.slice(parsed.needed.first));
   document.querySelectorAll("[data-card-rank]").forEach(button=>{let card=button.getAttribute("data-card-rank")+hodlCardSuit;button.disabled=used.has(card)});
@@ -4641,8 +4657,8 @@ function hodlRenderKeyForm(){
       <p class="muted" id="dice-help">${diceHelp}</p>
       ${dplusConvention}
       <div class="dice-input-shell"><pre class="dice-input-highlight" id="dice-highlight" aria-hidden="true"></pre><textarea id="dice" placeholder="${dicePlaceholder}" aria-describedby="dice-help dice-meta"></textarea></div>
-      ${dicePad}
       ${hodlSeedMetaRowMarkup("dice-meta",!0)}
+      ${dicePad}
       <div id="dice-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div><div id="last-words" class="row" style="margin-top:8px"></div>`;
     let input=document.getElementById("dice");input.dataset.previousValue=input.value;
     at.querySelectorAll("[data-d]").forEach(button=>{button.onclick=()=>hodlInsertDiceControl(input,button)});
@@ -4663,27 +4679,28 @@ function hodlRenderKeyForm(){
     hodlBindKeyFields();hodlRenderPassphraseKeyboard();return
   }
   if(Ne==="cards"){
-    let needed=hodlCardNeeded(config.words),suitPad=hodlCardSuits.map(suit=>`<button type="button" class="card-suit${suit.red?" is-red":""}${suit.code===hodlCardSuit?" active":""}" data-card-suit="${suit.code}" aria-label="${suit.label}" aria-pressed="${suit.code===hodlCardSuit}">${suit.symbol}</button>`).join("");
+    let needed=hodlCardNeeded(config.words),showCards=Boolean(hodlKeys[hodlActiveKey]?.showCards),suitPad=hodlCardSuits.map(suit=>`<button type="button" class="card-suit${suit.red?" is-red":""}${suit.code===hodlCardSuit?" active":""}" data-card-suit="${suit.code}" aria-label="${suit.label}" aria-pressed="${suit.code===hodlCardSuit}">${suit.symbol}</button>`).join("");
     let rankPad=hodlCardRanks.map(rank=>`<button type="button" data-card-rank="${rank}" aria-label="${rank==="T"?"10":rank}">${rank==="T"?"10":rank}</button>`).join("");
     at.innerHTML=`
       <p class="label">Playing cards</p>
-      <p class="muted" id="cards-help">${config.words===24?"Shuffle thoroughly, deal all 52 unique cards, then shuffle again and deal 6 more. SHA-256 of the ASCII transcript becomes the 24-word seed.":`Shuffle thoroughly and deal ${needed.first} unique cards without putting them back. SHA-256 of the ASCII transcript (AS 2C TD) becomes the ${config.words}-word seed.`}</p>
+      <p class="muted" id="cards-help">Each valid card updates a deterministic test seed. For real security, ${config.words===24?"deal all 52 unique cards, shuffle again, then deal 6 more":`deal ${needed.first} unique cards without putting them back`}. SHA-256 hashes the ASCII transcript (AS 2C TD).</p>
+      <label class="field" id="cards-input-label" for="cards">Card transcript</label>
+      <div class="dice-input-shell cards-input-shell"><pre class="dice-input-highlight" id="cards-highlight" aria-hidden="true"></pre><textarea id="cards" placeholder="AS 2C 10H TD\u2026" autocomplete="off" spellcheck="false" autocapitalize="characters" aria-labelledby="cards-input-label" aria-describedby="cards-help cards-meta"></textarea></div>
+      ${hodlSeedMetaRowMarkup("cards-meta")}
       <div class="card-suit-pad" role="group" aria-label="Suit">${suitPad}</div>
       <div class="card-rank-pad dice-input-pad" role="group" aria-label="Rank">${rankPad}</div>
-      <div class="dealt-cards" id="dealt-cards" aria-live="polite"></div>
+      <div class="row card-controls-row"><button class="btn secondary" id="card-undo" type="button" disabled>Undo</button><label class="seed-autocomplete-toggle card-visibility-toggle"><input type="checkbox" id="show-cards" aria-controls="dealt-cards" ${showCards?"checked":""} /><span>Show cards</span></label></div>
+      <div class="dealt-cards" id="dealt-cards" aria-live="polite"${showCards?"":" hidden"}></div>
       <aside class="cards-reshuffle" id="cards-reshuffle" hidden></aside>
-      <label class="field">Card transcript
-        <textarea id="cards" placeholder="AS 2C 10H TD\u2026" autocomplete="off" spellcheck="false" aria-describedby="cards-help cards-meta"></textarea>
-      </label>
-      <div class="row" style="margin-top:8px"><button class="btn secondary" id="card-undo" type="button" disabled>Undo last card</button></div>
-      ${hodlSeedMetaRowMarkup("cards-meta")}
       <div id="dice-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div>
     `;
     let input=document.getElementById("cards");
-    input.oninput=()=>hodlUpdateCards();
+    input.onbeforeinput=event=>{if(event.inputType==="insertText"&&event.data&&!hodlCardTypedCharactersAllowed(event.data))event.preventDefault()};
+    input.oninput=()=>{hodlApplyFilteredInput(input,hodlFilterCards);hodlUpdateCards()};input.onscroll=()=>hodlSyncDiceHighlight(input);
     at.querySelectorAll("[data-card-suit]").forEach(button=>{button.onclick=()=>{hodlCardSuit=button.getAttribute("data-card-suit");hodlUpdateCards()}});
     at.querySelectorAll("[data-card-rank]").forEach(button=>{button.onclick=()=>hodlAppendCard(button.getAttribute("data-card-rank"))});
     document.getElementById("card-undo").onclick=hodlUndoCard;
+    document.getElementById("show-cards").onchange=event=>{let visible=event.currentTarget.checked,state=hodlKeys[hodlActiveKey],dealt=document.getElementById("dealt-cards");if(state)state.showCards=visible;if(dealt)dealt.hidden=!visible};
     hodlBindKeyFields();hodlUpdateCards();return
   }
 
@@ -4702,8 +4719,8 @@ function hodlRenderKeyForm(){
       <p class="label" id="entropy-input-label">${binary?`Binary entropy (coin flips) for a ${config.words}-word seed`:`Hexadecimal entropy for a ${config.words}-word seed`}</p>
       <p class="muted" id="entropy-input-help">${binary?`Spaces are added every 11 bits. Each complete group fills one BIP39 word; the checksum-derived final word appears at ${config.bits} bits.`:`Each hex character contributes four bits. Seed-word cards fill as enough bits arrive; the checksum-derived final word appears at exactly ${config.hexChars} characters.`} No generator — enter entropy you already created.</p>
       <div class="dice-input-shell entropy-input-shell"><pre class="dice-input-highlight" id="entropy-input-highlight" aria-hidden="true"></pre><textarea id="${inputId}" placeholder="${binary?`Exactly ${config.bits} zeros and ones`:`${config.hexChars} hex characters for a ${config.words}-word seed`}" aria-labelledby="entropy-input-label" aria-describedby="entropy-input-help entropy-meta" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div>
-      ${entropyPad}
       ${hodlSeedMetaRowMarkup("entropy-meta",!0)}
+      ${entropyPad}
       <div id="entropy-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div>`;
     at.querySelectorAll('input[name="entropy-format"]').forEach(radio=>{radio.onchange=()=>{
       let state=hodlKeys[hodlActiveKey],previous=document.getElementById(hodlEntropyFormat);if(state&&previous)state.fields[hodlEntropyFormat]=previous.value;
@@ -5438,7 +5455,7 @@ function hodlRenderPsbt(psbt){
 }
 var hodlAccountId="bip84",hodlNextKeyId=1,hodlNextKeyNumber=1,hodlKeys=[],hodlActiveKey=-1;
 function hodlKeyColor(id){let hue=Math.round((Number(id)*137.508+19)%360);return`oklch(61% 0.08 ${hue})`}
-function hodlNewKeyState(name,keyId,keyNumber){let id=keyId??hodlNextKeyId++,number=keyNumber??hodlNextKeyNumber++;return{id,number,color:hodlKeyColor(id),name:name||hodlDefaultKeyName(number),mode:"dice",diceMethod:"coldcard",entropyFormat:"hex",seedAutocomplete:!1,dplusNumberedD16:!1,targetWords:24,diceCoinPositions:[],lastWord:"",dplusLastWord:"",result:null,reveal:!1,accountId:"bip84",error:"",fields:{pass:"",script:"bip84",network:"mainnet",account:"0",count:"5",dice:"",dplusDice:"",hex:"",bin:"",cards:"",seed:"",key:"",keyKind:"wif"}}}
+function hodlNewKeyState(name,keyId,keyNumber){let id=keyId??hodlNextKeyId++,number=keyNumber??hodlNextKeyNumber++;return{id,number,color:hodlKeyColor(id),name:name||hodlDefaultKeyName(number),mode:"dice",diceMethod:"coldcard",entropyFormat:"hex",seedAutocomplete:!1,dplusNumberedD16:!1,showCards:!1,targetWords:24,diceCoinPositions:[],lastWord:"",dplusLastWord:"",result:null,reveal:!1,accountId:"bip84",error:"",fields:{pass:"",script:"bip84",network:"mainnet",account:"0",count:"5",dice:"",dplusDice:"",hex:"",bin:"",cards:"",seed:"",key:"",keyKind:"wif"}}}
 function hodlRestoreFormFields(state){
   if(!state)return;
   let restoredKeyKind=hodlNormalizePrivateKeyKind(state.fields.keyKind,state.fields.key);state.fields.keyKind=restoredKeyKind;document.querySelectorAll("input[name=kk]").forEach(input=>{input.checked=input.value===restoredKeyKind});
@@ -5454,7 +5471,7 @@ function hodlSetMode(mode){
 }
 function hodlKeyStateNeedsClear(state){
   if(!state)return!1;let fields=state.fields||{},hasText=id=>String(fields[id]??"").length>0;
-  return String(state.mode??"dice")!=="dice"||String(state.diceMethod??"coldcard")!=="coldcard"||String(state.entropyFormat??"hex")!=="hex"||Boolean(state.seedAutocomplete)||Boolean(state.dplusNumberedD16)||Number(state.targetWords??24)!==24||
+  return String(state.mode??"dice")!=="dice"||String(state.diceMethod??"coldcard")!=="coldcard"||String(state.entropyFormat??"hex")!=="hex"||Boolean(state.seedAutocomplete)||Boolean(state.dplusNumberedD16)||Boolean(state.showCards)||Number(state.targetWords??24)!==24||
     (Array.isArray(state.diceCoinPositions)&&state.diceCoinPositions.length>0)||String(state.lastWord??"").length>0||String(state.dplusLastWord??"").length>0||Boolean(state.result)||Boolean(state.reveal)||String(state.error??"").length>0||
     String(state.accountId??"bip84")!=="bip84"||String(fields.script??"bip84")!=="bip84"||String(fields.network??"mainnet")!=="mainnet"||String(fields.account??"0")!=="0"||String(fields.count??"5")!=="5"||
     hodlNormalizePrivateKeyKind(fields.keyKind,fields.key)!=="wif"||["pass","dice","dplusDice","hex","bin","cards","seed","key"].some(hasText)
@@ -5470,7 +5487,7 @@ function hodlWipeActiveKey(){
 function hodlCaptureKey(){
   if(hodlActiveKey<0||!hodlKeys[hodlActiveKey])return;
   let state=hodlKeys[hodlActiveKey];
-  state.mode=Ne;state.diceMethod=ge;state.entropyFormat=hodlEntropyFormat;let seedAutocomplete=document.getElementById("seed-autocomplete");if(seedAutocomplete)state.seedAutocomplete=seedAutocomplete.checked;let dplusToggle=document.getElementById("dplus-numbered-d16");if(dplusToggle)hodlDPlusNumberedD16=dplusToggle.checked;state.dplusNumberedD16=Boolean(hodlDPlusNumberedD16);state.targetWords=Pt;state.diceCoinPositions=hodlDiceCoinPositions.slice();if(ge==="dplus")state.dplusLastWord=ft;else if(ge==="bitbox")state.lastWord=ft;state.result=re;state.reveal=Ge;state.accountId=hodlSelectedScriptType();state.fields.script=state.accountId;
+  state.mode=Ne;state.diceMethod=ge;state.entropyFormat=hodlEntropyFormat;let seedAutocomplete=document.getElementById("seed-autocomplete");if(seedAutocomplete)state.seedAutocomplete=seedAutocomplete.checked;let dplusToggle=document.getElementById("dplus-numbered-d16");if(dplusToggle)hodlDPlusNumberedD16=dplusToggle.checked;state.dplusNumberedD16=Boolean(hodlDPlusNumberedD16);let showCards=document.getElementById("show-cards");if(showCards)state.showCards=showCards.checked;state.targetWords=Pt;state.diceCoinPositions=hodlDiceCoinPositions.slice();if(ge==="dplus")state.dplusLastWord=ft;else if(ge==="bitbox")state.lastWord=ft;state.result=re;state.reveal=Ge;state.accountId=hodlSelectedScriptType();state.fields.script=state.accountId;
   state.error=document.getElementById("error")?.textContent||"";
   ["pass","account","count","hex","bin","seed","key","cards"].forEach(id=>{let el=document.getElementById(id);if(el)state.fields[id]=el.value});state.fields.network=hodlSelectedNetwork(document.getElementById("network"));
   let dice=document.getElementById("dice");if(dice)state.fields[ge==="dplus"?"dplusDice":"dice"]=dice.value;
