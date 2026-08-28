@@ -42,5 +42,8 @@ coordinate a fix; scope it as narrowly as needed to reproduce responsibly.
 
 ## Disclaimer
 
-This software is provided without warranty under the
-[MIT License](LICENSE). Keep verified backups, and use it at your own risk.
+This software is provided without warranty of any kind — no express, no
+implied, no promise it work or fit any purpose — under
+[The Ooga Booga License](LICENSE), which dedicates it to the public domain. The
+caveman words mean what The Unlicense means. Keep verified backups, and use it
+at your own risk.
