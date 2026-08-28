@@ -27,6 +27,10 @@ Official website: [entropylab.online](https://entropylab.online)
   for repeated ECDSA nonces from the same public key, verifies optional Jade
   anti-exfil (sign-to-contract) transcripts without a key, and can compare supported
   SegWit v0 SIGHASH_ALL signatures with RFC 6979, including Bitcoin Core-style low-r grinding, in a temporary session.
+- Runs a quick barrage of startup sanity checks on the host browser (secure
+  context, CSPRNG, BigInt, UTF-8 encoding, and NFKD normalization). If any
+  check fails, the page is replaced with a failure report listing the failed
+  checks, because wallet output from a broken host cannot be trusted.
 - Produces recovery information that can be saved or printed for offline use.
 - Exports a Bitcoin Core `wallet.dat` (SQLite descriptor wallet) with every
   derived output descriptor already imported — receive and change for each
@@ -96,6 +100,7 @@ files, run `npm run clean`.
 │   ├── browser-instrumentation.html  In-page browser test hooks
 │   ├── browser-suite.html            In-page browser test suite
 │   ├── browser.test.mjs              Headless-Firefox integration harness
+│   ├── browser-check.test.mjs        Tests for the startup browser sanity checks
 │   ├── network-check.test.mjs        Tests for the network-check module
 │   ├── sqlite-writer.test.mjs        Tests for the SQLite writer (verified with real SQLite)
 │   ├── ui-defaults.test.mjs          UI defaults and markup invariants
@@ -112,6 +117,7 @@ files, run `npm run clean`.
 │       ├── wallet-export.js Bitcoin Core wallet.dat descriptor export
 │       ├── online.js       Hosted-site behavior and version picker
 │       ├── network-check.js Network adapter detection and warning
+│       ├── browser-check.js Startup browser sanity checks and kill-screen
 │       ├── enhanced-inputs.js
 │       └── repeat-inputs.js
 ├── index.html              Compiled application (generated, committed)

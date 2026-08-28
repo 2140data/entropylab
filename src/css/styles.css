@@ -454,6 +454,24 @@ header { padding: 8px 0 16px; }
 }
 .network-warning strong { color: var(--ok); }
 .beta-warning strong { color: var(--danger); }
+.sanity-failure {
+  min-height: 100dvh; display: grid; place-items: center; padding: 24px; box-sizing: border-box;
+}
+.sanity-failure-card {
+  max-width: 620px; margin: 0 auto; padding: 28px 24px; text-align: center;
+  border: 1px solid var(--danger); border-radius: 12px;
+  background: color-mix(in oklab, var(--danger) 10%, var(--surface));
+}
+.sanity-failure-icon { width: 56px; height: 56px; color: var(--danger); }
+.sanity-failure-title { margin: 12px 0 6px; font-size: 22px; color: var(--fg); }
+.sanity-failure-message { margin: 0 0 18px; color: var(--fg); }
+.sanity-failure-table { margin: 0 auto 16px; border-collapse: collapse; min-width: min(100%, 420px); }
+.sanity-failure-table th, .sanity-failure-table td {
+  border: 1px solid var(--border); padding: 8px 14px; text-align: left; font-size: 14px;
+}
+.sanity-failure-table th { color: var(--muted); font-weight: 600; }
+.sanity-failure-table td:last-child { color: var(--danger); font-weight: 700; }
+.sanity-failure-advice { margin: 0; color: var(--muted); font-size: 14px; }
 @media print {
   :root, :root[data-theme] {
     color-scheme: light;
