@@ -3852,7 +3852,7 @@ var hodlSeedLengths=Object.freeze({
   18:Object.freeze({words:18,bits:192,bytes:24,hexChars:48,hashRolls:75,partialWords:17,candidates:32}),
   24:Object.freeze({words:24,bits:256,bytes:32,hexChars:64,hashRolls:99,partialWords:23,candidates:8})
 });
-var hodlBip39WordSet=new Set(Ae);
+var hodlBip39WordSet=new Set(Ae),hodlBip39WordIndex=new Map(Ae.map((word,index)=>[word,index])),hodlLastWordCache=new Map();
 var hodlOnScreenKeyboardOpen=!1;
 function hodlSeedConfig(words=Pt){return hodlSeedLengths[Number(words)]||hodlSeedLengths[24]}
 function hodlLooksExtendedKey(value){return/^[xtyzuvYZUV][A-Za-z0-9]+$/.test(value.trim())&&value.trim().length>80}
@@ -4124,25 +4124,36 @@ function hodlValidateTargetMnemonic(value,targetWords=Pt){
 function hodlTargetLastWords(value,targetWords=Pt){
   let words=Rn(value).split(" ").filter(Boolean),config=hodlSeedConfig(targetWords);
   if(words.length!==config.partialWords)return null;
-  let result=Tr(words.join(" "));
-  return result&&result.completeCount===config.words?result:null
+  return hodlComputeTargetLastWords(words,config.words)
+}
+function hodlComputeTargetLastWords(words,targetWords=Pt){
+  let config=hodlSeedConfig(targetWords),normalized=words.map(word=>String(word??"").toLowerCase()),invalid=normalized.find(word=>!hodlBip39WordSet.has(word));
+  if(normalized.length!==config.partialWords)return null;
+  if(invalid)return{partialCount:normalized.length,completeCount:config.words,candidates:[],error:`\u201c${invalid}\u201d is not on the BIP39 English list.`};
+  let cacheKey=`${config.words}:${normalized.join(" ")}`,cached=hodlLastWordCache.get(cacheKey);if(cached)return cached;
+  let prefixBits=normalized.map(word=>hodlBip39WordIndex.get(word).toString(2).padStart(11,"0")).join(""),checksumBits=config.bits/32,missingEntropyBits=config.bits-prefixBits.length,candidates=[];
+  for(let suffix=0;suffix<2**missingEntropyBits;suffix++){
+    let entropyBits=prefixBits+suffix.toString(2).padStart(missingEntropyBits,"0"),bytes=new Uint8Array(config.bytes);for(let index=0;index<bytes.length;index++)bytes[index]=Number.parseInt(entropyBits.slice(index*8,index*8+8),2);
+    let checksum=Z(bytes)[0]>>(8-checksumBits),wordIndex=suffix*2**checksumBits+checksum;candidates.push(Ae[wordIndex])
+  }
+  let result={partialCount:normalized.length,completeCount:config.words,candidates};if(hodlLastWordCache.size>=32)hodlLastWordCache.delete(hodlLastWordCache.keys().next().value);hodlLastWordCache.set(cacheKey,result);return result
 }
 function hodlSeedFinalWordContext(value,targetWords=Pt){
   let config=hodlSeedConfig(targetWords),tokens=[...String(value??"").matchAll(/\S+/g)].map(match=>({word:match[0].toLowerCase(),start:match.index,end:match.index+match[0].length}));
   if(tokens.length<config.partialWords||tokens.length>config.words)return null;
   let baseTokens=tokens.slice(0,config.partialWords);if(baseTokens.some(token=>!hodlBip39WordSet.has(token.word)))return null;
-  let result=Tr(baseTokens.map(token=>token.word).join(" "));if(!result||result.error||result.completeCount!==config.words)return null;
+  let result=hodlComputeTargetLastWords(baseTokens.map(token=>token.word),config.words);if(!result||result.error||result.completeCount!==config.words)return null;
   let finalToken=tokens[config.partialWords]??null,prefix=finalToken?.word??"",matchingCandidates=prefix?result.candidates.filter(word=>word.startsWith(prefix)):result.candidates.slice();
   return{baseWords:baseTokens.map(token=>token.word),candidates:result.candidates,finalToken,prefix,matchingCandidates,selected:result.candidates.includes(prefix)?prefix:"",targetWords:config.words}
 }
 function hodlAnalyzeSeedInput(input,targetWords=Pt){
-  let value=input.value,config=hodlSeedConfig(targetWords);if(hodlLooksExtendedKey(value))return{tokens:[],invalidRanges:[],invalidWords:[],excessCount:0,checksumInvalid:!1,extendedKey:!0};
+  let value=input.value,config=hodlSeedConfig(targetWords);if(hodlLooksExtendedKey(value))return{tokens:[],invalidRanges:[],invalidWords:[],excessCount:0,checksumInvalid:!1,extendedKey:!0,finalContext:null};
   let tokens=[...value.matchAll(/\S+/g)].map(match=>({word:match[0].toLowerCase(),start:match.index,end:match.index+match[0].length})),invalidRanges=[],invalidWords=[],excessCount=0,lastIndex=tokens.length-1,last=tokens[lastIndex],activePrefix=Boolean(last&&document.activeElement===input&&!/\s$/.test(value)&&input.selectionStart===input.selectionEnd&&input.selectionStart===last.end);
   let finalContext=hodlSeedFinalWordContext(value,config.words);
   tokens.forEach((token,index)=>{let listed=hodlBip39WordSet.has(token.word),options=index===config.partialWords&&finalContext?finalContext.candidates:Ae,viablePrefix=activePrefix&&index===lastIndex&&token.word.length>0&&options.some(word=>word.startsWith(token.word));if(index>=config.words){invalidRanges.push([token.start,token.end]);excessCount+=1}else if(!listed&&!viablePrefix){invalidRanges.push([token.start,token.end]);invalidWords.push({index,word:token.word})}});
   let checksumInvalid=!1,allListed=tokens.length===config.words&&tokens.every(token=>hodlBip39WordSet.has(token.word)),finalCanContinue=Boolean(activePrefix&&finalContext?.prefix&&finalContext.matchingCandidates.some(word=>word!==finalContext.prefix));
   if(allListed&&!Pn(tokens.map(token=>token.word).join(" "),Ae)&&!finalCanContinue){checksumInvalid=!0;let final=tokens[tokens.length-1];invalidRanges.push([final.start,final.end])}
-  return{tokens,invalidRanges,invalidWords,excessCount,checksumInvalid,extendedKey:!1}
+  return{tokens,invalidRanges,invalidWords,excessCount,checksumInvalid,extendedKey:!1,finalContext}
 }
 function hodlRenderSeedInputState(input,targetWords=Pt){let analysis=hodlAnalyzeSeedInput(input,targetWords);input.setAttribute("aria-invalid",String(analysis.invalidRanges.length>0));hodlRenderInputHighlight(input,analysis.invalidRanges);return analysis}
 function hodlApplyFilteredInput(input,filter){
@@ -4462,7 +4473,7 @@ function hodlRenderKeyForm(){
     let input=document.getElementById("seed"),update=()=>{
       let rawValue=input.value,value=rawValue.trim(),meta=W("#seed-meta"),picker=W("#last-words"),analysis=hodlRenderSeedInputState(input,config.words);
       if(hodlLooksExtendedKey(value)){let status=hodlSinglesigImportStatus(value,hodlSelectedNetwork(document.getElementById("network")));picker.innerHTML="";meta.textContent=status.message;meta.className="muted "+(status.ok?"ok":"err");return}
-      let finalContext=hodlSeedFinalWordContext(rawValue,config.words),validation=hodlValidateTargetMnemonic(value,config.words),entered=analysis.tokens.length,progress=hodlSeedCountStatus(entered,config.words),remaining=Math.max(0,config.words-entered);
+      let finalContext=analysis.finalContext,validation=hodlValidateTargetMnemonic(value,config.words),entered=analysis.tokens.length,progress=hodlSeedCountStatus(entered,config.words),remaining=Math.max(0,config.words-entered);
       if(finalContext){
         hodlRenderLastWordPicker(picker,finalContext.candidates,finalContext.selected,word=>hodlReplaceSeedFinalWord(input,finalContext,word),{forceSelect:!0,resettable:!0,targetWords:config.words,placeholder:`Choose ${config.words===18?"an":"a"} ${config.words}th word`});
         if(!finalContext.finalToken){meta.textContent=`${progress} \u00b7 choose the final checksum word \u00b7 ${finalContext.candidates.length} valid choices`;meta.className="muted ok";return}

@@ -53,6 +53,12 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /function hodlSetSeedKeyboardLayout\(keyboard,button,next\)/);
   assert.match(app, /order=\["lower","upper","number"\]/);
   assert.match(app, /function hodlSeedKeyboardCanEnterCharacter\(input,key,targetWords=Pt\)/);
+  assert.match(app, /hodlBip39WordIndex=new Map\(Ae\.map\(\(word,index\)=>\[word,index\]\)\)/);
+  assert.match(app, /hodlLastWordCache=new Map\(\)/);
+  assert.match(app, /function hodlComputeTargetLastWords\(words,targetWords=Pt\)/);
+  assert.match(app, /missingEntropyBits=config\.bits-prefixBits\.length/);
+  assert.match(app, /for\(let suffix=0;suffix<2\*\*missingEntropyBits;suffix\+\+\)/);
+  assert.match(app, /let finalContext=analysis\.finalContext,validation=/);
   assert.match(app, /options=context\.candidates/);
   assert.match(app, /function hodlSeedKeyboardCanEnterSpace\(input,targetWords=Pt\)/);
   assert.match(app, /words\.length<config\.words&&words\.every\(word=>hodlBip39WordSet\.has\(word\)\)/);

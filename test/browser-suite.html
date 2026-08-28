@@ -228,6 +228,27 @@
     assert(!document.querySelector('img[src="x"]') && window.__browserTestInjected !== true, "Input executed markup");
   });
 
+  await test("pasting a complete seed phrase computes final-word candidates once", async () => {
+    await chooseMode("Seed phrase");
+    const seed = await until(() => document.getElementById("seed"), "seed input");
+    const phrase = [...Array(23).fill("abandon"), "art"].join(" ");
+    const partial = phrase.split(" ").slice(0, 23);
+    crypto.clearLastWordCache();
+    const started = performance.now();
+    input(seed, phrase);
+    const pasteMilliseconds = performance.now() - started;
+    const fast = crypto.computeTargetLastWords(partial, 24);
+    const cached = crypto.computeTargetLastWords(partial, 24);
+    const bruteStarted = performance.now();
+    const brute = crypto.bruteTargetLastWords(partial.join(" "));
+    const bruteMilliseconds = performance.now() - bruteStarted;
+    equal(JSON.stringify(fast.candidates), JSON.stringify(brute.candidates), "Optimized final-word candidates differ from BIP39 validation");
+    assert(fast === cached, "Final-word candidates were recomputed instead of cached");
+    assert(fast.candidates.includes("art") && crypto.validateTargetMnemonic(phrase, 24).ok, "The public 24-word test vector was not recognized as checksum-valid");
+    assert(pasteMilliseconds < Math.max(250, bruteMilliseconds), `Seed paste remained slow (${pasteMilliseconds.toFixed(1)} ms; brute force ${bruteMilliseconds.toFixed(1)} ms)`);
+    input(seed, "");
+  });
+
   await test("dice, hex, seed, and private-key keyboard toggles share their open state", async () => {
     await chooseMode("Seed phrase");
     let toggle = await until(() => document.getElementById("seed-keyboard-toggle"), "seed keyboard toggle");
@@ -314,9 +335,9 @@
     privateKey.value = "0".repeat(63) + "1";
     privateKey.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertFromPaste", data: privateKey.value }));
     assert(document.querySelector('input[name="kk"][value="hex-key"]').checked, "A pasted hexadecimal key did not select Hex");
-    assert(hodlPrivateKeyInputIsValid(), "A valid hexadecimal key was rejected with Hex selected");
+    assert(crypto.privateKeyInputIsValid(), "A valid hexadecimal key was rejected with Hex selected");
     document.querySelector('input[name="kk"][value="wif"]').click();
-    assert(!hodlPrivateKeyInputIsValid(), "A hexadecimal key was accepted with WIF selected");
+    assert(!crypto.privateKeyInputIsValid(), "A hexadecimal key was accepted with WIF selected");
     input(privateKey, "");
     document.querySelector('input[name="kk"][value="wif"]').click();
     assert(!keyboard.querySelector('[data-seed-key="K"]').disabled, "A mainnet WIF prefix was disabled");
@@ -336,9 +357,9 @@
     assert(!keyboard.querySelector('[data-seed-key="1"]').disabled && keyboard.querySelector('[data-seed-key="0"]').disabled, "Mini key number restrictions are wrong");
     assert(keyboard.querySelector('[data-seed-key="!"]').disabled && keyboard.querySelector(".seed-keyboard-space").disabled, "Mini key symbols or space were enabled");
     input(privateKey, "S6c56bnXQiBjk9mqSYE7ykVQ7NzrRy");
-    assert(hodlPrivateKeyInputIsValid(), "A canonical Casascius Mini key was rejected");
+    assert(crypto.privateKeyInputIsValid(), "A canonical Casascius Mini key was rejected");
     input(privateKey, "SOc56bnXQiBjk9mqSYE7ykVQ7NzrRy");
-    assert(!hodlPrivateKeyInputIsValid(), "A Mini key containing a Base58-forbidden O was accepted");
+    assert(!crypto.privateKeyInputIsValid(), "A Mini key containing a Base58-forbidden O was accepted");
     input(privateKey, "");
     document.querySelector('input[name="kk"][value="brain"]').click();
     assert([...keyboard.querySelectorAll("[data-seed-character-key]")].every((button) => !button.disabled), "Brain-wallet characters were restricted");
