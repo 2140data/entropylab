@@ -359,10 +359,17 @@ test("multisig consistently uses derive for its heading and action", () => {
   assert.match(app, /let\{network,count,n,m,kind,legacyStandard,nodes,xpubs,keyTokens,accountSummary,accountWarning\}=hodlValidatedMsigInputs\(\)/);
 });
 
+test("seed-entry tools keep a square keyboard toggle and a block note on narrow screens", () => {
+  assert.match(
+    css,
+    /@media \(max-width: 520px\)[\s\S]*\.seed-entry-tools \{ align-items: flex-start; \}[\s\S]*\.seed-autocomplete-note \{ display: block; margin-top: 2px; \}/,
+  );
+});
+
 test("multisig heading spans beneath the delete action on narrow screens", () => {
   assert.match(
     css,
-    /@media \(max-width: 520px\)[\s\S]*#msig-card \.key-panel-head \{ display: grid; grid-template-columns: minmax\(0, 1fr\) auto; \}[\s\S]*#msig-card \.key-panel-head > div:first-child \{ grid-column: 1 \/ -1; grid-row: 2; width: 100%; \}[\s\S]*#msig-card \.key-panel-head > \.delete-key \{ grid-column: 2; grid-row: 1; justify-self: end; \}/,
+    /@media \(max-width: 520px\)[\s\S]*\.key-panel-head \{ display: grid; grid-template-columns: minmax\(0, 1fr\) auto; \}[\s\S]*\.key-panel-head > div:first-child \{ grid-column: 1 \/ -1; grid-row: 2; width: 100%; \}[\s\S]*\.key-panel-head > \.delete-key \{ grid-column: 2; grid-row: 1; justify-self: end; \}/,
   );
 });
 

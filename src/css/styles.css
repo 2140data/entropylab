@@ -585,10 +585,11 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .key-form > .muted:empty, .key-form > #last-words:empty { display: none; }
 #calc-card > .key-form + .field { margin-top: var(--space-section); }
 .master-fingerprint-preview {
-  display: flex; align-items: center; gap: 12px; max-width: 680px; margin-top: var(--space-component);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px; max-width: 680px; margin-top: var(--space-component);
 }
+.master-fingerprint-heading { flex: 0 0 100%; margin: 0 0 -4px; }
 .master-fingerprint-card {
-  flex: 0 1 240px; min-width: 0; padding: 10px 12px; border: 1px solid var(--border);
+  flex: 0 1 180px; min-width: 0; padding: 10px 12px; border: 1px solid var(--border);
   border-radius: 10px; background: var(--surface-2);
   transition: background-color .16s ease, border-color .16s ease;
 }
@@ -661,7 +662,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 }
 @media (max-width: 520px) {
   .master-fingerprint-preview { gap: 8px; }
-  .master-fingerprint-card { padding: 9px; }
+  .master-fingerprint-card { flex: 1 1 0; padding: 9px; }
   .master-fingerprint-label { font-size: 11px; }
   .master-fingerprint-value { font-size: 14px; }
   .master-fingerprint-arrow { font-size: 22px; }
@@ -774,7 +775,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   .msig-threshold-control { --msig-slider-inset: 12px; padding: 14px 10px 12px; }
   .msig-threshold-labels { gap: 8px; margin-inline: 10px; }
   .msig-threshold-labels label { font-size: 11px; }
-  .msig-threshold-number { flex: 0 0 auto; width: 48px !important; min-width: 48px; height: 28px; min-height: 28px !important; font-size: 15px; }
+  .msig-threshold-number { flex: 0 0 auto; width: 56px !important; min-width: 56px; height: 40px; min-height: 40px !important; font-size: 16px; }
   .msig-threshold-ticks { font-size: 9px; }
 }
 .psbt-intro { margin: var(--space-control) 0 0; }
@@ -929,9 +930,11 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   .download-controls .custom-select { min-width: 0; }
 }
 @media (max-width: 520px) {
-  #msig-card .key-panel-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
-  #msig-card .key-panel-head > div:first-child { grid-column: 1 / -1; grid-row: 2; width: 100%; }
-  #msig-card .key-panel-head > .delete-key { grid-column: 2; grid-row: 1; justify-self: end; }
+  .key-panel-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  .key-panel-head > div:first-child { grid-column: 1 / -1; grid-row: 2; width: 100%; }
+  .key-panel-head > .delete-key { grid-column: 2; grid-row: 1; justify-self: end; }
+  .seed-entry-tools { align-items: flex-start; }
+  .seed-autocomplete-note { display: block; margin-top: 2px; }
   .wallet-data-card { padding: 18px; }
   .wallet-private-section { padding: 13px; }
   .account-private-section { padding: 14px; }

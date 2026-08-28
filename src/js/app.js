@@ -58,13 +58,14 @@ var vr=[16,20,24,28,32],Rc={0:"00",1:"01",2:"10",3:"11",4:"0",5:"1"};function kr
         <span class="passphrase-input-row"><span class="passphrase-keyboard-toggle-host" id="passphrase-keyboard-toggle-host" hidden></span><input id="pass" autocomplete="off" placeholder="Leave blank unless you set one" /></span>
       </label>
       <div class="master-fingerprint-preview" id="master-fingerprint-preview" role="status" aria-live="polite" aria-atomic="true">
-        <div class="master-fingerprint-card is-disabled" id="base-master-fingerprint-card" role="group" data-state="unavailable" aria-label="Base seed Master Fingerprint unavailable">
-          <span class="master-fingerprint-label">Base seed · Master Fingerprint</span>
+        <p class="label master-fingerprint-heading">Master fingerprint</p>
+        <div class="master-fingerprint-card is-disabled" id="base-master-fingerprint-card" role="group" data-state="unavailable" aria-label="Base seed master fingerprint unavailable">
+          <span class="master-fingerprint-label">Base seed</span>
           <code class="master-fingerprint-value" id="base-master-fingerprint"></code>
         </div>
         <span class="master-fingerprint-arrow is-disabled" id="master-fingerprint-arrow" aria-hidden="true">\u2192</span>
-        <div class="master-fingerprint-card master-fingerprint-derived is-disabled" id="passphrase-master-fingerprint-card" role="group" data-state="unavailable" aria-label="With passphrase Master Fingerprint unavailable">
-          <span class="master-fingerprint-label">With passphrase · Master Fingerprint</span>
+        <div class="master-fingerprint-card master-fingerprint-derived is-disabled" id="passphrase-master-fingerprint-card" role="group" data-state="unavailable" aria-label="With passphrase master fingerprint unavailable">
+          <span class="master-fingerprint-label">With passphrase</span>
           <code class="master-fingerprint-value" id="passphrase-master-fingerprint"></code>
         </div>
       </div>
@@ -1838,7 +1839,7 @@ function hodlMasterFingerprint(mnemonic,passphrase=""){
   let seed=wi(mnemonic,passphrase);try{return Us(Gt.fromMasterSeed(seed).fingerprint)}finally{seed.fill(0)}
 }
 function hodlSetMasterFingerprintCard(card,valueNode,value){
-  let available=typeof value==="string"&&value.length>0,label=card.querySelector(".master-fingerprint-label")?.textContent.trim()||"Master Fingerprint";valueNode.textContent=available?value:"";card.classList.toggle("is-disabled",!available);card.dataset.state=available?"ready":"unavailable";card.setAttribute("aria-label",available?`${label}: ${value}`:`${label} unavailable`);return available
+  let available=typeof value==="string"&&value.length>0,label=`${card.querySelector(".master-fingerprint-label")?.textContent.trim()||""} master fingerprint`.trim();valueNode.textContent=available?value:"";card.classList.toggle("is-disabled",!available);card.dataset.state=available?"ready":"unavailable";card.setAttribute("aria-label",available?`${label}: ${value}`:`${label} unavailable`);return available
 }
 function hodlRenderMasterFingerprintPreview(revision=hodlMasterFingerprintRevision){
   if(revision!==hodlMasterFingerprintRevision)return;

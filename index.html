@@ -587,10 +587,11 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .key-form > .muted:empty, .key-form > #last-words:empty { display: none; }
 #calc-card > .key-form + .field { margin-top: var(--space-section); }
 .master-fingerprint-preview {
-  display: flex; align-items: center; gap: 12px; max-width: 680px; margin-top: var(--space-component);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px; max-width: 680px; margin-top: var(--space-component);
 }
+.master-fingerprint-heading { flex: 0 0 100%; margin: 0 0 -4px; }
 .master-fingerprint-card {
-  flex: 0 1 240px; min-width: 0; padding: 10px 12px; border: 1px solid var(--border);
+  flex: 0 1 180px; min-width: 0; padding: 10px 12px; border: 1px solid var(--border);
   border-radius: 10px; background: var(--surface-2);
   transition: background-color .16s ease, border-color .16s ease;
 }
@@ -663,7 +664,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 }
 @media (max-width: 520px) {
   .master-fingerprint-preview { gap: 8px; }
-  .master-fingerprint-card { padding: 9px; }
+  .master-fingerprint-card { flex: 1 1 0; padding: 9px; }
   .master-fingerprint-label { font-size: 11px; }
   .master-fingerprint-value { font-size: 14px; }
   .master-fingerprint-arrow { font-size: 22px; }
@@ -776,7 +777,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   .msig-threshold-control { --msig-slider-inset: 12px; padding: 14px 10px 12px; }
   .msig-threshold-labels { gap: 8px; margin-inline: 10px; }
   .msig-threshold-labels label { font-size: 11px; }
-  .msig-threshold-number { flex: 0 0 auto; width: 48px !important; min-width: 48px; height: 28px; min-height: 28px !important; font-size: 15px; }
+  .msig-threshold-number { flex: 0 0 auto; width: 56px !important; min-width: 56px; height: 40px; min-height: 40px !important; font-size: 16px; }
   .msig-threshold-ticks { font-size: 9px; }
 }
 .psbt-intro { margin: var(--space-control) 0 0; }
@@ -931,9 +932,11 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   .download-controls .custom-select { min-width: 0; }
 }
 @media (max-width: 520px) {
-  #msig-card .key-panel-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
-  #msig-card .key-panel-head > div:first-child { grid-column: 1 / -1; grid-row: 2; width: 100%; }
-  #msig-card .key-panel-head > .delete-key { grid-column: 2; grid-row: 1; justify-self: end; }
+  .key-panel-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  .key-panel-head > div:first-child { grid-column: 1 / -1; grid-row: 2; width: 100%; }
+  .key-panel-head > .delete-key { grid-column: 2; grid-row: 1; justify-self: end; }
+  .seed-entry-tools { align-items: flex-start; }
+  .seed-autocomplete-note { display: block; margin-top: 2px; }
   .wallet-data-card { padding: 18px; }
   .wallet-private-section { padding: 13px; }
   .account-private-section { padding: 14px; }
@@ -1051,13 +1054,14 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
         <span class="passphrase-input-row"><span class="passphrase-keyboard-toggle-host" id="passphrase-keyboard-toggle-host" hidden></span><input id="pass" autocomplete="off" placeholder="Leave blank unless you set one"></span>
       </label>
       <div class="master-fingerprint-preview" id="master-fingerprint-preview" role="status" aria-live="polite" aria-atomic="true">
-        <div class="master-fingerprint-card is-disabled" id="base-master-fingerprint-card" role="group" data-state="unavailable" aria-label="Base seed Master Fingerprint unavailable">
-          <span class="master-fingerprint-label">Base seed · Master Fingerprint</span>
+        <p class="label master-fingerprint-heading">Master fingerprint</p>
+        <div class="master-fingerprint-card is-disabled" id="base-master-fingerprint-card" role="group" data-state="unavailable" aria-label="Base seed master fingerprint unavailable">
+          <span class="master-fingerprint-label">Base seed</span>
           <code class="master-fingerprint-value" id="base-master-fingerprint"></code>
         </div>
         <span class="master-fingerprint-arrow is-disabled" id="master-fingerprint-arrow" aria-hidden="true">→</span>
-        <div class="master-fingerprint-card master-fingerprint-derived is-disabled" id="passphrase-master-fingerprint-card" role="group" data-state="unavailable" aria-label="With passphrase Master Fingerprint unavailable">
-          <span class="master-fingerprint-label">With passphrase · Master Fingerprint</span>
+        <div class="master-fingerprint-card master-fingerprint-derived is-disabled" id="passphrase-master-fingerprint-card" role="group" data-state="unavailable" aria-label="With passphrase master fingerprint unavailable">
+          <span class="master-fingerprint-label">With passphrase</span>
           <code class="master-fingerprint-value" id="passphrase-master-fingerprint"></code>
         </div>
       </div>
@@ -3414,13 +3418,14 @@ zoo`.split(`
         <span class="passphrase-input-row"><span class="passphrase-keyboard-toggle-host" id="passphrase-keyboard-toggle-host" hidden></span><input id="pass" autocomplete="off" placeholder="Leave blank unless you set one" /></span>
       </label>
       <div class="master-fingerprint-preview" id="master-fingerprint-preview" role="status" aria-live="polite" aria-atomic="true">
-        <div class="master-fingerprint-card is-disabled" id="base-master-fingerprint-card" role="group" data-state="unavailable" aria-label="Base seed Master Fingerprint unavailable">
-          <span class="master-fingerprint-label">Base seed · Master Fingerprint</span>
+        <p class="label master-fingerprint-heading">Master fingerprint</p>
+        <div class="master-fingerprint-card is-disabled" id="base-master-fingerprint-card" role="group" data-state="unavailable" aria-label="Base seed master fingerprint unavailable">
+          <span class="master-fingerprint-label">Base seed</span>
           <code class="master-fingerprint-value" id="base-master-fingerprint"></code>
         </div>
         <span class="master-fingerprint-arrow is-disabled" id="master-fingerprint-arrow" aria-hidden="true">\u2192</span>
-        <div class="master-fingerprint-card master-fingerprint-derived is-disabled" id="passphrase-master-fingerprint-card" role="group" data-state="unavailable" aria-label="With passphrase Master Fingerprint unavailable">
-          <span class="master-fingerprint-label">With passphrase · Master Fingerprint</span>
+        <div class="master-fingerprint-card master-fingerprint-derived is-disabled" id="passphrase-master-fingerprint-card" role="group" data-state="unavailable" aria-label="With passphrase master fingerprint unavailable">
+          <span class="master-fingerprint-label">With passphrase</span>
           <code class="master-fingerprint-value" id="passphrase-master-fingerprint"></code>
         </div>
       </div>
@@ -5194,7 +5199,7 @@ function hodlMasterFingerprint(mnemonic,passphrase=""){
   let seed=wi(mnemonic,passphrase);try{return Us(Gt.fromMasterSeed(seed).fingerprint)}finally{seed.fill(0)}
 }
 function hodlSetMasterFingerprintCard(card,valueNode,value){
-  let available=typeof value==="string"&&value.length>0,label=card.querySelector(".master-fingerprint-label")?.textContent.trim()||"Master Fingerprint";valueNode.textContent=available?value:"";card.classList.toggle("is-disabled",!available);card.dataset.state=available?"ready":"unavailable";card.setAttribute("aria-label",available?`${label}: ${value}`:`${label} unavailable`);return available
+  let available=typeof value==="string"&&value.length>0,label=`${card.querySelector(".master-fingerprint-label")?.textContent.trim()||""} master fingerprint`.trim();valueNode.textContent=available?value:"";card.classList.toggle("is-disabled",!available);card.dataset.state=available?"ready":"unavailable";card.setAttribute("aria-label",available?`${label}: ${value}`:`${label} unavailable`);return available
 }
 function hodlRenderMasterFingerprintPreview(revision=hodlMasterFingerprintRevision){
   if(revision!==hodlMasterFingerprintRevision)return;
