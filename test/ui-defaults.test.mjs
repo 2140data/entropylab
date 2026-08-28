@@ -78,7 +78,7 @@ test("entropy progress messages sit directly below their inputs and above keypad
 });
 
 test("seed phrase copy controls sit immediately above every numbered word grid", () => {
-  assert.match(appSource, /\$\{dicePad\}\s*\$\{hodlSeedCopyRowMarkup\(\)\}\s*<div id="dice-words"/);
+  assert.match(appSource, /\$\{dicePad\}\s*<div class="dice-fairness-tools">[\s\S]*?<\/aside>\s*\$\{hodlSeedCopyRowMarkup\(\)\}\s*<div id="dice-words"/);
   assert.match(appSource, /<div class="dealt-cards"[^>]*><\/div>\s*\$\{hodlSeedCopyRowMarkup\(\)\}\s*<div id="dice-words"/);
   assert.match(appSource, /\$\{entropyPad\}\s*\$\{hodlSeedCopyRowMarkup\(\)\}\s*<div id="entropy-words"/);
   assert.match(appSource, /<\/div>\$\{hodlSeedCopyRowMarkup\(\)\}<div id="seed-number-words"/);
@@ -771,4 +771,26 @@ test("seed-length selector offers all five BIP39 sizes", () => {
     assert.match(template, new RegExp(`data-seed-words="${words}"`), `${words} missing from src/index.html`);
     assert.match(app, new RegExp(`data-seed-words="${words}"`), `${words} missing from runtime markup in src/js/app.js`);
   }
+});
+
+test("dice rolls hide Pearson chi-squared fairness behind a text expand button", () => {
+  assert.match(app, /id="dice-fairness-toggle"/);
+  assert.match(app, /aria-controls="dice-fairness"/);
+  assert.match(app, /class="dice-fairness-toggle"/);
+  assert.match(app, /data-dice-fairness-glyph/);
+  assert.match(app, / Die fairness<\/button>/);
+  assert.match(app, /id="dice-fairness" class="dice-fairness" hidden role="status" aria-live="polite"/);
+  assert.match(app, /function hodlSetDiceFairnessOpen\(open\)/);
+  assert.match(app, /function hodlChiSquaredCdf\(/);
+  assert.match(app, /function hodlDiceFairnessAssess\(rolls,\s*labels,\s*title\)/);
+  assert.match(app, /function hodlRenderDiceFairness\(value,\s*method,\s*targetWords\s*=\s*Pt\)/);
+  assert.match(app, /hodlRenderDiceFairness\(input\.value,\s*ge,\s*config\.words\)/);
+  assert.match(app, /showDiceFairness:!1/);
+  assert.match(app, /Looks pretty fair/);
+  assert.match(app, /Looks biased/);
+  assert.match(css, /\.dice-fairness \{/);
+  assert.match(css, /\.dice-fairness-toggle \{/);
+  assert.match(css, /\.dice-fairness\[data-tone="danger"\] \{/);
+  assert.match(template, /dicefairness\.johnellmore\.com/);
+  assert.match(template, /How can I test whether a die is fair/);
 });

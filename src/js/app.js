@@ -2078,6 +2078,171 @@ function hodlAnalyzeDiceInput(value, method = ge, targetWords = Pt, coinPosition
   let coinDerivedCount = [...coinPositionSet].filter((index) => index >= 0 && index < value.length).length;
   return { invalidRanges, invalidCount: invalidRanges.length, coinDerivedCount, acceptedRolls, words, diceInWord, mappedBits, totalMappedBits, complete: method === "bitbox" && words >= config.partialWords, coinTurn: method === "bitbox" && words < config.partialWords && diceInWord === 5 };
 }
+var hodlLanczosGamma = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+function hodlLogGamma(z) {
+  let value = Number(z);
+  if (!(value > 0) || !Number.isFinite(value)) return Number.POSITIVE_INFINITY;
+  if (value < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * value)) - hodlLogGamma(1 - value);
+  let x = hodlLanczosGamma[0], shifted = value - 1;
+  for (let index = 1; index < hodlLanczosGamma.length; index++) x += hodlLanczosGamma[index] / (shifted + index);
+  let t = shifted + 7.5;
+  return 0.5 * Math.log(2 * Math.PI) + (shifted + 0.5) * Math.log(t) - t + Math.log(x);
+}
+function hodlLowerRegularizedGamma(s, x) {
+  let shape = Number(s), xx = Number(x);
+  if (!(shape > 0) || !Number.isFinite(shape) || !Number.isFinite(xx) || xx <= 0) return 0;
+  let logPrefactor = -xx + shape * Math.log(xx) - hodlLogGamma(shape);
+  if (xx < shape + 1) {
+    let term = 1 / shape, sum = term;
+    for (let n = 1; n < 200; n++) {
+      term *= xx / (shape + n);
+      sum += term;
+      if (Math.abs(term) < Math.abs(sum) * 1e-15) break;
+    }
+    if (logPrefactor < -745) return 0;
+    return Math.min(1, Math.max(0, Math.exp(logPrefactor) * sum));
+  }
+  let b = xx + 1 - shape, c = 1 / 1e-300, d = 1 / b, h = d;
+  for (let i = 1; i <= 200; i++) {
+    let an = -i * (i - shape);
+    b += 2;
+    d = an * d + b;
+    if (Math.abs(d) < 1e-300) d = 1e-300;
+    c = b + an / c;
+    if (Math.abs(c) < 1e-300) c = 1e-300;
+    d = 1 / d;
+    let del = d * c;
+    h *= del;
+    if (Math.abs(del - 1) < 1e-12) break;
+  }
+  if (logPrefactor < -745) return 1;
+  return Math.min(1, Math.max(0, 1 - Math.exp(logPrefactor) * h));
+}
+function hodlChiSquaredCdf(chiSq, df) {
+  let x = Number(chiSq), degrees = Number(df);
+  if (!(x >= 0) || !Number.isFinite(x) || !(degrees >= 1) || !Number.isFinite(degrees)) return 0;
+  return hodlLowerRegularizedGamma(degrees / 2, x / 2);
+}
+function hodlDiceMinimumRolls(sides) {
+  return 5 * Math.max(0, Number(sides) || 0);
+}
+function hodlFormatFairnessNumber(value) {
+  return new Intl.NumberFormat(undefined, { maximumSignificantDigits: 5 }).format(Number(value) || 0);
+}
+function hodlDiceFairnessVerdict(cdf, enough) {
+  if (!enough) return { id: "need-more", label: "Need more rolls", tone: "muted" };
+  if (cdf < 0.8) return { id: "fair", label: "Looks pretty fair", tone: "ok" };
+  if (cdf < 0.9) return { id: "unsure", label: "Not sure; roll some more", tone: "warn" };
+  return { id: "biased", label: "Looks biased", tone: "danger" };
+}
+function hodlDiceFairnessAssess(rolls, labels, title) {
+  let faces = Array.isArray(labels) && labels.length ? labels.map((label) => String(label)) : [], n = (rolls || []).length, sides = faces.length, minimum = hodlDiceMinimumRolls(sides);
+  let counts = faces.map((label) => ({ label, count: 0 })), indexByLabel = new Map(faces.map((label, index) => [label, index]));
+  for (let roll of rolls || []) {
+    let index = indexByLabel.get(String(roll));
+    if (index != null) counts[index].count += 1;
+  }
+  let expected = sides && n ? n / sides : 0, chi = 0;
+  if (expected > 0) for (let face of counts) chi += (face.count - expected) ** 2 / expected;
+  let df = Math.max(1, sides - 1), cdf = expected > 0 ? hodlChiSquaredCdf(chi, df) : 0, enough = n >= minimum && minimum > 0, verdict = n ? hodlDiceFairnessVerdict(cdf, enough) : { id: "empty", label: "", tone: "muted" };
+  return { title: title || "Die", sides, n, minimum, remaining: Math.max(0, minimum - n), expected, chi, cdf, df, counts, enough, verdict };
+}
+function hodlDiceFairnessSamples(value, method, targetWords = Pt, numberedD16 = hodlDPlusNumberedD16) {
+  if (method === "dplus") {
+    let parsed = hodlDPlusRolls(value, targetWords, numberedD16), d8 = [], d16 = [];
+    for (let group of parsed.groups) group.faces.forEach((face, position) => {
+      if (group.validity[position]) (position === 0 ? d8 : d16).push(face);
+    });
+    hodlDPlusFinalSteps(targetWords).forEach((step, index) => {
+      let face = (parsed.entries || [])[hodlSeedConfig(targetWords).partialWords * 3 + index]?.face;
+      if (!face) return;
+      if (step === "d8" && /^[1-8]$/.test(face)) d8.push(face);
+      else if (step === "d16" && hodlDPlusD16Value(face) !== null) d16.push(face);
+    });
+    return [
+      { id: "d8", title: "D8", rolls: d8, labels: ["1", "2", "3", "4", "5", "6", "7", "8"] },
+      { id: "d16", title: numberedD16 ? "D16 (1–16)" : "D16 (0–F)", rolls: d16, labels: numberedD16 ? ["1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "0"] : ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"] }
+    ];
+  }
+  if (method === "bitbox") {
+    let config = hodlSeedConfig(targetWords), d4 = [], coins = [], diceInWord = [], words = 0;
+    for (let character of String(value ?? "")) {
+      if (/\s|,|;|\|/.test(character)) continue;
+      let input = character.toLowerCase(), isDie = input >= "1" && input <= "6", isCoin = input === "h" || input === "t";
+      if (!isDie && !isCoin) continue;
+      if (words >= config.partialWords) continue;
+      if (diceInWord.length < 5) {
+        if (isCoin) continue;
+        let face = Number(input);
+        if (face >= 5) continue;
+        d4.push(String(face));
+        diceInWord.push(face);
+        continue;
+      }
+      coins.push(input === "h" || input === "1" || input === "2" || input === "3" ? "Heads" : "Tails");
+      words += 1;
+      diceInWord = [];
+    }
+    return [
+      { id: "d4", title: "D4 (1–4)", rolls: d4, labels: ["1", "2", "3", "4"] },
+      { id: "coin", title: "Coin", rolls: coins, labels: ["Heads", "Tails"] }
+    ];
+  }
+  return [{ id: "d6", title: "D6", rolls: hodlAnalyzeDiceInput(value, method, targetWords).acceptedRolls, labels: ["1", "2", "3", "4", "5", "6"] }];
+}
+function hodlDiceFairnessReports(value, method, targetWords = Pt, numberedD16 = hodlDPlusNumberedD16) {
+  return hodlDiceFairnessSamples(value, method, targetWords, numberedD16).map((sample) => hodlDiceFairnessAssess(sample.rolls, sample.labels, sample.title));
+}
+function hodlDiceFairnessTone(reports) {
+  let rank = { danger: 3, warn: 2, ok: 1, muted: 0 }, tone = "muted";
+  for (let report of reports || []) if ((rank[report.verdict.tone] || 0) > rank[tone]) tone = report.verdict.tone;
+  return tone;
+}
+function hodlDiceFairnessNote(report) {
+  if (!report.n) return "";
+  if (!report.enough) return `${report.n} of ${report.minimum} minimum ${report.title} rolls for Pearson’s χ² test · ${report.remaining} more needed.`;
+  let robust = report.minimum * 2, cdfPercent = hodlFormatFairnessNumber(report.cdf * 100);
+  let quality = report.n >= robust ? "Enough rolls to reasonably assess fairness." : `Minimum reached. ${robust - report.n} more would make the estimate more robust.`;
+  return `A fair ${report.title} would score χ² below ${hodlFormatFairnessNumber(report.chi)} in ${cdfPercent}% of tests. ${quality}`;
+}
+function hodlDiceFairnessMarkup(reports) {
+  return (reports || []).filter((report) => report.n > 0).map((report) => {
+    let peak = Math.max(report.expected, ...report.counts.map((face) => face.count), 1);
+    let faces = report.counts.map((face) => {
+      let hot = report.enough && report.expected > 0 && Math.abs(face.count - report.expected) >= 2 * Math.sqrt(report.expected);
+      return `<div class="dice-fairness-face${hot ? " is-hot" : ""}"><span class="dice-fairness-label">${$t(face.label)}</span><span class="dice-fairness-track"><span class="dice-fairness-bar" style="width:${(face.count / peak * 100).toFixed(1)}%"></span>${report.expected > 0 ? `<span class="dice-fairness-expected" style="left:${(report.expected / peak * 100).toFixed(1)}%"></span>` : ""}</span><span class="dice-fairness-count">${face.count}</span></div>`;
+    }).join("");
+    return `<section class="dice-fairness-test" data-tone="${report.verdict.tone}"><div class="dice-fairness-head"><strong>${$t(report.verdict.label)}</strong><span>χ² ${hodlFormatFairnessNumber(report.chi)} · ${report.df} df · ${report.n} roll${report.n === 1 ? "" : "s"}</span></div><p class="dice-fairness-note">${$t(hodlDiceFairnessNote(report))}</p><div class="dice-fairness-faces" data-sides="${report.sides}">${faces}</div></section>`;
+  }).join("");
+}
+function hodlDiceFairnessIsOpen() {
+  return Boolean(hodlKeys[hodlActiveKey]?.showDiceFairness);
+}
+function hodlDiceFairnessToggleMarkup(open) {
+  let expanded = Boolean(open);
+  return `<button type="button" class="dice-fairness-toggle" id="dice-fairness-toggle" aria-controls="dice-fairness" aria-expanded="${expanded}" aria-label="${expanded ? "Hide die fairness" : "Show die fairness"}"><span data-dice-fairness-glyph aria-hidden="true">${expanded ? "\u25BE" : "\u25B8"}</span> Die fairness</button>`;
+}
+function hodlSetDiceFairnessOpen(open) {
+  let expanded = Boolean(open), state = hodlKeys[hodlActiveKey], toggle = document.getElementById("dice-fairness-toggle"), glyph = toggle?.querySelector("[data-dice-fairness-glyph]");
+  if (state) state.showDiceFairness = expanded;
+  if (toggle) {
+    toggle.setAttribute("aria-expanded", String(expanded));
+    toggle.setAttribute("aria-label", expanded ? "Hide die fairness" : "Show die fairness");
+  }
+  if (glyph) glyph.textContent = expanded ? "\u25BE" : "\u25B8";
+  let input = document.getElementById("dice");
+  hodlRenderDiceFairness(input?.value || "", ge, hodlSeedConfig().words);
+  hodlSyncKeyClearButton();
+}
+function hodlRenderDiceFairness(value, method, targetWords = Pt) {
+  let panel = document.getElementById("dice-fairness");
+  if (!panel) return;
+  let reports = hodlDiceFairnessReports(value, method, targetWords), markup = hodlDiceFairnessMarkup(reports), open = hodlDiceFairnessIsOpen();
+  panel.hidden = !open;
+  panel.dataset.tone = open ? hodlDiceFairnessTone(reports) : "muted";
+  panel.innerHTML = open ? (markup ? `${markup}<p class="dice-fairness-caveat">Pearson’s χ² goodness-of-fit. A lucky streak can look biased, and a biased die can look fair until more rolls arrive. This check does not block derivation.</p>` : `<p class="dice-fairness-note">Enter rolls to run Pearson’s χ² test.</p>`) : "";
+  panel.setAttribute("aria-label", "Die fairness");
+}
 function hodlDiceControlValue(button) {
   return button.dataset.d || "";
 }
@@ -3996,10 +4161,14 @@ function hodlRenderKeyForm() {
       <div class="dice-input-shell"><pre class="dice-input-highlight" id="dice-highlight" aria-hidden="true"></pre><textarea id="dice" placeholder="${dicePlaceholder}" aria-describedby="dice-help dice-meta"></textarea></div>
       ${hodlSeedMetaRowMarkup("dice-meta", true)}
       ${dicePad}
+      <div class="dice-fairness-tools">${hodlDiceFairnessToggleMarkup(hodlKeys[hodlActiveKey]?.showDiceFairness)}</div>
+      <aside id="dice-fairness" class="dice-fairness" hidden role="status" aria-live="polite"></aside>
       ${hodlSeedCopyRowMarkup()}
       <div id="dice-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div><div id="last-words" class="row" style="margin-top:8px"></div>`;
     let input = document.getElementById("dice");
     input.dataset.previousValue = input.value;
+    let fairnessToggle = document.getElementById("dice-fairness-toggle");
+    if (fairnessToggle) fairnessToggle.onclick = () => hodlSetDiceFairnessOpen(!hodlDiceFairnessIsOpen());
     at.querySelectorAll("[data-d]").forEach((button) => {
       button.onclick = () => hodlInsertDiceControl(input, button);
     });
@@ -4463,6 +4632,7 @@ function hodlUpdateDice() {
     }
     meta.append(document.createTextNode(statusTail + invalidStatus));
     meta.className = "muted" + (complete && !result.invalidCount ? " ok" : result.invalidCount ? " err" : "");
+    hodlRenderDiceFairness(input.value, ge, config.words);
     hodlQueueMasterFingerprintPreview();
     return;
   }
@@ -4482,6 +4652,7 @@ function hodlUpdateDice() {
       if (state) state.lastWord = ft;
       hodlUpdateDice();
     }, { forceSelect: true, resettable: true, targetWords: config.words, placeholder: `Choose ${config.words === 18 ? "an" : "a"} ${config.words}th word` });
+    hodlRenderDiceFairness(input.value, ge, config.words);
     hodlQueueMasterFingerprintPreview();
     return;
   }
@@ -4490,6 +4661,7 @@ function hodlUpdateDice() {
   let missing = Math.max(0, config.hashRolls - rolls.length), provisional = rolls.length > 0 && missing > 0, extra = Math.max(0, rolls.length - config.hashRolls), methodLabel = ge === "coleman" ? "Hashed rolls / Dice [1-6]" : "Hashed rolls / Base 10 [0-9]";
   hodlRenderDiceWordGrid(wordsBox, words, config.words, provisional);
   W("#dice-meta").textContent = (!rolls.length ? `0 of ${config.hashRolls} recommended rolls \xB7 0.0 bits estimated \xB7 ${methodLabel}` : missing ? `${rolls.length} of ${config.hashRolls} recommended rolls \xB7 ${kr(rolls.length).toFixed(1)} bits estimated \xB7 seed available for testing \xB7 ${missing} more recommended` : `${rolls.length} roll${rolls.length === 1 ? "" : "s"} \xB7 ${kr(rolls.length).toFixed(1)} bits estimated \xB7 ready to derive${extra ? ` \xB7 all ${extra} extra roll${extra === 1 ? " is" : "s are"} included` : ""}`) + invalidStatus;
+  hodlRenderDiceFairness(input.value, ge, config.words);
   hodlQueueMasterFingerprintPreview();
 }
 function hodlPrivateKeyCharacterEntries(value) {
@@ -6680,7 +6852,7 @@ function hodlPrivateKeyValues(fields) {
 }
 function hodlNewKeyState(name, keyId, keyNumber) {
   let id = keyId ?? hodlNextKeyId++, number = keyNumber ?? hodlNextKeyNumber++;
-  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: false, passphraseBip39Words: false, dplusNumberedD16: false, showCards: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", network: "mainnet", account: "0", count: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
+  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: false, passphraseBip39Words: false, dplusNumberedD16: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", network: "mainnet", account: "0", count: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
 }
 function hodlRestoreFormFields(state) {
   if (!state) return;
@@ -6732,7 +6904,7 @@ function hodlSetMode(mode) {
 function hodlKeyStateNeedsClear(state) {
   if (!state) return false;
   let fields = state.fields || {}, privateKeys = hodlPrivateKeyValues(fields), hasText = (id) => String(fields[id] ?? "").length > 0;
-  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || Boolean(state.seedAutocomplete) || Boolean(state.passphraseBip39Words) || Boolean(state.dplusNumberedD16) || Boolean(state.showCards) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.network ?? "mainnet") !== "mainnet" || String(fields.account ?? "0") !== "0" || String(fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
+  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || Boolean(state.seedAutocomplete) || Boolean(state.passphraseBip39Words) || Boolean(state.dplusNumberedD16) || Boolean(state.showCards) || Boolean(state.showDiceFairness) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.network ?? "mainnet") !== "mainnet" || String(fields.account ?? "0") !== "0" || String(fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
 }
 function hodlSyncKeyClearButton(capture = false) {
   if (capture) hodlCaptureKey();
@@ -6766,6 +6938,8 @@ function hodlCaptureKey() {
   state.dplusNumberedD16 = Boolean(hodlDPlusNumberedD16);
   let showCards = document.getElementById("show-cards");
   if (showCards) state.showCards = showCards.checked;
+  let fairnessToggle = document.getElementById("dice-fairness-toggle");
+  if (fairnessToggle) state.showDiceFairness = fairnessToggle.getAttribute("aria-expanded") === "true";
   state.targetWords = Pt;
   state.diceCoinPositions = hodlDiceCoinPositions.slice();
   if (ge === "dplus") state.dplusLastWord = ft;

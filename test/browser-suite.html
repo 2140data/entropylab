@@ -745,6 +745,30 @@
     input(passphrase, "");
   });
 
+  await test("dice fairness panel stays hidden until the Die fairness text button expands it", async () => {
+    await chooseMode("Dice rolls");
+    const dice = await until(() => document.getElementById("dice"), "dice input");
+    const panel = await until(() => document.getElementById("dice-fairness"), "dice fairness panel");
+    const toggle = await until(() => document.getElementById("dice-fairness-toggle"), "dice fairness toggle");
+    const glyph = toggle.querySelector("[data-dice-fairness-glyph]");
+    assert(toggle.textContent.includes("Die fairness") && glyph && glyph.textContent === "▸", "Fairness toggle did not use a text glyph and Die fairness label");
+    input(dice, "");
+    assert(panel.hidden && toggle.getAttribute("aria-expanded") === "false", "Empty rolls still showed the fairness panel");
+    input(dice, "123456".repeat(5));
+    assert(panel.hidden, "Uniform d6 rolls opened the fairness panel without the expand button");
+    toggle.click();
+    assert(!panel.hidden && toggle.getAttribute("aria-expanded") === "true" && glyph.textContent === "▾", "Die fairness button did not expand the fairness panel");
+    assert(panel.textContent.includes("Looks pretty fair"), "Uniform d6 was not reported as fair");
+    assert(panel.textContent.includes("D6"), "D6 fairness test was missing");
+    input(dice, "1".repeat(30));
+    assert(!panel.hidden, "Expanded fairness panel collapsed after more rolls");
+    assert(panel.textContent.includes("Looks biased"), "Constant d6 face was not reported as biased");
+    toggle.click();
+    assert(panel.hidden && toggle.getAttribute("aria-expanded") === "false" && glyph.textContent === "▸", "Die fairness button did not collapse the fairness panel");
+    input(dice, "");
+    assert(panel.hidden, "Cleared rolls did not keep the fairness panel hidden");
+  });
+
   await test("dice, binary, passphrase, multisig, and PSBT inputs cannot inject markup", async () => {
     const payload = '<img src=x onerror="window.__browserTestInjected=true">';
     await chooseMode("Dice rolls");
