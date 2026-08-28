@@ -7,8 +7,6 @@ sensitive data to a server.
 
 Current version: **v0.1.3**
 
-The project is created, owned, and maintained by **Mr.Hodl and Wicked**.
-
 Official website: [entropylab.online](https://entropylab.online)
 
 ## Features
@@ -164,12 +162,11 @@ Bitcoin private keys and seed phrases control funds. Review the code, test the
 tool with known vectors, keep secret material offline, and maintain verified
 backups. This software is provided without warranty; use it at your own risk.
 
-## Authors and ownership
-
-EntropyLab belongs to **Mr.Hodl and Wicked**, who are its creators and
-maintainers.
-
 ## License
 
-EntropyLab is released under the [MIT License](LICENSE). Copyright (c) 2026
-Mr.Hodl and Wicked.
+EntropyLab is released into the public domain under
+[The Ooga Booga License](LICENSE) — a caveman-speak dedication of the software
+to the public domain, with the same meaning as The Unlicense: free to copy,
+modify, publish, use, compile, sell, or distribute, in source or binary form,
+for any purpose and by any means, with no warranty of any kind. Any and all
+copyright interest in the software is dedicated to the public at large.
