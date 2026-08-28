@@ -14,14 +14,15 @@ var vr=[16,20,24,28,32],Rc={0:"00",1:"01",2:"10",3:"11",4:"0",5:"1"};function kr
     <header>
       <div>
         <div class="kicker">EntropyLab v{{VERSION}} \xB7 Run Offline \xB7 No entropy RNG \xB7 Bring your own entropy</div>
-        <div class="header-title-row"><img class="online-brand-mark" id="online-brand-mark" data-online-src="assets/entropylab_dark.png" alt="" aria-hidden="true" hidden><h1>EntropyLab — Air-Gapped Bitcoin Calculator</h1></div>
+        <div class="header-title-row"><img class="online-brand-mark" id="online-brand-mark" data-online-src="assets/entropylab_dark.png" data-online-src-light="assets/entropylab_light.png" alt="" aria-hidden="true" hidden><h1>EntropyLab — Air-Gapped Bitcoin Calculator</h1></div>
         <p class="muted">This file never generates wallet entropy. Save it to USB and open it on a computer that never goes online.</p>
         <div class="download-controls no-print">
           <label class="version-picker">Version
             <select class="version-select" aria-label="EntropyLab version"><option value="entropylab-{{VERSION}}.html" selected>v{{VERSION}} (Latest)</option></select>
           </label>
           <a class="btn secondary download-html" href="entropylab-{{VERSION}}.html" download="entropylab-{{VERSION}}.html">Download EntropyLab</a>
-          <a class="btn secondary github-repo-link" href="https://github.com/w-s-bitcoin/entropylab" target="_blank" rel="noopener noreferrer" aria-label="View the EntropyLab GitHub repository in a new tab">View on GitHub</a>
+          <a class="btn secondary github-repo-link" href="https://github.com/w-s-bitcoin/entropylab" target="_blank" rel="noopener noreferrer" aria-label="View the EntropyLab GitHub repository in a new tab"><svg class="github-mark" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>View on GitHub</a>
+<button type="button" class="seed-keyboard-toggle theme-toggle" id="theme-toggle" data-theme-mode="dark" aria-label="Theme: dark. Switch to light"><svg class="theme-icon-dark" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><svg class="theme-icon-light" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="theme-icon-system" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></button>
         </div>
       </div>
     </header>
@@ -191,10 +192,10 @@ var vr=[16,20,24,28,32],Rc={0:"00",1:"01",2:"10",3:"11",4:"0",5:"1"};function kr
     <div id="out"></div>
     <section class="card muted">
       <h3 class="sources-heading">Sources</h3>
-      <p>Ian Coleman BIP39: <a href="https://github.com/iancoleman/bip39">github.com/iancoleman/bip39</a> \u2014 pull <code>bip39-standalone.html</code> from Releases, or <code>src/js/index.js</code>, <code>entropy.js</code>, <code>jsbip39.js</code>, <code>wordlist_english.js</code>.</p>
-      <p>bitaddress.org: <a href="https://github.com/pointbiz/bitaddress.org">github.com/pointbiz/bitaddress.org</a> \u2014 pull <code>bitaddress.org.html</code>, or <code>src/ninja.key.js</code>, <code>ninja.detailwallet.js</code>, <code>ninja.paperwallet.js</code>, <code>bitcoinjs-lib.eckey.js</code>.</p>
-      <p>BitBox02 diceware: <a href="https://blog.bitbox.swiss/en/roll-the-dice-generate-your-own-seed/">roll-the-dice-generate-your-own-seed</a> \u2014 lookup table is the BIP39 English list in order.</p>
-      <p>D++ D8 &amp; D16 method: <a href="https://thesimplestbitcoinbook.net/wp-content/uploads/2023/09/Roll-Your-Own-Seed-Phrase-PDF.pdf">Roll Your Own Bitcoin Seed Phrase</a> \u2014 the published 24-word workflow uses one D8 and two D16 rolls per word, then a final D8.</p>
+      <p>Ian Coleman BIP39: <a href="https://github.com/iancoleman/bip39" target="_blank" rel="noopener noreferrer">github.com/iancoleman/bip39</a> \u2014 pull <code>bip39-standalone.html</code> from Releases, or <code>src/js/index.js</code>, <code>entropy.js</code>, <code>jsbip39.js</code>, <code>wordlist_english.js</code>.</p>
+      <p>bitaddress.org: <a href="https://github.com/pointbiz/bitaddress.org" target="_blank" rel="noopener noreferrer">github.com/pointbiz/bitaddress.org</a> \u2014 pull <code>bitaddress.org.html</code>, or <code>src/ninja.key.js</code>, <code>ninja.detailwallet.js</code>, <code>ninja.paperwallet.js</code>, <code>bitcoinjs-lib.eckey.js</code>.</p>
+      <p>BitBox02 diceware: <a href="https://blog.bitbox.swiss/en/roll-the-dice-generate-your-own-seed/" target="_blank" rel="noopener noreferrer">roll-the-dice-generate-your-own-seed</a> \u2014 lookup table is the BIP39 English list in order.</p>
+      <p>D++ D8 &amp; D16 method: <a href="https://thesimplestbitcoinbook.net/wp-content/uploads/2023/09/Roll-Your-Own-Seed-Phrase-PDF.pdf" target="_blank" rel="noopener noreferrer">Roll Your Own Bitcoin Seed Phrase</a> \u2014 the published 24-word workflow uses one D8 and two D16 rolls per word, then a final D8.</p>
     </section>
   </div>
 `;if(/^(www\.)?entropylab\.online$/i.test(location.hostname))document.getElementById("online-warning")?.removeAttribute("hidden");var hodlKeyModes=["dice","cards","hex","seed","key"],hodlCardRanks=["A","2","3","4","5","6","7","8","9","T","J","Q","K"],hodlCardSuits=[{code:"S",symbol:"\u2660",label:"Spades",red:!1},{code:"H",symbol:"\u2665",label:"Hearts",red:!0},{code:"D",symbol:"\u2666",label:"Diamonds",red:!0},{code:"C",symbol:"\u2663",label:"Clubs",red:!1}],hodlCardSuit="S",Ne="dice",ge="coldcard",Pt=24,hodlEntropyFormat="hex",hodlDiceCoinPositions=[],hodlDPlusNumberedD16=!1,ft="",re=null,Ge=!1,Zs=W("#modes"),at=W("#form"),dr=W("#out");hodlKeyModes.forEach(e=>{let t=document.createElement("button"),active=e===Ne;t.type="button";t.className="tab"+(active?" active":"");t.setAttribute("aria-pressed",String(active));t.textContent=e==="dice"?"Dice rolls":e==="cards"?"Cards":e==="hex"?"Hex or binary":e==="seed"?"Seed phrase":"Private key";t.onclick=()=>hodlSetMode(e);Zs.appendChild(t)});document.querySelectorAll("#seed-length [data-seed-words]").forEach(button=>{button.onclick=()=>hodlSetSeedLength(Number(button.dataset.seedWords))});W("#go").onclick=hodlCalculateKey;W("#wipe").onclick=hodlWipeActiveKey;function W(e){let t=e.startsWith("#")?e.slice(1):e,r=document.getElementById(t);if(!r)throw new Error(t);return r}function lr(){if(Ne==="dice"){at.innerHTML=`
@@ -2572,6 +2573,21 @@ function hodlInitSegmentedControls(){
   }
   window.addEventListener("resize",hodlQueueSegmentedControlSync,{passive:!0});hodlQueueSegmentedControlSync()
 }
+var hodlThemeModes=["dark","light","system"],hodlThemeStorageKey="entropylab-theme",hodlThemeLightQuery=matchMedia("(prefers-color-scheme: light)");
+function hodlReadThemeMode(){try{let mode=localStorage.getItem(hodlThemeStorageKey);return hodlThemeModes.includes(mode)?mode:"dark"}catch(e){return"dark"}}
+function hodlApplyTheme(mode){
+  if(!hodlThemeModes.includes(mode))mode="dark";let light=mode==="light"||mode==="system"&&hodlThemeLightQuery.matches;
+  if(light)document.documentElement.dataset.theme="light";else delete document.documentElement.dataset.theme;
+  try{if(mode==="dark")localStorage.removeItem(hodlThemeStorageKey);else localStorage.setItem(hodlThemeStorageKey,mode)}catch(e){}
+  let toggle=document.getElementById("theme-toggle");if(toggle){let next=hodlThemeModes[(hodlThemeModes.indexOf(mode)+1)%hodlThemeModes.length];toggle.dataset.themeMode=mode;toggle.setAttribute("aria-label",`Theme: ${mode}. Switch to ${next}`)}
+  let meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.content=light?"#ffffff":"#000000";
+  let brand=document.getElementById("online-brand-mark");if(brand&&!brand.hidden)brand.src=light?brand.dataset.onlineSrcLight:brand.dataset.onlineSrc
+}
+function hodlInitTheme(){
+  hodlApplyTheme(hodlReadThemeMode());let toggle=document.getElementById("theme-toggle");
+  if(toggle)toggle.onclick=()=>hodlApplyTheme(hodlThemeModes[(hodlThemeModes.indexOf(hodlReadThemeMode())+1)%hodlThemeModes.length]);
+  hodlThemeLightQuery.addEventListener("change",()=>{if(hodlReadThemeMode()==="system")hodlApplyTheme("system")})
+}
 function hodlInitSecretFieldAutoClear(){
   let clearSecretFields=()=>{
     for(let id of["dice","hex","bin","seed","key","pass","cards"]){let field=document.getElementById(id);if(field)field.value=""}
@@ -2580,4 +2596,4 @@ function hodlInitSecretFieldAutoClear(){
   addEventListener("pagehide",clearSecretFields);
   addEventListener("pageshow",event=>{if(event.persisted)clearSecretFields()})
 }
-hodlInitWorkspace();hodlSeedInitialManagers();hodlInitKeyManager();hodlInitMsigManager();hodlInitClearActionState();hodlInitSecretFieldAutoClear();hodlInitMasterFingerprintPreview();hodlInitDerivationControls();hodlInitSegmentedControls();})();
+hodlInitWorkspace();hodlSeedInitialManagers();hodlInitKeyManager();hodlInitMsigManager();hodlInitClearActionState();hodlInitSecretFieldAutoClear();hodlInitTheme();hodlInitMasterFingerprintPreview();hodlInitDerivationControls();hodlInitSegmentedControls();})();

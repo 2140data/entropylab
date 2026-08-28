@@ -301,3 +301,17 @@ test("top banners share one consistent gap", () => {
     /\.beta-warning, \.online-warning, \.network-warning\s*\{[^}]*margin: 0 0 12px;/s,
   );
 });
+
+test("header theme toggle cycles dark, light, and OS themes without a flash", () => {
+  for (const markup of [template, app]) {
+    assert.match(markup, /class="seed-keyboard-toggle theme-toggle" id="theme-toggle" data-theme-mode="dark" aria-label="Theme: dark\. Switch to light"/);
+    assert.match(markup, /data-online-src="assets\/entropylab_dark\.png" data-online-src-light="assets\/entropylab_light\.png"/);
+  }
+  assert.match(template, /<script>\(function\(\)\{try\{var m=localStorage\.getItem\("entropylab-theme"\)/);
+  assert.match(app, /var hodlThemeModes=\["dark","light","system"\],hodlThemeStorageKey="entropylab-theme"/);
+  assert.match(app, /function hodlApplyTheme\(mode\)/);
+  assert.match(app, /hodlInitSecretFieldAutoClear\(\);hodlInitTheme\(\);/);
+  assert.match(css, /:root\[data-theme="light"\] \{\s*color-scheme: light;/);
+  assert.match(css, /@media print \{\s*:root, :root\[data-theme\] \{/);
+  assert.match(css, /\.download-controls \.theme-toggle \{ margin-left: auto; align-self: end; \}/);
+});

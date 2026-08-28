@@ -10,7 +10,7 @@
 
   const brandMark = document.getElementById("online-brand-mark");
   if (brandMark) {
-    brandMark.src = brandMark.dataset.onlineSrc;
+    brandMark.src = document.documentElement.dataset.theme === "light" ? brandMark.dataset.onlineSrcLight : brandMark.dataset.onlineSrc;
     brandMark.hidden = false;
   }
 

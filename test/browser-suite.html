@@ -249,6 +249,29 @@
     input(seed, "");
   });
 
+  await test("theme toggle cycles dark, light, and system and persists the choice", () => {
+    const toggle = document.getElementById("theme-toggle");
+    const controls = document.querySelector(".download-controls");
+    const background = () => getComputedStyle(document.body).backgroundColor;
+    assert(toggle && controls.contains(toggle), "Theme toggle is missing from the download controls");
+    assert(Math.abs(toggle.getBoundingClientRect().right - controls.getBoundingClientRect().right) < 1, "Theme toggle is not at the right edge of its row");
+    try {
+      assert(toggle.dataset.themeMode === "dark" && !document.documentElement.dataset.theme, "Theme did not start dark");
+      const dark = background();
+      toggle.click();
+      assert(toggle.dataset.themeMode === "light" && document.documentElement.dataset.theme === "light", "Theme did not switch to light");
+      assert(background() !== dark, "Light theme did not change the page background");
+      assert(localStorage.getItem("entropylab-theme") === "light", "Light theme was not persisted");
+      toggle.click();
+      assert(toggle.dataset.themeMode === "system" && localStorage.getItem("entropylab-theme") === "system", "Theme did not switch to system");
+      toggle.click();
+      assert(toggle.dataset.themeMode === "dark" && !document.documentElement.dataset.theme && localStorage.getItem("entropylab-theme") === null, "Theme did not return to dark");
+      assert(background() === dark, "Dark theme background was not restored");
+    } finally {
+      localStorage.removeItem("entropylab-theme");
+    }
+  });
+
   await test("dice, hex, seed, and private-key keyboard toggles share their open state", async () => {
     await chooseMode("Seed phrase");
     let toggle = await until(() => document.getElementById("seed-keyboard-toggle"), "seed keyboard toggle");
