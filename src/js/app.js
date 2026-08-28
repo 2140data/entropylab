@@ -1117,11 +1117,9 @@ function hodlUpdateCards(){
   let dealt=document.getElementById("dealt-cards");
   if(dealt){
     dealt.hidden=!showCards;
-    if(!parsed.cards.length)dealt.innerHTML=`<span class="muted">No cards yet.</span>`;
-    else if(config.words===24){
-      let first=parsed.cards.slice(0,52),extra=parsed.cards.slice(52);
-      dealt.innerHTML=`<p class="dealt-shuffle-label">First shuffle \u00b7 ${first.length} of 52</p>${first.map(hodlDealtCardMarkup).join("")}`+(first.length>=52?`<p class="dealt-shuffle-label">Second shuffle \u00b7 ${extra.length} of 6</p>${extra.map(hodlDealtCardMarkup).join("")}`:"")
-    }else dealt.innerHTML=parsed.cards.map(hodlDealtCardMarkup).join("")
+    let firstTarget=parsed.needed.first,first=parsed.cards.slice(0,firstTarget),extra=parsed.cards.slice(firstTarget);
+    if(!parsed.cards.length)dealt.innerHTML=`<p class="dealt-shuffle-label">First shuffle \u00b7 No cards yet</p><span class="dealt-card dealt-card-placeholder" aria-hidden="true"></span>`;
+    else dealt.innerHTML=`<p class="dealt-shuffle-label">First shuffle \u00b7 ${first.length} of ${firstTarget}</p>${first.map(hodlDealtCardMarkup).join("")}`+(config.words===24&&first.length>=firstTarget?`<p class="dealt-shuffle-label">Second shuffle \u00b7 ${extra.length} of ${parsed.needed.extra}</p>${extra.map(hodlDealtCardMarkup).join("")}`:"")
   }
   let reshuffle=document.getElementById("cards-reshuffle");
   if(reshuffle){
@@ -1539,7 +1537,7 @@ function hodlRenderKeyForm(){
       ${hodlSeedMetaRowMarkup("cards-meta")}
       <div class="card-suit-pad" role="group" aria-label="Suit">${suitPad}</div>
       <div class="card-rank-pad dice-input-pad" role="group" aria-label="Rank">${rankPad}</div>
-      <div class="row card-controls-row"><button class="btn secondary" id="card-undo" type="button" disabled>Undo</button><label class="seed-autocomplete-toggle card-visibility-toggle"><input type="checkbox" id="show-cards" aria-controls="dealt-cards" ${showCards?"checked":""} /><span>Show cards</span></label></div>
+      <div class="card-controls-row"><button class="card-undo-button seed-keyboard-delete" id="card-undo" type="button" aria-label="Undo last card" title="Undo last card" disabled><svg viewBox="0 0 24 18" aria-hidden="true" focusable="false"><path d="M9 2h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9L2 9l7-7Z"/><path d="m12 6 6 6m0-6-6 6"/></svg></button><label class="seed-autocomplete-toggle card-visibility-toggle"><input type="checkbox" id="show-cards" aria-controls="dealt-cards" ${showCards?"checked":""} /><span>Show cards</span></label></div>
       <div class="dealt-cards" id="dealt-cards" aria-live="polite"${showCards?"":" hidden"}></div>
       <aside class="cards-reshuffle" id="cards-reshuffle" hidden></aside>
       <div id="dice-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div>

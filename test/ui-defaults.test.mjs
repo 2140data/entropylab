@@ -38,6 +38,19 @@ test("entropy progress messages sit directly below their inputs and above keypad
   assert.match(app, /<textarea id="key"[^>]*><\/textarea><\/div><p class="muted" id="private-key-meta"[^>]*><\/p>/);
 });
 
+test("dealt playing cards use theme-appropriate surfaces", () => {
+  assert.match(css, /:root \{[\s\S]*?--playing-card-bg: #292929;[\s\S]*?--playing-card-fg: #eeeeee;/);
+  assert.match(css, /:root\[data-theme="light"\] \{[\s\S]*?--playing-card-bg: #ffffff;[\s\S]*?--playing-card-fg: #111111;/);
+  assert.match(css, /\.dealt-card \{[\s\S]*?background: var\(--playing-card-bg\); color: var\(--playing-card-fg\);/);
+  assert.match(css, /\.dealt-card\.is-red \{ color: var\(--playing-card-red\); \}/);
+});
+
+test("card undo uses the keyboard delete icon and one rank-grid column", () => {
+  assert.match(app, /class="card-undo-button seed-keyboard-delete" id="card-undo"[^>]*aria-label="Undo last card"[^>]*><svg viewBox="0 0 24 18"/);
+  assert.match(css, /\.card-controls-row \{[\s\S]*?grid-template-columns: repeat\(7, minmax\(0, 1fr\)\)/);
+  assert.match(css, /@media \(min-width: 640px\) \{\s*\.card-controls-row \{ grid-template-columns: repeat\(13, minmax\(0, 1fr\)\); \}/);
+});
+
 test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /function hodlSeedKeyboardToggleMarkup\(\)/);
   assert.match(app, /function hodlPassphraseKeyboardToggleMarkup\(\)/);

@@ -15,6 +15,9 @@
   --blue: #6f9fca;
   --warn: #c9a44a;
   --paper: #f3efe4;
+  --playing-card-bg: #292929;
+  --playing-card-fg: #eeeeee;
+  --playing-card-red: #ef7468;
   --scrollbar-track: #0a0a0a;
   --scrollbar-thumb: #4a4a4a;
   --scrollbar-thumb-hover: #626262;
@@ -39,6 +42,9 @@
   --ok: #4f7a3a;
   --blue: #245d8f;
   --warn: #765a11;
+  --playing-card-bg: #ffffff;
+  --playing-card-fg: #111111;
+  --playing-card-red: #b42318;
   --scrollbar-track: #ededed;
   --scrollbar-thumb: #b5b5b5;
   --scrollbar-thumb-hover: #9a9a9a;
@@ -248,8 +254,20 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
 .card-rank-pad button { font-size: 15px; }
 .dealt-cards { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; min-height: 60px; }
 .dealt-cards[hidden] { display: none; }
-.card-controls-row { align-items: stretch; gap: var(--space-control); margin-top: var(--space-control); }
-.card-controls-row .card-visibility-toggle { margin: 0; }
+.card-controls-row {
+  display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+  align-items: stretch; gap: 8px; margin-top: var(--space-control);
+}
+.card-controls-row .card-visibility-toggle { grid-column: span 4; justify-content: center; margin: 0; }
+.card-undo-button {
+  display: grid; place-items: center; min-width: 0; min-height: 48px; padding: 0;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); color: var(--muted);
+}
+.card-undo-button:disabled { cursor: not-allowed; opacity: 0.38; }
+@media (min-width: 640px) {
+  .card-controls-row { grid-template-columns: repeat(13, minmax(0, 1fr)); }
+  .card-controls-row .card-visibility-toggle { grid-column: span 2; }
+}
 .dealt-shuffle-label {
   flex: 1 0 100%; margin: 4px 0 0; color: var(--muted);
   font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
@@ -264,10 +282,12 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
 .cards-reshuffle strong { color: var(--accent); }
 .dealt-card {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  width: 44px; height: 60px; border-radius: 6px; background: var(--paper); color: #111;
+  width: 44px; height: 60px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--playing-card-bg); color: var(--playing-card-fg);
   font-family: var(--mono); font-weight: 700; line-height: 1.05;
 }
-.dealt-card.is-red { color: #b42318; }
+.dealt-card-placeholder { visibility: hidden; }
+.dealt-card.is-red { color: var(--playing-card-red); }
 .dealt-card .dealt-rank { font-size: 13px; }
 .dealt-card .dealt-suit { font-size: 16px; }
 .wordlist {

@@ -17,6 +17,9 @@
   --blue: #6f9fca;
   --warn: #c9a44a;
   --paper: #f3efe4;
+  --playing-card-bg: #292929;
+  --playing-card-fg: #eeeeee;
+  --playing-card-red: #ef7468;
   --scrollbar-track: #0a0a0a;
   --scrollbar-thumb: #4a4a4a;
   --scrollbar-thumb-hover: #626262;
@@ -41,6 +44,9 @@
   --ok: #4f7a3a;
   --blue: #245d8f;
   --warn: #765a11;
+  --playing-card-bg: #ffffff;
+  --playing-card-fg: #111111;
+  --playing-card-red: #b42318;
   --scrollbar-track: #ededed;
   --scrollbar-thumb: #b5b5b5;
   --scrollbar-thumb-hover: #9a9a9a;
@@ -250,8 +256,20 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
 .card-rank-pad button { font-size: 15px; }
 .dealt-cards { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; min-height: 60px; }
 .dealt-cards[hidden] { display: none; }
-.card-controls-row { align-items: stretch; gap: var(--space-control); margin-top: var(--space-control); }
-.card-controls-row .card-visibility-toggle { margin: 0; }
+.card-controls-row {
+  display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+  align-items: stretch; gap: 8px; margin-top: var(--space-control);
+}
+.card-controls-row .card-visibility-toggle { grid-column: span 4; justify-content: center; margin: 0; }
+.card-undo-button {
+  display: grid; place-items: center; min-width: 0; min-height: 48px; padding: 0;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); color: var(--muted);
+}
+.card-undo-button:disabled { cursor: not-allowed; opacity: 0.38; }
+@media (min-width: 640px) {
+  .card-controls-row { grid-template-columns: repeat(13, minmax(0, 1fr)); }
+  .card-controls-row .card-visibility-toggle { grid-column: span 2; }
+}
 .dealt-shuffle-label {
   flex: 1 0 100%; margin: 4px 0 0; color: var(--muted);
   font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
@@ -266,10 +284,12 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
 .cards-reshuffle strong { color: var(--accent); }
 .dealt-card {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  width: 44px; height: 60px; border-radius: 6px; background: var(--paper); color: #111;
+  width: 44px; height: 60px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--playing-card-bg); color: var(--playing-card-fg);
   font-family: var(--mono); font-weight: 700; line-height: 1.05;
 }
-.dealt-card.is-red { color: #b42318; }
+.dealt-card-placeholder { visibility: hidden; }
+.dealt-card.is-red { color: var(--playing-card-red); }
 .dealt-card .dealt-rank { font-size: 13px; }
 .dealt-card .dealt-suit { font-size: 16px; }
 .wordlist {
@@ -4267,11 +4287,9 @@ function hodlUpdateCards(){
   let dealt=document.getElementById("dealt-cards");
   if(dealt){
     dealt.hidden=!showCards;
-    if(!parsed.cards.length)dealt.innerHTML=`<span class="muted">No cards yet.</span>`;
-    else if(config.words===24){
-      let first=parsed.cards.slice(0,52),extra=parsed.cards.slice(52);
-      dealt.innerHTML=`<p class="dealt-shuffle-label">First shuffle \u00b7 ${first.length} of 52</p>${first.map(hodlDealtCardMarkup).join("")}`+(first.length>=52?`<p class="dealt-shuffle-label">Second shuffle \u00b7 ${extra.length} of 6</p>${extra.map(hodlDealtCardMarkup).join("")}`:"")
-    }else dealt.innerHTML=parsed.cards.map(hodlDealtCardMarkup).join("")
+    let firstTarget=parsed.needed.first,first=parsed.cards.slice(0,firstTarget),extra=parsed.cards.slice(firstTarget);
+    if(!parsed.cards.length)dealt.innerHTML=`<p class="dealt-shuffle-label">First shuffle \u00b7 No cards yet</p><span class="dealt-card dealt-card-placeholder" aria-hidden="true"></span>`;
+    else dealt.innerHTML=`<p class="dealt-shuffle-label">First shuffle \u00b7 ${first.length} of ${firstTarget}</p>${first.map(hodlDealtCardMarkup).join("")}`+(config.words===24&&first.length>=firstTarget?`<p class="dealt-shuffle-label">Second shuffle \u00b7 ${extra.length} of ${parsed.needed.extra}</p>${extra.map(hodlDealtCardMarkup).join("")}`:"")
   }
   let reshuffle=document.getElementById("cards-reshuffle");
   if(reshuffle){
@@ -4689,7 +4707,7 @@ function hodlRenderKeyForm(){
       ${hodlSeedMetaRowMarkup("cards-meta")}
       <div class="card-suit-pad" role="group" aria-label="Suit">${suitPad}</div>
       <div class="card-rank-pad dice-input-pad" role="group" aria-label="Rank">${rankPad}</div>
-      <div class="row card-controls-row"><button class="btn secondary" id="card-undo" type="button" disabled>Undo</button><label class="seed-autocomplete-toggle card-visibility-toggle"><input type="checkbox" id="show-cards" aria-controls="dealt-cards" ${showCards?"checked":""} /><span>Show cards</span></label></div>
+      <div class="card-controls-row"><button class="card-undo-button seed-keyboard-delete" id="card-undo" type="button" aria-label="Undo last card" title="Undo last card" disabled><svg viewBox="0 0 24 18" aria-hidden="true" focusable="false"><path d="M9 2h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9L2 9l7-7Z"/><path d="m12 6 6 6m0-6-6 6"/></svg></button><label class="seed-autocomplete-toggle card-visibility-toggle"><input type="checkbox" id="show-cards" aria-controls="dealt-cards" ${showCards?"checked":""} /><span>Show cards</span></label></div>
       <div class="dealt-cards" id="dealt-cards" aria-live="polite"${showCards?"":" hidden"}></div>
       <aside class="cards-reshuffle" id="cards-reshuffle" hidden></aside>
       <div id="dice-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div>
