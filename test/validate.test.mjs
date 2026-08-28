@@ -37,6 +37,7 @@ const requiredFiles = [
   "src/js/app.js",
   "src/js/online.js",
   "src/js/network-check.js",
+  "src/js/browser-check.js",
   "src/js/enhanced-inputs.js",
   "src/js/repeat-inputs.js",
   "src/js/sqlite-writer.js",
@@ -44,6 +45,7 @@ const requiredFiles = [
   "test/sqlite-writer.test.mjs",
   "test/wallet-export.test.mjs",
   "test/wallet-export-reference.mjs",
+  "test/browser-check.test.mjs",
   ".github/workflows/ci-cd.yml",
 ];
 

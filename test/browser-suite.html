@@ -58,6 +58,13 @@
       const options = [...document.querySelectorAll(".version-select option")];
       assert(options.length === 1 && options[0].value === currentFile, "Local version fallback is missing");
     });
+    await test("offline host passes the startup sanity-check barrage", () => {
+      const root = document.documentElement;
+      equal(root.dataset.browserFailed, "0");
+      assert(Number(root.dataset.browserChecks) >= 5, "Sanity barrage did not record its checks");
+      assert(document.getElementById("btc-calc"), "Page was killed despite all checks passing");
+      assert(!document.querySelector(".sanity-failure"), "Failure screen rendered on a sane host");
+    });
     report("offline-results.txt");
     return;
   }
@@ -124,6 +131,14 @@
     assert(warning && !warning.hidden, "Online warning was not displayed");
     assert(brand && !brand.hidden && new URL(brand.src).origin === location.origin, "Brand asset is not same-origin");
     assert(favicon && new URL(favicon.href).origin === location.origin, "Favicon is not same-origin");
+  });
+
+  await test("hosted host passes the startup sanity-check barrage", () => {
+    const root = document.documentElement;
+    equal(root.dataset.browserFailed, "0");
+    assert(Number(root.dataset.browserChecks) >= 5, "Sanity barrage did not record its checks");
+    assert(document.getElementById("btc-calc"), "Page was killed despite all checks passing");
+    assert(!document.querySelector(".sanity-failure"), "Failure screen rendered on a sane host");
   });
 
   await test("hosted version manifest is fetched and allowlisted before entering the DOM", async () => {

@@ -32,6 +32,18 @@ jobs:
       - name: Run network-check tests
         run: npm run test:network
 
+  test-browser-check:
+    name: Test · browser sanity checks (browser-check.js)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Run browser-check tests
+        run: npm run test:browser-check
+
   test-ui:
     name: Test · UI defaults (app.js, index.html, styles.css)
     runs-on: ubuntu-latest
