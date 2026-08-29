@@ -18,7 +18,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash, createHmac } from "node:crypto";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -394,10 +394,10 @@ test("template, build script, and app wiring ship the export", () => {
   // The button renders next to #save in the wallet-data-actions row, and its
   // label is driven by the reveal flag (Ge) at render time.
   assert.match(app, /id="save"[^>]*>\$\{downloadLabel\}<\/button>\s*\$\{hodlWalletDatControl\(privateSheet\)\}/);
-  assert.match(app, /hodlSaveRecoveryControl\(\)\{return`<div class="wallet-data-actions no-print">[^`]*\$\{hodlWalletDatControl\(!1\)\}/);
+  assert.match(app, /hodlSaveRecoveryControl\s*\(\s*\)\s*\{\s*return\s*`<div class="wallet-data-actions no-print">[^`]*\$\{hodlWalletDatControl\(\s*(?:false|!1)\s*\)\}/);
   assert.match(app, /id="download-wallet-dat"[^>]*>\$\{hodlWalletExport\.walletDatButtonLabel\(includePrivate\)\}/);
   assert.match(app, /hodlWalletExport\.hasDescriptors\(re\)/);
-  assert.match(app, /hodlWalletExport\.buildWalletDat\(re,Ge,hodlWalletDatDeps\(\)\)/);
+  assert.match(app, /hodlWalletExport\.buildWalletDat\(\s*re\s*,\s*Ge\s*,\s*hodlWalletDatDeps\(\s*\)\s*\)/);
   assert.match(app, /hodlWalletExport\.walletDatFilename\(Ge\)/);
   assert.match(app, /document\.getElementById\("download-wallet-dat"\)/);
   assert.match(css, /\.save-wallet-dat/);
@@ -473,10 +473,13 @@ const setResult = (value, flag) => { re = value; Ge = flag; };
 export { captured, elements, hodlPrivateDataControls, hodlSaveRecoveryControl, hodlDownloadWalletDat, hodlBindWalletResultActions, setResult };
 `;
 
-const harnessPath = join(root, "test", `.wallet-export-harness-${Math.random().toString(16).slice(2)}.mjs`);
+// Keep the transient harness out of test/ so parallel suites that list the
+// directory (e.g. the parse check) never see it.
+const harnessDir = mkdtempSync(join(tmpdir(), "entropylab-harness-"));
+const harnessPath = join(harnessDir, "wallet-export-harness.mjs");
 writeFileSync(harnessPath, harnessSource);
 const ui = await import(pathToFileURL(harnessPath).href);
-unlinkSync(harnessPath);
+rmSync(harnessDir, { recursive: true });
 
 test("controls render the wallet.dat button next to #save only when descriptors exist", () => {
   ui.setResult(WATCH_ONLY_WALLET, false);

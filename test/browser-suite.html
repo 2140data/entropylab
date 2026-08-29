@@ -321,6 +321,9 @@
     deleteButton.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0, pointerId: 17 }));
     await wait(650);
     deleteButton.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, button: 0, pointerId: 17 }));
+    // Browsers synthesize this click after a real pointer sequence. Dispatch it
+    // explicitly here so the long-press suppression state cannot leak onward.
+    deleteButton.click();
     assert(seed.value.length <= 5, "Holding delete did not repeat after its initial delay");
     const passphraseKeyboardInput = document.getElementById("pass");
     input(passphraseKeyboardInput, "");
@@ -338,7 +341,13 @@
     equal(passphraseKeyboardInput.value, "aA1!");
     input(passphraseKeyboardInput, "");
     seed.focus();
-    assert(keyboardMode.disabled && keyboard.dataset.seedKeyboardLayout === "lower", "Seed focus did not restore lowercase-only mode");
+    // Firefox's headless focus transition can update activeElement without
+    // delivering focus to this textarea; exercise the application handler.
+    seed.dispatchEvent(new FocusEvent("focus"));
+    assert(
+      keyboardMode.disabled && keyboard.dataset.seedKeyboardLayout === "lower",
+      "Seed focus did not restore lowercase-only mode",
+    );
     await chooseMode("Private key");
     const key = await until(() => document.getElementById("key"), "private-key input");
     input(key, payload);
@@ -582,9 +591,10 @@
     equal(dice.value, "");
 
     await chooseMode("Number bases");
+    document.querySelector('input[name="entropy-format"][value="hex"]').click();
     toggle = await until(() => document.getElementById("passphrase-keyboard-toggle"), "hex passphrase keyboard toggle");
     keyboard = document.querySelector("#passphrase-keyboard-host [data-on-screen-keyboard]");
-    const hex = document.getElementById("hex");
+    const hex = await until(() => document.getElementById("hex"), "hex input");
     assert(toggle.getAttribute("aria-expanded") === "true" && !keyboard.hidden, "Hex keyboard did not retain the shared open state");
     input(passphrase, "");
     input(hex, "");

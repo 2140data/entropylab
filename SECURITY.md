@@ -25,6 +25,14 @@ material. Its security posture rests on the following model:
 - Wallet security depends on the quality and secrecy of the entropy, seed
   phrase, passphrase, or private key supplied by the user, and on the
   integrity of the machine it runs on.
+- Low-entropy dice and card transcripts are accepted intentionally so the
+  calculator can be used for deterministic tests, demonstrations, and
+  recovery experiments. EntropyLab does not claim that hashing a short input
+  makes it secure. When the entered transcript is below the recommended
+  entropy target, the result displays a prominent warning with the estimated
+  supplied entropy and says to use it only for testing. Users who intend to
+  secure funds must meet the displayed roll/card recommendation and verify
+  their procedure independently.
 - Material involving loss of funds (incorrect derivations, exfiltration of
   secret data, injected script execution in the generated HTML, unexpected
   network egress) is treated as a security issue.

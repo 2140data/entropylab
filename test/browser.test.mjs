@@ -57,15 +57,8 @@ const stageSite = () => {
   if (markerIndex === -1) throw new Error("could not find the application stylesheet marker");
   const stageOne = `${appHtml.slice(0, markerIndex)}${instrumentation}${appHtml.slice(markerIndex)}`;
 
-  // Expose the application crypto functions for the published vectors.
-  const bridge =
-    'globalThis.__entropyLabCrypto={entropyToMnemonic:(hex)=>_n(M.decode(hex)),mnemonicToEntropy:(mnemonic)=>M.encode(Er(mnemonic,Ae)),mnemonicToSeed:(mnemonic,passphrase)=>M.encode(wi(mnemonic,passphrase)),validateMnemonic:(mnemonic)=>Mt(mnemonic).ok,masterXprv:(mnemonic,passphrase)=>Gt.fromMasterSeed(wi(mnemonic,passphrase)).privateExtendedKey,privateKeyInputIsValid:()=>hodlPrivateKeyInputIsValid(),computeTargetLastWords:(words,targetWords)=>hodlComputeTargetLastWords(words,targetWords),clearLastWordCache:()=>hodlLastWordCache.clear(),validateTargetMnemonic:(value,targetWords)=>hodlValidateTargetMnemonic(value,targetWords),bruteTargetLastWords:(value)=>Tr(value)};';
-  const anchor = 'var ec=document.getElementById("btc-calc")';
-  const stageTwo = stageOne.replace(anchor, `${bridge}${anchor}`);
-  if (stageTwo === stageOne) throw new Error("could not find the crypto bridge anchor");
-
   // Append the browser suite before the document end.
-  const testHtml = `${stageTwo.replace(/<\/body>\s*<\/html>\s*$/, "")}${suite}</body></html>\n`;
+  const testHtml = `${stageOne.replace(/<\/body>\s*<\/html>\s*$/, "")}${suite}</body></html>\n`;
   const testHtmlPath = join(siteDir, "browser-tests.html");
   writeFileSync(testHtmlPath, testHtml, "utf8");
 

@@ -2,7 +2,7 @@
 // Browser sanity check: runs a quick barrage of smoke tests at startup to
 // confirm this host can run EntropyLab's wallet math correctly. Every check
 // covers a platform feature the application depends on: a secure context,
-// the CSPRNG (vendor.js), BigInt arithmetic (key derivation and the SQLite
+// the CSPRNG (locked cryptographic dependencies), BigInt arithmetic (key derivation and the SQLite
 // writer), UTF-8 TextEncoder/TextDecoder (hashing entropy input and writing
 // wallet.dat), and NFKD string normalization (BIP39 passphrases). The
 // checks are synchronous, read-only, and generate no network traffic. When

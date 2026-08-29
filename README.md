@@ -65,12 +65,15 @@ supplied by the user.
 
 ## Building from source
 
-The project uses a zero-dependency Node.js build that inlines the sources in
-`src/` into a single self-contained HTML file at the repository root.
+The build imports the cryptographic libraries declared in `package.json`,
+bundles them with the application using esbuild, and inlines the result into a
+single self-contained HTML file. `package-lock.json` pins the complete
+dependency tree and the integrity hash of every downloaded package.
 
-Requirements: Node.js 18 or newer (no npm packages to install).
+Requirements: Node.js 20.19 or newer.
 
 ```sh
+npm ci
 npm run build
 ```
 
@@ -91,7 +94,7 @@ files, run `npm run clean`.
 ```
 ├── assets/                 Static assets (logo, favicon)
 ├── scripts/
-│   ├── build.mjs           Zero-dependency build script
+│   ├── build.mjs           Locked-dependency esbuild and HTML assembly
 │   └── verify-site.mjs     Site artifact verification (npm run verify)
 ├── test/
 │   ├── browser-instrumentation.html  In-page browser test hooks
@@ -109,8 +112,7 @@ files, run `npm run clean`.
 │   ├── assets/             Header logos, inlined as data URIs at build time
 │   ├── css/styles.css      Application styles
 │   └── js/
-│       ├── vendor.js       Bundled third-party crypto (noble, scure, bip39)
-│       ├── app.js          Application logic
+│       ├── app.js          Application logic and explicit package imports
 │       ├── sqlite-writer.js Minimal SQLite database file writer
 │       ├── wallet-export.js Bitcoin Core wallet.dat descriptor export
 │       ├── online.js       Hosted-site behavior and header version label
@@ -125,8 +127,8 @@ files, run `npm run clean`.
 
 ## Development and deployment
 
-The toolchain is npm and Node.js (>=18) with no third-party dependencies. Every
-local and CI operation is exposed as an npm script:
+The toolchain is npm and Node.js (>=20.19). Install the exact dependency tree
+with `npm ci`; every local and CI operation is exposed as an npm script:
 
 ```bash
 npm test                    # run all tests, including the headless-Firefox suite

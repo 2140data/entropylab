@@ -53,17 +53,17 @@ user tapping "Heads" cannot infer a bias in the displayed face — nothing more.
 If you believe you need a new exception, open an issue and argue it against the
 section above. Please do not open a pull request that quietly adds one.
 
-Note: the bundled crypto library in `src/js/vendor.js` exposes random helpers of
-its own. Availability is not permission — application code in `src/js/app.js`
-and the other first-party modules stays deterministic.
+Note: some locked cryptographic dependencies expose random helpers of their
+own. Availability is not permission — application code in `src/js/app.js` and
+the other first-party modules stays deterministic.
 
 ## 2. Keep it Simple
 
 - The smallest change that fixes the problem is the right change. Prefer it.
-- **No new dependencies.** The build and the test suite are dependency-free
-  Node.js. There is no `node_modules`, and that is a feature: it keeps the
-  compiled `entropylab.html` auditable and the supply chain empty. Vendoring a third
-  party library into `src/js/vendor.js` needs a real, discussed reason.
+- **No unreviewed dependencies.** Cryptographic and build dependencies must be
+  exact versions in `package.json`, resolved with integrity hashes in the
+  committed `package-lock.json`, and installed with `npm ci`. Do not commit
+  copied or prebundled third-party source.
 - No frameworks, no transpilers, no bundler abstractions beyond
   `scripts/build.mjs`, no config files for things that can be code.
 - One output: a single self-contained HTML file. Nothing in the design should
@@ -94,7 +94,8 @@ The tool is meant to run air-gapped. It must not phone home.
 ```sh
 git clone https://github.com/w-s-bitcoin/entropylab.git
 cd entropylab
-node --version        # >= 18, no npm install needed
+node --version        # >= 20.19
+npm ci
 npm test
 ```
 

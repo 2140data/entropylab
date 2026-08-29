@@ -18,6 +18,7 @@ const requiredFiles = [
   "README.md",
   "LICENSE",
   "package.json",
+  "package-lock.json",
   appFile,
   "versions.json",
   "assets/favicon.png",
@@ -34,7 +35,6 @@ const requiredFiles = [
   "src/assets/logo-dark.png",
   "src/assets/logo-light.png",
   "src/css/styles.css",
-  "src/js/vendor.js",
   "src/js/app.js",
   "src/js/online.js",
   "src/js/network-check.js",
@@ -47,6 +47,8 @@ const requiredFiles = [
   "test/wallet-export.test.mjs",
   "test/wallet-export-reference.mjs",
   "test/browser-check.test.mjs",
+  "test/psbt-metadata.test.mjs",
+  "test/secret-clear.test.mjs",
   ".github/workflows/ci-cd.yml",
 ];
 
@@ -62,6 +64,22 @@ test("package.json declares a valid version and the expected scripts", () => {
   for (const script of ["build", "clean", "test", "verify", "ci"]) {
     assert.equal(typeof pkg.scripts?.[script], "string", `package.json is missing the "${script}" script`);
   }
+});
+
+test("dependencies and build tooling are exactly locked", () => {
+  assert.match(pkg.packageManager, /^npm@\d+\.\d+\.\d+$/);
+  for (const [name, version] of Object.entries({ ...pkg.dependencies, ...pkg.devDependencies })) {
+    assert.match(version, /^\d+\.\d+\.\d+$/, `${name} must use an exact version`);
+  }
+  const lock = JSON.parse(read("package-lock.json"));
+  assert.equal(lock.lockfileVersion, 3);
+  assert.deepEqual(lock.packages[""].dependencies, pkg.dependencies);
+  assert.deepEqual(lock.packages[""].devDependencies, pkg.devDependencies);
+  for (const [path, entry] of Object.entries(lock.packages)) {
+    if (!path || entry.link) continue;
+    assert.match(entry.integrity ?? "", /^sha512-/, `${path} has no SHA-512 package integrity`);
+  }
+  assert.equal(existsSync(join(root, "src/js/vendor.js")), false, "opaque vendor bundle must not return");
 });
 
 test("Node scripts and test files parse", () => {
@@ -91,6 +109,19 @@ test("versions.json lists the current release", () => {
     JSON.parse(read("versions.json")),
     { versions: [{ version: `v${appVersion}`, file: appFile }] },
   );
+});
+
+test("third-party actions are immutable and deployment is test-gated", () => {
+  const workflow = read(".github/workflows/ci-cd.yml");
+  assert.doesNotMatch(workflow, /^\s*uses:\s*[^\s]+@(?![0-9a-f]{40}(?:\s|$))/m);
+  assert.match(workflow, /^\s{2}build:\n(?:.|\n)*?^\s{4}needs: \[test-ci, test-browser\]$/m);
+  assert.match(workflow, /^\s{2}deploy:\n(?:.|\n)*?^\s{4}needs: \[build, verify\]$/m);
+});
+
+test("the intentional low-entropy recovery behavior is documented", () => {
+  const security = read("SECURITY.md");
+  assert.match(security, /low-entropy dice and card transcripts are accepted intentionally/i);
+  assert.match(security, /does not claim that hashing a short input\s+makes it secure/i);
 });
 
 const htmlFiles = [appFile];
@@ -136,7 +167,7 @@ test("repository source has no unresolved merge markers", () => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const name = entry.name;
       const path = join(dir, name);
-      if (name === ".git" || name.endsWith(".png")) continue;
+      if (name === ".git" || name === "node_modules" || name.endsWith(".png")) continue;
       if (entry.isSymbolicLink()) continue;
       if (entry.isDirectory()) {
         walk(path);
