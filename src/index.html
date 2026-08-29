@@ -6,6 +6,7 @@
       <span class="site-logo" aria-hidden="true"></span>
       <span class="site-title">EntropyLab</span>
       <span class="site-version"><span class="site-version-number">v{{VERSION}}</span> <span class="site-version-tag">(Latest)</span></span>
+      <span class="network-status" id="network-status" data-state="online" role="status" aria-label="Network status: online">Online</span>
       <div class="download-controls">
         <a class="btn secondary download-html header-button" href="entropylab.html" download="entropylab.html" aria-label="Download EntropyLab"><svg class="download-mark" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg><span class="control-label">Download</span></a>
         <a class="btn secondary github-repo-link header-button" href="https://github.com/w-s-bitcoin/entropylab" target="_blank" rel="noopener noreferrer" aria-label="View the EntropyLab GitHub repository in a new tab"><svg class="github-mark" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span class="control-label">GitHub</span></a>
@@ -19,21 +20,15 @@
         <strong>JavaScript is required:</strong> EntropyLab performs wallet calculations locally inside your browser. With JavaScript disabled the calculator cannot derive keys or addresses. Enable JavaScript, then run this file offline on an air-gapped computer.
       </aside>
     </noscript>
-    <!-- Warning banners are parked here while their UI is reworked. Nothing else
-         has to change to bring them back: online.js, the app's inline runtime and
-         network-check.js all look these up by id and no-op when they are absent,
-         and both conditional asides keep their hidden attribute, so restoring the
-         block cannot flash a banner.
-    <aside class="beta-warning no-print" role="alert">
-      <strong>Beta software:</strong> EntropyLab is experimental and should be used only for testing. Do not rely on it to secure real bitcoin, and never test with funds you cannot afford to lose.
-    </aside>
     <aside class="online-warning no-print" id="online-warning" role="alert" hidden>
       <strong>Online version:</strong> Do not enter seed phrases, private keys, or other wallet secrets on an internet-connected device. <a href="entropylab.html" download="entropylab.html">Download EntropyLab</a> and run the HTML file offline on a trusted, air-gapped computer.
     </aside>
-    <aside class="network-warning no-print" id="network-warning" role="alert" hidden>
-      <strong>Network detected:</strong> This computer has an active network adapter — it is online and possibly connected to the internet. Do not enter wallet secrets here; disconnect from all networks (Wi-Fi and Ethernet) and use this file on an air-gapped computer.
-    </aside>
-    -->
+    <!-- TODO: This copy is being kept for the network-detected modal that will
+         replace the banner. Verbatim, with the lead-in as the modal's title:
+         "Network detected:" / "This computer has an active network adapter — it
+         is online and possibly connected to the internet. Do not enter wallet
+         secrets here; disconnect from all networks (Wi-Fi and Ethernet) and use
+         this file on an air-gapped computer." -->
     <section class="card">
       <div class="kicker">Run Offline · Bring your own entropy</div>
       <h2>Hold or receive bitcoin without a signing device.</h2>
@@ -259,6 +254,9 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
       <p>D++ D8 &amp; D16 method: <a href="https://thesimplestbitcoinbook.net/wp-content/uploads/2023/09/Roll-Your-Own-Seed-Phrase-PDF.pdf" target="_blank" rel="noopener noreferrer">Roll Your Own Bitcoin Seed Phrase</a> — the published 24-word workflow uses one D8 and two D16 rolls per word, then a final D8.</p>
       <p>Jade anti-exfil (sign-to-contract): <a href="https://blog.blockstream.com/anti-exfil-stopping-key-exfiltration/" target="_blank" rel="noopener noreferrer">Anti-Exfil: Stopping Key Exfiltration</a> — secp256k1-zkp <code>ecdsa_s2c</code> / <code>anti_exfil_host_verify</code>.</p>
     </section>
+    <footer class="site-footer no-print">
+      <p class="fine-print">EntropyLab is designed to be used by advanced bitcoin users, and is otherwise for testing and educational purposes only.<br>It is your responsibility to keep your private key and seed material air-gapped and offline.</p>
+    </footer>
   </div>
 </div><!--/$--><script>/*@@JS_BROWSER_CHECK@@*/</script><script id="btc-calc-script">/*@@JS_MAIN@@*/</script>
 <script>/*@@JS_SQLITE_WRITER@@*/</script>

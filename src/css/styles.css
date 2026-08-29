@@ -11,7 +11,9 @@
   --selection-accent: #ff9900;
   --selection-fg: #000000;
   --danger: #d4574a;
+  --danger-bright: #ff4438; /* alert red: --danger is too muted to carry a live status */
   --ok: #8aaa74;
+  --ok-bright: #22c55e; /* a true green: --ok sits closer to olive than the status tag wants */
   --blue: #6f9fca;
   --warn: #c9a44a;
   --paper: #f3efe4;
@@ -27,6 +29,8 @@
   --space-major: 32px; /* seams between the page's major sections */
   --space-lede: 48px; /* the widest seam: where the pitch ends and the tool begins */
   --site-header-height: 52px; /* .header-button height plus 6px above and below */
+  --site-header-pad: 16px; /* the bar's side padding; the status tag aligns to it */
+  --site-min-width: 320px; /* the narrowest layout we lay out for: below this the page scrolls */
   --display: "Iowan Old Style", Palatino, Georgia, serif;
   --sans: "Segoe UI", system-ui, sans-serif;
   --mono: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
@@ -42,7 +46,9 @@
   --border: #c9c9c9;
   --accent: #b86f1c;
   --danger: #b42318;
+  --danger-bright: #d92d20;
   --ok: #4f7a3a;
+  --ok-bright: #15803d;
   --blue: #245d8f;
   --warn: #765a11;
   --playing-card-bg: #ffffff;
@@ -62,7 +68,7 @@
 *::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 *::-webkit-scrollbar-corner { background: var(--scrollbar-track); }
 html { overflow-y: scroll; scrollbar-gutter: stable; scroll-padding-top: calc(var(--site-header-height) + 12px); }
-html, body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); }
+html, body { margin: 0; min-width: var(--site-min-width); background: var(--bg); color: var(--fg); font-family: var(--sans); }
 body { min-height: 100vh; }
 h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; }
 h1 { font-size: 2rem; margin: 8px 0; }
@@ -423,19 +429,30 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 /* Top padding sets the gap below the warning banners, which carry 12px of
    their own margin. */
 .site-header {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 40; min-width: var(--site-min-width);
   background: var(--bg); border-bottom: 1px solid var(--border);
 }
+/* The rule answers to the tag hung on it, so the whole width of the bar carries
+   the warning rather than just the badge. Reading the state off the tag rather
+   than a second flag keeps the two from ever disagreeing: network-check.js
+   still writes exactly one attribute. It takes --danger, not --danger-bright:
+   a full-width rule at the brighter red would outshout the word it is warning
+   about, so the brightest red stays reserved for the tag's text. */
+.site-header:has(.network-status[data-state="online"]) { border-bottom-color: var(--danger); }
 /* The tight gap belongs to the mark and wordmark, which read as one lockup.
    Everything after them buys its own breathing room back with a margin. */
 .site-header-inner {
+  position: relative;
   display: flex; align-items: center; gap: 6px; height: var(--site-header-height);
-  max-width: 1000px; margin: 0 auto; padding: 0 16px;
+  max-width: 1000px; margin: 0 auto; padding: 0 var(--site-header-pad);
 }
 /* Both marks are inlined as data URIs at build time; the light one wins when
-   the light theme sets data-theme on the root element. */
+   the light theme sets data-theme on the root element. The negative margin
+   cancels the flex gap on this side only: the art carries 20px of transparent
+   margin per side in a 96px square, so it already supplies ~7.5px of space at
+   the rendered 36px and the 6px gap on top of it read as a hole. */
 .site-logo {
-  flex: 0 0 auto; width: 36px; height: 36px;
+  flex: 0 0 auto; width: 36px; height: 36px; margin-right: -6px;
   background: url("data:image/png;base64,/*@@LOGO_DARK@@*/") center / contain no-repeat;
 }
 :root[data-theme="light"] .site-logo { background-image: url("data:image/png;base64,/*@@LOGO_LIGHT@@*/"); }
@@ -454,6 +471,24 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 /* Version strings opt out of the uppercase, so the "v" prefix stays lowercase
    wherever one appears in the label. */
 .site-version-number { text-transform: none; font-variant-numeric: tabular-nums; }
+/* Straddles the header's bottom rule so the rule runs into its two edges and
+   the tag reads as speared by it, and sits at the bar's left edge, under the
+   logo and wordmark. Hanging below the control row is what lets it hold that
+   position at every width without competing with the lockup for space. The
+   opaque background is load-bearing: without it the rule would cross the text
+   rather than stop at the edges.
+   network-check.js owns data-state; the text colour follows from it. The border
+   is transparent but kept at 1px: it kills the outline without changing the
+   tag's height, which is what sets how far it rises above the rule. */
+.network-status {
+  position: absolute; left: var(--site-header-pad); bottom: 0; transform: translateY(50%); z-index: 1;
+  padding: 3px 6px; border: 1px solid transparent; border-radius: 999px;
+  background: var(--bg);
+  font-size: 11px; font-weight: 700; line-height: 1; letter-spacing: 0.1em; text-transform: uppercase;
+  text-indent: 0.1em; white-space: nowrap;
+}
+.network-status[data-state="offline"] { color: var(--ok-bright); }
+.network-status[data-state="online"] { color: var(--danger-bright); }
 /* min-width: 0 lets the row shrink on narrow screens rather than pushing the
    controls out of the bar. */
 .download-controls { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; margin-left: auto; min-width: 0; }
@@ -517,7 +552,7 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 .custom-select-option:hover, .custom-select-option:focus-visible { background: color-mix(in oklab, var(--accent) 14%, var(--surface-2)); outline: none; }
 .custom-select-option[aria-selected="true"] { background: color-mix(in oklab, var(--accent) 20%, var(--surface-2)); color: var(--accent); }
 .custom-select-option:disabled { background: transparent; color: var(--faint); cursor: not-allowed; opacity: .48; }
-.beta-warning, .online-warning, .network-warning {
+.beta-warning, .online-warning {
   margin: 0 0 12px; padding: 14px 16px; border: 1px solid; border-radius: 10px;
   color: var(--fg); line-height: 1.5;
 }
@@ -526,11 +561,14 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 }
 .online-warning strong { color: var(--danger); }
 .online-warning a { font-weight: 700; white-space: nowrap; }
-.network-warning {
-  border-color: var(--ok); background: color-mix(in oklab, var(--ok) 12%, var(--surface));
-}
-.network-warning strong { color: var(--ok); }
 .beta-warning strong { color: var(--danger); }
+.site-footer {
+  margin-top: var(--space-lede); padding-top: 14px; border-top: 1px solid var(--border);
+}
+.fine-print {
+  max-width: 700px; margin: 0 auto; color: var(--faint); font-size: 12px;
+  line-height: 1.6; text-align: center;
+}
 .sanity-failure {
   min-height: 100dvh; display: grid; place-items: center; padding: 24px; box-sizing: border-box;
 }
@@ -996,7 +1034,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 /* Narrow screens: drop the control labels so the bar stays one row. Each
    control keeps its own aria-label, so nothing is lost to assistive tech. */
 @media (max-width: 719px) {
-  .site-header-inner { padding: 0 12px; }
+  :root { --site-header-pad: 12px; }
   .control-label { display: none; }
   /* Icon-only: square them off against the 40px theme toggle. */
   .download-controls .btn:is(.download-html, .github-repo-link) { flex: 0 0 40px; width: 40px; padding: 0; justify-content: center; }
@@ -1005,6 +1043,14 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   .download-controls { gap: 6px; }
   /* Only the version number itself survives on narrow screens. */
   .site-version-tag { display: none; }
+}
+/* Below the common 412/414px Android widths the lockup is the last thing with
+   give left in the bar, the controls being fixed-width icons by now. Taking it
+   down a step buys back roughly the width the row is short of at 320px, and
+   costs less than dropping an item. */
+@media (max-width: 400px) {
+  .site-title { font-size: 17px; }
+  .site-version { font-size: 11px; margin-left: 2px; }
 }
 @media (max-width: 520px) {
   .key-panel-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; }

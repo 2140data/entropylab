@@ -45,8 +45,8 @@
     await test("offline mode keeps online-only presentation disabled", () => {
       const warning = document.getElementById("online-warning");
       const logo = document.querySelector(".site-logo");
-      // The banners are parked while their UI is reworked; restore them and
-      // this asserts the offline build still keeps the warning hidden.
+      // The warning is live but hidden by default; this asserts the offline
+      // build never reveals it.
       assert(!warning || warning.hidden, "Offline mode displayed the online warning");
       assert(logo, "Header logo is missing");
       assert(
