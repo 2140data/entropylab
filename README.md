@@ -29,6 +29,9 @@ Official website: [entropylab.online](https://entropylab.online)
   for repeated ECDSA nonces from the same public key, verifies optional Jade
   anti-exfil (sign-to-contract) transcripts without a key, and can compare supported
   SegWit v0 SIGHASH_ALL signatures with RFC 6979, including Bitcoin Core-style low-r grinding, in a temporary session.
+  Every input's declared sighash policy and each signature's appended sighash
+  byte are decoded without a key; anything other than exact SIGHASH_ALL is a
+  blocking warning.
 - Runs a quick barrage of startup sanity checks on the host browser (secure
   context, CSPRNG, BigInt, UTF-8 encoding, and NFKD normalization). If any
   check fails, the page is replaced with a failure report listing the failed

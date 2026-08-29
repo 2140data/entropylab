@@ -6322,6 +6322,30 @@ function hodlPartialSigs(entries) {
 function hodlTapSigs(entries) {
   return hodlFind(entries, 19).concat(hodlFind(entries, 20));
 }
+// PSBT_IN_SIGHASH_TYPE (input type 0x03): empty keydata, four-byte
+// little-endian policy. It must be decoded before signing, and shown even
+// without a session key.
+function hodlSighashPolicy(entries) {
+  let declarations = hodlFind(entries, 3).filter((entry) => entry.keydata.length === 0);
+  if (!declarations.length) return null;
+  if (declarations[0].val.length !== 4) throw new Error("A sighash policy field is malformed.");
+  return new DataView(declarations[0].val.buffer, declarations[0].val.byteOffset, 4).getUint32(0, true);
+}
+// The base type occupies the low seven bits; bit 0x80 marks ANYONECANPAY.
+function hodlSighashLabel(policy) {
+  let base = policy & 0x7f, baseName = base === 1 ? "SIGHASH_ALL" : base === 2 ? "SIGHASH_NONE" : base === 3 ? "SIGHASH_SINGLE" : "unknown 0x" + base.toString(16);
+  return baseName + ((policy & 0x80) ? " | ANYONECANPAY" : "") + " (0x" + policy.toString(16) + ")";
+}
+// Exact SIGHASH_ALL is the only policy that commits to every displayed
+// output. Anything else, or a disagreement between the PSBT field and a
+// signature's appended byte, is blocking — no session key required.
+function hodlSighashProblems(declared, suffix) {
+  let problems = [];
+  if (declared !== null && declared !== 1) problems.push("The PSBT requests " + hodlSighashLabel(declared) + ", which does not commit to all shown outputs.");
+  if (suffix !== null && suffix !== 1) problems.push("This signature uses " + hodlSighashLabel(suffix) + ", which does not commit to all shown outputs.");
+  if (declared !== null && suffix !== null && declared !== suffix) problems.push("The PSBT-declared policy and the signature's appended sighash byte disagree.");
+  return problems;
+}
 function hodlFinalized(entries) {
   return entries.some((entry) => entry.type === 7 || entry.type === 8);
 }
@@ -6682,9 +6706,18 @@ function hodlRenderPsbt(psbt) {
       inputSum += witnessUtxo.amount;
       knownInputs++;
     }
+    let declaredSighash = null, declaredSighashError = "";
+    try {
+      declaredSighash = hodlSighashPolicy(entries);
+    } catch (exception) {
+      declaredSighashError = exception.message || String(exception);
+    }
+    let declaredLabel = declaredSighashError ? "" : declaredSighash === null ? "SIGHASH_ALL (default)" : hodlSighashLabel(declaredSighash);
     let previous = tx.inputs[index], destination = witnessUtxo ? hodlAddr(witnessUtxo.script, network) : "(previous output details unavailable)", signatures = hodlPartialSigs(entries), tapSignatures = hodlTapSigs(entries), finalized = hodlFinalized(entries);
     tapSignatureCount += tapSignatures.length;
-    html.push("<p class='psbt-kv'><strong>Input " + index + "</strong> \xB7 " + hodlHexRev(previous.txid) + " : " + previous.vout + (witnessUtxo ? " \xB7 " + hodlSats(witnessUtxo.amount) + " BTC claimed" : "") + "<br>" + $t(destination) + "<br>" + (signatures.length + tapSignatures.length ? signatures.length + tapSignatures.length + " signature(s) present" : finalized ? "Finalized input data present" : "Not signed yet") + "</p>");
+    html.push("<p class='psbt-kv'><strong>Input " + index + "</strong> \xB7 " + hodlHexRev(previous.txid) + " : " + previous.vout + (witnessUtxo ? " \xB7 " + hodlSats(witnessUtxo.amount) + " BTC claimed" : "") + "<br>" + $t(destination) + "<br>" + (signatures.length + tapSignatures.length ? signatures.length + tapSignatures.length + " signature(s) present" : finalized ? "Finalized input data present" : "Not signed yet") + (declaredSighashError ? "<br>Declared sighash policy unreadable: " + $t(declaredSighashError) : "<br>Signature policy: " + $t(declaredLabel)) + "</p>");
+    if (declaredSighashError) html.push("<p class='psbt-bad'><strong>Policy problem:</strong> input " + index + " declares a malformed sighash policy. Do not sign until its policy is known.</p>");
+    else if (declaredSighash !== null && declaredSighash !== 1) html.push("<p class='psbt-bad'><strong>Policy problem:</strong> input " + index + " requests " + $t(declaredLabel) + "; that policy does not commit to all shown outputs. Do not accept the displayed outputs as what a signature will authorize.</p>");
     signatures.forEach(signature => {
       let parts = hodlSigParts(signature.der),
         looseR = parts ? parts.r : hodlDerRLoose(signature.der),
@@ -6698,10 +6731,16 @@ function hodlRenderPsbt(psbt) {
         privateKey = hodlPrivForPub(signature.pubkey) || hodlPrivFromPath(entries, signature.pubkey),
         message = "Need the matching key in this session to check RFC 6979 and low-r grind.",
         className = "muted";
+      let suffixForPolicy = signature.raw.length >= 2 ? signature.sighash : null,
+        sighashProblems = hodlSighashProblems(declaredSighash, suffixForPolicy);
       if (!parts && !looseR) {
         uninspected += 1;
         message = "Signature is not DER and its nonce cannot be inspected.";
-        className = "psbt-warn"
+        className = "psbt-warn";
+        if (sighashProblems.length) {
+          message = "Signature policy problem: " + sighashProblems.join(" ");
+          className = "psbt-bad";
+        }
       } else {
         rValues.push({
           input: index,
@@ -6711,7 +6750,11 @@ function hodlRenderPsbt(psbt) {
           sighash,
           valid: parts ? signatureValid : null
         });
-        if (!parts) {
+        if (sighashProblems.length) {
+          // An unsafe or conflicting sighash policy blocks every other check.
+          message = "Signature policy problem: " + sighashProblems.join(" ");
+          className = "psbt-bad";
+        } else if (!parts) {
           message = "Signature is not strict DER. Its r value is still compared for nonce reuse.";
           className = "psbt-warn"
         } else if (signatureValid === !1) {
@@ -6751,10 +6794,7 @@ function hodlRenderPsbt(psbt) {
           message = "Could not recompute this signature: " + (exception.message || String(exception));
           className = "psbt-warn";
         }
-        else if (privateKey && signature.sighash !== 1) {
-          message = "Matching key found, but this check currently supports SIGHASH_ALL without ANYONECANPAY only.";
-          className = "psbt-warn";
-        } else if (privateKey && !scriptCode) {
+        else if (privateKey && !scriptCode) {
           message = "Matching key found, but this input script is not yet supported for RFC 6979 comparison.";
           className = "psbt-warn";
         }
