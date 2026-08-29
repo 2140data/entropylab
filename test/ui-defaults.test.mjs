@@ -69,6 +69,14 @@ test("entropy progress messages sit directly below their inputs and above keypad
   assert.match(app, /<textarea id="key"[^>]*><\/textarea><\/div><p class="muted" id="private-key-meta"[^>]*><\/p>/);
 });
 
+test("seed phrase copy controls sit immediately above every numbered word grid", () => {
+  assert.match(appSource, /\$\{dicePad\}\s*\$\{hodlSeedCopyRowMarkup\(\)\}\s*<div id="dice-words"/);
+  assert.match(appSource, /<div class="dealt-cards"[^>]*><\/div>\s*\$\{hodlSeedCopyRowMarkup\(\)\}\s*<div id="dice-words"/);
+  assert.match(appSource, /\$\{entropyPad\}\s*\$\{hodlSeedCopyRowMarkup\(\)\}\s*<div id="entropy-words"/);
+  assert.match(appSource, /<\/div>\$\{hodlSeedCopyRowMarkup\(\)\}<div id="seed-number-words"/);
+  assert.match(appSource, /function hodlSeedMetaRowMarkup\(metaId, live = false\) \{\s*return `<div class="seed-word-meta"><p[^`]+<\/p><\/div>`;\s*\}/);
+});
+
 test("Seed phrase offers one-based or zero-based BIP39 word-number entry", () => {
   assert.match(appSource, /name="seed-method" value="words"/);
   assert.match(appSource, /name="seed-method" value="numbers"/);
