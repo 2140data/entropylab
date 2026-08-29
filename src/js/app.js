@@ -1788,7 +1788,6 @@ function hodlReadAddressWindow(prefix = "", mark = true) {
 }
 function hodlFormatAddressEstimate(milliseconds) {
   if (!Number.isFinite(milliseconds) || milliseconds < 100) return "under 0.1 seconds";
-  if (milliseconds < 1000) return `about ${(milliseconds / 1000).toFixed(1)} seconds`;
   if (milliseconds < 10000) return `about ${(milliseconds / 1000).toFixed(1)} seconds`;
   if (milliseconds < 60000) return `about ${Math.round(milliseconds / 1000)} seconds`;
   return `about ${Math.ceil(milliseconds / 60000)} minutes`;
@@ -1876,6 +1875,17 @@ function hodlResetDerivationProgress(kind, hide = true) {
   if (label) label.textContent = "0%";
   progress.hidden = hide;
 }
+function hodlDerivationPause() {
+  return new Promise((resolve) => {
+    let settled = false, finish = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+    if ("requestAnimationFrame" in window) requestAnimationFrame(finish);
+    setTimeout(finish, 100);
+  });
+}
 function hodlCreateDerivationTracker(progress, control) {
   let total = 1, completed = 0, lastPercent = -1, lastYield = performance.now();
   let ensureActive = () => {
@@ -1902,15 +1912,10 @@ function hodlCreateDerivationTracker(progress, control) {
       completed = Math.min(total, completed + amount);
       render(Math.min(99, Math.floor(completed / total * 100)));
       if (performance.now() - lastYield < 16) return null;
-      return new Promise((resolve, reject) => requestAnimationFrame(() => {
+      return hodlDerivationPause().then(() => {
         lastYield = performance.now();
-        try {
-          ensureActive();
-          resolve();
-        } catch (error) {
-          reject(error);
-        }
-      }));
+        ensureActive();
+      });
     },
     complete() {
       ensureActive();
@@ -1942,8 +1947,10 @@ async function hodlDeriveWithProgress(kind, derive) {
   hodlActiveDerivation = control;
   hodlResetDerivationProgress(kind, false);
   hodlSetDerivationButtonState(kind, "running");
+  (multisig ? hodlSyncDeriveButton : hodlSyncMsigDeriveButton)();
   try {
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    await hodlDerivationPause();
+    await hodlDerivationPause();
     if (control.cancelled) throw new HodlDerivationCancelledError();
     let tracker = hodlCreateDerivationTracker(progress, control), succeeded = await derive(tracker);
     if (succeeded === false) hodlResetDerivationProgress(kind);
@@ -1954,8 +1961,8 @@ async function hodlDeriveWithProgress(kind, derive) {
   } finally {
     if (hodlActiveDerivation === control) hodlActiveDerivation = null;
     hodlSetDerivationButtonState(kind, "idle");
-    if (multisig) hodlSyncMsigDeriveButton();
-    else hodlSyncDeriveButton();
+    hodlSyncDeriveButton();
+    hodlSyncMsigDeriveButton();
   }
 }
 function hodlImportedExtendedKeyDepth() {
@@ -5188,12 +5195,20 @@ function hodlCanDeriveCurrentKey() {
 function hodlSyncDeriveButton() {
   let button = document.getElementById("go");
   if (!button) return;
-  if (hodlActiveDerivation?.kind === "key") {
-    hodlSetDerivationButtonState("key", hodlActiveDerivation.cancelled ? "stopping" : "running");
+  if (hodlActiveDerivation) {
+    if (hodlActiveDerivation.kind === "key") {
+      hodlSetDerivationButtonState("key", hodlActiveDerivation.cancelled ? "stopping" : "running");
+      return;
+    }
+    hodlSetDerivationButtonState("key", "idle");
+    button.disabled = true;
+    button.setAttribute("aria-disabled", "true");
+    button.title = "A derivation is already running.";
     return;
   }
   hodlSetDerivationButtonState("key", "idle");
   button.disabled = !hodlCanDeriveCurrentKey();
+  button.title = "";
   button.setAttribute("aria-disabled", String(button.disabled));
 }
 var hodlMasterFingerprintTimer = 0, hodlMasterFingerprintRevision = 0;
@@ -5321,6 +5336,7 @@ function hodlInvalidateLiveKeyResult() {
   re = null;
   Ge = false;
   dr.innerHTML = "";
+  hodlStopDerivation("key");
   hodlResetDerivationProgress("key");
 }
 function hodlInitMasterFingerprintPreview() {
@@ -5649,8 +5665,15 @@ function hodlUpdateMsigKeyPlaceholders() {
 function hodlSyncMsigDeriveButton() {
   let button = document.getElementById("msig-go");
   if (!button) return;
-  if (hodlActiveDerivation?.kind === "msig") {
-    hodlSetDerivationButtonState("msig", hodlActiveDerivation.cancelled ? "stopping" : "running");
+  if (hodlActiveDerivation) {
+    if (hodlActiveDerivation.kind === "msig") {
+      hodlSetDerivationButtonState("msig", hodlActiveDerivation.cancelled ? "stopping" : "running");
+      return;
+    }
+    hodlSetDerivationButtonState("msig", "idle");
+    button.disabled = true;
+    button.setAttribute("aria-disabled", "true");
+    button.title = "A derivation is already running.";
     return;
   }
   hodlSetDerivationButtonState("msig", "idle");
@@ -5829,6 +5852,7 @@ function hodlInvalidateMsig() {
   dr.innerHTML = "";
   let err = document.getElementById("msig-error");
   if (err) err.textContent = "";
+  hodlStopDerivation("msig");
   hodlResetDerivationProgress("msig");
   hodlUpdateMsigAccount();
   hodlSyncMsigDeriveButton();

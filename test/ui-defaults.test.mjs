@@ -108,6 +108,18 @@ test("key and multisig derivation use an indexed address window with an estimate
   assert.match(appSource, /hodlHandleDerivationButton\("msig", hodlBuildMsig\)/);
 });
 
+test("a running derivation yields off the main thread, survives hidden tabs, and cancels on edits", () => {
+  assert.match(appSource, /function hodlDerivationPause\(\)/);
+  assert.match(appSource, /requestAnimationFrame\(finish\)/);
+  assert.match(appSource, /setTimeout\(finish, 100\)/);
+  assert.match(appSource, /return hodlDerivationPause\(\)\.then\(\(\) => \{/);
+  assert.match(appSource, /function hodlInvalidateLiveKeyResult\(\) \{[\s\S]*?hodlStopDerivation\("key"\)[\s\S]*?\}/);
+  assert.match(appSource, /function hodlInvalidateMsig\(\) \{[\s\S]*?hodlStopDerivation\("msig"\)[\s\S]*?\}/);
+  assert.match(appSource, /function hodlSyncDeriveButton\(\) \{[\s\S]*?hodlActiveDerivation\.kind === "key"[\s\S]*?button\.disabled = true;/);
+  assert.match(appSource, /function hodlSyncMsigDeriveButton\(\) \{[\s\S]*?hodlActiveDerivation\.kind === "msig"[\s\S]*?button\.disabled = true;/);
+  assert.equal(appSource.match(/A derivation is already running\./g)?.length, 2);
+});
+
 test("entropy progress messages sit directly below their inputs and above keypads", () => {
   assert.match(app, /<textarea id="dice"[^>]*><\/textarea><\/div>\s*\$\{hodlSeedMetaRowMarkup\("dice-meta",!0\)\}\s*\$\{dicePad\}/);
   assert.match(appSource, /<textarea id="\$\{inputId\}"[^>]*><\/textarea><\/div>\s*\$\{hodlSeedMetaRowMarkup\("cards-meta"\)\}/);

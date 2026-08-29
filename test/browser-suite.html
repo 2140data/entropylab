@@ -876,6 +876,37 @@
     );
   });
 
+  await test("editing a field mid-derivation cancels the run instead of publishing a stale wallet", async () => {
+    const start = document.getElementById("address-start");
+    const range = document.getElementById("address-range");
+    const derive = document.getElementById("go");
+    input(range, "10000");
+    await until(() => !derive.disabled, "derive button after range edit");
+    derive.click();
+    equal(derive.textContent.trim(), "Stop", "The derive button did not become a Stop button while running");
+    const multisigDerive = document.getElementById("msig-go");
+    assert(multisigDerive.disabled && multisigDerive.getAttribute("aria-disabled") === "true", "The multisig derive button was not disabled while a key derivation was running");
+    equal(multisigDerive.title, "A derivation is already running.", "The disabled multisig derive button did not explain why");
+    await until(() => Number(document.getElementById("derive-progress").getAttribute("aria-valuenow")) > 0, "derivation progress before editing");
+    input(start, "8");
+    await until(() => derive.textContent.trim() === "Derive Wallet", "restored Derive Wallet button after editing");
+    assert(!document.getElementById("error").textContent, "Cancelling via an edit was shown as a derivation error");
+    assert(!document.querySelector("#acct .account-result-card"), "An edited derivation published a stale wallet");
+    const progress = document.getElementById("derive-progress");
+    assert(progress.hidden, "The progress indicator remained visible after an edit cancelled the run");
+    equal(start.value, "8", "The field edit that cancelled the run was not kept");
+
+    input(range, "5");
+    derive.click();
+    await until(
+      () => document.querySelector('#acct [data-address-table="hd-receive"] table[aria-rowcount="6"]'),
+      "five-address table derived from the edited fields",
+    );
+    const receiveRows = document.querySelectorAll('#acct [data-address-table="hd-receive"] tbody tr');
+    equal(receiveRows[0].querySelector("th")?.textContent.trim(), "8", "The re-derived table did not use the edited starting index");
+    equal(multisigDerive.title === "A derivation is already running.", false, "The multisig derive button kept its busy hint after the run");
+  });
+
   await test("Legacy key derivation exports BIP87 and can derive a 1-of-1 Legacy BIP87 wallet", async () => {
     const exportRow = [...document.querySelectorAll("#acct p")].find((row) =>
       row.textContent.includes("Legacy · BIP87 · Account 0")
