@@ -13,6 +13,8 @@ Official website: [entropylab.online](https://entropylab.online)
 
 - Accepts dice rolls, coin flips, hexadecimal entropy, BIP39 seed phrases,
   extended keys, WIF keys, raw private keys, and Casascius mini private keys.
+  All five BIP39 phrase lengths (12, 15, 18, 21, and 24 words) are supported
+  for every entropy entry method.
 - Derives BIP39 seeds, BIP32 extended keys, wallet fingerprints, addresses,
   and Bitcoin Core-compatible descriptors. Each master fingerprint is shown
   next to its deterministic [LifeHash](https://lifehash.info) icon so two

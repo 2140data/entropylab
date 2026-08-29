@@ -53,7 +53,9 @@
         <p class="label" id="seed-length-label">Seed phrase length</p>
         <div class="row seed-length-options segmented-control" role="group" aria-label="Seed phrase length">
           <button type="button" class="tab" data-seed-words="12" aria-pressed="false">12 words</button>
+          <button type="button" class="tab" data-seed-words="15" aria-pressed="false">15 words</button>
           <button type="button" class="tab" data-seed-words="18" aria-pressed="false">18 words</button>
+          <button type="button" class="tab" data-seed-words="21" aria-pressed="false">21 words</button>
           <button type="button" class="tab active" data-seed-words="24" aria-pressed="true">24 words</button>
         </div>
         <p class="muted" id="seed-length-help">24 words use 256 bits of BIP39 entropy.</p>
@@ -74,13 +76,13 @@ This matches the method used by Keystone, and all rolls are included.</span></sp
       <label class="choice"><input type="radio" name="dm" value="bitbox">
         <span><strong>BitBox diceware / Direct word selection</strong>
         <span class="desc">Same as the BitBox02 lookup table: five dice
-showing 1–4, then a coin (or 6th die: 1–3 tails, 4–6 heads). 5 and 6 on
-the first five dice of a word are skipped (reroll). After 23 words, pick
- one of the 8 checksum words.</span></span>
+showing 1–4, then a coin (or 6th die: 1–3 heads, 4–6 tails). 5 and 6 on
+the first five dice of a word are skipped (reroll). After the lookup-table
+words, pick one of the checksum words.</span></span>
       </label>
       <label class="choice"><input type="radio" name="dm" value="dplus">
         <span><strong>D++ / Direct word selection</strong>
-        <span class="desc">For a 24-word seed, roll one D8 and two D16 dice for each of the first 23 words, then a final D8 for the checksum word.</span></span>
+        <span class="desc">Roll one D8 and two D16 dice for each lookup-table word, then use the per-size final rolls for the checksum word.</span></span>
       </label>
       </div>
       <p class="label" id="dice-label">Dice rolls (faces 1–6 only)</p>
