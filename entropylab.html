@@ -932,7 +932,14 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .key-manager { margin: 14px 0 -1px; position: relative; z-index: 2; }
 .key-manager-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .key-manager-head h2 { margin: 0; }
-.add-key { width: 44px; padding: 0; font-size: 24px; line-height: 1; }
+.key-tab-strip { display: flex; align-items: flex-end; min-width: 0; margin-top: 12px; }
+.add-key {
+  width: 36px; min-width: 36px; min-height: 44px; padding: 0; border: 0; border-radius: 0;
+  background: transparent; box-shadow: none; color: var(--muted); font-size: 28px; line-height: 1; cursor: pointer;
+}
+.add-key:hover { background: transparent; color: var(--accent); }
+.add-key:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
+.add-key:active { background: transparent; color: var(--accent); }
 .add-item-control { position: relative; display: inline-flex; flex: 0 0 auto; }
 .add-item-tooltip {
   position: absolute; top: calc(100% + 10px); right: 0; z-index: 10; width: max-content; max-width: min(240px, calc(100vw - 32px));
@@ -954,7 +961,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 }
 @media (prefers-reduced-motion: reduce) { .add-item-tooltip { transition: none; } }
 .key-tabs {
-  display: flex; align-items: flex-end; gap: 0; height: 50px; margin-top: 12px; position: relative; z-index: 2;
+  display: flex; align-items: flex-end; gap: 0; flex: 1 1 auto; min-width: 0; height: 50px; margin-top: 0; position: relative; z-index: 2;
   overflow-x: auto; overflow-y: hidden; overscroll-behavior-inline: contain;
   scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; cursor: grab;
 }
@@ -1154,8 +1161,8 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
     </section>
     <div class="row no-print segmented-control" id="workspace"><button class="tab active" aria-pressed="true">Key Derivation</button><button class="tab" aria-pressed="false">Multi Signature</button><button class="tab" aria-pressed="false">PSBT / Nonce</button></div>
     <section class="key-manager no-print" id="key-manager">
-      <div class="key-manager-head"><h2>Keys</h2><div class="add-item-control"><button class="btn secondary add-key" id="add-key" type="button" aria-label="Add key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Add another key</span></div></div>
-      <div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div>
+      <div class="key-manager-head"><h2>Keys</h2></div>
+      <div class="key-tab-strip"><div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div><div class="add-item-control"><button class="add-key" id="add-key" type="button" aria-label="Add key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Add another key</span></div></div>
     </section>
     <section class="card no-print" id="calc-card" role="tabpanel" hidden>
       <div class="key-panel-head">
@@ -1260,8 +1267,8 @@ words, pick one of the checksum words.</span></span>
       <p class="err" id="error"></p>
     </section>
     <section class="key-manager no-print" id="msig-manager" hidden="">
-      <div class="key-manager-head"><h2>Multisigs</h2><div class="add-item-control"><button class="btn secondary add-key" id="add-msig" type="button" aria-label="Add multisig" aria-describedby="add-msig-tooltip">+</button><span class="add-item-tooltip" id="add-msig-tooltip" role="tooltip">Add another multisig</span></div></div>
-      <div class="key-tabs" id="msig-tabs" role="tablist" aria-label="Multisigs"></div>
+      <div class="key-manager-head"><h2>Multisigs</h2></div>
+      <div class="key-tab-strip"><div class="key-tabs" id="msig-tabs" role="tablist" aria-label="Multisigs"></div><div class="add-item-control"><button class="add-key" id="add-msig" type="button" aria-label="Add multisig" aria-describedby="add-msig-tooltip">+</button><span class="add-item-tooltip" id="add-msig-tooltip" role="tooltip">Add another multisig</span></div></div>
     </section>
     <section class="card no-print" id="msig-card" role="tabpanel" hidden="">
       <div class="key-panel-head">
@@ -3569,8 +3576,8 @@ zoo`.split(`
     </section>
     <div class="row no-print segmented-control" id="workspace" role="group" aria-label="Workspace"></div>
     <section class="key-manager no-print" id="key-manager">
-      <div class="key-manager-head"><h2>Keys</h2><div class="add-item-control"><button class="btn secondary add-key" id="add-key" type="button" aria-label="Add key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Add another key</span></div></div>
-      <div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div>
+      <div class="key-manager-head"><h2>Keys</h2></div>
+      <div class="key-tab-strip"><div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div><div class="add-item-control"><button class="add-key" id="add-key" type="button" aria-label="Add key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Add another key</span></div></div>
     </section>
     <section class="card no-print" id="calc-card" role="tabpanel" hidden>
       <div class="key-panel-head">
@@ -3645,8 +3652,8 @@ zoo`.split(`
       <p class="err" id="error"></p>
     </section>
     <section class="key-manager no-print" id="msig-manager" hidden>
-      <div class="key-manager-head"><h2>Multisigs</h2><div class="add-item-control"><button class="btn secondary add-key" id="add-msig" type="button" aria-label="Add multisig" aria-describedby="add-msig-tooltip">+</button><span class="add-item-tooltip" id="add-msig-tooltip" role="tooltip">Add another multisig</span></div></div>
-      <div class="key-tabs" id="msig-tabs" role="tablist" aria-label="Multisigs"></div>
+      <div class="key-manager-head"><h2>Multisigs</h2></div>
+      <div class="key-tab-strip"><div class="key-tabs" id="msig-tabs" role="tablist" aria-label="Multisigs"></div><div class="add-item-control"><button class="add-key" id="add-msig" type="button" aria-label="Add multisig" aria-describedby="add-msig-tooltip">+</button><span class="add-item-tooltip" id="add-msig-tooltip" role="tooltip">Add another multisig</span></div></div>
     </section>
     <section class="card no-print" id="msig-card" role="tabpanel" hidden>
       <div class="key-panel-head">
