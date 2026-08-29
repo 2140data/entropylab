@@ -598,3 +598,10 @@ test("narrow screens keep the fixed header on one row by hiding control labels",
     assert.match(markup, /class="btn secondary github-repo-link header-button"[^>]*aria-label="View the EntropyLab GitHub repository in a new tab"/);
   }
 });
+
+test("PSBT amounts and fees are labeled as unverified claims", () => {
+  assert.match(app, /BTC claimed/);
+  assert.match(app, /Unverified fee \(PSBT witness UTXO claims\)/);
+  assert.match(app, /Input amounts and any fee are unverified PSBT claims/);
+  assert.doesNotMatch(app, /Fee \(from PSBT fields\)/);
+});
