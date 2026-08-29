@@ -42,8 +42,12 @@ Official website: [entropylab.online](https://entropylab.online)
   script type, active and ready for address generation. The default download
   is watch-only; while private recovery material is shown on screen, the
   export becomes the spending variant (account xprvs as descriptor keys) and
-  the button says so. Generated database files match Bitcoin Core's own
-  record layout byte-for-byte (verified against Bitcoin Core v28.3.0).
+  the button says so. The descriptor birthday defaults to genesis so
+  recovered keys are discovered by Bitcoin Core's initial scan; choose the
+  "New keys" birthday only for entropy created at that moment. If a loaded
+  wallet looks empty, repair it with `rescanblockchain 0` in Bitcoin Core.
+  Generated database files match Bitcoin Core's own record layout
+  byte-for-byte (verified against Bitcoin Core v28.3.0).
 
 ## Usage
 

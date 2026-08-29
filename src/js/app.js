@@ -597,7 +597,7 @@ ec.innerHTML = `
   </div>
 `;
 if (/^(www\.)?entropylab\.online$/i.test(location.hostname)) document.getElementById("online-warning")?.removeAttribute("hidden");
-var hodlKeyModes = ["dice", "cards", "hex", "seed", "key"], hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "\u2660", label: "Spades", red: false }, { code: "H", symbol: "\u2665", label: "Hearts", red: true }, { code: "C", symbol: "\u2663", label: "Clubs", red: false }, { code: "D", symbol: "\u2666", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, hodlCardColemanSymbols = false, Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], ft = "", re = null, Ge = false, Zs = W("#modes"), at = W("#form"), dr = W("#out");
+var hodlKeyModes = ["dice", "cards", "hex", "seed", "key"], hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "\u2660", label: "Spades", red: false }, { code: "H", symbol: "\u2665", label: "Hearts", red: true }, { code: "C", symbol: "\u2663", label: "Clubs", red: false }, { code: "D", symbol: "\u2666", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, hodlCardColemanSymbols = false, Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], ft = "", re = null, Ge = false, hodlWalletDatBirthday = "genesis", Zs = W("#modes"), at = W("#form"), dr = W("#out");
 hodlKeyModes.forEach((e) => {
   let t = document.createElement("button"), active = e === Ne;
   t.type = "button";
@@ -1315,7 +1315,13 @@ function hodlPrivateDataControls(descriptionId, scope = "wallet") {
 }
 function hodlWalletDatControl(includePrivate) {
   if (!hodlWalletExport.hasDescriptors(re)) return "";
-  return `<button class="btn secondary save-wallet-dat" id="download-wallet-dat" type="button" aria-describedby="recovery-sheet-disclosure">${hodlWalletExport.walletDatButtonLabel(includePrivate)}</button>`;
+  // Bitcoin Core starts its automatic scan at the wallet birthday stored in
+  // the descriptor records. Recovery needs genesis (creation time 0) so
+  // transactions predating this export are found; "now" is only safe for
+  // keys created at this moment and skips past history (faster, and reveals
+  // no older activity to anyone who later sees the file). If a loaded wallet
+  // looks empty, repair it with Bitcoin Core's `rescanblockchain 0`.
+  return `<label class="wallet-dat-birthday">Wallet birthday <select data-wallet-dat-birthday aria-describedby="wallet-dat-birthday-help"><option value="genesis"${hodlWalletDatBirthday === "genesis" ? " selected" : ""}>Recovering keys \xB7 scan from genesis</option><option value="now"${hodlWalletDatBirthday === "now" ? " selected" : ""}>New keys \xB7 created today</option></select></label><button class="btn secondary save-wallet-dat" id="download-wallet-dat" type="button" aria-describedby="recovery-sheet-disclosure wallet-dat-birthday-help">${hodlWalletExport.walletDatButtonLabel(includePrivate)}</button><p class="muted wallet-dat-birthday-help" id="wallet-dat-birthday-help">Bitcoin Core only auto-scans history back to the birthday. Choose \u201CNew keys\u201D only for entropy created right now; recovering older keys with today's birthday can look empty until you run <code>rescanblockchain 0</code> in Bitcoin Core.</p>`;
 }
 function hodlSaveRecoveryControl() {
   return `<div class="wallet-data-actions no-print"><button class="btn secondary save-recovery-sheet" id="save" type="button">Save watch-only sheet</button>${hodlWalletDatControl(false)}</div>`;
@@ -1445,7 +1451,11 @@ function hodlWalletDatDeps() {
 }
 function hodlDownloadWalletDat() {
   if (!re || !hodlWalletExport.hasDescriptors(re)) return;
-  let bytes = hodlWalletExport.buildWalletDat(re, Ge, hodlWalletDatDeps()), blob = new Blob([bytes], { type: "application/octet-stream" }), url = URL.createObjectURL(blob), link = document.createElement("a");
+  // Recovery default is a genesis birthday so Core scans from the start;
+  // "now" is written only when the user confirms the keys are new (issue
+  // #95).
+  let creationTime = hodlWalletDatBirthday === "now" ? Math.floor(Date.now() / 1000) : 0;
+  let bytes = hodlWalletExport.buildWalletDat(re, Ge, hodlWalletDatDeps(), creationTime), blob = new Blob([bytes], { type: "application/octet-stream" }), url = URL.createObjectURL(blob), link = document.createElement("a");
   link.href = url;
   link.download = hodlWalletExport.walletDatFilename(re, Ge);
   link.click();
@@ -1470,6 +1480,12 @@ function hodlBindWalletResultActions() {
     walletDat.replaceWith(clean);
     clean.addEventListener("click", hodlDownloadWalletDat);
   }
+  document.querySelectorAll("[data-wallet-dat-birthday]").forEach((select) => {
+    select.value = hodlWalletDatBirthday;
+    select.onchange = () => {
+      hodlWalletDatBirthday = select.value === "now" ? "now" : "genesis";
+    };
+  });
   hodlBindAddressMatch();
 }
 function hodlFocusWalletResult() {
@@ -5006,6 +5022,10 @@ function hodlInitMasterFingerprintPreview() {
 }
 function hodlCalculateKey() {
   W("#error").textContent = "";
+  // A fresh derivation restores the safe wallet.dat birthday default (scan
+  // from genesis) so a previous "new keys" choice cannot leak into a
+  // recovery export.
+  hodlWalletDatBirthday = "genesis";
   try {
     let network = hodlSelectedNetwork(document.getElementById("network")), count = Number(document.getElementById("count").value), passphrase = document.getElementById("pass").value, scriptType = hodlSelectedScriptType(), account = Ne === "key" ? 0 : hodlReadAccount();
     if (Ne !== "key" && hodlPassphraseBip39Enabled() && passphrase) {
