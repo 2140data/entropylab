@@ -31,6 +31,13 @@ test("top status banner omits the entropy RNG message", () => {
   assert.match(template, /<div class="kicker">Run Offline · Bring your own entropy<\/div>/);
 });
 
+test("every enabled button uses orange and black momentary press feedback", () => {
+  assert.match(css, /button:not\(:disabled\):active \{[\s\S]*?background: var\(--selection-accent\) !important;[\s\S]*?color: var\(--selection-fg\) !important;[\s\S]*?border-color: var\(--selection-accent\) !important;/);
+  assert.match(css, /button:not\(:disabled\):active \* \{ color: inherit !important; \}/);
+  assert.equal(/--selection-accent: #ff9900;/.test(css), true);
+  assert.equal(/--selection-fg: #000000;/.test(css), true);
+});
+
 test("all wallet network selectors enable and default to mainnet", () => {
   for (const id of ["network", "msig-network", "psbt-network"]) {
     const selectedMainnet = new RegExp(
