@@ -32,8 +32,13 @@
   --site-header-pad: 16px; /* the bar's side padding; the status tag aligns to it */
   --site-min-width: 320px; /* the narrowest layout we lay out for: below this the page scrolls */
   --display: "Iowan Old Style", Palatino, Georgia, serif;
-  --sans: "Segoe UI", system-ui, sans-serif;
-  --mono: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+  /* The card-suit glyphs (♠ ♥ ♦ ♣, U+2660–U+2666) are not covered by every
+     default UI font (notably SF Mono on macOS); the named symbol fonts
+     between the preferred families and the generic fallback carry them on
+     Windows, macOS, and Linux. All are locally installed system fonts —
+     nothing is ever downloaded (the no-network-egress rule). */
+  --sans: "Segoe UI", system-ui, "Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols", "DejaVu Sans", sans-serif;
+  --mono: ui-monospace, "Cascadia Code", Menlo, Consolas, "Segoe UI Symbol", "Apple Symbols", "Noto Sans Symbols", "DejaVu Sans Mono", "DejaVu Sans", monospace;
 }
 :root[data-theme="light"] {
   color-scheme: light;
