@@ -2501,7 +2501,9 @@ function hodlBinaryEntropy(value, targetWords = Pt) {
 function hodlCardNeeded(targetWords = Pt) {
   let bits = hodlSeedConfig(targetWords).bits;
   if (bits <= 128) return { first: 25, extra: 0 };
+  if (bits <= 160) return { first: 31, extra: 0 };
   if (bits <= 192) return { first: 39, extra: 0 };
+  if (bits <= 224) return { first: 50, extra: 0 };
   return { first: 52, extra: 6 };
 }
 function hodlCardWithoutReplacementBits(count) {

@@ -35,7 +35,9 @@ const hodlCardTypedCharactersAllowed = new Function(`${loadSlice("hodlCardTypedC
 const hodlCardWithoutReplacementBits = new Function(`${loadSlice("hodlCardWithoutReplacementBits")}; return hodlCardWithoutReplacementBits;`)();
 const hodlSeedLengths = {
   12: { words: 12, bits: 128, bytes: 16 },
+  15: { words: 15, bits: 160, bytes: 20 },
   18: { words: 18, bits: 192, bytes: 24 },
+  21: { words: 21, bits: 224, bytes: 28 },
   24: { words: 24, bits: 256, bytes: 32 },
 };
 function hodlSeedConfig(words = 12) {
@@ -78,13 +80,20 @@ test("card transcript input normalizes its limited character set", () => {
   assert.equal(hodlCardTypedCharactersAllowed("B"), false);
 });
 
-test("25 unique cards reach 12-word bits; 24 unique do not", () => {
+test("unique-card counts cover every BIP39 entropy length", () => {
   assert.ok(hodlCardWithoutReplacementBits(24) < 128);
   assert.ok(hodlCardWithoutReplacementBits(25) >= 128);
+  assert.ok(hodlCardWithoutReplacementBits(30) < 160);
+  assert.ok(hodlCardWithoutReplacementBits(31) >= 160);
+  assert.ok(hodlCardWithoutReplacementBits(38) < 192);
   assert.ok(hodlCardWithoutReplacementBits(39) >= 192);
+  assert.ok(hodlCardWithoutReplacementBits(49) < 224);
+  assert.ok(hodlCardWithoutReplacementBits(50) >= 224);
   assert.ok(hodlCardWithoutReplacementBits(52) < 256);
   assert.equal(hodlCardNeeded(12).first, 25);
+  assert.equal(hodlCardNeeded(15).first, 31);
   assert.equal(hodlCardNeeded(18).first, 39);
+  assert.equal(hodlCardNeeded(21).first, 50);
   assert.deepEqual(hodlCardNeeded(24), { first: 52, extra: 6 });
 });
 
