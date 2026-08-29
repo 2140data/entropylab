@@ -131,8 +131,16 @@ words, pick one of the checksum words.</span></span>
             <input id="account" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0" aria-describedby="account-help">
             <span class="field-note" id="account-help">Hardened account index · 0 to 2,147,483,647</span>
           </label>
-          <label class="field">Addresses
-            <select id="count"><option value="5" selected="selected">5 receive + 5 change</option><option value="10">10 receive + 10 change</option><option value="20">20 receive + 20 change</option></select>
+        </div>
+        <div class="key-settings-row address-range-settings" id="address-range-settings">
+          <label class="field">Starting address index
+            <input id="address-start" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0" aria-describedby="address-start-help">
+            <span class="field-note" id="address-start-help">First receive and change index to derive.</span>
+          </label>
+          <label class="field">Address range
+            <input id="address-range" type="number" min="1" max="10000" step="1" inputmode="numeric" value="5" aria-describedby="address-range-help address-estimate">
+            <span class="field-note" id="address-range-help">Derives 5 receive and 5 change addresses.</span>
+            <span class="field-note address-estimate" id="address-estimate" role="status">Measuring this device…</span>
           </label>
         </div>
       </div>
@@ -147,6 +155,7 @@ words, pick one of the checksum words.</span></span>
       </section>
       <div class="row key-action-row current-item-actions">
         <button class="btn primary" id="go" disabled aria-disabled="true">Derive Wallet</button>
+        <div class="derive-progress" id="derive-progress" role="progressbar" aria-label="Wallet derivation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0% complete" hidden><span class="derive-progress-track"><span class="derive-progress-bar"></span></span><span class="derive-progress-label">0%</span></div>
         <button class="btn clear-current-action" id="wipe" type="button" disabled aria-disabled="true">Clear Current Key</button>
       </div>
       <p class="err" id="error"></p>
@@ -200,8 +209,16 @@ words, pick one of the checksum words.</span></span>
             <span class="field-note" id="msig-account-help">Derived from co-signer key origins.</span>
             <span class="field-note msig-account-warning" id="msig-account-warning" role="status" hidden></span>
           </label>
-          <label class="field">Addresses
-            <select id="msig-count"><option value="5" selected="selected">5 + 5</option><option value="10">10 + 10</option><option value="20">20 + 20</option></select>
+        </div>
+        <div class="key-settings-row address-range-settings">
+          <label class="field">Starting address index
+            <input id="msig-address-start" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0" aria-describedby="msig-address-start-help">
+            <span class="field-note" id="msig-address-start-help">First receive and change index to derive.</span>
+          </label>
+          <label class="field">Address range
+            <input id="msig-address-range" type="number" min="1" max="10000" step="1" inputmode="numeric" value="5" aria-describedby="msig-address-range-help msig-address-estimate">
+            <span class="field-note" id="msig-address-range-help">Derives 5 receive and 5 change addresses.</span>
+            <span class="field-note address-estimate" id="msig-address-estimate" role="status">Measuring this device…</span>
           </label>
         </div>
         <details class="msig-advanced" id="msig-advanced">
@@ -217,6 +234,7 @@ words, pick one of the checksum words.</span></span>
       </div>
       <div class="row current-item-actions">
         <button class="btn primary" id="msig-go" type="button" aria-describedby="msig-script-warning" disabled aria-disabled="true">Derive Multisig</button>
+        <div class="derive-progress" id="msig-derive-progress" role="progressbar" aria-label="Multisig derivation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0% complete" hidden><span class="derive-progress-track"><span class="derive-progress-bar"></span></span><span class="derive-progress-label">0%</span></div>
         <button class="btn clear-current-action" id="msig-wipe" type="button" disabled aria-disabled="true">Clear Current Multisig</button>
       </div>
       <p class="err" id="msig-error"></p>
