@@ -125,6 +125,10 @@ textarea { display: block; min-height: 96px; letter-spacing: 0.08em; }
 .dice-roll-invalid {
   color: var(--danger);
 }
+/* The decimal keypad shows the die reading over the hex character it enters,
+   so the transcript stays hex whichever die you are holding. */
+.dplus-key-face { display: block; line-height: 1.1; }
+.dplus-key-decimal { display: block; font-size: 11px; line-height: 1.1; color: var(--muted); }
 .seed-autocomplete-toggle {
   display: inline-flex; align-items: center; gap: 9px; min-height: 44px;
   margin-top: var(--space-component); padding: 9px 12px;
@@ -261,6 +265,12 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
     grid-template-rows: repeat(4, minmax(48px, auto));
   }
 }
+@media (max-width: 399px) {
+  /* The D16 faces carry two-part labels ("10/A"), so they run out of room
+     first on narrow phones. Shrink only that half of the pad; the D8 keys
+     1-8 are single characters and keep their full size. */
+  .dice-input-pad.dplus button:nth-child(n + 9) { font-size: 15px; }
+}
 .card-suit-pad { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: var(--space-control); }
 .card-suit-pad button {
   min-height: 48px; font-size: 22px; line-height: 1;
@@ -269,6 +279,13 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
 .card-suit-pad button.is-red { color: var(--danger); }
 .card-suit-pad button.active {
   background: var(--selection-accent); color: var(--selection-fg); border-color: var(--selection-accent);
+}
+/* Reuses the card suit buttons so the D16 choice reads as the same kind of
+   control: discrete pills in a grid, accent fill on the active one. */
+.dplus-die-pad { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.dplus-die-pad button { font-size: 15px; padding-inline: 10px; }
+@media (max-width: 399px) {
+  .dplus-die-pad { grid-template-columns: minmax(0, 1fr); }
 }
 .card-rank-pad { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 @media (min-width: 640px) {
