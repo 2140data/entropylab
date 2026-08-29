@@ -4112,6 +4112,7 @@ function hodlAutocompleteSeedInput(input, event, completeExisting = false, whole
   // boxes in other modes (the passphrase) still obey it.
   let toggle = document.getElementById("seed-autocomplete"),
     enabled = toggle ? toggle.checked : Boolean(hodlKeys[hodlActiveKey]?.seedAutocomplete);
+  input.hodlCompletionActive = false;
   if (!enabled || !completeExisting && (event?.inputType !== "insertText" || event.isComposing) || input.selectionStart !== input.selectionEnd) return false;
   let caret = input.selectionStart ?? input.value.length, suffix = input.value.slice(caret);
   if (suffix && !/^\s/.test(suffix)) return false;
@@ -4121,9 +4122,22 @@ function hodlAutocompleteSeedInput(input, event, completeExisting = false, whole
   if (prefix.length < minimumLength) return false;
   let matches = options.filter((word) => word.startsWith(prefix));
   if (matches.length !== 1) return false;
-  let replacement = matches[0] + (suffix ? "" : " ");
-  input.setRangeText(replacement, start, caret, "end");
+  // Insert the rest of the word but leave it selected, so typing on simply
+  // replaces it instead of appending to a word already completed. The space
+  // arrives only when the completion is accepted and the next word begins.
+  input.setRangeText(matches[0], start, caret, "end");
+  input.setSelectionRange(caret, start + matches[0].length);
+  input.hodlCompletionActive = start + matches[0].length > caret;
   return true;
+}
+// Space, Tab or Enter accepts a live completion: the caret jumps past the
+// selected remainder so the key lands after the whole word instead of
+// replacing it.
+function hodlAcceptSeedCompletion(input, event) {
+  if (!input || event.key !== " " && event.key !== "Tab" && event.key !== "Enter") return;
+  if (!input.hodlCompletionActive || input.selectionStart === input.selectionEnd) return;
+  input.setSelectionRange(input.selectionEnd, input.selectionEnd);
+  input.hodlCompletionActive = false;
 }
 function hodlKeyboardToggleMarkup(id, label, controls = "seed-keyboard") {
   return `<button type="button" class="seed-keyboard-toggle" id="${id}" data-on-screen-keyboard-toggle aria-label="${hodlOnScreenKeyboardOpen ? `Hide ${label}` : `Show ${label}`}" aria-controls="${controls}" aria-expanded="${hodlOnScreenKeyboardOpen}"><svg viewBox="0 0 64 44" aria-hidden="true" focusable="false"><rect class="seed-keyboard-icon-case" x="3" y="6" width="58" height="32" rx="4"/><g class="seed-keyboard-icon-keys"><rect x="9" y="10" width="4" height="5" rx=".5"/><rect x="15" y="10" width="4" height="5" rx=".5"/><rect x="21" y="10" width="4" height="5" rx=".5"/><rect x="27" y="10" width="4" height="5" rx=".5"/><rect x="33" y="10" width="4" height="5" rx=".5"/><rect x="39" y="10" width="4" height="5" rx=".5"/><rect x="45" y="10" width="4" height="5" rx=".5"/><rect x="51" y="10" width="4" height="5" rx=".5"/><rect x="12" y="18" width="4" height="5" rx=".5"/><rect x="18" y="18" width="4" height="5" rx=".5"/><rect x="24" y="18" width="4" height="5" rx=".5"/><rect x="30" y="18" width="4" height="5" rx=".5"/><rect x="36" y="18" width="4" height="5" rx=".5"/><rect x="42" y="18" width="4" height="5" rx=".5"/><rect x="48" y="18" width="4" height="5" rx=".5"/><rect x="17" y="28" width="30" height="5" rx=".75"/></g></svg></button>`;
@@ -5364,7 +5378,7 @@ function hodlRenderKeyForm() {
           return;
         }
         if (!finalContext.matchingCandidates.length) {
-          meta.textContent = `${progress} \xB7 No valid checksum word starts with "${finalContext.prefix}".`;
+          meta.textContent = `${progress} \xB7 No valid checksum word starts with "${finalContext.prefix.length > 24 ? finalContext.prefix.slice(0, 24) + "…" : finalContext.prefix}".`;
           meta.className = "muted err";
           return;
         }
@@ -5407,6 +5421,7 @@ function hodlRenderKeyForm() {
       hodlAutocompleteSeedInput(input, event);
       update();
     };
+    input.onkeydown = (event) => hodlAcceptSeedCompletion(input, event);
     input.onscroll = () => hodlSyncDiceHighlight(input);
     input.onfocus = update;
     input.onblur = (event) => {
@@ -5942,6 +5957,9 @@ function hodlInitMasterFingerprintPreview() {
     }
     hodlInvalidateLiveKeyResult();
     hodlQueueMasterFingerprintPreview();
+  });
+  panel.addEventListener("keydown", (event) => {
+    if (event.target?.id === "pass") hodlAcceptSeedCompletion(pass, event);
   });
   ["focus", "blur"].forEach((type) => pass.addEventListener(type, () => hodlRenderPassphraseInputState(pass)));
   panel.addEventListener("change", (event) => {
