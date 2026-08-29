@@ -5811,7 +5811,11 @@ function hodlMultisigAccountKeyError(parsed, kind, legacyStandard = "bip45") {
   return "";
 }
 function hodlCanonicalMultisigKey(parsed) {
-  return hodlSerializeExtendedKey(parsed.node.publicExtendedKey, parsed.network, "x", false);
+  // Co-signer identity is the derivation authority: the compressed account
+  // public key plus chain code. Version bytes and the unauthenticated parent
+  // fingerprint in the extended-key serialization are metadata; mutating only
+  // those bytes must not let one key pass as two distinct co-signers.
+  return M.encode(parsed.node.publicKey) + ":" + M.encode(parsed.node.chainCode);
 }
 function hodlDuplicateMultisigKey(ta, parsed) {
   let canonical = hodlCanonicalMultisigKey(parsed);
@@ -6026,6 +6030,9 @@ function hodlBuildMsig() {
         if (!key) throw new Error("Could not derive a public key");
         return key;
       });
+      // Final defense behind the co-signer identity check: never emit a
+      // script whose public keys repeat, whatever the supplied encodings were.
+      if (new Set(receivePublicKeys.concat(changePublicKeys).map(M.encode)).size !== receivePublicKeys.length + changePublicKeys.length) throw new Error("Two co-signers derive the same public key. Every co-signer must use a distinct extended public key.");
       receive.push(Object.assign({
         index,
         path: receivePath.slice(1) + index
