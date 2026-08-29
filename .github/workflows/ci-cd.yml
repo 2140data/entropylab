@@ -129,6 +129,7 @@ jobs:
         run: |
           mkdir _site
           cp entropylab.html versions.json _site/
+          cp entropylab.html _site/index.html
           cp -r assets _site/assets
           touch _site/.nojekyll
       - name: Upload GitHub Pages artifact

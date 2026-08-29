@@ -140,7 +140,10 @@ npm run ci                  # run the CI test subset, build, and verify in order
 
 GitHub Actions runs the same steps for pull requests and pushes to `main`,
 then stages the verified site (`entropylab.html`, `versions.json`,
-`assets/`) and deploys it to GitHub Pages. CI runs the
+`assets/`) and deploys it to GitHub Pages. The staging step copies the verified
+`entropylab.html` to a deployment-only `index.html`, allowing both the site root
+and `/entropylab.html` to serve the same application without committing a
+second application artifact. CI runs the
 test suites that need no browser; the headless-Firefox suite runs locally
 where a Firefox binary is available. Local checks and CI/CD use the same
 commands; the workflow contains no separate build implementation.

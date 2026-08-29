@@ -86,6 +86,15 @@ test("no versioned snapshots linger at the repository root", () => {
   assert.deepEqual(snapshots, [], `unexpected versioned snapshots: ${snapshots.join(", ")}`);
 });
 
+test("GitHub Pages aliases the canonical app at the site root only during deployment", () => {
+  assert.equal(existsSync(join(root, "index.html")), false, "index.html should not be committed");
+  assert.match(
+    read(".github/workflows/ci-cd.yml"),
+    /^\s*cp entropylab\.html _site\/index\.html\s*$/m,
+    "Pages staging must copy entropylab.html to its required index.html entry file",
+  );
+});
+
 test("versions.json lists the current release", () => {
   assert.deepEqual(
     JSON.parse(read("versions.json")),
