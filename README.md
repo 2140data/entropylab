@@ -57,6 +57,24 @@ wallet or signing device before receiving funds.
 
 To build the HTML file yourself, see [Building from source](#building-from-source).
 
+### Verifying the download
+
+Every merge to `rock` publishes a `SHA256SUMS.txt` checksum manifest for
+`entropylab.html` (committed next to it in this repository) and a
+[GitHub artifact attestation](https://github.com/w-s-bitcoin/entropylab/attestations)
+for the exact bytes built by CI. After downloading, verify both:
+
+```sh
+sha256sum -c SHA256SUMS.txt
+gh attestation verify entropylab.html -R w-s-bitcoin/entropylab
+```
+
+The attestation is keyless (Sigstore) and bound to this repository's release
+workflow, so it authenticates the artifact independently of the hosting
+account. The checksum manifest alone only detects accidental corruption —
+always pair it with the attestation or with your own rebuild from source,
+which is byte-for-byte reproducible.
+
 An online version is available at [entropylab.online](https://entropylab.online)
 for convenient access. Do not enter seed phrases, private keys, or other secret
 wallet material into an internet-connected device; use the downloaded HTML on

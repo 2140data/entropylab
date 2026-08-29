@@ -150,6 +150,20 @@ test("the WASM boot chain has a failure path that kills the page", () => {
   assert.match(app, /<tr><td>secp256k1 WebAssembly module<\/td><td>Failed<\/td><\/tr>/);
 });
 
+test("the release build attests the wallet artifact and ships a checksum manifest (issue #58)", () => {
+  const workflow = read(".github/workflows/ci-cd.yml");
+  const build = workflow.match(/^  build:\n(?:.|\n)*?(?=^  [a-z-]+:)/m)?.[0] ?? "";
+  assert.match(build, /sha256sum entropylab\.html > SHA256SUMS\.txt/, "build must generate SHA256SUMS.txt");
+  assert.match(build, /actions\/attest-build-provenance@[0-9a-f]{40}/, "build must attest entropylab.html");
+  assert.match(build, /subject-path: entropylab\.html/, "the attestation subject is the wallet HTML");
+  assert.match(build, /attestations: write/, "attestation requires the attestations permission");
+  // Only merges to the default branch produce release attestations.
+  assert.match(build, /if: github\.ref == 'refs\/heads\/rock' && github\.event_name == 'push'\n\s*uses: actions\/attest-build-provenance/);
+  const artifact = workflow.match(/^  artifact:\n(?:.|\n)*?(?=^  [a-z-]+:)/m)?.[0] ?? "";
+  assert.match(artifact, /SHA256SUMS\.txt/, "the committed artifact includes the checksum manifest");
+  assert.match(read("README.md"), /gh attestation verify entropylab\.html -R w-s-bitcoin\/entropylab/);
+});
+
 test("third-party actions are immutable and deployment is test-gated", () => {
   const workflow = read(".github/workflows/ci-cd.yml");
   assert.doesNotMatch(workflow, /^\s*uses:\s*[^\s]+@(?![0-9a-f]{40}(?:\s|$))/m);
