@@ -1,27 +1,28 @@
 
-// Network check: shows the green network warning when this computer has a
-// network adapter available, and hides the warning when it does not.
-// Detection relies on navigator.onLine plus the online/offline events
-// only — no network traffic of any kind is ever generated. When onLine is
-// false the OS reports no usable network adapter, so the machine is
+// Network check: drives the header status tag, which reads ONLINE in red when
+// this computer has a network adapter available and OFFLINE in green when it
+// does not. Detection relies on navigator.onLine plus the online/offline
+// events only — no network traffic of any kind is ever generated. When onLine
+// is false the OS reports no usable network adapter, so the machine is
 // offline. When true, an adapter is available with a link; that includes
 // a LAN without internet access, which still matters for an air-gap
 // warning. Browsers intentionally offer no finer-grained adapter
-// introspection, so a missing warning is not proof of an air gap.
+// introspection, so an OFFLINE tag is not proof of an air gap.
 (() => {
-  const WARNING_ID = "network-warning";
+  const TAG_ID = "network-status";
 
-  const showWarning = () => {
-    document.getElementById(WARNING_ID)?.removeAttribute("hidden");
-  };
-
-  const hideWarning = () => {
-    document.getElementById(WARNING_ID)?.setAttribute("hidden", "");
+  // The markup ships in the online state, so every path here either confirms
+  // it or downgrades it; the tag can never be left claiming an unverified gap.
+  const setStatus = (online) => {
+    const tag = document.getElementById(TAG_ID);
+    if (!tag) return;
+    tag.dataset.state = online ? "online" : "offline";
+    tag.textContent = online ? "Online" : "Offline";
+    tag.setAttribute("aria-label", online ? "Network status: online" : "Network status: offline");
   };
 
   const checkNetwork = () => {
-    if (navigator.onLine === true) showWarning();
-    else hideWarning();
+    setStatus(navigator.onLine === true);
   };
 
   checkNetwork();

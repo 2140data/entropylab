@@ -466,13 +466,62 @@ test("private alternate account exports are visible without an accordion", () =>
 });
 
 test("top banners share one consistent gap", () => {
+  // The network banner left the group for the header status tag; the no-JS
+  // notice and the hosted-site warning still share the gap.
   assert.match(
     css,
-    /\.beta-warning, \.online-warning, \.network-warning\s*\{[^}]*margin: 0 0 12px;/s,
+    /\.beta-warning, \.online-warning\s*\{[^}]*margin: 0 0 12px;/s,
   );
   // The title block that used to follow them is gone, so the banners' 12px now
   // collapses into the leading card's own 16px.
   assert.match(css, /\.card \{[^}]*margin: 16px 0; \}/);
+});
+
+test("the beta notice sits in the footer as fine print, not a banner", () => {
+  for (const markup of [template, app]) {
+    const wrapper = markup.indexOf('<div class="wrap">');
+    const live = markup.slice(wrapper).replace(/<!--[\s\S]*?-->/g, "");
+    // It reads as a closing disclaimer now, so it trails the sources card and
+    // drops the alert role the banner needed to announce itself on load.
+    const footer = live.match(/<footer class="site-footer no-print">[\s\S]*?<\/footer>/)?.[0];
+    assert.ok(footer, "the footer fine print is missing");
+    assert.match(footer, /<p class="fine-print">EntropyLab is designed to be used by advanced bitcoin users, and is otherwise for testing and educational purposes only\.<br>It is your responsibility to keep your private key and seed material air-gapped and offline\.<\/p>/);
+    assert.doesNotMatch(footer, /role="alert"|<strong>/);
+    assert.ok(live.indexOf("sources") < live.indexOf("site-footer"), "the footer must follow the sources card");
+    // The only .beta-warning left is the no-JS notice in the static template.
+    assert.doesNotMatch(live, /class="beta-warning[^"]*"[^>]*>\s*<strong>Beta software/);
+  }
+  assert.match(css, /\.site-footer \{\s*margin-top: var\(--space-lede\);[^}]*border-top: 1px solid var\(--border\);/s);
+  assert.match(css, /\.fine-print \{[^}]*color: var\(--faint\); font-size: 12px;/s);
+  assert.match(css, /\.fine-print \{\s*max-width: 700px; margin: 0 auto;/s);
+  assert.doesNotMatch(css, /\.fine-print strong/);
+});
+
+test("the lockup steps down again below 400px", () => {
+  const narrow = css.slice(css.indexOf("@media (max-width: 400px)"));
+  assert.ok(narrow, "the 400px breakpoint is missing");
+  assert.match(narrow, /\.site-title \{ font-size: 17px; \}/);
+  // 6px flex gap plus this margin, down from 12px, so the version closes up on
+  // the wordmark as both shrink.
+  assert.match(narrow, /\.site-version \{ font-size: 11px; margin-left: 2px; \}/);
+  // It has to follow the 719px block, which sets the wordmark to 19px, or the
+  // cascade hands the wider rule the win at equal specificity.
+  assert.ok(
+    css.indexOf("@media (max-width: 719px)") < css.indexOf("@media (max-width: 400px)"),
+    "the 400px block must come after the 719px block",
+  );
+});
+
+test("the layout has a 320px floor that the fixed header shares", () => {
+  assert.match(css, /:root \{[^}]*--site-min-width: 320px;/s);
+  assert.match(css, /html, body \{[^}]*min-width: var\(--site-min-width\);/s);
+  // position: fixed sizes to the viewport rather than the body, so the bar
+  // needs its own copy of the floor or it shrinks past what sits beneath it.
+  assert.match(css, /\.site-header \{[^}]*min-width: var\(--site-min-width\);/s);
+  // The literal appears once among the declarations, in the token itself, so
+  // the two floors cannot be set apart. Prose may name the value freely.
+  const declarations = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  assert.equal(declarations.match(/320px/g).length, 1);
 });
 
 test("header theme toggle cycles dark, light, and OS themes without a flash", () => {
@@ -503,13 +552,17 @@ test("the site header is fixed, carries the logo, and holds the version, downloa
     // opens on that card and carries no second header of its own.
     const live = markup.slice(wrapper).replace(/<!--[\s\S]*?-->/g, "");
     // The static template opens with a no-JS notice; the runtime one has no
-    // need of it. Either way the card is the first thing the page renders.
-    assert.match(live, /<div class="wrap">\s*(?:<noscript>[\s\S]*?<\/noscript>\s*)?<section class="card">/);
+    // need of it. Both then carry the conditional warnings, which start hidden,
+    // so the card is the first thing either page actually renders.
+    assert.match(live, /<div class="wrap">\s*(?:<noscript>[\s\S]*?<\/noscript>\s*)?(?:<aside[^>]*online-warning[\s\S]*?<\/aside>\s*)*<section class="card">/);
     assert.doesNotMatch(markup.slice(wrapper), /<header>|download-controls/);
   }
   assert.doesNotMatch(css, /^header (\{|h1)/m);
   assert.match(css, /\.site-header \{\s*position: fixed; top: 0; left: 0; right: 0;/);
   assert.match(css, /\.site-header-inner \{[^}]*height: var\(--site-header-height\)/s);
+  // The mark's own art margin supplies the lockup gap, so the flex gap is
+  // cancelled on that side; without this the wordmark drifts 6px further out.
+  assert.match(css, /\.site-logo \{[^}]*margin-right: -6px;/s);
   // The wordmark shares the h1's display face rather than the control sans.
   // The wordmark runs to both ends of the ramp rather than tracking --fg, so
   // each theme has to name its own end.
