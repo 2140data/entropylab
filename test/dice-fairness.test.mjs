@@ -53,7 +53,6 @@ const hodlDiceFairnessSamples = new Function(
   "hodlSeedConfig",
   "hodlAnalyzeDiceInput",
   "Pt",
-  "hodlDPlusNumberedD16",
   "hodlDPlusFinalSteps",
   "hodlDPlusD16Value",
   `${loadSlice("hodlDiceFairnessSamples")}; return hodlDiceFairnessSamples;`,
@@ -72,7 +71,6 @@ const hodlDiceFairnessSamples = new Function(
   hodlSeedConfig,
   (value) => ({ acceptedRolls: [...String(value)].filter((character) => character >= "1" && character <= "6") }),
   24,
-  false,
   () => ["d8"],
   (face) => {
     const normalized = String(face ?? "").toUpperCase();
@@ -125,20 +123,20 @@ test("too few rolls withhold the fairness verdict", () => {
 });
 
 test("hashed-roll samples count accepted d6 faces", () => {
-  const [sample] = hodlDiceFairnessSamples("415263 99 415263", "coldcard", 24, false);
+  const [sample] = hodlDiceFairnessSamples("415263 99 415263", "coldcard", 24);
   assert.equal(sample.title, "D6");
   assert.deepEqual(sample.rolls, ["4", "1", "5", "2", "6", "3", "4", "1", "5", "2", "6", "3"]);
 });
 
 test("BitBox samples split D4 entropy rolls from the coin / sixth die", () => {
-  const [d4, coin] = hodlDiceFairnessSamples("11111H22222T333331444446", "bitbox", 24, false);
+  const [d4, coin] = hodlDiceFairnessSamples("11111H22222T333331444446", "bitbox", 24);
   assert.equal(d4.title, "D4 (1–4)");
   assert.deepEqual(d4.rolls, ["1", "1", "1", "1", "1", "2", "2", "2", "2", "2", "3", "3", "3", "3", "3", "4", "4", "4", "4", "4"]);
   assert.deepEqual(coin.rolls, ["Heads", "Tails", "Heads", "Tails"]);
 });
 
 test("D++ samples keep D8 and D16 rolls separate", () => {
-  const [d8, d16] = hodlDiceFairnessSamples("10F8AB4", "dplus", 24, false);
+  const [d8, d16] = hodlDiceFairnessSamples("10F8AB4", "dplus", 24);
   assert.equal(d8.title, "D8");
   assert.deepEqual(d8.rolls, ["1", "8", "4"]);
   assert.equal(d16.title, "D16 (0–F)");
@@ -150,7 +148,6 @@ const hodlDiceFairnessSamples18 = new Function(
   "hodlSeedConfig",
   "hodlAnalyzeDiceInput",
   "Pt",
-  "hodlDPlusNumberedD16",
   "hodlDPlusFinalSteps",
   "hodlDPlusD16Value",
   `${loadSlice("hodlDiceFairnessSamples")}; return hodlDiceFairnessSamples;`,
@@ -164,7 +161,6 @@ const hodlDiceFairnessSamples18 = new Function(
   hodlSeedConfig,
   () => ({ acceptedRolls: [] }),
   18,
-  false,
   () => ["d16", "coin"],
   (face) => {
     const normalized = String(face ?? "").toUpperCase();
@@ -173,7 +169,7 @@ const hodlDiceFairnessSamples18 = new Function(
 );
 
 test("D++ 18-word final coin flip joins the fairness samples", () => {
-  const [d8, d16, coin] = hodlDiceFairnessSamples18("", "dplus", 18, false);
+  const [d8, d16, coin] = hodlDiceFairnessSamples18("", "dplus", 18);
   assert.deepEqual(d8.rolls, []);
   assert.deepEqual(d16.rolls, ["F"]);
   assert.equal(coin.title, "Coin");

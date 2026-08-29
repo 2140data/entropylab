@@ -78,7 +78,7 @@ test("D++ parses and completes a valid transcript for every target size", () => 
     const steps = api.hodlDPlusFinalSteps(words);
     const validFaces = steps.map((step) => (step === "d8" || step === "coin" ? "5" : "0"));
     const value = group.repeat(config.partialWords) + validFaces.join("");
-    const parsed = api.hodlDPlusRolls(value, words, false);
+    const parsed = api.hodlDPlusRolls(value, words);
     assert.equal(parsed.waiting, "complete", `${words}: waiting=${parsed.waiting}`);
     assert.equal(parsed.complete, true, `${words}: not complete`);
     assert.equal(parsed.allRolledValid, true, `${words}: not all valid`);
@@ -92,40 +92,49 @@ test("D++ parses and completes a valid transcript for every target size", () => 
 
 test("D++ reports the next required roll through every phase", () => {
   const value12 = "10E".repeat(11);
-  let parsed = api.hodlDPlusRolls(value12, 12, false);
+  let parsed = api.hodlDPlusRolls(value12, 12);
   assert.equal(parsed.waiting, "checksum-d8");
-  parsed = api.hodlDPlusRolls(value12 + "4", 12, false);
+  parsed = api.hodlDPlusRolls(value12 + "4", 12);
   assert.equal(parsed.waiting, "checksum-d16");
-  parsed = api.hodlDPlusRolls("10E".repeat(2), 12, false);
+  parsed = api.hodlDPlusRolls("10E".repeat(2), 12);
   assert.equal(parsed.waiting, "d8");
-  parsed = api.hodlDPlusRolls("10E1", 12, false);
+  parsed = api.hodlDPlusRolls("10E1", 12);
   assert.equal(parsed.waiting, "d16-first");
-  parsed = api.hodlDPlusRolls("10E1A", 12, false);
+  parsed = api.hodlDPlusRolls("10E1A", 12);
   assert.equal(parsed.waiting, "d16-second");
-  parsed = api.hodlDPlusRolls("10E".repeat(11) + "G", 12, false);
+  parsed = api.hodlDPlusRolls("10E".repeat(11) + "G", 12);
   assert.equal(parsed.waiting, "correction");
   assert.equal(parsed.firstInvalid.final, true);
+});
+
+test("D++ canonical hex vectors match the published Keysa workflow", () => {
+  const first = api.hodlDPlusRolls("100", 24);
+  const last = api.hodlDPlusRolls("8FF", 24);
+  assert.equal(first.groups[0].word, "abandon");
+  assert.equal(last.groups[0].word, "zoo");
+  assert.deepEqual(first.groups[0].faces, ["1", "0", "0"]);
+  assert.deepEqual(last.groups[0].faces, ["8", "F", "F"]);
 });
 
 test("D++ picks a candidate with the same index the spec maps to", () => {
   const words = 15;
   const config = api.hodlSeedConfig(words);
-  const parsed = api.hodlDPlusRolls("10E".repeat(config.partialWords) + "12", words, false);
+  const parsed = api.hodlDPlusRolls("10E".repeat(config.partialWords) + "12", words);
   assert.equal(parsed.waiting, "complete");
   // (d8 - 1) * 8 + (d8 - 1) = 0 * 8 + 1 = 1
   assert.equal(parsed.finalWord, parsed.candidates[1]);
   const words21 = 21;
   const config21 = api.hodlSeedConfig(words21);
-  const parsed21 = api.hodlDPlusRolls("10E".repeat(config21.partialWords) + "A", words21, false);
+  const parsed21 = api.hodlDPlusRolls("10E".repeat(config21.partialWords) + "A", words21);
   assert.equal(parsed21.finalWord, parsed21.candidates[0xA]);
   const words18 = 18;
   const config18 = api.hodlSeedConfig(words18);
-  const parsed18 = api.hodlDPlusRolls("10E".repeat(config18.partialWords) + "A5", words18, false);
+  const parsed18 = api.hodlDPlusRolls("10E".repeat(config18.partialWords) + "A5", words18);
   // (d16) * 2 + (coin >= 5 ? 1 : 0) = 10 * 2 + 1 = 21
   assert.equal(parsed18.finalWord, parsed18.candidates[21]);
   const words12 = 12;
   const config12 = api.hodlSeedConfig(words12);
-  const parsed12 = api.hodlDPlusRolls("10E".repeat(config12.partialWords) + "3A", words12, false);
+  const parsed12 = api.hodlDPlusRolls("10E".repeat(config12.partialWords) + "3A", words12);
   // (d8 - 1) * 16 + (d16) = 2 * 16 + 10 = 42
   assert.equal(parsed12.finalWord, parsed12.candidates[42]);
   assert.equal(api.hodlValidateTargetMnemonic([...parsed12.wordSlots, parsed12.finalWord].join(" "), 12).ok, true);

@@ -773,6 +773,14 @@ test("seed-length selector offers all five BIP39 sizes", () => {
   }
 });
 
+test("D++ uses the published hexadecimal D16 transcript without a notation toggle", () => {
+  assert.match(appSource, /let dplusFaces = \["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"\]/);
+  assert.match(appSource, /D8 labeled 1\\u20138 and two hexadecimal D16 dice labeled 0\\u2013F/);
+  assert.match(appSource, /100 selects abandon and 8FF selects zoo/);
+  assert.doesNotMatch(appSource, /data-dplus-die|hodlDPlusNumberedD16|dplusNumberedD16|Decimal D16/);
+  assert.doesNotMatch(css, /dplus-die-pad|dplus-key-decimal|dplus-key-face/);
+});
+
 test("dice rolls hide Pearson chi-squared fairness behind a text expand button", () => {
   assert.match(app, /id="dice-fairness-toggle"/);
   assert.match(app, /aria-controls="dice-fairness"/);
