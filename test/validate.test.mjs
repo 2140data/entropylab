@@ -191,3 +191,13 @@ test("repository source has no unresolved merge markers", () => {
   walk(root);
   assert.deepEqual(offenders, [], `unresolved merge markers in: ${offenders.join(", ")}`);
 });
+
+test("GitHub Actions are pinned to commit SHAs", () => {
+  const workflow = read(".github/workflows/ci-cd.yml");
+  const uses = [...workflow.matchAll(/^\s*-?\s*uses:\s*(\S+)/gm)].map((match) => match[1]);
+  assert.ok(uses.length >= 5, "expected third-party actions in ci-cd.yml");
+  for (const spec of uses) {
+    assert.match(spec, /@[0-9a-f]{40}$/, `${spec} must be pinned to a 40-character commit SHA`);
+  }
+  assert.match(read(".github/dependabot.yml"), /package-ecosystem:\s*github-actions/);
+});
