@@ -1029,7 +1029,7 @@ function hodlDPlusRolls(value,targetWords=Pt,numberedD16=hodlDPlusNumberedD16){
   if(finalD16&&finalCoin&&finalWord)notes.push(`Final D16 result ${finalD16} and final D8 result ${finalCoin}, read as ${Number(finalCoin)>=5?"Tails":"Heads"} selected checksum option ${hodlDPlusD16Value(finalD16)*2+(Number(finalCoin)>=5?1:0)+1} of ${config.candidates}: ${finalWord}.`);
   if(waiting==="last-word")notes.push(`Choose 1 of ${config.candidates} checksum-valid final words to complete the ${config.words}-word seed.`);
   if(rejectedD8)notes.push(`Rejected ${rejectedD8} result${rejectedD8===1?"":"s"} that cannot be used for a D8 roll.`);
-  if(rejectedD16)notes.push(`Rejected ${rejectedD16} result${rejectedD16===1?"":"s"} that ${rejectedD16===1?"is":"are"} not valid for the selected D16 convention (${numberedD16?"1–16":"0–9 or A–F"}).`);
+  if(rejectedD16)notes.push(`Rejected ${rejectedD16} result${rejectedD16===1?"":"s"} that ${rejectedD16===1?"is":"are"} not valid for the selected D16 convention (${numberedD16?"1–16":"0–F"}).`);
   if(extraAfter)warnings.push(`${extraAfter} extra input${extraAfter===1?" was":"s were"} ignored after ${config.words===24?"the final D8 roll":config.words===18?"the final D16 roll and coin flip":"the final D8 and D16 rolls"}.`);
   return{words,wordSlots,groups,group,entries,finalEntry:finalEntry?.face||"",finalRoll,finalD16,finalCoin,finalWord,candidates,waiting,currentPosition,activeGroupIndex,completedGroups,validWordCount,allRolledComplete,allRolledValid,bits,notes,warnings,invalidRanges,invalidCount:invalidRanges.length,invalidRequiredCount,rolledInvalidCount,needsCorrection:invalidRequiredCount>0,firstInvalid,rejectedD8,rejectedD16,extraAfter,acceptedCharacters,targetWords:config.words,neededPartial:rolledTarget,numberedD16,complete:allRolledValid&&Boolean(finalWord)}
 }
@@ -1849,7 +1849,7 @@ function hodlRenderKeyForm(){
 function hodlUpdateDice(){
   let input=document.getElementById("dice");if(!input)return;let wordsBox=document.getElementById("dice-words"),picker=document.getElementById("last-words"),config=hodlSeedConfig(),inputState=hodlRenderDiceInputState(input),invalidStatus=inputState.invalidCount?` \u00b7 ${inputState.invalidCount} invalid input${inputState.invalidCount===1?"":"s"} highlighted`:"";if(ge!=="bitbox"&&inputState.coinDerivedCount)invalidStatus+=` \u00b7 coin-button digits are BitBox-only`;
   if(ge==="dplus"){
-    let result=inputState.dplus||hodlDPlusRolls(input.value,config.words),status="",selectingFinal=result.waiting==="last-word",d16Range=hodlDPlusNumberedD16?"1–16":"0–9 or A–F";
+    let result=inputState.dplus||hodlDPlusRolls(input.value,config.words),status="",selectingFinal=result.waiting==="last-word",d16Range=hodlDPlusNumberedD16?"1–16":"0–F";
     if(ft&&(!selectingFinal||!result.candidates.includes(ft))){ft="";let state=hodlKeys[hodlActiveKey];if(state)state.dplusLastWord=""}
     let selectedFinal=selectingFinal?ft:"",complete=result.complete||Boolean(selectedFinal);
     if(result.waiting==="d8")status=`${result.completedGroups} of ${config.partialWords} groups entered \u00b7 word ${result.activeGroupIndex+1} \u00b7 D8 roll (1\u20138)`;
