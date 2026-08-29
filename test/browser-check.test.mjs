@@ -5,13 +5,22 @@
 // and when it leaves a healthy page untouched.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const read = (path) => readFileSync(join(root, path), "utf8");
 const src = read("src/js/browser-check.js");
+
+// entropylab.html is a CI-generated artifact, not a committed file. Tests that
+// read it require a fresh local build.
+const ensureBuild = () => {
+  if (!existsSync(join(root, "entropylab.html"))) {
+    execFileSync(process.execPath, [join(root, "scripts/build.mjs")], { stdio: "inherit" });
+  }
+};
 
 const PAGE = '<div id="btc-calc">wallet app</div>';
 
@@ -218,6 +227,7 @@ test("the build inlines the module and the failure screen is styled", () => {
 });
 
 test("the compiled application ships the inlined barrage", () => {
+  ensureBuild();
   const compiled = read("entropylab.html");
   assert.match(compiled, /Host failed basic sanity checks/);
   assert.match(compiled, /data-browser-checks|dataset\.browserChecks/);

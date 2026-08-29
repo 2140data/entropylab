@@ -18,10 +18,10 @@ env:
   NODE_VERSION: "22"
 
 jobs:
-  # Required aggregate gates. The build cannot start until both pass, so a
-  # deployment can never race ahead of a failing unit or browser test.
-  test-ci:
-    name: Test · complete dependency-free suite
+  # ── Build: compile src/ first — every later job tests the generated site ──
+
+  build:
+    name: Build · compile site + Pages artifact
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -32,11 +32,26 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
-      - name: Run complete CI test suite
-        run: npm run test:ci
+      - name: Build static site
+        run: npm run build
+      - name: Prepare static site
+        run: |
+          mkdir _site
+          cp entropylab.html versions.json _site/
+          cp entropylab.html _site/index.html
+          cp -r assets _site/assets
+          touch _site/.nojekyll
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _site
+          retention-days: 7
 
-  test-browser:
-    name: Test · Firefox integration suite
+  # Required aggregate gates. The deployment cannot start until both pass, so
+  # it can never race ahead of a failing unit or browser test.
+  test-ci:
+    name: Test · complete dependency-free suite
+    needs: [build]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -44,6 +59,26 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+      - name: Build static site
+        run: npm run build
+      - name: Run complete CI test suite
+        run: npm run test:ci
+
+  test-browser:
+    name: Test · Firefox integration suite
+    needs: [build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Build static site
+        run: npm run build
       - name: Run headless Firefox tests
         run: npm run test:browser
 
@@ -63,6 +98,7 @@ jobs:
 
   test-browser-check:
     name: Test · browser sanity checks (browser-check.js)
+    needs: [build]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -70,6 +106,8 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: ${{ env.NODE_VERSION }}
+      - name: Build static site
+        run: npm run build
       - name: Run browser-check tests
         run: npm run test:browser-check
 
@@ -139,13 +177,16 @@ jobs:
       - name: Run number-base tests
         run: npm run test:number-bases
 
-  # ── Build: compile, prove reproducibility, stage + upload the Pages artifact ──
+  # ── Artifact: commit the rebuilt site after merges to main ────────────────
 
-  build:
-    name: Build · reproducibility + Pages artifact
-    needs: [test-ci, test-browser]
+  artifact:
+    name: Artifact · commit rebuilt site after merge
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [verify]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -156,31 +197,23 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Build static site
         run: npm run build
-      - name: Verify committed build output is reproducible
+      - name: Commit the generated artifact
         run: |
-          if [ -n "$(git status --porcelain -- entropylab.html versions.json 'entropylab-*.html')" ]; then
-            echo "Build output differs from the committed files."
-            echo "Run 'npm run build' and commit the result."
-            git status --porcelain -- entropylab.html versions.json 'entropylab-*.html'
-            exit 1
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f entropylab.html versions.json
+          if git diff --cached --quiet; then
+            echo "Build output is unchanged; nothing to commit."
+            exit 0
           fi
-      - name: Prepare static site
-        run: |
-          mkdir _site
-          cp entropylab.html versions.json _site/
-          cp entropylab.html _site/index.html
-          cp -r assets _site/assets
-          touch _site/.nojekyll
-      - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
-        with:
-          path: _site
-          retention-days: 7
+          git commit -m "Rebuild site artifact [skip ci]"
+          git push
 
   # ── Verify: independent check of the generated site artifact ──
 
   verify:
     name: Verify · site artifact (snapshot, manifest, assets)
+    needs: [build]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -188,6 +221,8 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: ${{ env.NODE_VERSION }}
+      - name: Build static site
+        run: npm run build
       - name: Verify site artifact
         run: npm run verify
 
@@ -196,7 +231,7 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-    needs: [build, verify]
+    needs: [build, verify, test-ci, test-browser]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

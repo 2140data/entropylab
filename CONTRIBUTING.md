@@ -102,7 +102,7 @@ npm test
 Useful commands (same ones CI runs):
 
 ```sh
-npm run build         # compile src/ into the committed root files
+npm run build         # compile src/ into the generated root files
 npm run verify        # verify the site artifact, manifest and assets
 npm run test:validate # source and security invariants
 npm run test:browser  # headless-Firefox suite (needs a local Firefox)
@@ -111,10 +111,11 @@ npm run ci            # test subset + build + verify, in order
 
 ### Edit sources, never the build output
 
-`entropylab.html` and `versions.json` are generated and
-committed so the app can be downloaded directly. Change `src/` instead, then run
-`npm run build` and commit the regenerated files in the same commit. Hand-edited
-output will fail CI's reproducibility check.
+`entropylab.html` and `versions.json` are generated and gitignored. Change
+`src/` instead; tests that need the compiled file build it automatically (or
+run `npm run build` yourself). Never commit the generated files — CI rebuilds
+them and commits them back to `main` after each merge, so pull requests no
+longer conflict on build output.
 
 ### Versioning and docs move together
 

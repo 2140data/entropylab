@@ -1,5 +1,6 @@
-// Verifies the committed site artifact: the compiled entropylab.html, the
-// versions.json manifest, and the published assets.
+// Verifies the freshly built site artifact: the compiled entropylab.html, the
+// versions.json manifest, and the published assets. The artifact is generated
+// by `npm run build` (CI builds it before running this); it is not committed.
 // Zero dependencies. Run with `npm run verify`.
 import {
   existsSync,
@@ -28,7 +29,7 @@ const appFile = "entropylab.html";
 for (const name of [appFile, "versions.json", "assets/favicon.png", "assets/entropylab_dark.png"]) {
   const path = join(repoDir, name);
   if (!existsSync(path) || statSync(path).size === 0) {
-    fail(`Site artifact is missing or empty: ${name}`);
+    fail(`Site artifact is missing or empty: ${name}\nRun 'npm run build' first.`);
   }
 }
 

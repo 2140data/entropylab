@@ -1,10 +1,12 @@
 // EntropyLab build script.
 //
 // Inlines the sources from src/ into a single self-contained entropylab.html
-// at the repository root so the file can be downloaded directly. The Pages
-// workflow copies it to a deployment-only index.html so both / and
-// /entropylab.html serve the same application. The output is byte-for-byte
-// reproducible from the sources and the version declared in package.json.
+// at the repository root. The file is a generated artifact (gitignored); CI
+// rebuilds it for every test run, deploys it with Pages, and commits it back
+// to main after each merge so the file stays downloadable. The Pages workflow
+// copies it to a deployment-only index.html so both / and /entropylab.html
+// serve the same application. The output is byte-for-byte reproducible from
+// the sources and the version declared in package.json.
 import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
