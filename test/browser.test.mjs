@@ -21,7 +21,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const read = (path) => readFileSync(join(root, path), "utf8");
@@ -211,7 +211,7 @@ test("headless Firefox runs the hosted and offline suites", async () => {
     const exportBytes = Buffer.from(await exportResponse.arrayBuffer());
     assert.ok(exportBytes.equals(readFileSync(appSource)), "HTML export is not the current self-contained release");
     const onlineUrl = `http://127.0.0.1:${port}/browser-tests.html?online-preview=1`;
-    const offlineUrl = `file://${testHtmlPath}?offline-test=1`;
+    const offlineUrl = `${pathToFileURL(testHtmlPath).href}?offline-test=1`;
     const onlineLog = join(workDir, "firefox-online.log");
     const offlineLog = join(workDir, "firefox-offline.log");
     browsers.push(spawnFirefox(onlineProfile, onlineUrl, onlineLog));
