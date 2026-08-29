@@ -14,13 +14,19 @@ const pkg = JSON.parse(read("package.json"));
 const appVersion = pkg.version;
 const appFile = "entropylab.html";
 
+// entropylab.html and versions.json are CI-generated artifacts, not committed
+// sources. Tests that read them require a fresh local build.
+const ensureBuild = () => {
+  if (!existsSync(join(root, appFile))) {
+    execFileSync(process.execPath, [join(root, "scripts/build.mjs")], { stdio: "inherit" });
+  }
+};
+
 const requiredFiles = [
   "README.md",
   "LICENSE",
   "package.json",
   "package-lock.json",
-  appFile,
-  "versions.json",
   "assets/favicon.png",
   "assets/entropylab_dark.png",
   "assets/entropylab_light.png",
@@ -114,6 +120,7 @@ test("GitHub Pages aliases the canonical app at the site root only during deploy
 });
 
 test("versions.json lists the current release", () => {
+  ensureBuild();
   assert.deepEqual(
     JSON.parse(read("versions.json")),
     { versions: [{ version: `v${appVersion}`, file: appFile }] },
@@ -123,8 +130,9 @@ test("versions.json lists the current release", () => {
 test("third-party actions are immutable and deployment is test-gated", () => {
   const workflow = read(".github/workflows/ci-cd.yml");
   assert.doesNotMatch(workflow, /^\s*uses:\s*[^\s]+@(?![0-9a-f]{40}(?:\s|$))/m);
-  assert.match(workflow, /^\s{2}build:\n(?:.|\n)*?^\s{4}needs: \[test-ci, test-browser\]$/m);
-  assert.match(workflow, /^\s{2}deploy:\n(?:.|\n)*?^\s{4}needs: \[build, verify\]$/m);
+  assert.match(workflow, /^\s{2}test-ci:\n(?:.|\n)*?^\s{4}needs: \[build\]$/m);
+  assert.match(workflow, /^\s{2}test-browser:\n(?:.|\n)*?^\s{4}needs: \[build\]$/m);
+  assert.match(workflow, /^\s{2}deploy:\n(?:.|\n)*?^\s{4}needs: \[build, verify, test-ci, test-browser\]$/m);
 });
 
 test("the intentional low-entropy recovery behavior is documented", () => {
@@ -134,6 +142,8 @@ test("the intentional low-entropy recovery behavior is documented", () => {
 });
 
 const htmlFiles = [appFile];
+
+ensureBuild();
 
 for (const file of htmlFiles) {
   test(`${file} declares HTML5`, () => {

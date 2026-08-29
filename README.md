@@ -40,10 +40,9 @@ Official website: [entropylab.online](https://entropylab.online)
 
 ## Usage
 
-Download the self-contained [`entropylab.html`](../../raw/main/entropylab.html) from the
-root of this repository (or from the
-[releases page](https://github.com/w-s-bitcoin/entropylab/releases) /
-[official website](https://entropylab.online)), transfer it to a trusted
+Download the self-contained `entropylab.html` from the
+[official website](https://entropylab.online) or the
+[releases page](https://github.com/w-s-bitcoin/entropylab/releases), transfer it to a trusted
 computer, disconnect that computer from all networks, and open the file in a
 modern browser. For sensitive wallet material, use a dedicated air-gapped
 machine and verify important addresses and descriptors with an independent
@@ -77,17 +76,16 @@ npm ci
 npm run build
 ```
 
-Build output (committed to the repository so the file can be downloaded
-directly):
+Build output (generated; CI rebuilds it for every run and commits it back to
+`main` after each merge so the file stays downloadable from the repository):
 
 - `entropylab.html` — the self-contained application (open this file)
 - `versions.json` — version manifest the hosted header reads to flag a newer release
 
 The version is declared once in `package.json` and substituted into the
-output at build time. After changing anything in `src/`, run `npm run build`
-and commit the regenerated files; CI runs the test suite (`npm test`) and
-verifies that the committed output is reproducible. To remove generated
-files, run `npm run clean`.
+output at build time. The generated files are gitignored locally; CI builds
+them before every test run and commits them back to `main` after each merge.
+To remove generated files, run `npm run clean`.
 
 ## Project structure
 
@@ -120,8 +118,8 @@ files, run `npm run clean`.
 │       ├── browser-check.js Startup browser sanity checks and kill-screen
 │       ├── enhanced-inputs.js
 │       └── repeat-inputs.js
-├── entropylab.html         Compiled application (generated, committed)
-├── versions.json           Version manifest for the hosted header version label
+├── entropylab.html         Compiled application (generated, CI-committed)
+├── versions.json           Version manifest for the hosted header version label (generated, CI-committed)
 └── versions/archived/      Historical releases excluded from the picker
 ```
 
@@ -135,17 +133,20 @@ npm test                    # run all tests, including the headless-Firefox suit
 npm run test:ci             # the CI subset: network-check, ui-defaults, source invariants
 npm run test:validate       # validate source and security invariants
 npm run test:browser        # test crypto, sanitization, networking, exports in headless Firefox
-npm run build               # compile src/ into the committed root files
+npm run build               # compile src/ into the generated root files
 npm run verify              # verify the site artifact (snapshot, manifest, assets)
 npm run ci                  # run the CI test subset, build, and verify in order
 ```
 
-GitHub Actions runs the same steps for pull requests and pushes to `main`,
-then stages the verified site (`entropylab.html`, `versions.json`,
-`assets/`) and deploys it to GitHub Pages. The staging step copies the verified
-`entropylab.html` to a deployment-only `index.html`, allowing both the site root
-and `/entropylab.html` to serve the same application without committing a
-second application artifact. CI runs the
+GitHub Actions builds the site first, then runs the same test steps for pull
+requests and pushes to `main`, stages the verified site (`entropylab.html`,
+`versions.json`, `assets/`) and deploys it to GitHub Pages. After a merge to
+`main`, a final job commits the rebuilt `entropylab.html` and `versions.json`
+back to the repository so the file stays downloadable; pull requests never
+carry the generated output, so they stop conflicting on it. The staging step
+copies the verified `entropylab.html` to a deployment-only `index.html`,
+allowing both the site root and `/entropylab.html` to serve the same
+application without committing a second application artifact. CI runs the
 test suites that need no browser; the headless-Firefox suite runs locally
 where a Firefox binary is available. Local checks and CI/CD use the same
 commands; the workflow contains no separate build implementation.
