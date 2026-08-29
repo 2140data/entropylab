@@ -19,6 +19,19 @@ material. Its security posture rests on the following model:
 
 - The tool is self-contained and designed for offline, air-gapped use. It does
   not intentionally transmit sensitive data to any server.
+- EntropyLab's own secp256k1 curve operations (public-key derivation, ECDSA
+  signing and verification in PSBT inspection, curve point math) run on
+  bitcoin-core/libsecp256k1 (the library securing Bitcoin Core), compiled to
+  WebAssembly from the pinned, lockfiled Rust crate in `secp256k1-wasm/` and
+  executed entirely in-process — no network access, and the module never
+  generates randomness (signing is RFC 6979 with caller-fixed extra entropy).
+  The bundled `@scure` libraries still carry `@noble/curves` internally for
+  BIP32 extended-key derivation and address/script construction. CI rebuilds
+  the WASM from the committed Rust sources and runs its test suite against
+  the fresh build before any deployment; the artifact job then commits the
+  runner's copy back to the repository, the same flow as the site artifact.
+  Cross-machine byte identity is not claimed — the C side compiles with the
+  builder's clang, and build-host paths are remapped out of the binary.
 - The on-screen result of any derivation can only be as trustworthy as the
   code that produced it. Review the source, build from `src/`, and test the
   tool with published vectors before relying on it.
@@ -33,6 +46,12 @@ material. Its security posture rests on the following model:
   supplied entropy and says to use it only for testing. Users who intend to
   secure funds must meet the displayed roll/card recommendation and verify
   their procedure independently.
+- The single-file design inlines all scripts (`script-src 'unsafe-inline'`),
+  and the secp256k1 WebAssembly module adds `wasm-unsafe-eval` to the
+  content security policy: Chromium and WebKit engines refuse to compile a
+  WebAssembly module from JS without it. Application scripts are still all
+  bundled at build time, so any inline script injected after packaging is
+  outside the threat model this policy addresses.
 - Material involving loss of funds (incorrect derivations, exfiltration of
   secret data, injected script execution in the generated HTML, unexpected
   network egress) is treated as a security issue.

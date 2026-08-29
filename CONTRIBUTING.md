@@ -53,9 +53,15 @@ browser test that asserts this must stay green.
   HTML file with no runtime requirements (server, network, storage, or
   extensions). Any change must keep this true.
 - Edit sources in `src/`, never the build output. `entropylab.html` is
-  generated, git-ignored, and not committed.
+  generated, git-ignored, and not committed. The secp256k1 WASM artifact
+  (`src/js/secp256k1-wasm-b64.js`) is also generated (from `secp256k1-wasm/`);
+  regenerate it with `npm run build:wasm`, never edit it by hand.
 - CI rebuilds from `src/`, proves the output is byte-for-byte reproducible, and
-  publishes it to the `pages` branch and GitHub Pages.
+  publishes it to the `pages` branch and GitHub Pages. CI likewise rebuilds
+  the WASM artifact from the pinned Rust crate (`Cargo.lock`,
+  `rust-toolchain.toml`), runs its test suite against the fresh build, and
+  commits the artifact back to `rock` after each merge (same flow as
+  `entropylab.html`).
 
 ```sh
 git clone https://github.com/w-s-bitcoin/entropylab.git && cd entropylab
@@ -67,7 +73,9 @@ npm test
 
 Useful commands (same as CI): `npm run build`, `npm run verify`,
 `npm run test:validate`, `npm run test:browser` (needs local Firefox),
-`npm run ci`.
+`npm run ci`. `npm run build:wasm` additionally needs Rust (the pinned
+toolchain installs itself via `secp256k1-wasm/rust-toolchain.toml`) and is
+only required when changing the curve bindings in `secp256k1-wasm/`.
 
 ## 5. Working agreements
 

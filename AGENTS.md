@@ -9,7 +9,11 @@ Guidelines for AI coding agents.
   what is actually on disk, not what you assume.
 - **Never assume:** when something is unknown, check the documentation or the
   code first, then proceed.
-- Edit sources in `src/`, never generated build artifacts.
+- Edit sources in `src/` (and the Rust crate in `secp256k1-wasm/`), never
+  generated build artifacts — that includes `entropylab.html` and
+  `src/js/secp256k1-wasm-b64.js` (regenerate the latter with
+  `npm run build:wasm`; it needs Rust, toolchain pinned by
+  `secp256k1-wasm/rust-toolchain.toml`).
 - Make the smallest change that works. No refactors, reformatting, or new
   dependencies.
 - Don't weaken or skip tests. New behaviour needs a test.

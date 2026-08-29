@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const app = readFileSync(join(root, "src/js/app.js"), "utf8");
 const start = app.indexOf("function hodlInitSecretFieldAutoClear()");
-const end = app.indexOf("\nhodlInitWorkspace();", start);
+const end = app.indexOf("\nfunction hodlBoot()", start);
 const lifecycle = app.slice(start, end);
 
 test("page lifecycle clearing replaces every cached key and clears PSBT private state", () => {

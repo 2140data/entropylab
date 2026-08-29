@@ -82,6 +82,7 @@ const loadModule = (overrides = {}) => {
     bigIntImpl: BigInt,
     textEncoderImpl: TextEncoder,
     textDecoderImpl: TextDecoder,
+    webAssemblyImpl: WebAssembly,
     hasBody: true,
     normalizeImpl: undefined, // when present in overrides, replaces String.prototype.normalize
     elements: {}, // DOM elements the disclaimer gate can find, by id
@@ -101,6 +102,7 @@ const loadModule = (overrides = {}) => {
     BigInt: options.bigIntImpl,
     TextEncoder: options.textEncoderImpl,
     TextDecoder: options.textDecoderImpl,
+    WebAssembly: options.webAssemblyImpl,
     Uint8Array,
     localStorage: options.storage,
     // Run callbacks synchronously so assertions see the post-fade state.
@@ -138,7 +140,7 @@ test("never generates network traffic", () => {
 test("a sane browser keeps the page intact and records the barrage outcome", () => {
   const { body, documentElement } = loadModule();
   assert.equal(body.innerHTML, PAGE);
-  assert.equal(documentElement.dataset.browserChecks, "5");
+  assert.equal(documentElement.dataset.browserChecks, "6");
   assert.equal(documentElement.dataset.browserFailed, "0");
 });
 
@@ -210,6 +212,23 @@ test("a wrong UTF-8 decoding kills the page", () => {
   assertPageKilled(body, ["TextEncoder/TextDecoder (UTF-8)"]);
 });
 
+test("missing WebAssembly kills the page", () => {
+  const { body } = loadModule({ webAssemblyImpl: undefined });
+  assertPageKilled(body, ["WebAssembly (secp256k1 engine)"]);
+});
+
+test("a CSP or engine that refuses WebAssembly compilation kills the page", () => {
+  const webAssemblyImpl = {
+    Module: class {
+      constructor() {
+        throw new Error("Refused to compile WebAssembly");
+      }
+    },
+  };
+  const { body } = loadModule({ webAssemblyImpl });
+  assertPageKilled(body, ["WebAssembly (secp256k1 engine)"]);
+});
+
 test("missing String.normalize kills the page", () => {
   const { body } = loadModule({ normalizeImpl: undefined });
   assertPageKilled(body, ["String.normalize (NFKD)"]);
@@ -222,7 +241,7 @@ test("a wrong NFKD normalization kills the page", () => {
 
 test("multiple failures are all listed in one table", () => {
   const { body, documentElement } = loadModule({ secure: false, bigIntImpl: undefined });
-  assert.equal(documentElement.dataset.browserChecks, "5");
+  assert.equal(documentElement.dataset.browserChecks, "6");
   assert.equal(documentElement.dataset.browserFailed, "2");
   assertPageKilled(body, ["Secure browser context", "BigInt arithmetic"]);
 });
@@ -239,7 +258,7 @@ test("a check that throws is reported as a failure, not a crash", () => {
 
 test("a missing document.body still records the outcome without throwing", () => {
   const { documentElement } = loadModule({ secure: false, hasBody: false });
-  assert.equal(documentElement.dataset.browserChecks, "5");
+  assert.equal(documentElement.dataset.browserChecks, "6");
   assert.equal(documentElement.dataset.browserFailed, "1");
 });
 

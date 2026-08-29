@@ -76,12 +76,31 @@ bundles them with the application using esbuild, and inlines the result into a
 single self-contained HTML file. `package-lock.json` pins the complete
 dependency tree and the integrity hash of every downloaded package.
 
+EntropyLab's own secp256k1 calls — public-key derivation, ECDSA signing and
+verification in PSBT inspection, and curve point math — run on
+libsecp256k1 0.8.0 compiled to WebAssembly from the pinned Rust crate in
+`secp256k1-wasm/` (exact crate versions in `secp256k1-wasm/Cargo.lock`,
+toolchain pinned by `rust-toolchain.toml`) via the facade in
+`src/js/secp256k1.js`. BIP32 extended-key derivation and address/script
+construction still run on `@noble/curves`, brought in by the bundled
+`@scure` libraries. The compiled artifact is committed as
+`src/js/secp256k1-wasm-b64.js`, so building the site needs only Node.js. CI
+rebuilds it from the Rust sources, runs its test suite against the fresh
+build, and commits the runner's copy back to `rock` after each merge (the
+same flow as the site artifact; byte identity across machines is not
+asserted, since the C side compiles with the builder's clang, and build-host
+paths are remapped out of the binary).
+
 Requirements: Node.js 20.19 or newer.
 
 ```sh
 npm ci
 npm run build
 ```
+
+To modify the curve bindings (`secp256k1-wasm/`), Rust (with the
+`wasm32-unknown-unknown` target, installed automatically by rustup) is also
+required; regenerate the committed artifact with `npm run build:wasm`.
 
 Build output (generated; CI rebuilds it for every run and commits it back to
 `rock` after each merge so the file stays downloadable from the repository):
@@ -99,7 +118,9 @@ To remove generated files, run `npm run clean`.
 ├── assets/                 Static assets (logo, favicon, social card)
 ├── scripts/
 │   ├── build.mjs           Locked-dependency esbuild and HTML assembly
+│   ├── build-wasm.mjs      libsecp256k1 WASM rebuild (npm run build:wasm)
 │   └── verify-site.mjs     Site artifact verification (npm run verify)
+├── secp256k1-wasm/         Pinned Rust crate: libsecp256k1 -> WebAssembly bindings
 ├── test/
 │   ├── browser-instrumentation.html  In-page browser test hooks
 │   ├── browser-suite.html            In-page browser test suite
@@ -117,6 +138,8 @@ To remove generated files, run `npm run clean`.
 │   ├── css/styles.css      Application styles
 │   └── js/
 │       ├── app.js          Application logic and explicit package imports
+│       ├── secp256k1.js    Curve facade over the WASM module (noble-shaped API)
+│       ├── secp256k1-wasm-b64.js Generated WASM artifact (committed; build:wasm)
 │       ├── sqlite-writer.js Minimal SQLite database file writer
 │       ├── wallet-export.js Bitcoin Core wallet.dat descriptor export
 │       ├── online.js       Hosted-site behavior and header version label
@@ -139,6 +162,7 @@ npm run test:ci             # the CI subset: network-check, ui-defaults, source 
 npm run test:validate       # validate source and security invariants
 npm run test:browser        # test crypto, sanitization, networking, exports in headless Firefox
 npm run build               # compile src/ into the generated root files
+npm run build:wasm          # rebuild the committed secp256k1 WASM artifact (needs Rust)
 npm run verify              # verify the site artifact (entropylab.html, assets)
 npm run ci                  # run the CI test subset, build, and verify in order
 ```
