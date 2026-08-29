@@ -128,6 +128,10 @@ textarea { display: block; min-height: 96px; letter-spacing: 0.08em; }
 /* The decimal keypad shows the die reading over the hex character it enters,
    so the transcript stays hex whichever die you are holding. */
 .dplus-key-face { display: block; line-height: 1.1; }
+/* On the 18-word coin turn the eight D8 keys become one Tails and one Heads. */
+.dice-input-pad.dplus button.dice-key-wide { grid-column: span 4; }
+.dice-input-pad.faces-1-6 button.dice-key-wide { grid-column: span 3; }
+.dice-input-pad button[hidden] { display: none; }
 .dplus-key-decimal { display: block; font-size: 11px; line-height: 1.1; color: var(--muted); }
 .seed-autocomplete-toggle {
   display: inline-flex; align-items: center; gap: 9px; min-height: 44px;
