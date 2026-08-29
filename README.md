@@ -48,6 +48,10 @@ Official website: [entropylab.online](https://entropylab.online)
   reproduce the same child — this is a calculator, not a generator. Children
   follow the published BIP-85 vectors and match COLDCARD, including derivation
   from a passphrase-extended root when a BIP-39 passphrase is in effect.
+- Derives BIP-352 Silent Payment addresses (`sp1q…` / `tsp1q…`) from a seed or
+  root xprv, including labeled codes, BIP-392 `spscan` / `spspend` descriptors,
+  sender taproot outputs from pasted vin JSON, and receiver verification of
+  pasted x-only outputs. This is a calculator: it does not scan the chain.
 - Runs a quick barrage of startup sanity checks on the host browser (secure
   context, CSPRNG, BigInt, UTF-8 encoding, and NFKD normalization). If any
   check fails, the page is replaced with a failure report listing the failed

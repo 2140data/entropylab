@@ -58,6 +58,7 @@ test("wallet coin type indexes enable and default to mainnet", () => {
     assert.match(markup, /id="network-help">Coin type index (?:·|\\xB7) Mainnet (?:·|\\xB7) Hardened (?:·|\\xB7) 0 to 2,147,483,647/);
     assert.match(markup, /id="msig-network-help">Coin type index (?:·|\\xB7) Mainnet (?:·|\\xB7) Hardened (?:·|\\xB7) 0 to 2,147,483,647/);
     assert.match(markup, /<select id="psbt-network"><option value="mainnet" selected(?:="selected")?>Bitcoin mainnet<\/option>/);
+    assert.match(markup, /<select id="sp-network"><option value="mainnet" selected(?:="selected")?>Bitcoin mainnet<\/option>/);
   }
   assert.match(appSource, /function hodlReadCoinType\(input = document\.getElementById\("network"\), mark = true\)/);
   assert.match(appSource, /function hodlNetworkFromCoinType\(coinType\)/);
@@ -1090,7 +1091,7 @@ test("virtual keypads never focus the field on touch so the mobile keyboard stay
 });
 
 test("workspace tabs place BIP-85 between Key Derivation and Multi Signature", () => {
-  assert.match(appSource, /\["calc", "Key Derivation"\], \["bip85", "BIP-85"\], \["msig", "Multi Signature"\], \["psbt", "PSBT \/ Nonce"\]/);
+  assert.match(appSource, /\["calc", "Key Derivation"\], \["bip85", "BIP-85"\], \["msig", "Multi Signature"\], \["sp", "Silent Payments"\], \["psbt", "PSBT \/ Nonce"\]/);
   for (const markup of [template, appSource]) {
     assert.match(markup, /id="bip85-card"/);
     assert.match(markup, /id="bip85-go"/);
@@ -1107,4 +1108,20 @@ test("BIP-85 entry point sits beside Derive Wallet and opens the BIP-85 tab", ()
   assert.match(appSource, /getElementById\("bip85-open"\)/);
   assert.match(appSource, /open\.onclick = \(\) => \{\s*hodlShowWorkspace\("bip85"\)/);
   assert.match(appSource, /open\.onclick[\s\S]*?hodlUseActiveKeyForBip85\(\)/);
+});
+
+test("Silent Payments sits between Multi Signature and PSBT / Nonce", () => {
+  const order = /Key Derivation[\s\S]*Multi Signature[\s\S]*Silent Payments[\s\S]*PSBT \/ Nonce/;
+  assert.match(template, order);
+  assert.match(appSource, /\["calc", "Key Derivation"\], \["bip85", "BIP-85"\], \["msig", "Multi Signature"\], \["sp", "Silent Payments"\], \["psbt", "PSBT \/ Nonce"\]/);
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /id="sp-card"/);
+    assert.match(markup, /id="sp-key"/);
+    assert.match(markup, /id="sp-network"/);
+    assert.match(markup, /id="sp-derive"/);
+    assert.match(markup, /id="sp-send-go"/);
+    assert.match(markup, /id="sp-verify-go"/);
+    assert.match(markup, /BIP-352/);
+  }
+  assert.match(css, /#sp-card\[hidden\]/);
 });

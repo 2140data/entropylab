@@ -4,6 +4,20 @@ import { ripemd160 } from "@noble/hashes/legacy.js";
 // is a drop-in for the noble/curves surface this file uses (see
 // src/js/secp256k1.js). App boot waits for the module to be ready.
 import { secp256k1 as xe, secp256k1Ready } from "./secp256k1.js";
+import {
+  createLabeledSilentPaymentAddress,
+  createSilentPaymentOutputs,
+  decodeSilentPaymentAddress,
+  encodeSilentPaymentAddress,
+  encodeSpscan,
+  encodeSpspend,
+  formatSpDescriptor,
+  hrpForNetwork as hodlSpHrp,
+  p2trAddressFromXonly,
+  scanSilentPaymentOutputs,
+  spendPrivForOutput,
+  bytesToHex as hodlSpBytesToHex,
+} from "./bip352.js";
 import { createBase58check as fi, hex as M } from "@scure/base";
 import { HDKey as Gt } from "@scure/bip32";
 import { entropyToMnemonic as bi, mnemonicToEntropy as Er, mnemonicToSeedSync as wi, validateMnemonic as Pn } from "@scure/bip39";
@@ -647,6 +661,76 @@ ec.innerHTML = `
       </div>
       <p class="err" id="msig-error"></p>
     </section>
+    <section class="card no-print" id="sp-card" role="tabpanel" hidden>
+      <div class="kicker">BIP-352 · reusable address, unique outputs</div>
+      <h2>Silent Payments</h2>
+      <p class="muted psbt-intro">A calculator, not a chain scanner. Derive a reusable <code>sp1q…</code> address from your seed, compute the unique taproot output a sender must pay, or check pasted outputs against your scan key. Nothing here talks to the network.</p>
+      <div class="row no-print segmented-control" id="sp-modes">
+        <button class="tab active" type="button" data-sp-mode="receive" aria-pressed="true">Receive</button>
+        <button class="tab" type="button" data-sp-mode="send" aria-pressed="false">Send</button>
+        <button class="tab" type="button" data-sp-mode="verify" aria-pressed="false">Verify</button>
+      </div>
+      <div class="psbt-grid">
+        <label class="field">Session key (BIP39 seed phrase or root xprv/tprv)
+          <textarea id="sp-key" placeholder="Leave blank and use the active key, or paste a seed / root xprv" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+        </label>
+        <div>
+          <label class="field">Optional BIP39 passphrase
+            <input id="sp-pass" autocomplete="off" placeholder="Enter a BIP39 passphrase, or leave blank for none">
+          </label>
+          <label class="field">Address network
+            <select id="sp-network"><option value="mainnet" selected>Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
+          </label>
+          <label class="field">Account
+            <input id="sp-account" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0">
+          </label>
+        </div>
+      </div>
+      <div class="row psbt-actions">
+        <button class="btn secondary" id="sp-use-calc" type="button">Use active key this session</button>
+        <button class="btn secondary" id="sp-wipe" type="button">End session / clear fields</button>
+      </div>
+      <p class="muted" id="sp-session" aria-live="polite">No session key. Receive and verify need a seed or root xprv.</p>
+      <div id="sp-receive">
+        <label class="field">Label <code>m</code>
+          <input id="sp-label" type="number" min="0" max="2147483647" step="1" inputmode="numeric" placeholder="blank = unlabeled · 0 = change (do not hand out)">
+          <span class="field-note">Unlabeled is the reusable address you publish. <code>m = 0</code> is reserved for change. <code>m ≥ 1</code> is an extra labeled code from the same scan key.</span>
+        </label>
+        <div class="row psbt-actions">
+          <button class="btn primary" id="sp-derive" type="button">Derive silent payment address</button>
+        </div>
+      </div>
+      <div id="sp-send" hidden>
+        <label class="field">Recipients (one <code>sp1q…</code> / <code>tsp1q…</code> per line; optional count)
+          <textarea id="sp-recipients" placeholder="sp1qqgste7k9hx0q…&#10;sp1qqgste7k9hx0q… 2" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+        </label>
+        <label class="field">Inputs (BIP-352 vin JSON)
+          <textarea id="sp-send-vins" placeholder='[{"txid":"\u2026","vout":0,"scriptSig":"\u2026","txinwitness":"","prevout":{"scriptPubKey":{"hex":"\u2026"}},"private_key":"\u2026"}]' spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+          <span class="field-note">Same shape as the published BIP-352 send vectors. Each eligible input needs its private key. P2TR / P2WPKH / P2SH-P2WPKH / P2PKH only.</span>
+        </label>
+        <div class="row psbt-actions">
+          <button class="btn primary" id="sp-send-go" type="button">Compute taproot outputs</button>
+        </div>
+      </div>
+      <div id="sp-verify" hidden>
+        <label class="field">Inputs (BIP-352 vin JSON, private keys optional)
+          <textarea id="sp-verify-vins" placeholder='[{"txid":"\u2026","vout":0,"scriptSig":"\u2026","txinwitness":"","prevout":{"scriptPubKey":{"hex":"\u2026"}}}]' spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+        </label>
+        <label class="field">Taproot output keys (32-byte x-only hex, one per line)
+          <textarea id="sp-verify-outputs" placeholder="3e9fce73d4e77a4809908e3c3a2e54ee147b9312dc5044a193d1fc85de46e3c1" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+        </label>
+        <label class="field">Labels to scan
+          <input id="sp-verify-labels" placeholder="0, 1, 2" value="0">
+          <span class="field-note"><code>m = 0</code> is change and should stay in this list. Add any labeled codes you handed out.</span>
+        </label>
+        <div class="row psbt-actions">
+          <button class="btn primary" id="sp-verify-go" type="button">Scan pasted outputs</button>
+        </div>
+      </div>
+      <p class="err" id="sp-error" role="alert"></p>
+      <div id="sp-out" aria-live="polite"></div>
+      <p class="muted">Session keys remain in this page only and are never intentionally stored or sent. Memory clearing is best-effort because browsers may retain internal copies; close the page before reconnecting the computer.</p>
+    </section>
     <section class="card no-print" id="psbt-card" role="tabpanel" hidden>
       <div class="kicker">Inspect first. Sign elsewhere.</div>
       <h2>Read a PSBT. Check its ECDSA nonces.</h2>
@@ -690,6 +774,7 @@ ec.innerHTML = `
       <p>D++ D8 &amp; D16 method: <a href="https://thesimplestbitcoinbook.net/wp-content/uploads/2023/09/Roll-Your-Own-Seed-Phrase-PDF.pdf" target="_blank" rel="noopener noreferrer">Roll Your Own Bitcoin Seed Phrase</a> \u2014 the published 24-word workflow uses one D8 labeled 1\u20138 and two hexadecimal D16 dice labeled 0\u2013F per word, then a final D8.</p>
       <p>Jade anti-exfil (sign-to-contract): <a href="https://blog.blockstream.com/anti-exfil-stopping-key-exfiltration/" target="_blank" rel="noopener noreferrer">Anti-Exfil: Stopping Key Exfiltration</a> \u2014 secp256k1-zkp <code>ecdsa_s2c</code> / <code>anti_exfil_host_verify</code>.</p>
       <p>BIP-85 deterministic entropy: <a href="https://github.com/bitcoin/bips/blob/master/bip-0085.mediawiki" target="_blank" rel="noopener noreferrer">bip-0085.mediawiki</a> \u2014 HMAC-SHA512 of a fully hardened child; English BIP-39 / WIF / XPRV / HEX / password applications match COLDCARD.</p>
+      <p>BIP-352 Silent Payments: <a href="https://github.com/bitcoin/bips/blob/master/bip-0352.mediawiki" target="_blank" rel="noopener noreferrer">bips/bip-0352</a> \u2014 reusable <code>sp1q\u2026</code> addresses and unique taproot outputs. Descriptors: <a href="https://github.com/bitcoin/bips/blob/master/bip-0392.mediawiki" target="_blank" rel="noopener noreferrer">BIP-392</a>.</p>
     </section>
   </div>
 `;
@@ -7601,6 +7686,294 @@ function hodlRunPsbt() {
     error.textContent = exception instanceof Error ? exception.message : String(exception);
   }
 }
+
+var hodlSpHd = null, hodlSpKeys = null, hodlSpNote = "No session key. Receive and verify need a seed or root xprv.", hodlSpMode = "receive", hodlSpReveal = false;
+function hodlSpWipeKeys() {
+  if (hodlSpKeys) {
+    try { hodlSpKeys.scanPriv && hodlSpKeys.scanPriv.fill(0); } catch {}
+    try { hodlSpKeys.spendPriv && hodlSpKeys.spendPriv.fill(0); } catch {}
+  }
+  hodlSpKeys = null;
+  if (hodlSpHd) {
+    try { hodlSpHd.privateKey && hodlSpHd.privateKey.fill(0); } catch {}
+  }
+  hodlSpHd = null;
+  hodlSpNote = "No session key. Receive and verify need a seed or root xprv.";
+}
+function hodlSpWipeMem() {
+  hodlSpWipeKeys();
+  hodlSpReveal = false;
+}
+function hodlSpNetwork() {
+  return document.getElementById("sp-network")?.value === "testnet" ? "testnet" : "mainnet";
+}
+function hodlSpAccount() {
+  let value = Number(document.getElementById("sp-account")?.value || 0);
+  if (!Number.isInteger(value) || value < 0) throw new Error("Account index must be a non-negative integer.");
+  return value;
+}
+function hodlSpCoinType() {
+  return hodlSpNetwork() === "mainnet" ? 0 : 1;
+}
+function hodlSpLoadKey(text, passphrase) {
+  hodlSpWipeKeys();
+  let value = String(text || "").trim();
+  if (!value) throw new Error("Paste a BIP39 seed phrase or a BIP32 root xprv/tprv.");
+  if (/^[xt]prv[1-9A-HJ-NP-Za-km-z]+$/.test(value.replace(/\s/g, ""))) {
+    let parsed = uf(value.replace(/\s/g, ""));
+    if (!parsed.isPrivate) throw new Error("Watch-only extended keys cannot derive BIP-352 scan/spend paths.");
+    if (parsed.node.depth !== 0) throw new Error("Silent Payments needs a BIP32 root private key (depth 0), not an account xprv.");
+    hodlSpHd = parsed.node;
+    hodlSpNote = `Session key: root ${parsed.prefix}. Kept in page memory only.`;
+    return;
+  }
+  let mnemonic = Mt(value);
+  if (!mnemonic.ok) throw new Error(mnemonic.error || "Enter a BIP39 seed phrase or a BIP32 root xprv/tprv.");
+  let seed = wi(mnemonic.words.join(" "), passphrase || "");
+  try {
+    hodlSpHd = Gt.fromMasterSeed(seed);
+  } finally {
+    seed.fill(0);
+  }
+  hodlSpNote = "Session key: BIP39 seed" + (passphrase ? " + passphrase" : "") + ". Kept in page memory only.";
+}
+function hodlSpUseActiveKey() {
+  let state = hodlKeys[hodlActiveKey];
+  if (!state || !state.result) throw new Error("Generate an active key first, then return to Silent Payments.");
+  let result = state.result;
+  hodlSpWipeKeys();
+  if (result.kind === "hd" && result.mnemonic) {
+    let seed = wi(result.mnemonic, state.fields.pass || "");
+    try { hodlSpHd = Gt.fromMasterSeed(seed); } finally { seed.fill(0); }
+    hodlSpNote = "Session key from " + (state.name || "the active key") + " (BIP39 seed). Kept in page memory only.";
+  } else if (result.kind === "hd" && result.rootXprv) {
+    hodlSpHd = Gt.fromExtendedKey(uf(result.rootXprv).xkey);
+    hodlSpNote = "Session key from " + (state.name || "the active key") + " (root xprv). Kept in page memory only.";
+  } else throw new Error("Silent Payments needs the active key's seed or root xprv. Account-level and single keys cannot derive m/352'.");
+}
+function hodlSpEnsureHd() {
+  let manual = document.getElementById("sp-key")?.value;
+  if (manual && manual.trim()) {
+    hodlSpLoadKey(manual, document.getElementById("sp-pass")?.value);
+    document.getElementById("sp-key").value = "";
+    document.getElementById("sp-pass").value = "";
+  }
+  if (!hodlSpHd || !hodlSpHd.privateKey) throw new Error("Load a BIP39 seed or root xprv first (or use the active key).");
+  document.getElementById("sp-session").textContent = hodlSpNote;
+}
+function hodlSpDeriveSessionKeys() {
+  hodlSpEnsureHd();
+  if (hodlSpKeys) {
+    try { hodlSpKeys.scanPriv && hodlSpKeys.scanPriv.fill(0); } catch {}
+    try { hodlSpKeys.spendPriv && hodlSpKeys.spendPriv.fill(0); } catch {}
+  }
+  let root = hodlSpHd;
+  let scanPath = `m/352'/${hodlSpCoinType()}'/${hodlSpAccount()}'/1'/0`;
+  let spendPath = `m/352'/${hodlSpCoinType()}'/${hodlSpAccount()}'/0'/0`;
+  let scanNode = root.derive(scanPath);
+  let spendNode = root.derive(spendPath);
+  if (!scanNode.privateKey || !spendNode.privateKey) throw new Error("BIP-352 child keys are missing private material.");
+  hodlSpKeys = {
+    scanPath,
+    spendPath,
+    scanPriv: scanNode.privateKey.slice(),
+    spendPriv: spendNode.privateKey.slice(),
+    scanPub: xe.getPublicKey(scanNode.privateKey, true),
+    spendPub: xe.getPublicKey(spendNode.privateKey, true),
+    fingerprint: Us(root.fingerprint),
+  };
+}
+function hodlSpParseVins(text) {
+  let raw = String(text || "").trim();
+  if (!raw) throw new Error("Paste BIP-352 vin JSON.");
+  let parsed = JSON.parse(raw);
+  if (parsed && Array.isArray(parsed.vin)) parsed = parsed.vin;
+  if (!Array.isArray(parsed) || !parsed.length) throw new Error("Vin JSON must be a non-empty array.");
+  return parsed;
+}
+function hodlSpParseRecipients(text) {
+  let lines = String(text || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  if (!lines.length) throw new Error("Paste at least one silent payment address.");
+  return lines.map((line) => {
+    let match = line.match(/^(sp1[0-9a-z]+|tsp1[0-9a-z]+)(?:\s+(\d+))?$/i);
+    if (!match) throw new Error(`Not a silent payment address: ${line.slice(0, 24)}`);
+    return { address: match[1].toLowerCase(), count: match[2] ? Number(match[2]) : 1 };
+  });
+}
+function hodlSpParseOutputs(text) {
+  let raw = String(text || "").trim();
+  if (!raw) throw new Error("Paste at least one 32-byte x-only taproot output key.");
+  if (raw.startsWith("[")) {
+    let parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) throw new Error("Output JSON must be an array of hex strings.");
+    return parsed.map(String);
+  }
+  return raw.split(/\s+/).map((item) => item.replace(/^0x/i, "")).filter(Boolean);
+}
+function hodlSpParseLabels(text) {
+  let raw = String(text || "").trim();
+  if (!raw) return [];
+  return raw.split(/[,\s]+/).filter(Boolean).map((item) => {
+    let value = Number(item);
+    if (!Number.isInteger(value) || value < 0) throw new Error(`Invalid label: ${item}`);
+    return value;
+  });
+}
+function hodlSpSetMode(mode) {
+  hodlSpMode = mode;
+  ["receive", "send", "verify"].forEach((id) => {
+    let panel = document.getElementById(`sp-${id}`);
+    if (panel) panel.hidden = id !== mode;
+  });
+  document.querySelectorAll("#sp-modes [data-sp-mode]").forEach((button) => {
+    let active = button.dataset.spMode === mode;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+function hodlSpEscape(value) {
+  return String(value).replace(/[&<>"']/g, (ch) => {
+    if (ch === "&") return "&amp;";
+    if (ch === "<") return "&lt;";
+    if (ch === ">") return "&gt;";
+    if (ch === '"') return "&quot;";
+    return "&#39;";
+  });
+}
+function hodlSpCopyButton(id, label) {
+  return `<button type="button" class="btn secondary sp-copy" data-sp-copy="${id}">${label}</button>`;
+}
+function hodlRenderSpReceive() {
+  hodlSpDeriveSessionKeys();
+  let hrp = hodlSpHrp(hodlSpNetwork());
+  let labelField = document.getElementById("sp-label")?.value;
+  let labeled = String(labelField ?? "").trim() !== "";
+  let m = labeled ? Number(labelField) : null;
+  if (labeled && (!Number.isInteger(m) || m < 0)) throw new Error("Label m must be a non-negative integer.");
+  let scanPoint = xe.Point.fromBytes(hodlSpKeys.scanPub);
+  let spendPoint = xe.Point.fromBytes(hodlSpKeys.spendPub);
+  let address = labeled ? createLabeledSilentPaymentAddress(hodlSpKeys.scanPriv, spendPoint, m, hrp) : encodeSilentPaymentAddress(scanPoint, spendPoint, hrp);
+  let spscan = encodeSpscan(hodlSpKeys.scanPriv, hodlSpKeys.spendPub, hodlSpNetwork());
+  let spspend = encodeSpspend(hodlSpKeys.scanPriv, hodlSpKeys.spendPriv, hodlSpNetwork());
+  let origin = `${hodlSpKeys.fingerprint}/352h/${hodlSpCoinType()}h/${hodlSpAccount()}h`;
+  let qr = an(address);
+  let secrets = hodlSpReveal;
+  document.getElementById("sp-out").innerHTML = `
+    <div class="sp-result">
+      <p class="label">Reusable silent payment address${labeled ? ` · label m = ${m}${m === 0 ? " (change)" : ""}` : ""}</p>
+      <div class="sp-qr">${qr}</div>
+      <p class="psbt-kv" id="sp-address-value">${hodlSpEscape(address)}</p>
+      ${hodlSpCopyButton("sp-address-value", "Copy address")}
+      <p class="muted">Scan path <code>${hodlSpKeys.scanPath}</code> · Spend path <code>${hodlSpKeys.spendPath}</code></p>
+      <p class="label">Scan public key</p>
+      <p class="psbt-kv" id="sp-scan-pub">${hodlSpBytesToHex(hodlSpKeys.scanPub)}</p>
+      <p class="label">Spend public key</p>
+      <p class="psbt-kv" id="sp-spend-pub">${hodlSpBytesToHex(hodlSpKeys.spendPub)}</p>
+      <label class="choice"><input type="checkbox" id="sp-reveal" ${secrets ? "checked" : ""}> <span>Reveal scan/spend private material and BIP-392 descriptors</span></label>
+      ${secrets ? `<p class="label">BIP-392 watch-only <code>spscan</code></p><p class="psbt-kv" id="sp-spscan">${hodlSpEscape(formatSpDescriptor(spscan, origin))}</p>
+        <p class="label">BIP-392 spend <code>spspend</code></p><p class="psbt-kv" id="sp-spspend">${hodlSpEscape(formatSpDescriptor(spspend, origin))}</p>
+        <p class="label">Scan private key</p><p class="psbt-kv" id="sp-scan-priv">${hodlSpBytesToHex(hodlSpKeys.scanPriv)}</p>
+        <p class="label">Spend private key</p><p class="psbt-kv" id="sp-spend-priv">${hodlSpBytesToHex(hodlSpKeys.spendPriv)}</p>` : `<p class="muted">Private scan/spend material stays hidden until you reveal it.</p>`}
+    </div>`;
+  document.getElementById("sp-reveal")?.addEventListener("change", (event) => {
+    hodlSpReveal = event.target.checked;
+    try { hodlRenderSpReceive(); } catch (error) { document.getElementById("sp-error").textContent = error.message || String(error); }
+  });
+}
+function hodlRenderSpSend() {
+  let recipients = hodlSpParseRecipients(document.getElementById("sp-recipients")?.value);
+  let hrp = hodlSpHrp(hodlSpNetwork());
+  for (const recipient of recipients) decodeSilentPaymentAddress(recipient.address, hrp);
+  let result = createSilentPaymentOutputs(hodlSpParseVins(document.getElementById("sp-send-vins")?.value), recipients, { hrp });
+  if (!result.outputs.length) {
+    document.getElementById("sp-out").innerHTML = `<p class="psbt-warn">No silent payment outputs. Eligible inputs may be missing, the private-key sum may be zero, or a scan-key group exceeded K<sub>max</sub> = 2323.</p>`;
+    return;
+  }
+  let network = hodlSpNetwork();
+  document.getElementById("sp-out").innerHTML = `<p class="psbt-ok">${result.outputs.length} unique taproot output${result.outputs.length === 1 ? "" : "s"}.</p>` + result.outputs.map((xonly, index) => {
+    let address = p2trAddressFromXonly(xonly, network);
+    return `<div class="sp-output"><p class="label">Output ${index + 1}</p><p class="psbt-kv" id="sp-out-addr-${index}">${hodlSpEscape(address)}</p><p class="psbt-kv" id="sp-out-xonly-${index}">${hodlSpEscape(xonly)}</p>${hodlSpCopyButton(`sp-out-addr-${index}`, "Copy P2TR")}</div>`;
+  }).join("");
+}
+function hodlRenderSpVerify() {
+  hodlSpDeriveSessionKeys();
+  let labels = hodlSpParseLabels(document.getElementById("sp-verify-labels")?.value);
+  let result = scanSilentPaymentOutputs({
+    scanPriv: hodlSpKeys.scanPriv,
+    spendPub: hodlSpKeys.spendPub,
+    vins: hodlSpParseVins(document.getElementById("sp-verify-vins")?.value),
+    outputs: hodlSpParseOutputs(document.getElementById("sp-verify-outputs")?.value),
+    labels,
+  });
+  if (!result.outputs.length) {
+    document.getElementById("sp-out").innerHTML = `<p class="muted">No matching silent payment outputs for this scan key and label set.</p>`;
+    return;
+  }
+  let network = hodlSpNetwork();
+  document.getElementById("sp-out").innerHTML = `<p class="psbt-ok">${result.outputs.length} matching output${result.outputs.length === 1 ? "" : "s"}.</p>` + result.outputs.map((row, index) => {
+    let address = p2trAddressFromXonly(row.pub_key, network);
+    let spend = hodlSpReveal ? hodlSpBytesToHex(spendPrivForOutput(hodlSpKeys.spendPriv, row.priv_key_tweak)) : "";
+    return `<div class="sp-output"><p class="label">Match ${index + 1}</p><p class="psbt-kv">${hodlSpEscape(address)}</p><p class="psbt-kv">tweak ${hodlSpEscape(row.priv_key_tweak)}</p>${hodlSpReveal ? `<p class="psbt-kv">spend key ${hodlSpEscape(spend)}</p>` : ""}</div>`;
+  }).join("") + `<label class="choice"><input type="checkbox" id="sp-reveal" ${hodlSpReveal ? "checked" : ""}> <span>Reveal spend private keys for matches</span></label>`;
+  document.getElementById("sp-reveal")?.addEventListener("change", (event) => {
+    hodlSpReveal = event.target.checked;
+    try { hodlRenderSpVerify(); } catch (error) { document.getElementById("sp-error").textContent = error.message || String(error); }
+  });
+}
+function hodlRunSp() {
+  let error = document.getElementById("sp-error"), output = document.getElementById("sp-out");
+  error.textContent = "";
+  output.innerHTML = "";
+  try {
+    if (hodlSpMode === "send") hodlRenderSpSend();
+    else if (hodlSpMode === "verify") hodlRenderSpVerify();
+    else hodlRenderSpReceive();
+  } catch (exception) {
+    error.textContent = exception instanceof Error ? exception.message : String(exception);
+  }
+}
+function hodlInitSp() {
+  if (!document.getElementById("sp-card")) return;
+  document.querySelectorAll("#sp-modes [data-sp-mode]").forEach((button) => {
+    button.onclick = () => { hodlSpSetMode(button.dataset.spMode); document.getElementById("sp-out").innerHTML = ""; document.getElementById("sp-error").textContent = ""; };
+  });
+  document.getElementById("sp-derive").onclick = () => { hodlSpMode = "receive"; hodlRunSp(); };
+  document.getElementById("sp-send-go").onclick = () => { hodlSpMode = "send"; hodlRunSp(); };
+  document.getElementById("sp-verify-go").onclick = () => { hodlSpMode = "verify"; hodlRunSp(); };
+  document.getElementById("sp-use-calc").onclick = () => {
+    document.getElementById("sp-error").textContent = "";
+    try {
+      hodlSpUseActiveKey();
+      document.getElementById("sp-key").value = "";
+      document.getElementById("sp-pass").value = "";
+      document.getElementById("sp-session").textContent = hodlSpNote;
+    } catch (exception) {
+      document.getElementById("sp-error").textContent = exception.message || String(exception);
+    }
+  };
+  document.getElementById("sp-wipe").onclick = () => {
+    hodlSpWipeMem();
+    ["sp-key", "sp-pass", "sp-recipients", "sp-send-vins", "sp-verify-vins", "sp-verify-outputs", "sp-label"].forEach((id) => {
+      let field = document.getElementById(id);
+      if (field) field.value = "";
+    });
+    let labels = document.getElementById("sp-verify-labels");
+    if (labels) labels.value = "0";
+    let account = document.getElementById("sp-account");
+    if (account) account.value = "0";
+    document.getElementById("sp-out").innerHTML = "";
+    document.getElementById("sp-error").textContent = "";
+    document.getElementById("sp-session").textContent = "Session ended and accessible fields were cleared (best effort).";
+  };
+  document.getElementById("sp-out").addEventListener("click", (event) => {
+    let button = event.target.closest?.("[data-sp-copy]");
+    if (!button) return;
+    let node = document.getElementById(button.dataset.spCopy);
+    if (!node) return;
+    navigator.clipboard?.writeText(node.textContent || "").catch(() => {});
+  });
+  hodlSpSetMode("receive");
+}
 function hodlTaggedSha256(tag, ...chunks) {
   let tagHash = Z(new TextEncoder().encode(tag)), total = 64;
   for (let chunk of chunks) total += chunk.length;
@@ -8559,6 +8932,7 @@ function hodlShowWorkspace(id) {
   document.getElementById("msig-card").hidden = true;
   document.getElementById("psbt-card").hidden = id !== "psbt";
   document.getElementById("bip85-card").hidden = id !== "bip85";
+  document.getElementById("sp-card").hidden = id !== "sp";
   re = null;
   Ge = false;
   dr.innerHTML = "";
@@ -8653,7 +9027,7 @@ function hodlSeedInitialManagers() {
 function hodlInitWorkspace() {
   let box = W("#workspace");
   box.innerHTML = "";
-  [["calc", "Key Derivation"], ["bip85", "BIP-85"], ["msig", "Multi Signature"], ["psbt", "PSBT / Nonce"]].forEach(([id, label]) => {
+  [["calc", "Key Derivation"], ["bip85", "BIP-85"], ["msig", "Multi Signature"], ["sp", "Silent Payments"], ["psbt", "PSBT / Nonce"]].forEach(([id, label]) => {
     let button = document.createElement("button"), active = hodlWorkspace === id;
     button.type = "button";
     button.className = "tab" + (active ? " active" : "");
@@ -8666,6 +9040,7 @@ function hodlInitWorkspace() {
   hodlInitMsig();
   hodlInitPsbt();
   hodlInitBip85();
+  hodlInitSp();
 }
 var hodlKeyClearSyncQueued = false, hodlMsigClearSyncQueued = false, hodlDeriveSyncQueued = false;
 function hodlQueueKeyClearButtonSync() {
@@ -8810,6 +9185,7 @@ function hodlInitSecretFieldAutoClear() {
   let clearSecretFields = () => {
     hodlPsbtWipeMem();
     hodlBip85WipeMem();
+    hodlSpWipeMem();
     hodlKeys = hodlKeys.map((state) => {
       let fields = state.fields || {}, privateKeys = fields.privateKeys;
       if (privateKeys) Object.keys(privateKeys).forEach((kind) => {
@@ -8842,6 +9218,15 @@ function hodlInitSecretFieldAutoClear() {
     if (bip85Out) bip85Out.innerHTML = "";
     if (bip85Error) bip85Error.textContent = "";
     if (bip85Session) bip85Session.textContent = hodlBip85Note;
+    let spKey = document.getElementById("sp-key"), spPass = document.getElementById("sp-pass");
+    if (spKey) spKey.value = "";
+    if (spPass) spPass.value = "";
+    let spVins = document.getElementById("sp-send-vins");
+    if (spVins) spVins.value = "";
+    let spOut = document.getElementById("sp-out"), spError = document.getElementById("sp-error"), spSession = document.getElementById("sp-session");
+    if (spOut) spOut.innerHTML = "";
+    if (spError) spError.textContent = "";
+    if (spSession) spSession.textContent = hodlSpNote;
     let out = document.getElementById("out");
     if (out) out.innerHTML = "";
     let error = document.getElementById("error");

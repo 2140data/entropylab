@@ -44,7 +44,7 @@
         <li>Keep your private keys offline.</li>
       </ul>
     </section>
-    <div class="row no-print segmented-control" id="workspace"><button class="tab active" aria-pressed="true">Key Derivation</button><button class="tab" aria-pressed="false">BIP-85</button><button class="tab" aria-pressed="false">Multi Signature</button><button class="tab" aria-pressed="false">PSBT / Nonce</button></div>
+    <div class="row no-print segmented-control" id="workspace"><button class="tab active" aria-pressed="true">Key Derivation</button><button class="tab" aria-pressed="false">BIP-85</button><button class="tab" aria-pressed="false">Multi Signature</button><button class="tab" aria-pressed="false">Silent Payments</button><button class="tab" aria-pressed="false">PSBT / Nonce</button></div>
     <section class="key-manager no-print" id="key-manager">
       <div class="key-manager-head"><h2>Keys</h2></div>
       <div class="key-tab-strip"><div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div><div class="add-item-control"><button class="add-key" id="add-key" type="button" aria-label="Add key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Add another key</span></div></div>
@@ -307,6 +307,76 @@ words, pick one of the checksum words.</span></span>
       </div>
       <p class="err" id="msig-error"></p>
     </section>
+    <section class="card no-print" id="sp-card" role="tabpanel" hidden>
+      <div class="kicker">BIP-352 · reusable address, unique outputs</div>
+      <h2>Silent Payments</h2>
+      <p class="muted psbt-intro">A calculator, not a chain scanner. Derive a reusable <code>sp1q…</code> address from your seed, compute the unique taproot output a sender must pay, or check pasted outputs against your scan key. Nothing here talks to the network.</p>
+      <div class="row no-print segmented-control" id="sp-modes">
+        <button class="tab active" type="button" data-sp-mode="receive" aria-pressed="true">Receive</button>
+        <button class="tab" type="button" data-sp-mode="send" aria-pressed="false">Send</button>
+        <button class="tab" type="button" data-sp-mode="verify" aria-pressed="false">Verify</button>
+      </div>
+      <div class="psbt-grid">
+        <label class="field">Session key (BIP39 seed phrase or root xprv/tprv)
+          <textarea id="sp-key" placeholder="Leave blank and use the active key, or paste a seed / root xprv" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+        </label>
+        <div>
+          <label class="field">Optional BIP39 passphrase
+            <input id="sp-pass" autocomplete="off" placeholder="Enter a BIP39 passphrase, or leave blank for none">
+          </label>
+          <label class="field">Address network
+            <select id="sp-network"><option value="mainnet" selected="selected">Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
+          </label>
+          <label class="field">Account
+            <input id="sp-account" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0">
+          </label>
+        </div>
+      </div>
+      <div class="row psbt-actions">
+        <button class="btn secondary" id="sp-use-calc" type="button">Use active key this session</button>
+        <button class="btn secondary" id="sp-wipe" type="button">End session / clear fields</button>
+      </div>
+      <p class="muted" id="sp-session" aria-live="polite">No session key. Receive and verify need a seed or root xprv.</p>
+      <div id="sp-receive">
+        <label class="field">Label <code>m</code>
+          <input id="sp-label" type="number" min="0" max="2147483647" step="1" inputmode="numeric" placeholder="blank = unlabeled · 0 = change (do not hand out)">
+          <span class="field-note">Unlabeled is the reusable address you publish. <code>m = 0</code> is reserved for change. <code>m ≥ 1</code> is an extra labeled code from the same scan key.</span>
+        </label>
+        <div class="row psbt-actions">
+          <button class="btn primary" id="sp-derive" type="button">Derive silent payment address</button>
+        </div>
+      </div>
+      <div id="sp-send" hidden>
+        <label class="field">Recipients (one <code>sp1q…</code> / <code>tsp1q…</code> per line; optional count)
+          <textarea id="sp-recipients" placeholder="sp1qqgste7k9hx0q…&#10;sp1qqgste7k9hx0q… 2" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+        </label>
+        <label class="field">Inputs (BIP-352 vin JSON)
+          <textarea id="sp-send-vins" placeholder='[{"txid":"…","vout":0,"scriptSig":"…","txinwitness":"","prevout":{"scriptPubKey":{"hex":"…"}},"private_key":"…"}]' spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+          <span class="field-note">Same shape as the published BIP-352 send vectors. Each eligible input needs its private key. P2TR / P2WPKH / P2SH-P2WPKH / P2PKH only.</span>
+        </label>
+        <div class="row psbt-actions">
+          <button class="btn primary" id="sp-send-go" type="button">Compute taproot outputs</button>
+        </div>
+      </div>
+      <div id="sp-verify" hidden>
+        <label class="field">Inputs (BIP-352 vin JSON, private keys optional)
+          <textarea id="sp-verify-vins" placeholder='[{"txid":"…","vout":0,"scriptSig":"…","txinwitness":"","prevout":{"scriptPubKey":{"hex":"…"}}}]' spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+        </label>
+        <label class="field">Taproot output keys (32-byte x-only hex, one per line)
+          <textarea id="sp-verify-outputs" placeholder="3e9fce73d4e77a4809908e3c3a2e54ee147b9312dc5044a193d1fc85de46e3c1" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+        </label>
+        <label class="field">Labels to scan
+          <input id="sp-verify-labels" placeholder="0, 1, 2" value="0">
+          <span class="field-note"><code>m = 0</code> is change and should stay in this list. Add any labeled codes you handed out.</span>
+        </label>
+        <div class="row psbt-actions">
+          <button class="btn primary" id="sp-verify-go" type="button">Scan pasted outputs</button>
+        </div>
+      </div>
+      <p class="err" id="sp-error" role="alert"></p>
+      <div id="sp-out" aria-live="polite"></div>
+      <p class="muted">Session keys remain in this page only and are never intentionally stored or sent. Memory clearing is best-effort because browsers may retain internal copies; close the page before reconnecting the computer.</p>
+    </section>
     <section class="card no-print" id="psbt-card" role="tabpanel" hidden>
       <div class="kicker">Inspect first. Sign elsewhere.</div>
       <h2>Read a PSBT. Check its ECDSA nonces.</h2>
@@ -351,6 +421,7 @@ words, pick one of the checksum words.</span></span>
       <p>Die Distribution / Fairness Analysis (Pearson’s χ²): <a href="https://rpg.stackexchange.com/questions/70802/how-can-i-test-whether-a-die-is-fair" target="_blank" rel="noopener noreferrer">How can I test whether a die is fair?</a> — live check while entering rolls, following the <a href="https://dicefairness.johnellmore.com/" target="_blank" rel="noopener noreferrer">Dice Fairness Tester</a> thresholds.</p>
       <p>Jade anti-exfil (sign-to-contract): <a href="https://blog.blockstream.com/anti-exfil-stopping-key-exfiltration/" target="_blank" rel="noopener noreferrer">Anti-Exfil: Stopping Key Exfiltration</a> — secp256k1-zkp <code>ecdsa_s2c</code> / <code>anti_exfil_host_verify</code>.</p>
       <p>BIP-85 deterministic entropy: <a href="https://github.com/bitcoin/bips/blob/master/bip-0085.mediawiki" target="_blank" rel="noopener noreferrer">bip-0085.mediawiki</a> — HMAC-SHA512 of a fully hardened child; English BIP-39 / WIF / XPRV / HEX / password applications match COLDCARD.</p>
+      <p>BIP-352 Silent Payments: <a href="https://github.com/bitcoin/bips/blob/master/bip-0352.mediawiki" target="_blank" rel="noopener noreferrer">bips/bip-0352</a> — reusable <code>sp1q…</code> addresses and unique taproot outputs. Descriptors: <a href="https://github.com/bitcoin/bips/blob/master/bip-0392.mediawiki" target="_blank" rel="noopener noreferrer">BIP-392</a>.</p>
     </section>
   </div>
 </div><!--/$--><div class="disclaimer-overlay no-print" id="beta-disclaimer" role="alertdialog" aria-modal="true" aria-labelledby="beta-disclaimer-title" aria-describedby="beta-disclaimer-text" hidden>
