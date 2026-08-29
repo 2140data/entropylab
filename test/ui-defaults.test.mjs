@@ -10,7 +10,7 @@ const online = read("src/js/online.js");
 
 test("top status banner omits the entropy RNG message", () => {
   assert.doesNotMatch(`${template}\n${app}`, /No entropy RNG/);
-  assert.match(template, /EntropyLab v\{\{VERSION\}\} · Run Offline · Bring your own entropy/);
+  assert.match(template, /<div class="kicker">Run Offline · Bring your own entropy<\/div>/);
 });
 
 test("all wallet network selectors enable and default to mainnet", () => {
@@ -376,8 +376,9 @@ test("top banners share one consistent gap", () => {
     css,
     /\.beta-warning, \.online-warning, \.network-warning\s*\{[^}]*margin: 0 0 12px;/s,
   );
-  // The banners' 12px plus the header's top padding separate them from the title.
-  assert.match(css, /header \{ padding: var\(--space-section\) 0 var\(--space-control\); \}/);
+  // The title block that used to follow them is gone, so the banners' 12px now
+  // collapses into the leading card's own 16px.
+  assert.match(css, /\.card \{[^}]*margin: 16px 0; \}/);
 });
 
 test("header theme toggle cycles dark, light, and OS themes without a flash", () => {
@@ -400,22 +401,47 @@ test("the site header is fixed, carries the logo, and holds the version, downloa
     const wrapper = markup.indexOf('<div class="wrap">');
     assert.ok(header >= 0, "the fixed site header is missing");
     assert.ok(header < wrapper, "the site header must come before the page wrapper");
-    assert.match(markup, /<span class="site-logo" aria-hidden="true"><\/span>\s*<div class="download-controls">/);
-    for (const control of [/class="version-select header-button"/, /class="btn secondary download-html header-button"/, /class="btn secondary github-repo-link header-button"/, /id="theme-toggle"/]) {
+    assert.match(markup, /<span class="site-logo" aria-hidden="true"><\/span>\s*<span class="site-title">EntropyLab<\/span>\s*<span class="site-version">/);
+    for (const control of [/class="site-version-number">v\{\{VERSION\}\}</, /class="btn secondary download-html header-button"/, /class="btn secondary github-repo-link header-button"/, /id="theme-toggle"/]) {
       assert.match(markup.slice(header, wrapper), control, `the fixed header is missing ${control}`);
     }
-    // Those controls moved out of the in-flow header, which keeps the heading.
-    assert.match(markup.slice(wrapper), /<header>\s*<div>\s*<div class="kicker">/);
-    assert.doesNotMatch(markup.slice(wrapper), /download-controls/);
+    // The in-flow title block folded into the marketing card, so the wrapper
+    // opens on that card and carries no second header of its own.
+    const live = markup.slice(wrapper).replace(/<!--[\s\S]*?-->/g, "");
+    // The static template opens with a no-JS notice; the runtime one has no
+    // need of it. Either way the card is the first thing the page renders.
+    assert.match(live, /<div class="wrap">\s*(?:<noscript>[\s\S]*?<\/noscript>\s*)?<section class="card">/);
+    assert.doesNotMatch(markup.slice(wrapper), /<header>|download-controls/);
   }
+  assert.doesNotMatch(css, /^header (\{|h1)/m);
   assert.match(css, /\.site-header \{\s*position: fixed; top: 0; left: 0; right: 0;/);
   assert.match(css, /\.site-header-inner \{[^}]*height: var\(--site-header-height\)/s);
+  // The wordmark shares the h1's display face rather than the control sans.
+  // The wordmark runs to both ends of the ramp rather than tracking --fg, so
+  // each theme has to name its own end.
+  assert.match(css, /\.site-title \{[^}]*font-family: var\(--display\);[^}]*color: #ffffff;/);
+  assert.match(css, /:root\[data-theme="light"\] \.site-title \{ color: #000000; \}/);
+  assert.match(css, /@media \(max-width: 719px\) \{[\s\S]*?\.site-title \{ font-size: 19px; \}/);
+  assert.match(css, /\.site-version \{[^}]*flex: 0 0 auto; display: inline-flex; align-items: baseline; gap: 6px;/s);
+  // The version echoes the kicker's accent and weight, but stays far below its
+  // display tracking, which reads as spread-out in a row of controls.
+  assert.match(css, /\.site-version \{[^}]*text-transform: uppercase; color: var\(--accent\); font-weight: 600;/s);
+  const tracking = (rule) => Number(css.match(new RegExp(`${rule} \\{[^}]*letter-spacing: ([\\d.]+)em`, "s"))?.[1]);
+  assert.ok(tracking("\\.site-version") < tracking("\\.kicker") / 2, "the header version kept the kicker's display tracking");
+  // The uppercase stops at the version string, so its "v" prefix stays lower
+  // case -- in the label the build stamps and in the one online.js renders.
+  assert.match(css, /\.site-version-number \{[^}]*text-transform: none;/);
+  assert.match(online, /newer\.className = "site-version-number";\s*newer\.textContent = latest\.version;/);
+  // The label is assembled from text nodes, and only an allowlisted
+  // same-directory filename may ever become its href.
+  assert.match(online, /tag = document\.createElement\("a"\);[\s\S]*?tag\.href = latest\.file;/);
+  assert.doesNotMatch(online, /version-select|innerHTML/);
   // Content clears the fixed header on screen, and reclaims the space in print.
   assert.match(css, /\.wrap \{ max-width: 1000px; margin: 0 auto; padding: calc\(var\(--site-header-height\) \+ 20px\) 16px 64px; \}/);
   assert.match(css, /@media print \{[\s\S]*?\.wrap \{ padding-top: 20px; \}/);
   assert.match(css, /html \{[^}]*scroll-padding-top: calc\(var\(--site-header-height\) \+ 12px\)/);
   // Every header control is one height, and the bar is sized to match it.
-  assert.match(css, /\.header-button, \.header-button \+ \.custom-select \.custom-select-button \{ min-height: 40px; font-size: 14px; \}/);
+  assert.match(css, /\.header-button \{ min-height: 40px; font-size: 14px; \}/);
   assert.match(css, /--site-header-height: 52px;/);
 });
 
@@ -429,15 +455,32 @@ test("the header logo is inlined for both themes and never fetched from assets",
   }
 });
 
-test("major page sections share one 32px seam", () => {
+test("the seam into the tool is wider than the page's other major seams", () => {
   assert.match(css, /--space-major: 32px;/);
-  // Below the marketing card, and above the closing Sources card. Both
-  // collapse with a neighbouring card's 16px, so the larger value wins.
-  assert.match(css, /#workspace \{ margin: var\(--space-major\) 0 4px; \}/);
+  assert.match(css, /--space-lede: 48px;/);
+  // The pitch-to-tool seam is the page's widest; the closing Sources card keeps
+  // the ordinary major one. Both collapse with a neighbouring card's 16px, so
+  // the larger value wins rather than the two adding up.
+  assert.match(css, /#workspace \{ margin: var\(--space-lede\) 0 4px; \}/);
   assert.match(css, /\.sources \{ margin-top: var\(--space-major\); \}/);
   for (const markup of [template, app]) {
     assert.match(markup, /<section class="card muted sources">/);
   }
+});
+
+test("the marketing card states its pitch as a list rather than a paragraph", () => {
+  for (const markup of [template, app]) {
+    const list = markup.match(/<ul class="pitch-list muted">[\s\S]*?<\/ul>/)?.[0];
+    assert.ok(list, "the pitch list is missing");
+    assert.equal((list.match(/<li>/g) || []).length, 4);
+    assert.match(list, /<li>Save this air-gapped bitcoin calculator to a removable drive/);
+    assert.match(list, /<li>Keep your private keys offline\.<\/li>/);
+    // The prose it replaced is gone, not merely hidden.
+    assert.doesNotMatch(markup, /A signing device is only required when you spend/);
+  }
+  // The list stands in for a paragraph, so it carries the space a paragraph
+  // would have above it and leaves the card's padding to close it out.
+  assert.match(css, /\.pitch-list \{ display: grid; gap: 7px; margin: var\(--space-component\) 0 0; padding-left: 20px; \}/);
 });
 
 test("the favicon ships inside the document instead of the assets directory", () => {
@@ -455,20 +498,27 @@ test("narrow screens keep the fixed header on one row by hiding control labels",
   // Icon-only buttons match the theme toggle's 40px square.
   assert.match(css, /@media \(max-width: 719px\) \{[\s\S]*?\.download-controls \.btn:is\(\.download-html, \.github-repo-link\) \{ flex: 0 0 40px; width: 40px; padding: 0; justify-content: center; \}/);
   for (const markup of [template, app]) {
-    // The version select carries no visible label at any width; the rendered
-    // option text ("v0.1.3 (Latest)") already says what it is.
-    assert.doesNotMatch(markup, /version-picker|<span class="control-label">Version<\/span>/);
+    // The version reads as plain text beside the logo; "v0.1.3" already says
+    // what it is, so it never carries a control label.
+    assert.doesNotMatch(markup, /version-picker|version-select|<span class="control-label">Version<\/span>/);
     // The glyph precedes the label at every width and stands alone once the
     // labels collapse, so it is never hidden.
     assert.match(markup, /<svg class="download-mark"[^>]*><path d="M12 3v12M7 11l5 5 5-5M5 21h14"\/><\/svg><span class="control-label">Download<\/span><\/a>/);
     assert.match(css, /\.download-mark \{ display: block; flex: 0 0 auto; \}/);
     assert.doesNotMatch(css, /@media \(max-width: 719px\) \{[\s\S]*?\.download-mark \{/);
-    assert.match(css, /\.download-controls > a \{ display: inline-flex; align-items: center; gap: 8px;/);
+    // One rule owns the icon-to-label gap for both buttons, so they cannot drift.
+    assert.match(css, /\.download-controls > a \{ display: inline-flex; align-items: center; gap: 6px;/);
+    assert.doesNotMatch(css, /\.download-controls \.github-repo-link \{ display: inline-flex/);
+    // Centring the label's em box leaves its caps a pixel below the icon's
+    // centre line, so the label carries an optical nudge back up.
+    assert.match(css, /\.control-label \{ position: relative; top: -1px; \}/);
     assert.match(markup, /<span class="control-label">GitHub<\/span><\/a>/);
     // Each accessible name still contains its visible label (WCAG 2.5.3).
     assert.match(markup, /class="btn secondary download-html header-button"[^>]*aria-label="Download EntropyLab"/);
-    // Every control that loses its label keeps an accessible name.
-    assert.match(markup, /<select class="version-select header-button" aria-label="EntropyLab version">/);
+    // The "(Latest)" half of the version is the one thing narrow bars drop; an
+    // update link stays, so it is never hidden.
+    assert.match(css, /@media \(max-width: 719px\) \{[\s\S]*?\.site-version-tag:not\(\.site-version-update\) \{ display: none; \}/);
+    assert.doesNotMatch(css, /@media \(max-width: 719px\) \{[\s\S]*?\.site-version-update \{/);
     assert.match(markup, /class="btn secondary github-repo-link header-button"[^>]*aria-label="View the EntropyLab GitHub repository in a new tab"/);
   }
 });

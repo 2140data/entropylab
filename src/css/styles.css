@@ -25,6 +25,7 @@
   --space-component: 16px;
   --space-section: 20px;
   --space-major: 32px; /* seams between the page's major sections */
+  --space-lede: 48px; /* the widest seam: where the pitch ends and the tool begins */
   --site-header-height: 52px; /* .header-button height plus 6px above and below */
   --display: "Iowan Old Style", Palatino, Georgia, serif;
   --sans: "Segoe UI", system-ui, sans-serif;
@@ -73,11 +74,15 @@ button { cursor: pointer; }
 .kicker { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px; margin: 16px 0; }
 /* Major seam above the closing Sources card. It collapses with the previous
-   card's 16px, so the larger value wins rather than the two adding up. The
-   matching seam below the marketing card lives on #workspace. */
+   card's 16px, so the larger value wins rather than the two adding up. The seam
+   below the marketing card lives on #workspace and is deliberately wider. */
 .sources { margin-top: var(--space-major); }
 .warn { background: color-mix(in oklab, var(--danger) 12%, var(--bg)); border-color: color-mix(in oklab, var(--danger) 40%, var(--border)); }
 .muted { color: var(--muted); font-size: 14px; line-height: 1.5; }
+/* The pitch is a set of discrete claims rather than prose, so it reads as a
+   list. The top margin stands in for the paragraph's, and dropping the
+   bottom one lets the card's own padding close it out. */
+.pitch-list { display: grid; gap: 7px; margin: var(--space-component) 0 0; padding-left: 20px; }
 .sources-heading { color: var(--fg); font-size: 1.17rem; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; }
 .tab, .btn {
@@ -391,37 +396,61 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 .ok { color: var(--ok); }
 /* Top padding sets the gap below the warning banners, which carry 12px of
    their own margin. */
-header { padding: var(--space-section) 0 var(--space-control); }
-header h1 { margin: 0; line-height: 1.15; }
 .site-header {
   position: fixed; top: 0; left: 0; right: 0; z-index: 40;
   background: var(--bg); border-bottom: 1px solid var(--border);
 }
+/* The tight gap belongs to the mark and wordmark, which read as one lockup.
+   Everything after them buys its own breathing room back with a margin. */
 .site-header-inner {
-  display: flex; align-items: center; gap: 12px; height: var(--site-header-height);
+  display: flex; align-items: center; gap: 6px; height: var(--site-header-height);
   max-width: 1000px; margin: 0 auto; padding: 0 16px;
 }
 /* Both marks are inlined as data URIs at build time; the light one wins when
    the light theme sets data-theme on the root element. */
 .site-logo {
-  flex: 0 0 auto; width: 32px; height: 32px;
+  flex: 0 0 auto; width: 36px; height: 36px;
   background: url("data:image/png;base64,/*@@LOGO_DARK@@*/") center / contain no-repeat;
 }
 :root[data-theme="light"] .site-logo { background-image: url("data:image/png;base64,/*@@LOGO_LIGHT@@*/"); }
-/* min-width: 0 lets the row shrink on narrow screens; the version picker is
-   the only flexible item, so it ellipsizes instead of pushing controls out. */
+/* The wordmark takes the h1's display face, so the bar reads as the same brand
+   as the page title below it. Pure white and pure black rather than --fg, which
+   stops short of both ends: the wordmark wants the full contrast. */
+.site-title { flex: 0 0 auto; font-family: var(--display); font-size: 22px; font-weight: 600; letter-spacing: -0.02em; color: #ffffff; white-space: nowrap; }
+:root[data-theme="light"] .site-title { color: #000000; }
+/* The build stamps this version beside the logo. online.js swaps the tag for a
+   link to the newer file when versions.json advertises one. It takes the
+   kicker's accent and weight, but not its display tracking: this sits in a
+   dense row of controls rather than above a title. */
+.site-version {
+  flex: 0 0 auto; display: inline-flex; align-items: baseline; gap: 6px; margin-left: 6px; white-space: nowrap;
+  font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); font-weight: 600;
+}
+/* Version strings opt out of the uppercase, so the "v" prefix stays lowercase
+   wherever one appears in the label. */
+.site-version-number { text-transform: none; font-variant-numeric: tabular-nums; }
+/* The link keeps the accent and marks itself with an underline, so it never
+   leans on colour alone to read as a link. */
+a.site-version-tag { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+a.site-version-tag:hover { color: var(--fg); }
+a.site-version-tag:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+/* inline-block keeps the separator out from under the link's underline. */
+.site-version-update::before { content: "·"; display: inline-block; margin-right: 6px; }
+/* min-width: 0 lets the row shrink on narrow screens rather than pushing the
+   controls out of the bar. */
 .download-controls { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; margin-left: auto; min-width: 0; }
-.download-controls .custom-select { width: auto; min-width: 104px; margin: 0; }
 /* The download glyph sits left of the label at every width, and stands alone
    once the labels collapse. */
 .download-mark { display: block; flex: 0 0 auto; }
-/* Header controls sit below the app's default 44px so the bar stays slim. The
-   version picker's real button is generated beside its select, so it follows
-   the class instead of carrying it. Keep --site-header-height in step. */
-.header-button, .header-button + .custom-select .custom-select-button { min-height: 40px; font-size: 14px; }
-.download-controls .custom-select-button { gap: 8px; }
-.download-controls .custom-select-button > span:first-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.download-controls > a { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+/* Header controls sit below the app's default 44px so the bar stays slim.
+   Keep --site-header-height in step. */
+.header-button { min-height: 40px; font-size: 14px; }
+.download-controls > a { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+/* Centring puts the label's em box on the button's centre line, but a font's
+   ascent leaves more room above the caps than its descent leaves below, so the
+   glyphs land a pixel low next to a symmetric icon. This nudge is optical, not
+   layout: it moves the ink, not the box. */
+.control-label { position: relative; top: -1px; }
 .download-controls .btn:is(.download-html, .github-repo-link) { flex: 0 0 auto; }
 /* Square it off against the 40px header controls; the shared keyboard-toggle
    base is 44px wide and stays that way everywhere else in the app. */
@@ -436,7 +465,6 @@ header h1 { margin: 0; line-height: 1.15; }
   background: color-mix(in oklab, var(--ok) 23%, var(--surface)); color: var(--fg);
 }
 .btn:is(.download-html, .save-recovery-sheet, .save-wallet-dat):focus-visible { outline: 2px solid var(--ok); outline-offset: 2px; }
-.download-controls .github-repo-link { display: inline-flex; align-items: center; gap: 8px; }
 .github-mark { flex: 0 0 auto; }
 .download-controls .github-repo-link {
   border-color: color-mix(in oklab, var(--blue) 65%, var(--border));
@@ -535,7 +563,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .hint.bad { color: var(--danger); }
 .hint.ok { color: var(--ok); }
 .hint:empty, .err:empty { display: none; }
-#workspace { margin: var(--space-major) 0 4px; } /* major seam below the marketing card */
+#workspace { margin: var(--space-lede) 0 4px; } /* the pitch ends here and the tool begins */
 .segmented-control {
   display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; max-width: 100%; isolation: isolate;
 }
@@ -921,12 +949,16 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 /* Narrow screens: drop the control labels so the bar stays one row. Each
    control keeps its own aria-label, so nothing is lost to assistive tech. */
 @media (max-width: 719px) {
-  .site-header-inner { gap: 8px; padding: 0 12px; }
+  .site-header-inner { padding: 0 12px; }
   .control-label { display: none; }
   /* Icon-only: square them off against the 40px theme toggle. */
   .download-controls .btn:is(.download-html, .github-repo-link) { flex: 0 0 40px; width: 40px; padding: 0; justify-content: center; }
+  /* The wordmark gives back the width the icon-only buttons still need. */
+  .site-title { font-size: 19px; }
   .download-controls { gap: 6px; }
-  .download-controls .custom-select { min-width: 0; }
+  /* Only the version itself survives; an update link stays, since it is the
+     one header item that is news. */
+  .site-version-tag:not(.site-version-update) { display: none; }
 }
 @media (max-width: 520px) {
   #msig-card .key-panel-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; }

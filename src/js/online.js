@@ -18,7 +18,7 @@ function hodlFormatRecoverySheet(text) {
 (() => {
   const current = document.querySelector('meta[name="application-version"]')?.content || "v{{VERSION}}";
   const currentFile = "entropylab-" + current.replace(/^v/, "") + ".html";
-  const selects = [...document.querySelectorAll(".version-select")];
+  const labels = [...document.querySelectorAll(".site-version")];
   const downloads = [...document.querySelectorAll('[download^="entropylab-"]')];
   let availableVersions = [{ version: current, file: currentFile }];
 
@@ -49,15 +49,29 @@ function hodlFormatRecoverySheet(text) {
     }, safe[0]);
     availableVersions = safe.map((item) => ({ ...item }));
 
-    selects.forEach((select) => {
-      select.replaceChildren(...safe.map((item) => {
-        const option = document.createElement("option");
-        option.value = item.file;
-        option.textContent = item.version + (item.version === latest.version ? " (Latest)" : "");
-        option.selected = item.version === current;
-        return option;
-      }));
-      select.onchange = () => location.assign(select.value);
+    // Every value below comes from the allowlist above, so the label is built
+    // from text nodes and a same-directory href only.
+    labels.forEach((label) => {
+      const number = document.createElement("span");
+      number.className = "site-version-number";
+      number.textContent = current;
+
+      let tag;
+      if (latest.version === current) {
+        tag = document.createElement("span");
+        tag.className = "site-version-tag";
+        tag.textContent = "(Latest)";
+      } else {
+        tag = document.createElement("a");
+        tag.className = "site-version-tag site-version-update";
+        tag.href = latest.file;
+        const newer = document.createElement("span");
+        newer.className = "site-version-number";
+        newer.textContent = latest.version;
+        tag.append(newer, " available");
+        tag.setAttribute("aria-label", "Open EntropyLab " + latest.version + ", newer than this " + current + " build");
+      }
+      label.replaceChildren(number, document.createTextNode(" "), tag);
     });
   };
 

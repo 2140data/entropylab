@@ -86,12 +86,19 @@ test("does not throw when the warning element is missing", () => {
   assert.doesNotThrow(() => loadModule({ onLine: false, hasElement: false }));
 });
 
-test("static and runtime templates ship the warning aside hidden and wired to the build", () => {
+test("the warning aside is parked in the disabled block, still hidden and wired to the build", () => {
   const template = read("src/index.html");
   const app = read("src/js/app.js");
   const build = read("scripts/build.mjs");
-  assert.match(template, /<aside[^>]*id="network-warning"[^>]*\shidden/);
-  assert.match(app, /<aside[^>]*id="network-warning"[^>]*\shidden/);
+  const live = (markup) => markup.replace(/<!--[\s\S]*?-->/g, "");
+  for (const markup of [template, app]) {
+    // Parked while its UI is reworked: present in the comment, absent from the
+    // live document. It keeps `hidden`, so restoring it cannot flash a banner.
+    const parked = markup.match(/<!--[\s\S]*?-->/g)?.find((c) => c.includes('id="network-warning"'));
+    assert.ok(parked, "the network warning is neither live nor parked");
+    assert.match(parked, /<aside[^>]*id="network-warning"[^>]*\shidden/);
+    assert.doesNotMatch(live(markup), /id="network-warning"/);
+  }
   assert.match(template, /\/\*@@JS_NETWORK@@\*\//);
   assert.match(build, /network-check\.js/);
 });
