@@ -633,13 +633,24 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 .online-warning strong { color: var(--danger); }
 .online-warning a { font-weight: 700; white-space: nowrap; }
 .beta-warning strong { color: var(--danger); }
-.site-footer {
-  margin-top: var(--space-lede); padding-top: 14px; border-top: 1px solid var(--border);
+.disclaimer-overlay {
+  position: fixed; inset: 0; z-index: 200; display: grid; place-items: center;
+  padding: 24px; box-sizing: border-box; background: rgb(0 0 0 / 55%);
+  opacity: 0; transition: opacity .24s ease;
 }
-.fine-print {
-  max-width: 700px; margin: 0 auto; color: var(--faint); font-size: 12px;
-  line-height: 1.6; text-align: center;
+.disclaimer-overlay[hidden] { display: none; }
+.disclaimer-overlay.is-visible { opacity: 1; }
+.disclaimer-overlay.is-dismissed { opacity: 0; pointer-events: none; }
+.disclaimer-card {
+  max-width: 520px; padding: 28px 24px; text-align: center;
+  border: 1px solid var(--danger); border-radius: 12px;
+  background: color-mix(in oklab, var(--danger) 10%, var(--surface));
+  box-shadow: 0 16px 36px rgb(0 0 0 / 55%);
 }
+.disclaimer-icon { width: 48px; height: 48px; color: var(--danger); }
+.disclaimer-title { margin: 12px 0 6px; font-size: 22px; color: var(--fg); }
+.disclaimer-text { margin: 0 0 18px; color: var(--fg); line-height: 1.5; }
+@media (prefers-reduced-motion: reduce) { .disclaimer-overlay { transition: none; } }
 .sanity-failure {
   min-height: 100dvh; display: grid; place-items: center; padding: 24px; box-sizing: border-box;
 }

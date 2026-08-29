@@ -379,6 +379,9 @@ ec.innerHTML = `
     </div>
   </div>
   <div class="wrap">
+    <aside class="beta-warning no-print" role="alert">
+      <strong>Beta software:</strong> EntropyLab is experimental and should be used only for testing. Do not rely on it to secure real bitcoin, and never test with funds you cannot afford to lose.
+    </aside>
     <aside class="online-warning no-print" id="online-warning" role="alert" hidden>
       <strong>Online version:</strong> Do not enter seed phrases, private keys, or other wallet secrets on an internet-connected device. <a href="entropylab.html" download="entropylab.html">Download EntropyLab</a> and run the HTML file offline on a trusted, air-gapped computer.
     </aside>
@@ -588,9 +591,6 @@ ec.innerHTML = `
       <p>D++ D8 &amp; D16 method: <a href="https://thesimplestbitcoinbook.net/wp-content/uploads/2023/09/Roll-Your-Own-Seed-Phrase-PDF.pdf" target="_blank" rel="noopener noreferrer">Roll Your Own Bitcoin Seed Phrase</a> \u2014 the published 24-word workflow uses one D8 labeled 1\u20138 and two hexadecimal D16 dice labeled 0\u2013F per word, then a final D8.</p>
       <p>Jade anti-exfil (sign-to-contract): <a href="https://blog.blockstream.com/anti-exfil-stopping-key-exfiltration/" target="_blank" rel="noopener noreferrer">Anti-Exfil: Stopping Key Exfiltration</a> \u2014 secp256k1-zkp <code>ecdsa_s2c</code> / <code>anti_exfil_host_verify</code>.</p>
     </section>
-    <footer class="site-footer no-print">
-      <p class="fine-print">EntropyLab is designed to be used by advanced bitcoin users, and is otherwise for testing and educational purposes only.<br>It is your responsibility to keep your private key and seed material air-gapped and offline.</p>
-    </footer>
   </div>
 `;
 if (/^(www\.)?entropylab\.online$/i.test(location.hostname)) document.getElementById("online-warning")?.removeAttribute("hidden");

@@ -15,6 +15,9 @@
     </div>
   </div>
   <div class="wrap">
+    <aside class="beta-warning no-print" role="alert">
+      <strong>Beta software:</strong> EntropyLab is experimental and should be used only for testing. Do not rely on it to secure real bitcoin, and never test with funds you cannot afford to lose.
+    </aside>
     <noscript>
       <aside class="beta-warning no-print" role="alert">
         <strong>JavaScript is required:</strong> EntropyLab performs wallet calculations locally inside your browser. With JavaScript disabled the calculator cannot derive keys or addresses. Enable JavaScript, then run this file offline on an air-gapped computer.
@@ -262,11 +265,16 @@ words, pick one of the checksum words.</span></span>
       <p>Die Distribution / Fairness Analysis (Pearson’s χ²): <a href="https://rpg.stackexchange.com/questions/70802/how-can-i-test-whether-a-die-is-fair" target="_blank" rel="noopener noreferrer">How can I test whether a die is fair?</a> — live check while entering rolls, following the <a href="https://dicefairness.johnellmore.com/" target="_blank" rel="noopener noreferrer">Dice Fairness Tester</a> thresholds.</p>
       <p>Jade anti-exfil (sign-to-contract): <a href="https://blog.blockstream.com/anti-exfil-stopping-key-exfiltration/" target="_blank" rel="noopener noreferrer">Anti-Exfil: Stopping Key Exfiltration</a> — secp256k1-zkp <code>ecdsa_s2c</code> / <code>anti_exfil_host_verify</code>.</p>
     </section>
-    <footer class="site-footer no-print">
-      <p class="fine-print">EntropyLab is designed to be used by advanced bitcoin users, and is otherwise for testing and educational purposes only.<br>It is your responsibility to keep your private key and seed material air-gapped and offline.</p>
-    </footer>
   </div>
-</div><!--/$--><script>/*@@JS_BROWSER_CHECK@@*/</script><script id="btc-calc-script">/*@@JS_MAIN@@*/</script>
+</div><!--/$--><div class="disclaimer-overlay no-print" id="beta-disclaimer" role="alertdialog" aria-modal="true" aria-labelledby="beta-disclaimer-title" aria-describedby="beta-disclaimer-text" hidden>
+  <div class="disclaimer-card">
+    <svg class="disclaimer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v4M12 17.5h.01"/></svg>
+    <p class="disclaimer-title" id="beta-disclaimer-title">Beta software</p>
+    <p class="disclaimer-text" id="beta-disclaimer-text">EntropyLab is experimental and can be dangerous: a bug could produce wrong keys or addresses, and funds sent to them could be lost. Do not use it in production, and never with funds you cannot afford to lose.</p>
+    <button class="btn primary" id="beta-disclaimer-accept" type="button">I understand</button>
+  </div>
+</div>
+<script>/*@@JS_BROWSER_CHECK@@*/</script><script id="btc-calc-script">/*@@JS_MAIN@@*/</script>
 <script>/*@@JS_SQLITE_WRITER@@*/</script>
 <script>/*@@JS_WALLET_EXPORT@@*/</script>
 <script>/*@@JS_ONLINE@@*/</script>
