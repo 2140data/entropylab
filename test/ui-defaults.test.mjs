@@ -360,6 +360,24 @@ test("Legacy multisig defaults to BIP45 and offers BIP87 accounts only for Legac
   assert.match(app, /legacyScriptConflict=standards\.includes\("bip87"\)&&summary\.kinds\.some\(kind=>kind!=="p2sh"\)/);
 });
 
+test("the master fingerprint cards carry a LifeHash image next to the hex", () => {
+  // Both cards get a LifeHash img beside the fingerprint value.
+  assert.match(app, /id="base-master-fingerprint-card"[\s\S]*?id="base-master-fingerprint-lifehash"/);
+  assert.match(app, /id="passphrase-master-fingerprint-card"[\s\S]*?id="passphrase-master-fingerprint-lifehash"/);
+  // The card setter renders the deterministic icon for the shown fingerprint.
+  assert.match(app, /function hodlSetMasterFingerprintCard\(card,valueNode,value,imageNode\)/);
+  assert.match(app, /hodlLifeHash\.fromFingerprint\(value\)/);
+  // Crisp pixels per the LifeHash presentation guidance.
+  assert.match(css, /\.master-fingerprint-lifehash \{[^}]*image-rendering: pixelated;/);
+});
+
+test("the build inlines the LifeHash module", () => {
+  const buildScript = read("scripts/build.mjs");
+  assert.match(buildScript, /lifehash\.js/);
+  assert.match(buildScript, /\/\*@@JS_LIFEHASH@@\*\//);
+  assert.match(template, /<script>\/\*@@JS_LIFEHASH@@\*\/<\/script>/);
+});
+
 test("account results do not repeat derivation settings shown above", () => {
   assert.doesNotMatch(app, /account-summary-grid|function hodlAccountSummaryItem/);
   assert.doesNotMatch(css, /\.account-summary-grid/);

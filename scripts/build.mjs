@@ -60,6 +60,7 @@ const jsWalletExport = read("js/wallet-export.js");
 const jsOnline = read("js/online.js");
 const jsNetwork = read("js/network-check.js");
 const jsBrowserCheck = read("js/browser-check.js");
+const jsLifeHash = read("js/lifehash.js");
 const jsEnhanced = read("js/enhanced-inputs.js");
 const jsRepeat = read("js/repeat-inputs.js");
 
@@ -72,6 +73,7 @@ let html = template
   .replace("/*@@JS_ONLINE@@*/", () => jsOnline)
   .replace("/*@@JS_NETWORK@@*/", () => jsNetwork)
   .replace("/*@@JS_BROWSER_CHECK@@*/", () => jsBrowserCheck)
+  .replace("/*@@JS_LIFEHASH@@*/", () => jsLifeHash)
   .replace("/*@@JS_ENHANCED@@*/", () => jsEnhanced)
   .replace("/*@@JS_REPEAT@@*/", () => jsRepeat)
   .split("{{VERSION}}").join(version);

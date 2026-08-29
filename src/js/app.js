@@ -429,11 +429,13 @@ ec.innerHTML = `
       <div class="master-fingerprint-preview" id="master-fingerprint-preview" role="status" aria-live="polite" aria-atomic="true">
         <p class="label master-fingerprint-heading">Master fingerprint</p>
         <div class="master-fingerprint-card is-disabled" id="base-master-fingerprint-card" role="group" data-state="unavailable" aria-label="Base seed master fingerprint unavailable">
+          <img class="master-fingerprint-lifehash" id="base-master-fingerprint-lifehash" alt="" width="96" height="96" hidden />
           <span class="master-fingerprint-label">Base seed</span>
           <code class="master-fingerprint-value" id="base-master-fingerprint"></code>
         </div>
         <span class="master-fingerprint-arrow is-disabled" id="master-fingerprint-arrow" aria-hidden="true">\u2192</span>
         <div class="master-fingerprint-card master-fingerprint-derived is-disabled" id="passphrase-master-fingerprint-card" role="group" data-state="unavailable" aria-label="With passphrase master fingerprint unavailable">
+          <img class="master-fingerprint-lifehash" id="passphrase-master-fingerprint-lifehash" alt="" width="96" height="96" hidden />
           <span class="master-fingerprint-label">With passphrase</span>
           <code class="master-fingerprint-value" id="passphrase-master-fingerprint"></code>
         </div>
@@ -4180,9 +4182,20 @@ function hodlMasterFingerprint(mnemonic, passphrase = "") {
     seed.fill(0);
   }
 }
-function hodlSetMasterFingerprintCard(card, valueNode, value) {
+function hodlSetMasterFingerprintCard(card, valueNode, value, imageNode) {
   let available = typeof value === "string" && value.length > 0, label = `${card.querySelector(".master-fingerprint-label")?.textContent.trim() || ""} master fingerprint`.trim();
   valueNode.textContent = available ? value : "";
+  if (imageNode) {
+    imageNode.hidden = !available;
+    if (available) {
+      // LifeHash is deterministic per fingerprint; show it only once resolved.
+      hodlLifeHash.fromFingerprint(value).then((url) => {
+        if (valueNode.textContent === value) imageNode.src = url;
+      }).catch(() => { imageNode.hidden = true; });
+    } else {
+      imageNode.removeAttribute("src");
+    }
+  }
   card.classList.toggle("is-disabled", !available);
   card.dataset.state = available ? "ready" : "unavailable";
   card.setAttribute("aria-label", available ? `${label}: ${value}` : `${label} unavailable`);
@@ -4190,7 +4203,7 @@ function hodlSetMasterFingerprintCard(card, valueNode, value) {
 }
 function hodlRenderMasterFingerprintPreview(revision = hodlMasterFingerprintRevision) {
   if (revision !== hodlMasterFingerprintRevision) return;
-  let preview = document.getElementById("master-fingerprint-preview"), baseCard = document.getElementById("base-master-fingerprint-card"), base = document.getElementById("base-master-fingerprint"), arrow = document.getElementById("master-fingerprint-arrow"), derivedCard = document.getElementById("passphrase-master-fingerprint-card"), derived = document.getElementById("passphrase-master-fingerprint"), pass = document.getElementById("pass");
+  let preview = document.getElementById("master-fingerprint-preview"), baseCard = document.getElementById("base-master-fingerprint-card"), base = document.getElementById("base-master-fingerprint"), baseImage = document.getElementById("base-master-fingerprint-lifehash"), arrow = document.getElementById("master-fingerprint-arrow"), derivedCard = document.getElementById("passphrase-master-fingerprint-card"), derived = document.getElementById("passphrase-master-fingerprint"), derivedImage = document.getElementById("passphrase-master-fingerprint-lifehash"), pass = document.getElementById("pass");
   if (!preview || !baseCard || !base || !arrow || !derivedCard || !derived || !pass) return;
   if (Ne === "key") {
     preview.hidden = true;
@@ -4200,8 +4213,8 @@ function hodlRenderMasterFingerprintPreview(revision = hodlMasterFingerprintRevi
   arrow.hidden = false;
   derivedCard.hidden = false;
   let clear = () => {
-    hodlSetMasterFingerprintCard(baseCard, base, "");
-    hodlSetMasterFingerprintCard(derivedCard, derived, "");
+    hodlSetMasterFingerprintCard(baseCard, base, "", baseImage);
+    hodlSetMasterFingerprintCard(derivedCard, derived, "", derivedImage);
     arrow.classList.add("is-disabled");
   };
   let mnemonic = hodlFingerprintMnemonic();
@@ -4210,7 +4223,7 @@ function hodlRenderMasterFingerprintPreview(revision = hodlMasterFingerprintRevi
     return;
   }
   try {
-    hodlSetMasterFingerprintCard(baseCard, base, hodlMasterFingerprint(mnemonic));
+    hodlSetMasterFingerprintCard(baseCard, base, hodlMasterFingerprint(mnemonic), baseImage);
   } catch {
     clear();
     return;
@@ -4220,7 +4233,7 @@ function hodlRenderMasterFingerprintPreview(revision = hodlMasterFingerprintRevi
     value = hodlMasterFingerprint(mnemonic, pass.value);
   } catch {
   }
-  let available = hodlSetMasterFingerprintCard(derivedCard, derived, value);
+  let available = hodlSetMasterFingerprintCard(derivedCard, derived, value, derivedImage);
   arrow.classList.toggle("is-disabled", !available);
 }
 function hodlQueueMasterFingerprintPreview(delay = 90) {

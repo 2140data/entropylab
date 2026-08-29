@@ -14,7 +14,9 @@ Official website: [entropylab.online](https://entropylab.online)
 - Accepts dice rolls, coin flips, hexadecimal entropy, BIP39 seed phrases,
   extended keys, WIF keys, raw private keys, and Casascius mini private keys.
 - Derives BIP39 seeds, BIP32 extended keys, wallet fingerprints, addresses,
-  and Bitcoin Core-compatible descriptors.
+  and Bitcoin Core-compatible descriptors. Each master fingerprint is shown
+  next to its deterministic [LifeHash](https://lifehash.info) icon so two
+  keys can be told apart at a glance.
 - Supports legacy, nested SegWit, native SegWit, and Taproot single-signature
   address types.
 - Supports Mainnet and Testnet wallet derivation, multisignature construction,
