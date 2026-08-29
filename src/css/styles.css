@@ -639,6 +639,13 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   border-radius: 10px; background: var(--surface-2);
   transition: background-color .16s ease, border-color .16s ease;
 }
+/* The LifeHash sits beside the fingerprint: a deterministic visual twin of the
+   hex, so two fingerprints can be compared at a glance. Crisp pixels, no
+   interpolation, per the LifeHash presentation guidance. */
+.master-fingerprint-lifehash {
+  float: right; width: 48px; height: 48px; margin: 0 0 4px 8px; border-radius: 4px;
+  image-rendering: pixelated; background: #fff;
+}
 .master-fingerprint-label {
   display: block; color: var(--muted); font-size: 12px; line-height: 1.35;
   transition: color .16s ease, opacity .16s ease;
