@@ -5924,7 +5924,8 @@ function hodlRfc6979Compare(sighash, privateKey, r) {
 }
 function hodlRenderPsbt(psbt) {
   let network = hodlSelectedNetwork(document.getElementById("psbt-network")),
-    transcript = hodlParseAntiExfil(document.getElementById("psbt-ax-transcript")?.value || ""),
+    transcript = null,
+    transcriptError = "",
     tx = psbt.tx,
     inputSum = 0n,
     knownInputs = 0,
@@ -5934,6 +5935,11 @@ function hodlRenderPsbt(psbt) {
     tapSignatureCount = 0,
     ecdsaIndex = 0,
     uninspected = 0;
+  try {
+    transcript = hodlParseAntiExfil(document.getElementById("psbt-ax-transcript")?.value || "");
+  } catch (exception) {
+    transcriptError = exception.message || String(exception);
+  }
   html.push("<p class='label'>Where this transaction sends bitcoin</p>");
   tx.outputs.forEach((output, index) => {
     html.push("<p class='psbt-kv'><strong>Output " + index + "</strong> \xB7 " + hodlSats(output.amount) + " BTC<br>" + $t(hodlAddr(output.script, network)) + "</p>");
@@ -6032,6 +6038,7 @@ function hodlRenderPsbt(psbt) {
   } else html.push("<p class='muted'>Fee unknown — some inputs do not include a claimed witness UTXO amount.</p>");
   html.push("<p class='muted'>Input amounts and any fee are unverified PSBT claims. This tool does not check them against previous transactions or the blockchain.</p>");
   html.push("<p class='label'>ECDSA nonce check</p>");
+  if (transcriptError) html.push("<p class='psbt-warn'><strong>Jade anti-exfil transcript not used:</strong> " + $t(transcriptError) + "</p>");
   let {
     reused,
     possible
