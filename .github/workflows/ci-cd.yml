@@ -3,7 +3,7 @@ name: EntropyLab CI/CD
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [rock]
   workflow_dispatch:
 
 permissions:
@@ -186,11 +186,11 @@ jobs:
       - name: Run number-base tests
         run: npm run test:number-bases
 
-  # ── Artifact: commit the rebuilt site after merges to main ────────────────
+  # ── Artifact: commit the rebuilt site after merges to rock ────────────────
 
   artifact:
     name: Artifact · commit rebuilt site after merge
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/rock' && github.event_name == 'push'
     needs: [verify]
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -242,7 +242,7 @@ jobs:
 
   deploy:
     name: Deploy to GitHub Pages
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/rock' && github.event_name != 'pull_request'
     needs: [build, verify, test-ci, test-browser]
     runs-on: ubuntu-latest
     timeout-minutes: 10

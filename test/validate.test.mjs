@@ -111,12 +111,20 @@ test("no versioned snapshots linger at the repository root", () => {
 });
 
 test("GitHub Pages aliases the canonical app at the site root only during deployment", () => {
+  const workflow = read(".github/workflows/ci-cd.yml");
   assert.equal(existsSync(join(root, "index.html")), false, "index.html should not be committed");
   assert.match(
-    read(".github/workflows/ci-cd.yml"),
+    workflow,
     /^\s*cp entropylab\.html _site\/index\.html\s*$/m,
     "Pages staging must copy entropylab.html to its required index.html entry file",
   );
+  assert.match(workflow, /^\s*branches: \[rock\]\s*$/m, "CI must run for pushes to the default branch");
+  assert.match(
+    workflow,
+    /github\.ref == 'refs\/heads\/rock'/,
+    "Pages deployment must be gated to the default branch",
+  );
+  assert.doesNotMatch(workflow, /refs\/heads\/main/, "workflow must not target the retired branch name");
 });
 
 test("versions.json lists the current release", () => {

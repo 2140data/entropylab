@@ -77,14 +77,14 @@ npm run build
 ```
 
 Build output (generated; CI rebuilds it for every run and commits it back to
-`main` after each merge so the file stays downloadable from the repository):
+`rock` after each merge so the file stays downloadable from the repository):
 
 - `entropylab.html` — the self-contained application (open this file)
 - `versions.json` — version manifest the hosted header reads to flag a newer release
 
 The version is declared once in `package.json` and substituted into the
 output at build time. The generated files are gitignored locally; CI builds
-them before every test run and commits them back to `main` after each merge.
+them before every test run and commits them back to `rock` after each merge.
 To remove generated files, run `npm run clean`.
 
 ## Project structure
@@ -139,9 +139,9 @@ npm run ci                  # run the CI test subset, build, and verify in order
 ```
 
 GitHub Actions builds the site first, then runs the same test steps for pull
-requests and pushes to `main`, stages the verified site (`entropylab.html`,
+requests and pushes to `rock`, stages the verified site (`entropylab.html`,
 `versions.json`, `assets/`) and deploys it to GitHub Pages. After a merge to
-`main`, a final job commits the rebuilt `entropylab.html` and `versions.json`
+`rock`, a final job commits the rebuilt `entropylab.html` and `versions.json`
 back to the repository so the file stays downloadable; pull requests never
 carry the generated output, so they stop conflicting on it. The staging step
 copies the verified `entropylab.html` to a deployment-only `index.html`,
