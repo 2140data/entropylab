@@ -924,7 +924,14 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .key-manager { margin: 14px 0 -1px; position: relative; z-index: 2; }
 .key-manager-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .key-manager-head h2 { margin: 0; }
-.add-key { width: 44px; padding: 0; font-size: 24px; line-height: 1; }
+.key-tab-strip { display: flex; align-items: flex-end; min-width: 0; margin-top: 12px; }
+.add-key {
+  width: 36px; min-width: 36px; min-height: 44px; padding: 0; border: 0; border-radius: 0;
+  background: transparent; box-shadow: none; color: var(--muted); font-size: 28px; line-height: 1; cursor: pointer;
+}
+.add-key:hover { background: transparent; color: var(--accent); }
+.add-key:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
+.add-key:active { background: transparent; color: var(--accent); }
 .add-item-control { position: relative; display: inline-flex; flex: 0 0 auto; }
 .add-item-tooltip {
   position: absolute; top: calc(100% + 10px); right: 0; z-index: 10; width: max-content; max-width: min(240px, calc(100vw - 32px));
@@ -946,7 +953,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 }
 @media (prefers-reduced-motion: reduce) { .add-item-tooltip { transition: none; } }
 .key-tabs {
-  display: flex; align-items: flex-end; gap: 0; height: 50px; margin-top: 12px; position: relative; z-index: 2;
+  display: flex; align-items: flex-end; gap: 0; flex: 1 1 auto; min-width: 0; height: 50px; margin-top: 0; position: relative; z-index: 2;
   overflow-x: auto; overflow-y: hidden; overscroll-behavior-inline: contain;
   scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; cursor: grab;
 }

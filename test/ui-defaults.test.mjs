@@ -507,6 +507,12 @@ test("multisig consistently uses derive for its heading and action", () => {
   assert.match(app, /let\{network,count,n,m,kind,legacyStandard,nodes,xpubs,keyTokens,accountSummary,accountWarning\}=hodlValidatedMsigInputs\(\)/);
 });
 
+test("key and multisig add controls stay pinned to the right of their tab strips", () => {
+  assert.match(css, /\.key-tab-strip \{ display: flex; align-items: flex-end; min-width: 0; margin-top: 12px; \}/);
+  assert.match(css, /\.key-tabs \{\s*display: flex;[^}]*flex: 1 1 auto; min-width: 0;/s);
+  assert.match(css, /\.add-item-control \{ position: relative; display: inline-flex; flex: 0 0 auto; \}/);
+});
+
 test("seed-entry tools keep a square keyboard toggle and a block note on narrow screens", () => {
   assert.match(
     css,
