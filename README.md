@@ -81,7 +81,9 @@ WebAssembly from the pinned Rust crate in `secp256k1-wasm/` (exact crate
 versions in `secp256k1-wasm/Cargo.lock`, toolchain pinned by
 `rust-toolchain.toml`). The compiled artifact is committed as
 `src/js/secp256k1-wasm-b64.js`, so building the site needs only Node.js. CI
-rebuilds it from the Rust sources and fails if the bytes differ.
+rebuilds it from the Rust sources, runs its test suite against the fresh
+build, and commits it back to `rock` after each merge (same flow as the site
+artifact).
 
 Requirements: Node.js 20.19 or newer.
 

@@ -59,7 +59,9 @@ browser test that asserts this must stay green.
 - CI rebuilds from `src/`, proves the output is byte-for-byte reproducible, and
   publishes it to the `pages` branch and GitHub Pages. CI likewise rebuilds
   the WASM artifact from the pinned Rust crate (`Cargo.lock`,
-  `rust-toolchain.toml`) and diffs it against the committed copy.
+  `rust-toolchain.toml`), runs its test suite against the fresh build, and
+  commits the artifact back to `rock` after each merge (same flow as
+  `entropylab.html`).
 
 ```sh
 git clone https://github.com/w-s-bitcoin/entropylab.git && cd entropylab

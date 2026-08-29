@@ -47,13 +47,15 @@ jobs:
           path: _site
           retention-days: 7
 
-  # The committed secp256k1 WASM artifact (src/js/secp256k1-wasm-b64.js) must
-  # be reproducible from the pinned Rust crate (secp256k1-wasm/, Cargo.lock,
-  # rust-toolchain.toml). This job rebuilds it from scratch and diffs.
-  # Note: C compilation uses the runner's clang; if a GitHub image update
-  # changes the bytes, regenerate with `npm run build:wasm` and commit.
+  # The secp256k1 WASM artifact (src/js/secp256k1-wasm-b64.js) is built from
+  # the pinned Rust crate (secp256k1-wasm/, Cargo.lock, rust-toolchain.toml).
+  # This job rebuilds it from scratch and runs its test suite against the
+  # fresh build, so a stale or hand-edited committed artifact cannot hide a
+  # broken crate. The artifact itself is committed back by the `artifact` job
+  # after merges, same as entropylab.html: byte identity across machines is
+  # not asserted because the C side compiles with the runner's clang.
   build-wasm:
-    name: Build · secp256k1 WASM reproducibility
+    name: Build · secp256k1 WASM from Rust sources
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -63,8 +65,8 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - name: Rebuild the WASM artifact from the Rust sources
         run: npm run build:wasm
-      - name: Assert the committed artifact is byte-identical
-        run: git diff --exit-code src/js/secp256k1-wasm-b64.js
+      - name: Test the freshly built bindings
+        run: node --test test/secp256k1-wasm.test.mjs
 
   # Required aggregate gates. The deployment cannot start until both pass, so
   # it can never race ahead of a failing unit or browser test.
@@ -223,13 +225,15 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
+      - name: Rebuild the secp256k1 WASM artifact from the Rust sources
+        run: npm run build:wasm
       - name: Build static site
         run: npm run build
       - name: Commit the generated artifact
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f entropylab.html
+          git add -f entropylab.html src/js/secp256k1-wasm-b64.js
           if git diff --cached --quiet; then
             echo "Build output is unchanged; nothing to commit."
             exit 0

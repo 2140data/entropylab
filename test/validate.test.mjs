@@ -144,9 +144,10 @@ test("third-party actions are immutable and deployment is test-gated", () => {
   assert.doesNotMatch(workflow, /^\s*uses:\s*[^\s]+@(?![0-9a-f]{40}(?:\s|$))/m);
   assert.match(workflow, /^\s{2}test-ci:\n(?:.|\n)*?^\s{4}needs: \[build\]$/m);
   assert.match(workflow, /^\s{2}test-browser:\n(?:.|\n)*?^\s{4}needs: \[build\]$/m);
-  // The WASM reproducibility gate must exist and block both the artifact
-  // commit and the Pages deploy.
-  assert.match(workflow, /^\s{2}build-wasm:\n(?:.|\n)*?git diff --exit-code src\/js\/secp256k1-wasm-b64\.js/m);
+  // The WASM gate must rebuild the bindings from the Rust sources, test the
+  // fresh build, and block both the artifact commit and the Pages deploy.
+  assert.match(workflow, /^\s{2}build-wasm:\n(?:.|\n)*?npm run build:wasm\n/m);
+  assert.match(workflow, /^\s{2}build-wasm:\n(?:.|\n)*?node --test test\/secp256k1-wasm\.test\.mjs/m);
   assert.match(workflow, /^\s{2}deploy:\n(?:.|\n)*?^\s{4}needs: \[build, verify, test-ci, test-browser, build-wasm\]$/m);
 });
 
