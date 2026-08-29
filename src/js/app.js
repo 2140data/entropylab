@@ -3159,8 +3159,8 @@ function hodlBitBoxRolls(value, targetWords = Pt) {
   let config = hodlSeedConfig(targetWords), words = [], skippedHigh = 0, leftover = "", extraAfter = 0, diceInWord = [], notes = [], warnings = [];
   for (let character of value) {
     if (/\s|,|;|\|/.test(character)) continue;
-    let input = character.toLowerCase(), isDie = input >= "1" && input <= "6", isCoin = input === "h" || input === "t";
-    if (!isDie && !isCoin) {
+    let input = character.toLowerCase(), isDie = input >= "1" && input <= "6";
+    if (!isDie) {
       leftover += character;
       continue;
     }
@@ -3169,10 +3169,6 @@ function hodlBitBoxRolls(value, targetWords = Pt) {
       continue;
     }
     if (diceInWord.length < 5) {
-      if (isCoin) {
-        leftover += character;
-        continue;
-      }
       let face = Number(input);
       if (face >= 5) {
         skippedHigh += 1;
@@ -3181,7 +3177,8 @@ function hodlBitBoxRolls(value, targetWords = Pt) {
       diceInWord.push(face);
       continue;
     }
-    let coin = input === "t" || input === "1" || input === "2" || input === "3" ? 0 : 1;
+    // The sixth roll is the coin: 1-3 is Tails, 4-6 is Heads.
+    let coin = input === "1" || input === "2" || input === "3" ? 0 : 1;
     words.push(mi(diceInWord, coin));
     diceInWord = [];
   }
