@@ -281,7 +281,11 @@ test("derived wallets offer an address match check", () => {
   assert.match(app, /id="address-match-status"/);
   assert.match(app, /address-match-field">Check an address/);
   assert.match(app, /Paste a receive or change address shown by another wallet/);
+  assert.match(app, /even if the index is beyond the table above/);
   assert.doesNotMatch(app, /Address from Sparrow/);
+  assert.match(app, /var hodlAddressSearchLimit=1000/);
+  assert.match(app, /function hodlMatchHdAddressBeyond\(address,account,start\)/);
+  assert.match(app, /function hodlMatchMsigAddressBeyond\(address,start\)/);
   assert.match(app, /hodlAddressTable\(account\.change,"Change addresses",hasPrivate\)\}\s*\$\{hodlAddressMatchMarkup\(\)/);
   assert.match(app, /hodlAddressTable\(re\.change,"Multisig change addresses"\)\}\s*\$\{hodlAddressMatchMarkup\(\)/);
   assert.match(css, /\.address-match-field/);

@@ -444,22 +444,57 @@ function hodlAddressCheckRows(){
 function hodlAddressMatchMarkup(){
   return `<label class="field address-match-field">Check an address
     <input id="address-match" autocomplete="off" spellcheck="false" placeholder="Paste bc1… or a 1… / 3… address">
-    <span class="field-note">Paste a receive or change address shown by another wallet. A match means that wallet computed the same derivation as this one.</span>
+    <span class="field-note">Paste a receive or change address shown by another wallet. A match means that wallet computed the same derivation, even if the index is beyond the table above.</span>
     <span class="hint" id="address-match-status" role="status"></span>
   </label>`
+}
+var hodlAddressSearchLimit=1000;
+function hodlMatchHdAddressBeyond(address,account,start){
+  let xpub=account?.xpub||account?.genericPublic;if(!xpub||!account?.def)return{state:"miss",searchedTo:start};
+  let node=Gt.fromExtendedKey(xpub),network=account.network||re.network,script=account.def.script,base=account.accountPath||"m";
+  for(let index=start;index<hodlAddressSearchLimit;index++){
+    for(let [chain,role] of [[0,"receive"],[1,"change"]]){
+      let child=node.derive(`m/${chain}/${index}`),pk=child.publicKey;if(!pk)continue;
+      if(hodlAddressesEqual(address,pf(script,pk,network)))return{state:"match",chain:role,index,path:`${base}/${chain}/${index}`,beyond:!0}
+    }
+  }
+  return{state:"miss",searchedTo:hodlAddressSearchLimit-1}
+}
+function hodlMatchMsigAddressBeyond(address,start){
+  let nodes=re?.nodes;if(!nodes?.length)return{state:"miss",searchedTo:start};
+  let bip45=re.script==="p2sh"&&re.scriptStandard==="bip45",receivePath=bip45?"m/0/0/":"m/0/",changePath=bip45?"m/0/1/":"m/1/";
+  for(let index=start;index<hodlAddressSearchLimit;index++){
+    let receiveKeys=nodes.map(node=>{let key=node.derive(receivePath+index).publicKey;if(!key)throw new Error("Could not derive a public key");return key});
+    if(hodlAddressesEqual(address,hodlMsigAddr(receiveKeys,re.m,re.network,re.script).address))return{state:"match",chain:"receive",index,path:receivePath.slice(1)+index,beyond:!0};
+    let changeKeys=nodes.map(node=>{let key=node.derive(changePath+index).publicKey;if(!key)throw new Error("Could not derive a public key");return key});
+    if(hodlAddressesEqual(address,hodlMsigAddr(changeKeys,re.m,re.network,re.script).address))return{state:"match",chain:"change",index,path:changePath.slice(1)+index,beyond:!0}
+  }
+  return{state:"miss",searchedTo:hodlAddressSearchLimit-1}
 }
 function hodlBindAddressMatch(){
   let input=document.getElementById("address-match"),status=document.getElementById("address-match-status");
   if(!input||!status)return;
   let update=()=>{
-    let rows=hodlAddressCheckRows(),result=hodlMatchDerivedAddress(input.value,rows.receive,rows.change);
+    let rows=hodlAddressCheckRows(),shown=Math.max(rows.receive.length,rows.change.length),result=hodlMatchDerivedAddress(input.value,rows.receive,rows.change);
     if(result.state==="empty"){status.textContent="";status.className="hint";return}
-    if(result.state==="match"){
-      let chain=result.chain==="receive"?"Receive":"Change";
-      status.textContent=`${chain} address #${result.index} of this wallet · ${hodlDisplayDerivationPath(result.path)}`;
-      status.className="hint ok";return
-    }
-    status.textContent=`No match in the ${result.receiveCount} receive + ${result.changeCount} change addresses derived here. Raise Addresses and derive again, or this is a different wallet.`;
+    let showMatch=hit=>{
+      let chain=hit.chain==="receive"?"Receive":"Change",extra=hit.beyond?` (beyond the ${shown} shown)`:"";
+      status.textContent=`${chain} address #${hit.index} of this wallet · ${hodlDisplayDerivationPath(hit.path)}${extra}`;
+      status.className="hint ok"
+    };
+    if(result.state==="match"){showMatch(result);return}
+    let address=hodlNormalizeAddressCheck(input.value);
+    status.textContent=`Not in the ${shown} shown addresses. Checking further indices…`;
+    status.className="hint";
+    let beyond={state:"miss",searchedTo:shown};
+    try{
+      if(re?.kind==="hd"){
+        let id=hodlSelectedScriptType(),account=re.accounts.find(candidate=>candidate.def.id===id)||re.accounts[0];
+        beyond=hodlMatchHdAddressBeyond(address,account,shown)
+      }else if(re?.kind==="msig")beyond=hodlMatchMsigAddressBeyond(address,shown)
+    }catch(error){beyond={state:"miss",searchedTo:shown}}
+    if(beyond.state==="match"){showMatch(beyond);return}
+    status.textContent=`No match in receive or change indices 0–${beyond.searchedTo??hodlAddressSearchLimit-1} of this derivation.`;
     status.className="hint bad"
   };
   input.oninput=update;update()
@@ -2296,7 +2331,7 @@ function hodlBuildMsig(){
     let notes=["This is watch-only. Private keys never entered this calculator.","Each key origin lets a signer match its seed to one co-signer.","A signer is only needed when you spend."];
     if(bip45)notes.push("Legacy BIP45 addresses use co-signer branch 0 for this receive and change set.");
     if(kind==="p2sh"&&legacyStandard==="bip87")notes.push("Legacy P2SH uses the selected BIP87 account paths. Keep the descriptor with every seed backup.");
-    re={kind:"msig",network,m,n,script:kind,scriptStandard:kind==="p2sh"?legacyStandard:"bip48",account:accountSummary.account,accountMixed:accountSummary.mixed,xpubs,receiveDescriptor:Le(descriptor),changeDescriptor:Le(changeDescriptor),walletDescriptor:hodlWatchOnlyMultipathDescriptor(Le(descriptor)),receive,change,notes,warnings:accountWarning?[accountWarning]:[]};
+    re={kind:"msig",network,m,n,script:kind,scriptStandard:kind==="p2sh"?legacyStandard:"bip48",account:accountSummary.account,accountMixed:accountSummary.mixed,nodes,xpubs,receiveDescriptor:Le(descriptor),changeDescriptor:Le(changeDescriptor),walletDescriptor:hodlWatchOnlyMultipathDescriptor(Le(descriptor)),receive,change,notes,warnings:accountWarning?[accountWarning]:[]};
     hodlCaptureMsig();hodlShowMsig();hodlFocusWalletResult()
   }catch(exception){re=null;dr.innerHTML="";error.textContent=exception.message||String(exception);hodlCaptureMsig()}
 }
