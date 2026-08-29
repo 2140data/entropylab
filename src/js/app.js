@@ -6976,6 +6976,109 @@ function hodlSighashProblems(declared, suffix) {
 function hodlFinalized(entries) {
   return entries.some((entry) => entry.type === 7 || entry.type === 8);
 }
+// Finalized inputs carry ECDSA signatures in PSBT_IN_FINAL_SCRIPTSIG (0x07)
+// or PSBT_IN_FINAL_SCRIPTWITNESS (0x08) instead of partial-signature
+// records. Both are decoded with strict size and item-count bounds so
+// finalized signatures still participate in repeated-nonce analysis; a
+// signature that cannot be decoded or associated must block a clean verdict
+// rather than pass silently (issue #87).
+function hodlScriptPushes(script) {
+  let items = [], offset = 0;
+  while (offset < script.length) {
+    let opcode = script[offset++], length;
+    if (opcode > 78) continue; // not a push opcode: no data to extract
+    if (opcode <= 75) length = opcode;
+    else if (opcode === 76) {
+      hodlPsbtNeed(script, offset, 1, "A final script push is truncated.");
+      length = script[offset++];
+    } else if (opcode === 77) {
+      hodlPsbtNeed(script, offset, 2, "A final script push is truncated.");
+      length = script[offset] | script[offset + 1] << 8;
+      offset += 2;
+    } else {
+      hodlPsbtNeed(script, offset, 4, "A final script push is truncated.");
+      length = hodlR32(script, offset);
+      offset += 4;
+    }
+    hodlPsbtNeed(script, offset, length, "A final script push is truncated.");
+    items.push(script.slice(offset, offset + length));
+    offset += length;
+  }
+  return items;
+}
+function hodlWitnessStackItems(value) {
+  let [count, offset] = hodlVarInt(value, 0);
+  if (count > 100) throw new Error("A final witness stack has too many items.");
+  let items = [];
+  for (let index = 0; index < count; index++) {
+    let [length, start] = hodlVarInt(value, offset);
+    hodlPsbtNeed(value, start, length, "A final witness item is truncated.");
+    items.push(value.slice(start, start + length));
+    offset = start + length;
+  }
+  if (offset !== value.length) throw new Error("A final witness stack has trailing bytes.");
+  return items;
+}
+function hodlLooksPubkey(item) {
+  return (item.length === 33 && (item[0] === 2 || item[0] === 3)) || (item.length === 65 && item[0] === 4);
+}
+function hodlLooksSignature(item) {
+  // DER sequence plus the appended sighash byte: 9 to 73 bytes.
+  return item.length >= 9 && item.length <= 73 && item[0] === 48;
+}
+function hodlFinalSigs(entries, witnessUtxo, tx, index) {
+  let items = [], candidates = [], malformed = false;
+  for (let entry of hodlFind(entries, 7)) {
+    if (entry.keydata.length) { malformed = true; continue; }
+    try {
+      items.push(...hodlScriptPushes(entry.val));
+    } catch {
+      malformed = true;
+    }
+  }
+  for (let entry of hodlFind(entries, 8)) {
+    if (entry.keydata.length) { malformed = true; continue; }
+    try {
+      items.push(...hodlWitnessStackItems(entry.val));
+    } catch {
+      malformed = true;
+    }
+  }
+  for (let item of items) if (hodlLooksPubkey(item)) candidates.push(item);
+  // Multisig co-signer keys live in the redeem/witness script, not the stack.
+  for (let scriptEntry of hodlFind(entries, 4).concat(hodlFind(entries, 5))) {
+    try {
+      for (let push of hodlScriptPushes(scriptEntry.val)) if (hodlLooksPubkey(push)) candidates.push(push);
+    } catch {
+    }
+  }
+  let signatures = [], uninspected = 0, scriptCode = hodlInputScriptCode(entries, witnessUtxo);
+  for (let item of items) {
+    if (!hodlLooksSignature(item)) continue;
+    let signature = { pubkey: null, der: item.slice(0, -1), sighash: item[item.length - 1], raw: item };
+    // Ownership is established by cryptographic verification, never by stack
+    // position. Without a reconstructable digest, only a single unambiguous
+    // candidate key can claim the signature.
+    let sighash = witnessUtxo && scriptCode ? hodlBip143(tx, index, scriptCode, witnessUtxo.amount, signature.sighash) : null;
+    if (sighash) for (let candidate of candidates) {
+      try {
+        if (xe.verify(signature.der, sighash, candidate, { prehash: false, format: "der", lowS: false })) {
+          signature.pubkey = candidate;
+          break;
+        }
+      } catch {
+      }
+    }
+    if (!signature.pubkey) {
+      let unique = [];
+      for (let candidate of candidates) if (!unique.some((seen) => hodlEq(seen, candidate))) unique.push(candidate);
+      if (unique.length === 1) signature.pubkey = unique[0];
+    }
+    if (signature.pubkey) signatures.push(signature);
+    else uninspected += 1;
+  }
+  return { signatures, uninspected, malformed };
+}
 function hodlBip32(entries, pubkey) {
   return hodlFind(entries, 6).filter((entry) => !pubkey || hodlEq(entry.keydata, pubkey)).map((entry) => {
     if (entry.val.length < 4 || (entry.val.length - 4) % 4) throw new Error("A BIP32 derivation path is malformed.");
@@ -7341,6 +7444,17 @@ function hodlRenderPsbt(psbt) {
     }
     let declaredLabel = declaredSighashError ? "" : declaredSighash === null ? "SIGHASH_ALL (default)" : hodlSighashLabel(declaredSighash);
     let previous = tx.inputs[index], destination = witnessUtxo ? hodlAddr(witnessUtxo.script, network) : "(previous output details unavailable)", signatures = hodlPartialSigs(entries), tapSignatures = hodlTapSigs(entries), finalized = hodlFinalized(entries);
+    if (finalized) {
+      // Finalized signatures moved into the final script fields must not
+      // escape repeated-nonce analysis (issue #87).
+      let finalMaterial = hodlFinalSigs(entries, witnessUtxo, tx, index);
+      // A finalized input whose fields yield no analyzable ECDSA signature
+      // (for example a Taproot-only witness) never yields a clean or
+      // no-signatures verdict.
+      if (!signatures.length && !finalMaterial.signatures.length && !finalMaterial.uninspected) finalMaterial.uninspected = 1;
+      signatures = signatures.concat(finalMaterial.signatures);
+      uninspected += finalMaterial.uninspected + (finalMaterial.malformed ? 1 : 0);
+    }
     tapSignatureCount += tapSignatures.length;
     html.push("<p class='psbt-kv'><strong>Input " + index + "</strong> \xB7 " + hodlHexRev(previous.txid) + " : " + previous.vout + (witnessUtxo ? " \xB7 " + hodlSats(witnessUtxo.amount) + " BTC claimed" : "") + "<br>" + $t(destination) + "<br>" + (signatures.length + tapSignatures.length ? signatures.length + tapSignatures.length + " signature(s) present" : finalized ? "Finalized input data present" : "Not signed yet") + (declaredSighashError ? "<br>Declared sighash policy unreadable: " + $t(declaredSighashError) : "<br>Signature policy: " + $t(declaredLabel)) + "</p>");
     if (declaredSighashError) html.push("<p class='psbt-bad'><strong>Policy problem:</strong> input " + index + " declares a malformed sighash policy. Do not sign until its policy is known.</p>");
@@ -7451,7 +7565,7 @@ function hodlRenderPsbt(psbt) {
   if (rValues.length) html.push("<p class='psbt-kv'>r values:<br>" + rValues.map(value => $t(value.hex) + " (input " + value.input + ")").join("<br>") + "</p>");
   rows.forEach(row => html.push("<p class='" + row.className + "'><strong>Input " + row.input + "</strong> pubkey " + $t(row.pubkey.slice(0, 18)) + "\u2026 \u2014 " + $t(row.message) + "</p>"));
   if (tapSignatureCount) html.push("<p class='muted'>This PSBT also contains " + tapSignatureCount + " Taproot / Schnorr signature(s). They are counted but their BIP340 nonces are not analyzed in this version.</p>");
-  html.push("<p class='muted'>RFC 6979 comparison currently covers SegWit v0 P2WPKH and P2WSH signatures using SIGHASH_ALL, including Bitcoin Core-style low-r grinding. Jade anti-exfil is secp256k1-zkp sign-to-contract and needs the USB host nonce plus signer opening; QR / sign_psbt Jade does not run it yet. BitBox anti-klepto is a different construction. Nonce reuse detection compares r values for the same secp256k1 point, including compressed and uncompressed encodings and recoverable non-strict DER. A clean verdict is not issued when a signature cannot be inspected.</p>");
+  html.push("<p class='muted'>RFC 6979 comparison currently covers SegWit v0 P2WPKH and P2WSH signatures using SIGHASH_ALL, including Bitcoin Core-style low-r grinding. Jade anti-exfil is secp256k1-zkp sign-to-contract and needs the USB host nonce plus signer opening; QR / sign_psbt Jade does not run it yet. BitBox anti-klepto is a different construction. Nonce reuse detection compares r values for the same secp256k1 point, including signatures carried by finalized scriptSig/witness fields, compressed and uncompressed encodings, and recoverable non-strict DER. A clean verdict is not issued when a signature cannot be inspected.</p>");
   return html.join("")
 }
 var hodlAccountId = "bip84",

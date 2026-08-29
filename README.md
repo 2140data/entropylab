@@ -33,12 +33,15 @@ Official website: [entropylab.online](https://entropylab.online)
   while pasted co-signer origins auto-detect and must agree with the selected
   purpose.
 - Inspects PSBT v0 transactions, reports PSBT-provided amounts and fees, checks
-  for repeated ECDSA nonces from the same public key, verifies optional Jade
+  for repeated ECDSA nonces from the same public key — including signatures
+  carried by finalized scriptSig/witness fields, which are decoded and analyzed
+  rather than skipped — verifies optional Jade
   anti-exfil (sign-to-contract) transcripts without a key, and can compare supported
   SegWit v0 SIGHASH_ALL signatures with RFC 6979, including Bitcoin Core-style low-r grinding, in a temporary session.
   Every input's declared sighash policy and each signature's appended sighash
   byte are decoded without a key; anything other than exact SIGHASH_ALL is a
-  blocking warning.
+  blocking warning. Finalized signatures that cannot be decoded or associated
+  with a key block any clean nonce verdict.
 - Runs a quick barrage of startup sanity checks on the host browser (secure
   context, CSPRNG, BigInt, UTF-8 encoding, and NFKD normalization). If any
   check fails, the page is replaced with a failure report listing the failed
