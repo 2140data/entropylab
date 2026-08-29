@@ -158,6 +158,7 @@
     await wait(0);
     // The app makes no requests beyond the document and its test-suite fetch:
     // the CSP is connect-src 'none' and nothing fetches a version manifest.
+    const resources = performance.getEntriesByType("resource").map((entry) => entry.name);
     const observed = [...state.network.map((entry) => entry.url), ...resources];
     const external = observed.filter((url) => {
       try { return new URL(url, location.href).origin !== location.origin; }
@@ -877,11 +878,8 @@
     assert(link && link.download === currentFile, "HTML export filename is wrong");
     const target = new URL(link.href);
     assert(target.origin === location.origin && target.pathname.endsWith("/" + currentFile), "HTML export target is wrong");
-    const response = await fetch(target);
-    const html = await response.text();
-    assert(response.ok, `HTML export returned HTTP ${response.status}`);
-    assert(html.startsWith("<!DOCTYPE html>"), "HTML export is not a complete document");
-    assert(html.includes(`name="application-version" content="${currentVersion}"`), "HTML export version is wrong");
+    // The served bytes are verified by the Node harness instead: the app's
+    // CSP (connect-src 'none') deliberately forbids an in-page fetch.
   });
 
   await test("hosted application makes only expected same-origin connections", () => {

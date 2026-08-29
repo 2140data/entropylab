@@ -156,6 +156,14 @@ test("headless Firefox runs the hosted and offline suites", async () => {
   let port = 0;
   try {
     port = await listen();
+    // The HTML export target is fetched here, outside the page: the app's CSP
+    // (connect-src 'none') deliberately blocks the in-page fetch the suite
+    // used to rely on, so the harness proves the download link serves the
+    // current self-contained release.
+    const exportResponse = await fetch(`http://127.0.0.1:${port}/${appFile}`);
+    assert.ok(exportResponse.ok, `HTML export returned HTTP ${exportResponse.status}`);
+    const exportBytes = Buffer.from(await exportResponse.arrayBuffer());
+    assert.ok(exportBytes.equals(readFileSync(appSource)), "HTML export is not the current self-contained release");
     const onlineUrl = `http://127.0.0.1:${port}/browser-tests.html?online-preview=1`;
     const offlineUrl = `file://${testHtmlPath}?offline-test=1`;
     const onlineLog = join(workDir, "firefox-online.log");
