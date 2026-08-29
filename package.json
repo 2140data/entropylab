@@ -54,5 +54,8 @@
   },
   "devDependencies": {
     "esbuild": "0.28.2"
+  },
+  "overrides": {
+    "@scure/base": "2.4.0"
   }
 }
