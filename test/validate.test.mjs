@@ -46,6 +46,7 @@ const requiredFiles = [
   "src/assets/favicon.svg",
   "src/css/styles.css",
   "src/js/app.js",
+  "src/js/bip85.js",
   "src/js/online.js",
   "src/js/network-check.js",
   "src/js/browser-check.js",

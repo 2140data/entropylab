@@ -46,6 +46,11 @@ material. Its security posture rests on the following model:
   supplied entropy and says to use it only for testing. Users who intend to
   secure funds must meet the displayed roll/card recommendation and verify
   their procedure independently.
+- BIP-85 children are a deterministic transformation of the parent BIP32 root,
+  not newly generated entropy. A BIP-39 passphrase, when present, is part of
+  that root (the same rule COLDCARD uses). Anyone who has the parent seed,
+  the exact passphrase, the application, and the index can reproduce every
+  child; protect the parent for the combined value of all derived wallets.
 - The single-file design inlines all scripts (`script-src 'unsafe-inline'`),
   and the secp256k1 WebAssembly module adds `wasm-unsafe-eval` to the
   content security policy: Chromium and WebKit engines refuse to compile a

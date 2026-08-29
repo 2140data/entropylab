@@ -10,6 +10,7 @@ import { entropyToMnemonic as bi, mnemonicToEntropy as Er, mnemonicToSeedSync as
 import { wordlist as bip39English } from "@scure/bip39/wordlists/english.js";
 import { Address as hodlBitcoinAddress, NETWORK as Ie, OutScript as Oe, TEST_NETWORK as mo, p2pkh as ir, p2sh as Jr, p2tr as en, p2wpkh as Tt, utils as bitcoinUtils } from "@scure/btc-signer";
 import { renderSVG as Xs } from "uqr";
+import { BIP39_LANGUAGE_ENGLISH, BIP85_APPS, bip85Path, deriveApplication, parseHardenedIndex, wipeBip85Result, wipeBytes as hodlWipeBytes } from "./bip85.js";
 const Ae = Object.freeze(bip39English);
 const tr = Z;
 const rr = (bytes) => ripemd160(Z(bytes));
@@ -506,6 +507,60 @@ ec.innerHTML = `
       </div>
       <p class="err" id="error"></p>
     </section>
+    <section class="card no-print" id="bip85-card" role="tabpanel" hidden>
+      <div class="kicker">One seed. Many children.</div>
+      <h2>Derive BIP-85 child entropy</h2>
+      <p class="muted bip85-intro">Deterministic child seeds, keys, and passwords from the active key's BIP32 root. Same parent, application, and index always reproduce the same child. This does not invent entropy \u2014 it is a calculator. English BIP-39 children match COLDCARD.</p>
+      <label class="field">Optional root xprv (leave blank to use the active key)
+        <textarea id="bip85-key" placeholder="xprv\u2026 or leave blank to use the active key" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+      </label>
+      <div class="bip85-grid">
+        <label class="field">Application
+          <select id="bip85-app">
+            <option value="bip39" selected>BIP-39 mnemonic (English)</option>
+            <option value="wif">HD-seed WIF</option>
+            <option value="xprv">XPRV (BIP-32)</option>
+            <option value="hex">HEX</option>
+            <option value="pwd-base64">Password \xB7 Base64</option>
+            <option value="pwd-base85">Password \xB7 Base85</option>
+          </select>
+        </label>
+        <label class="field">Index
+          <input id="bip85-index" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0" aria-describedby="bip85-index-help">
+          <span class="field-note" id="bip85-index-help">Hardened child index \xB7 0 to 2,147,483,647. COLDCARD defaults to 0\u20139,999.</span>
+        </label>
+      </div>
+      <div class="bip85-grid" id="bip85-app-options">
+        <label class="field" id="bip85-words-field">Word count
+          <select id="bip85-words">
+            <option value="12">12 words \xB7 128 bits</option>
+            <option value="15">15 words \xB7 160 bits</option>
+            <option value="18">18 words \xB7 192 bits</option>
+            <option value="21">21 words \xB7 224 bits</option>
+            <option value="24" selected>24 words \xB7 256 bits</option>
+          </select>
+          <span class="field-note">English wordlist only (language 0'). COLDCARD menus offer 12, 18, and 24.</span>
+        </label>
+        <label class="field" id="bip85-bytes-field" hidden>Hex bytes
+          <input id="bip85-bytes" type="number" min="16" max="64" step="1" inputmode="numeric" value="32" aria-describedby="bip85-bytes-help">
+          <span class="field-note" id="bip85-bytes-help">16 to 64 bytes. COLDCARD offers 32 and 64.</span>
+        </label>
+        <label class="field" id="bip85-pwdlen-field" hidden>Password length
+          <input id="bip85-pwdlen" type="number" min="10" max="86" step="1" inputmode="numeric" value="21" aria-describedby="bip85-pwdlen-help">
+          <span class="field-note" id="bip85-pwdlen-help">Base64: 20\u201386. Base85: 10\u201380.</span>
+        </label>
+      </div>
+      <p class="muted bip85-path-row">Path <code id="bip85-path">m/83696968'/39'/0'/24'/0'</code></p>
+      <div class="row bip85-actions">
+        <button class="btn primary" id="bip85-go" type="button">Derive child</button>
+        <button class="btn secondary" id="bip85-use-calc" type="button">Use active key</button>
+        <button class="btn secondary" id="bip85-wipe" type="button">Clear derived child</button>
+      </div>
+      <p class="muted" id="bip85-session" aria-live="polite">No parent loaded. Derive a key first, or paste a root xprv.</p>
+      <p class="err" id="bip85-error" role="alert"></p>
+      <div id="bip85-out" aria-live="polite"></div>
+      <p class="muted">Derived children remain in this page only. Anyone with the parent seed, passphrase, application, and index can reproduce them. Memory clearing is best-effort; close the page before reconnecting the computer.</p>
+    </section>
     <section class="key-manager no-print" id="msig-manager" hidden>
       <div class="key-manager-head"><h2>Multisigs</h2></div>
       <div class="key-tab-strip"><div class="key-tabs" id="msig-tabs" role="tablist" aria-label="Multisigs"></div><div class="add-item-control"><button class="add-key" id="add-msig" type="button" aria-label="Add multisig" aria-describedby="add-msig-tooltip">+</button><span class="add-item-tooltip" id="add-msig-tooltip" role="tooltip">Add another multisig</span></div></div>
@@ -633,6 +688,7 @@ ec.innerHTML = `
       <p>BitBox02 diceware: <a href="https://blog.bitbox.swiss/en/roll-the-dice-generate-your-own-seed/" target="_blank" rel="noopener noreferrer">roll-the-dice-generate-your-own-seed</a> \u2014 lookup table is the BIP39 English list in order.</p>
       <p>D++ D8 &amp; D16 method: <a href="https://thesimplestbitcoinbook.net/wp-content/uploads/2023/09/Roll-Your-Own-Seed-Phrase-PDF.pdf" target="_blank" rel="noopener noreferrer">Roll Your Own Bitcoin Seed Phrase</a> \u2014 the published 24-word workflow uses one D8 labeled 1\u20138 and two hexadecimal D16 dice labeled 0\u2013F per word, then a final D8.</p>
       <p>Jade anti-exfil (sign-to-contract): <a href="https://blog.blockstream.com/anti-exfil-stopping-key-exfiltration/" target="_blank" rel="noopener noreferrer">Anti-Exfil: Stopping Key Exfiltration</a> \u2014 secp256k1-zkp <code>ecdsa_s2c</code> / <code>anti_exfil_host_verify</code>.</p>
+      <p>BIP-85 deterministic entropy: <a href="https://github.com/bitcoin/bips/blob/master/bip-0085.mediawiki" target="_blank" rel="noopener noreferrer">bip-0085.mediawiki</a> \u2014 HMAC-SHA512 of a fully hardened child; English BIP-39 / WIF / XPRV / HEX / password applications match COLDCARD.</p>
     </section>
   </div>
 `;
@@ -7306,6 +7362,211 @@ function hodlInitPsbt() {
     if (event.persisted) clearSecretFields();
   });
 }
+var hodlBip85Root = null, hodlBip85Note = "No parent loaded. Derive a key first, or paste a root xprv.", hodlBip85Source = "", hodlBip85Result = null, hodlBip85Reveal = false, hodlBip85Testnet = false;
+function hodlBip85WipeMem() {
+  wipeBip85Result(hodlBip85Result);
+  hodlBip85Result = null;
+  hodlBip85Reveal = false;
+  if (hodlBip85Root) try {
+    hodlWipeBytes(hodlBip85Root.privateKey);
+  } catch {
+  }
+  hodlBip85Root = null;
+  hodlBip85Source = "";
+  hodlBip85Testnet = false;
+  hodlBip85Note = "No parent loaded. Derive a key first, or paste a root xprv.";
+}
+function hodlBip85PrivateValue(value) {
+  let mask = "************", text = String(value ?? "\u2014");
+  if (hodlBip85Reveal) return `<span class="secret private-field-value">${$t(text)}</span>`;
+  let bullets = "\u2022".repeat(Math.max(Array.from(text).length, mask.length));
+  return `<span class="secret private-field-value secret-placeholder"><span class="secret-placeholder-mask" aria-hidden="true">${bullets}</span><span class="secret-placeholder-message" aria-hidden="true">${mask}</span><span class="secret-placeholder-label">Private value hidden</span></span>`;
+}
+function hodlBip85SecretField(label, value) {
+  return `<p class="private-field"><span class="muted">${$t(label)}</span>${hodlBip85PrivateValue(value)}</p>`;
+}
+function hodlBip85Spec() {
+  let app = document.getElementById("bip85-app")?.value || "bip39";
+  let index = document.getElementById("bip85-index")?.value || "0";
+  return { app, index, words: Number(document.getElementById("bip85-words")?.value || 24), numBytes: Number(document.getElementById("bip85-bytes")?.value || 32), length: Number(document.getElementById("bip85-pwdlen")?.value || (app === "pwd-base85" ? 12 : 21)), testnet: hodlBip85Testnet };
+}
+function hodlBip85CurrentPath() {
+  try {
+    let spec = hodlBip85Spec(), index = parseHardenedIndex(spec.index);
+    if (spec.app === "bip39") return bip85Path(BIP85_APPS.BIP39, BIP39_LANGUAGE_ENGLISH, spec.words, index);
+    if (spec.app === "wif") return bip85Path(BIP85_APPS.WIF, index);
+    if (spec.app === "xprv") return bip85Path(BIP85_APPS.XPRV, index);
+    if (spec.app === "hex") return bip85Path(BIP85_APPS.HEX, spec.numBytes, index);
+    if (spec.app === "pwd-base64") return bip85Path(BIP85_APPS.PWD_BASE64, spec.length, index);
+    if (spec.app === "pwd-base85") return bip85Path(BIP85_APPS.PWD_BASE85, spec.length, index);
+  } catch {
+  }
+  return "";
+}
+function hodlBip85SyncOptions() {
+  let app = document.getElementById("bip85-app")?.value || "bip39";
+  let wordsField = document.getElementById("bip85-words-field"), bytesField = document.getElementById("bip85-bytes-field"), pwdField = document.getElementById("bip85-pwdlen-field"), pwd = document.getElementById("bip85-pwdlen");
+  if (wordsField) wordsField.hidden = app !== "bip39";
+  if (bytesField) bytesField.hidden = app !== "hex";
+  if (pwdField) pwdField.hidden = app !== "pwd-base64" && app !== "pwd-base85";
+  if (pwd) {
+    if (app === "pwd-base64") {
+      pwd.min = "20";
+      pwd.max = "86";
+      if (Number(pwd.value) < 20 || Number(pwd.value) > 86) pwd.value = "21";
+    } else if (app === "pwd-base85") {
+      pwd.min = "10";
+      pwd.max = "80";
+      if (Number(pwd.value) < 10 || Number(pwd.value) > 80) pwd.value = "12";
+    }
+  }
+  let path = document.getElementById("bip85-path");
+  if (path) path.textContent = hodlBip85CurrentPath() || "\u2014";
+}
+function hodlBip85LoadXprv(text) {
+  let value = String(text || "").trim(), { xkey, isPrivate } = uf(value);
+  if (!isPrivate) throw new Error("BIP-85 needs a private root (xprv/tprv), not an extended public key.");
+  let node = Gt.fromExtendedKey(xkey);
+  if (node.depth !== 0) throw new Error("BIP-85 starts at the BIP32 root. This extended key is not depth 0.");
+  hodlBip85WipeMem();
+  hodlBip85Root = node;
+  hodlBip85Testnet = /^[tuvn]prv/i.test(value);
+  hodlBip85Source = "manual";
+  hodlBip85Note = "Parent: pasted root " + (hodlBip85Testnet ? "tprv" : "xprv") + ". Kept in page memory only.";
+}
+function hodlUseActiveKeyForBip85() {
+  let state = hodlKeys[hodlActiveKey];
+  if (!state || !state.result) throw new Error("Derive an active key first, then return to BIP-85.");
+  let result = state.result;
+  hodlBip85WipeMem();
+  if (result.kind === "hd" && result.mnemonic) {
+    let seed = wi(result.mnemonic, state.fields.pass || "");
+    try {
+      hodlBip85Root = Gt.fromMasterSeed(seed);
+    } finally {
+      hodlWipeBytes(seed);
+    }
+    hodlBip85Testnet = false;
+    hodlBip85Note = "Parent: " + (state.name || "the active key") + (result.passphraseUsed || (state.fields.pass || "").length ? " with BIP-39 passphrase (COLDCARD does the same \u2014 children differ without it)." : ".") + " Kept in page memory only.";
+  } else if (result.kind === "hd" && result.rootXprv) {
+    hodlBip85Root = Gt.fromExtendedKey(uf(result.rootXprv).xkey);
+    hodlBip85Testnet = result.network === "testnet";
+    hodlBip85Note = "Parent: root xprv from " + (state.name || "the active key") + ". Kept in page memory only.";
+  } else if (result.kind === "hd") throw new Error("The active key is not a BIP32 root. Import the original seed or root xprv.");
+  else throw new Error("BIP-85 needs an HD root. The active key is a single private key.");
+  hodlBip85Source = "active";
+}
+function hodlCopyBip85Child(button) {
+  let phrase = button?.dataset.phrase;
+  if (!phrase || button.disabled) return;
+  let done = () => {
+    button.textContent = "Copied derived child";
+    clearTimeout(button.hodlCopiedTimer);
+    button.hodlCopiedTimer = setTimeout(() => {
+      if (button.isConnected) button.textContent = "Copy derived child";
+    }, 1600);
+  };
+  let fallback = () => {
+    let field = document.createElement("textarea");
+    field.value = phrase;
+    field.setAttribute("readonly", "");
+    field.style.position = "fixed";
+    field.style.left = "-9999px";
+    document.body.appendChild(field);
+    field.select();
+    try {
+      document.execCommand("copy");
+      done();
+    } finally {
+      field.remove();
+    }
+  };
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") navigator.clipboard.writeText(phrase).then(done).catch(fallback);
+  else fallback();
+}
+function hodlRenderBip85Out() {
+  let box = document.getElementById("bip85-out");
+  if (!box) return;
+  if (!hodlBip85Result) {
+    box.innerHTML = "";
+    return;
+  }
+  let derived = hodlBip85Result, notes = [...derived.notes || [], ...derived.warnings || []].map((message) => `<li>${$t(message)}</li>`).join("");
+  box.innerHTML = `<section class="wallet-data-section wallet-private-section" aria-labelledby="bip85-private-heading">
+      <div class="wallet-data-section-head">
+        <h3 id="bip85-private-heading">Derived child</h3>
+        <p class="muted" id="bip85-private-description">This child is derived from your seed. Anyone with the parent, application, and index can reproduce it.</p>
+      </div>
+      <div class="wallet-data-actions no-print">
+        <label class="reveal-private-toggle">
+          <input type="checkbox" id="bip85-reveal" ${hodlBip85Reveal ? "checked" : ""} aria-describedby="bip85-private-description">
+          <span>Show derived child <span class="reveal-private-toggle-note">(air-gap only)</span></span>
+        </label>
+        <button class="btn secondary" id="bip85-copy" type="button">Copy derived child</button>
+      </div>
+      <div class="wallet-data-fields">
+        ${ye("Path", derived.path)}
+        ${hodlBip85SecretField(derived.secretLabel, derived.secret)}
+        ${hodlBip85SecretField("Derived entropy", derived.entropyHex)}
+      </div>
+      ${notes ? `<ul class="bip85-notes">${notes}</ul>` : ""}
+    </section>`;
+  document.getElementById("bip85-reveal")?.addEventListener("change", (event) => {
+    hodlBip85Reveal = event.target.checked;
+    hodlRenderBip85Out();
+    requestAnimationFrame(() => document.getElementById("bip85-reveal")?.focus({ preventScroll: true }));
+  });
+  let copy = document.getElementById("bip85-copy");
+  if (copy) {
+    copy.dataset.phrase = derived.secret;
+    copy.onclick = () => hodlCopyBip85Child(copy);
+  }
+}
+function hodlRunBip85() {
+  let error = document.getElementById("bip85-error"), session = document.getElementById("bip85-session"), manual = document.getElementById("bip85-key")?.value || "";
+  if (error) error.textContent = "";
+  try {
+    if (manual.trim()) {
+      hodlBip85LoadXprv(manual);
+      document.getElementById("bip85-key").value = "";
+    } else if (!hodlBip85Root) hodlUseActiveKeyForBip85();
+    wipeBip85Result(hodlBip85Result);
+    hodlBip85Result = deriveApplication(hodlBip85Root, hodlBip85Spec());
+    hodlBip85Reveal = false;
+    if (session) session.textContent = hodlBip85Note;
+    hodlRenderBip85Out();
+  } catch (exception) {
+    if (error) error.textContent = exception.message || String(exception);
+  }
+}
+function hodlInitBip85() {
+  let go = document.getElementById("bip85-go");
+  if (!go) return;
+  go.onclick = hodlRunBip85;
+  document.getElementById("bip85-use-calc").onclick = () => {
+    let error = document.getElementById("bip85-error");
+    if (error) error.textContent = "";
+    try {
+      hodlUseActiveKeyForBip85();
+      document.getElementById("bip85-key").value = "";
+      document.getElementById("bip85-session").textContent = hodlBip85Note;
+    } catch (exception) {
+      if (error) error.textContent = exception.message || String(exception);
+    }
+  };
+  document.getElementById("bip85-wipe").onclick = () => {
+    hodlBip85WipeMem();
+    document.getElementById("bip85-key").value = "";
+    document.getElementById("bip85-out").innerHTML = "";
+    document.getElementById("bip85-error").textContent = "";
+    document.getElementById("bip85-session").textContent = "Derived child and parent session were cleared (best effort).";
+  };
+  for (let id of ["bip85-app", "bip85-index", "bip85-words", "bip85-bytes", "bip85-pwdlen"]) {
+    document.getElementById(id)?.addEventListener("input", hodlBip85SyncOptions);
+    document.getElementById(id)?.addEventListener("change", hodlBip85SyncOptions);
+  }
+  hodlBip85SyncOptions();
+}
 function hodlRunPsbt() {
   let error = document.getElementById("psbt-error"), output = document.getElementById("psbt-out"), manual = document.getElementById("psbt-key").value;
   error.textContent = "";
@@ -8280,6 +8541,7 @@ function hodlShowWorkspace(id) {
   document.getElementById("calc-card").hidden = true;
   document.getElementById("msig-card").hidden = true;
   document.getElementById("psbt-card").hidden = id !== "psbt";
+  document.getElementById("bip85-card").hidden = id !== "bip85";
   re = null;
   Ge = false;
   dr.innerHTML = "";
@@ -8289,7 +8551,7 @@ function hodlShowWorkspace(id) {
   } else if (id === "msig") {
     hodlRenderMsigTabs();
     hodlRestoreMsig();
-  }
+  } else if (id === "bip85") hodlBip85SyncOptions();
   if (hodlWorkspaceScrollFrame) cancelAnimationFrame(hodlWorkspaceScrollFrame);
   window.scrollTo(preservedLeft, preservedTop);
   hodlWorkspaceScrollFrame = requestAnimationFrame(() => {
@@ -8374,7 +8636,7 @@ function hodlSeedInitialManagers() {
 function hodlInitWorkspace() {
   let box = W("#workspace");
   box.innerHTML = "";
-  [["calc", "Key Derivation"], ["msig", "Multi Signature"], ["psbt", "PSBT / Nonce"]].forEach(([id, label]) => {
+  [["calc", "Key Derivation"], ["bip85", "BIP-85"], ["msig", "Multi Signature"], ["psbt", "PSBT / Nonce"]].forEach(([id, label]) => {
     let button = document.createElement("button"), active = hodlWorkspace === id;
     button.type = "button";
     button.className = "tab" + (active ? " active" : "");
@@ -8386,6 +8648,7 @@ function hodlInitWorkspace() {
   });
   hodlInitMsig();
   hodlInitPsbt();
+  hodlInitBip85();
 }
 var hodlKeyClearSyncQueued = false, hodlMsigClearSyncQueued = false, hodlDeriveSyncQueued = false;
 function hodlQueueKeyClearButtonSync() {
@@ -8529,6 +8792,7 @@ function hodlInitTheme() {
 function hodlInitSecretFieldAutoClear() {
   let clearSecretFields = () => {
     hodlPsbtWipeMem();
+    hodlBip85WipeMem();
     hodlKeys = hodlKeys.map((state) => {
       let fields = state.fields || {}, privateKeys = fields.privateKeys;
       if (privateKeys) Object.keys(privateKeys).forEach((kind) => {
@@ -8556,6 +8820,11 @@ function hodlInitSecretFieldAutoClear() {
     let psbtKey = document.getElementById("psbt-key"), psbtPass = document.getElementById("psbt-pass");
     if (psbtKey) psbtKey.value = "";
     if (psbtPass) psbtPass.value = "";
+    let bip85Key = document.getElementById("bip85-key"), bip85Out = document.getElementById("bip85-out"), bip85Error = document.getElementById("bip85-error"), bip85Session = document.getElementById("bip85-session");
+    if (bip85Key) bip85Key.value = "";
+    if (bip85Out) bip85Out.innerHTML = "";
+    if (bip85Error) bip85Error.textContent = "";
+    if (bip85Session) bip85Session.textContent = hodlBip85Note;
     let out = document.getElementById("out");
     if (out) out.innerHTML = "";
     let error = document.getElementById("error");

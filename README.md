@@ -42,6 +42,12 @@ Official website: [entropylab.online](https://entropylab.online)
   byte are decoded without a key; anything other than exact SIGHASH_ALL is a
   blocking warning. Finalized signatures that cannot be decoded or associated
   with a key block any clean nonce verdict.
+- Derives BIP-85 child entropy from the active key's BIP32 root (or a pasted
+  root xprv): English BIP-39 mnemonics (12–24 words), HD-seed WIF, XPRV, HEX,
+  and Base64/Base85 passwords. Same parent, application, and index always
+  reproduce the same child — this is a calculator, not a generator. Children
+  follow the published BIP-85 vectors and match COLDCARD, including derivation
+  from a passphrase-extended root when a BIP-39 passphrase is in effect.
 - Runs a quick barrage of startup sanity checks on the host browser (secure
   context, CSPRNG, BigInt, UTF-8 encoding, and NFKD normalization). If any
   check fails, the page is replaced with a failure report listing the failed

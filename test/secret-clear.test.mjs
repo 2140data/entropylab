@@ -13,6 +13,7 @@ const lifecycle = app.slice(start, end);
 
 test("page lifecycle clearing replaces every cached key and clears PSBT private state", () => {
   assert.match(lifecycle, /hodlPsbtWipeMem\(\)/);
+  assert.match(lifecycle, /hodlBip85WipeMem\(\)/);
   assert.match(lifecycle, /hodlKeys\s*=\s*hodlKeys\.map\(\(state\)\s*=>\s*\{/);
   assert.match(lifecycle, /privateKeys\[kind\]\s*=\s*""/);
   assert.match(lifecycle, /if \(id !== "privateKeys"\) fields\[id\] = ""/);
@@ -28,4 +29,10 @@ test("PSBT key and passphrase fields are explicitly cleared", () => {
   assert.match(lifecycle, /getElementById\("psbt-pass"\)/);
   assert.match(lifecycle, /psbtKey\.value\s*=\s*""/);
   assert.match(lifecycle, /psbtPass\.value\s*=\s*""/);
+});
+
+test("BIP-85 parent and derived-child fields are explicitly cleared", () => {
+  assert.match(lifecycle, /getElementById\("bip85-key"\)/);
+  assert.match(lifecycle, /bip85Key\.value\s*=\s*""/);
+  assert.match(lifecycle, /bip85Out\.innerHTML\s*=\s*""/);
 });
