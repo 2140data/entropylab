@@ -464,6 +464,7 @@ const le = (text, version) => {
 const cr = { mainnet: { x: { pub: 0x0488b21e } } };
 const Gt = { fromExtendedKey: (text) => hdNodeFrom(b58checkDecode(text)) };
 const xe = { getPublicKey: (secret) => publicKeyForPrivate(secret) };
+function hodlBindAddressMatch(){}
 ${extract("function hodlPrivateDataControls", "function hodlWalletMessages")}
 ${extract("function hodlWalletDatDeps", "function hodlFocusWalletResult")}
 ${sqliteSrc}
