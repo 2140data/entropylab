@@ -68,8 +68,16 @@ test("number-base character counts preserve exact BIP39 entropy lengths", () => 
     [128, 64, 43, 32, 28, 23],
   );
   assert.deepEqual(
+    ["bin", "base4", "base8", "hex", "base32", "base64"].map((format) => api.hodlEntropyFormatConfig(format, 15).digits),
+    [160, 80, 54, 40, 32, 30],
+  );
+  assert.deepEqual(
     ["bin", "base4", "base8", "hex", "base32", "base64"].map((format) => api.hodlEntropyFormatConfig(format, 18).digits),
     [192, 96, 64, 48, 40, 32],
+  );
+  assert.deepEqual(
+    ["bin", "base4", "base8", "hex", "base32", "base64"].map((format) => api.hodlEntropyFormatConfig(format, 21).digits),
+    [224, 112, 75, 56, 48, 39],
   );
   assert.deepEqual(
     ["bin", "base4", "base8", "hex", "base32", "base64"].map((format) => api.hodlEntropyFormatConfig(format, 24).digits),
@@ -80,7 +88,9 @@ test("number-base character counts preserve exact BIP39 entropy lengths", () => 
 test("all six formats decode to the same entropy bytes", () => {
   const vectors = [
     [12, "000102030405060708090a0b0c0d0e0f"],
+    [15, "000102030405060708090a0b0c0d0e0f10111213"],
     [18, "000102030405060708090a0b0c0d0e0f1011121314151617"],
+    [21, "000102030405060708090a0b0c0d0e0f101112131415161718191a1b"],
     [24, "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"],
   ];
   for (const [words, hex] of vectors) {
@@ -117,12 +127,13 @@ test("Base 8 uses a mixed-radix final character and Base32 switches to coin flip
 });
 
 test("complete entropy can be synchronized into every number base", () => {
-  const hex = "000102030405060708090a0b0c0d0e0f";
-  const bytes = Uint8Array.from(Buffer.from(hex, "hex"));
-  for (const format of ["bin", "base4", "base8", "hex", "base32", "base64"]) {
-    const value = api.hodlNumberBaseValueFromBytes(bytes, format, 12);
-    assert.equal(value.replace(/\s/g, ""), encodeInFormat(hex, format, 12), format);
-    assert.equal(api.hodlNumberBaseEntropy(value, format, 12).hex, hex, format);
+  for (const [words, hex] of [[12, "000102030405060708090a0b0c0d0e0f"], [15, "000102030405060708090a0b0c0d0e0f10111213"], [21, "000102030405060708090a0b0c0d0e0f101112131415161718191a1b"]]) {
+    const bytes = Uint8Array.from(Buffer.from(hex, "hex"));
+    for (const format of ["bin", "base4", "base8", "hex", "base32", "base64"]) {
+      const value = api.hodlNumberBaseValueFromBytes(bytes, format, words);
+      assert.equal(value.replace(/\s/g, ""), encodeInFormat(hex, format, words), `${words} words, ${format}`);
+      assert.equal(api.hodlNumberBaseEntropy(value, format, words).hex, hex, `${words} words, ${format}`);
+    }
   }
 });
 
