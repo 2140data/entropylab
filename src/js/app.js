@@ -390,7 +390,7 @@ ec.innerHTML = `
          this file on an air-gapped computer." -->
     <section class="card">
       <div class="kicker">Run Offline \xB7 Bring your own entropy</div>
-      <h2>Hold or receive bitcoin without a signing device.</h2>
+      <h1>Hold or receive bitcoin without a signing device.</h1>
       <ul class="pitch-list muted">
         <li>Save this air-gapped bitcoin calculator to a removable drive and open it on a computer that never goes online.</li>
         <li>Turn dice rolls or a seed you already have into receive addresses.</li>

@@ -27,6 +27,9 @@ const requiredFiles = [
   "LICENSE",
   "package.json",
   "package-lock.json",
+  "robots.txt",
+  "sitemap.xml",
+  "llms.txt",
   "assets/favicon.png",
   "assets/entropylab_dark.png",
   "assets/entropylab_light.png",
@@ -167,7 +170,7 @@ for (const file of htmlFiles) {
   test(`${file} has no remote executable subresources`, () => {
     const html = read(file);
     assert.doesNotMatch(html, /<(script|iframe)[^>]+src=["' ]*https?:\/\//i);
-    assert.doesNotMatch(html, /<link[^>]+href=["' ]*https?:\/\//i);
+    assert.doesNotMatch(html, /<link(?![^>]*rel="canonical")[^>]+href=["' ]*https?:\/\//i);
   });
   test(`${file} inlines the favicon from the published asset`, () => {
     const inlined = read(file).match(/<link rel="icon" type="image\/png" sizes="64x64" href="data:image\/png;base64,([A-Za-z0-9+/=]+)">/);
