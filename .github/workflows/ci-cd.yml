@@ -5,6 +5,23 @@ on:
   push:
     branches: [rock]
   workflow_dispatch:
+    inputs:
+      ubuntu:
+        description: Ubuntu
+        type: boolean
+        default: true
+      macos:
+        description: macOS
+        type: boolean
+        default: false
+      windows:
+        description: Windows
+        type: boolean
+        default: false
+      install-firefox:
+        description: Install Firefox (for macOS / Windows if not present)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -71,12 +88,38 @@ jobs:
       - name: Test the freshly built bindings
         run: node --test test/secp256k1-wasm.test.mjs
 
+  # Resolve the OS matrix from workflow_dispatch checkboxes (defaults to Ubuntu
+  # for automatic triggers or when nothing is selected).
+  setup:
+    name: Setup · resolve OS matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    outputs:
+      os-matrix: ${{ steps.matrix.outputs.os-matrix }}
+    steps:
+      - id: matrix
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            MATRIX="["
+            [ "${{ inputs.ubuntu }}" == "true" ] && MATRIX="$MATRIX\"ubuntu-latest\","
+            [ "${{ inputs.macos }}" == "true" ] && MATRIX="$MATRIX\"macos-latest\","
+            [ "${{ inputs.windows }}" == "true" ] && MATRIX="$MATRIX\"windows-latest\","
+            MATRIX="${MATRIX%,}]"
+            [ "$MATRIX" == "[]" ] && MATRIX='["ubuntu-latest"]'
+            echo "os-matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          else
+            echo 'os-matrix=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
+          fi
+
   # Required aggregate gates. The deployment cannot start until both pass, so
   # it can never race ahead of a failing unit or browser test.
   test-ci:
-    name: Test · complete dependency-free suite
-    needs: [build]
-    runs-on: ubuntu-latest
+    name: Test · complete dependency-free suite (${{ matrix.os }})
+    needs: [build, setup]
+    strategy:
+      matrix:
+        os: ${{ fromJSON(needs.setup.outputs.os-matrix) }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -92,10 +135,13 @@ jobs:
         run: npm run test:ci
 
   test-browser:
-    name: Test · Firefox integration suite
-    needs: [build]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    name: Test · Firefox integration suite (${{ matrix.os }})
+    needs: [build, setup]
+    strategy:
+      matrix:
+        os: ${{ fromJSON(needs.setup.outputs.os-matrix) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -104,6 +150,12 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
+      - name: Install Firefox (macOS)
+        if: inputs.install-firefox && runner.os == 'macOS'
+        run: brew install --cask firefox
+      - name: Install Firefox (Windows)
+        if: inputs.install-firefox && runner.os == 'Windows'
+        run: choco install firefox
       - name: Build static site
         run: npm run build
       - name: Run headless Firefox tests
