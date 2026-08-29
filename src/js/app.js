@@ -2553,8 +2553,15 @@ function hodlCardsHashInput(cards, coleman = false) {
 function hodlCardTokenCanContinue(token) {
   return /^(?:[A2-9TJQK]|1|10)$/i.test(String(token ?? ""));
 }
-function hodlFilterCards(value) {
-  return String(value ?? "").toUpperCase().replace(/\u2660/g, "S").replace(/\u2665/g, "H").replace(/\u2666/g, "D").replace(/\u2663/g, "C").replace(/[^0-9A-Z\s,.;:_|/-]/g, "").replace(/[\s,.;:_|/-]+/g, " ");
+function hodlFilterCards(value, coleman = false) {
+  let text = String(value ?? "").toUpperCase().replace(/\u2660/g, "S").replace(/\u2665/g, "H").replace(/\u2666/g, "D").replace(/\u2663/g, "C");
+  if (coleman) {
+    text = text.replace(/10([CDHS])/g, "10\0$1");
+    text = text.replace(/([A2-9TJQK])([CDHS])/g, (_, rank, suit) => rank + ({ C: "\u2663", D: "\u2666", H: "\u2665", S: "\u2660" })[suit]);
+    text = text.replace(/10\0([CDHS])/g, (_, suit) => "10" + ({ C: "\u2663", D: "\u2666", H: "\u2665", S: "\u2660" })[suit]);
+    return text.replace(/[^0-9A-Z\s,.;:_|/\-\u2660\u2663\u2665\u2666]/g, "").replace(/[\s,.;:_|/-]+/g, " ");
+  }
+  return text.replace(/[^0-9A-Z\s,.;:_|/-]/g, "").replace(/[\s,.;:_|/-]+/g, " ");
 }
 function hodlCardTypedCharactersAllowed(value) {
   return [...String(value ?? "")].every((character) => /[A2-9TJQKCDHS10\s,.;:_|/\-\u2660\u2663\u2665\u2666]/i.test(character));
@@ -4064,7 +4071,7 @@ function hodlRenderKeyForm() {
     if (!direct) hodlCardSuit = hodlCardRank = "";
     let suitPad = hodlCardSuits.map((suit) => `<button type="button" class="card-suit${suit.red ? " is-red" : ""}" data-card-suit="${suit.code}" aria-label="${suit.label}" aria-pressed="false">${suit.symbol}</button>`).join("");
     let rankPad = direct ? hodlDirectCardRanks.map((rank) => `<button type="button" data-direct-card-rank="${rank}" aria-label="Enter rank ${rank}">${rank}</button>`).join("") : hodlCardRanks.map((rank) => `<button type="button" data-card-rank="${rank}" aria-label="${rank === "T" ? "10" : rank}">${rank === "T" ? "10" : rank}</button>`).join("");
-    let inputId = direct ? "direct-cards" : "cards", inputLabel = direct ? "Rank-only draw transcript" : "Card transcript", inputHelp = direct ? `For each of the first ${config.partialWords} words, shuffle and draw from A\u20138 three times, then A\u20134 once. Each four-character group selects one word; spaces separate the groups. The shorter final group supplies the remaining entropy bits, and EntropyLab calculates the BIP39 checksum bits.` : `Each valid card updates a deterministic test seed. For real security, ${config.words === 24 ? "deal all 52 unique cards, shuffle again, then deal 6 more" : `deal ${needed.first} unique cards without putting them back`}. SHA-256 hashes the ASCII transcript (AS 2C TD).`, placeholder = direct ? "A284 37A2 \u2026" : "AS 2C 10H TD\u2026";
+    let inputId = direct ? "direct-cards" : "cards", inputLabel = direct ? "Rank-only draw transcript" : "Card transcript", inputHelp = direct ? `For each of the first ${config.partialWords} words, shuffle and draw from A\u20138 three times, then A\u20134 once. Each four-character group selects one word; spaces separate the groups. The shorter final group supplies the remaining entropy bits, and EntropyLab calculates the BIP39 checksum bits.` : `Each valid card updates a deterministic test seed. For real security, ${config.words === 24 ? "deal all 52 unique cards, shuffle again, then deal 6 more" : `deal ${needed.first} unique cards without putting them back`}. SHA-256 hashes the ASCII transcript (AS 2C TD).`, placeholder = direct ? "A284 37A2 \u2026" : hodlCardColemanSymbols ? "A\u2660 2\u2663 10\u2665 T\u2666\u2026" : "AS 2C 10H TD\u2026";
     at.innerHTML = `
       <p class="label">How to turn cards into a ${config.words}-word seed</p>
       <div class="choice-grid">
@@ -4072,7 +4079,7 @@ function hodlRenderKeyForm() {
         <label class="choice"><input type="radio" name="card-method" value="direct" ${direct ? "checked" : ""} /><span><strong>Direct word selection</strong><span class="desc">Ignore suits. Reshuffle and draw A\u20138, A\u20138, A\u20138, then A\u20134 for each full word. Finish with the shorter rank sequence shown for the checksum-valid final word.</span></span></label>
       </div>
       <p class="muted" id="cards-help">${inputHelp}</p>
-      ${direct ? "" : `<label class="seed-autocomplete-toggle seed-zero-index-toggle"><input type="checkbox" id="cards-ian-coleman" ${hodlCardColemanSymbols ? "checked" : ""} /><span><strong>Match Ian Coleman BIP39</strong> <span class="seed-autocomplete-note">(hash A\u2660 2\u2663 instead of AS 2C)</span></span></label>`}
+      ${direct ? "" : `<label class="seed-autocomplete-toggle seed-zero-index-toggle"><input type="checkbox" id="cards-ian-coleman" ${hodlCardColemanSymbols ? "checked" : ""} /><span><strong>Match Ian Coleman method</strong> <span class="seed-autocomplete-note">(show and hash A\u2660 2\u2663 instead of AS 2C)</span></span></label>`}
       <label class="field" id="cards-input-label" for="${inputId}">${inputLabel}</label>
       <div class="dice-input-shell cards-input-shell"><pre class="dice-input-highlight" id="cards-highlight" aria-hidden="true"></pre><textarea id="${inputId}" placeholder="${placeholder}" autocomplete="off" spellcheck="false" autocapitalize="characters" aria-labelledby="cards-input-label" aria-describedby="cards-help cards-meta"></textarea></div>
       ${hodlSeedMetaRowMarkup("cards-meta")}
@@ -4090,7 +4097,7 @@ function hodlRenderKeyForm() {
     };
     input.oninput = () => {
       if (!direct) hodlCardSuit = hodlCardRank = "";
-      hodlApplyFilteredInput(input, direct ? hodlFilterDirectCards : hodlFilterCards);
+      hodlApplyFilteredInput(input, direct ? hodlFilterDirectCards : (value) => hodlFilterCards(value, hodlCardColemanSymbols));
       direct ? hodlUpdateDirectCards() : hodlUpdateCards();
     };
     input.onscroll = () => hodlSyncDiceHighlight(input);
@@ -4137,7 +4144,13 @@ function hodlRenderKeyForm() {
     let colemanToggle = document.getElementById("cards-ian-coleman");
     if (colemanToggle) colemanToggle.onchange = () => {
       hodlCardColemanSymbols = colemanToggle.checked;
-      if (state) state.cardColemanSymbols = hodlCardColemanSymbols;
+      input.value = hodlFilterCards(input.value, hodlCardColemanSymbols);
+      input.placeholder = hodlCardColemanSymbols ? "A\u2660 2\u2663 10\u2665 T\u2666\u2026" : "AS 2C 10H TD\u2026";
+      input.setSelectionRange(input.value.length, input.value.length);
+      if (state) {
+        state.cardColemanSymbols = hodlCardColemanSymbols;
+        state.fields.cards = input.value;
+      }
       hodlInvalidateLiveKeyResult();
       hodlUpdateCards();
     };

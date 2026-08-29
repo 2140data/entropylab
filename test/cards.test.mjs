@@ -123,6 +123,9 @@ test("card tokens normalize 10 and suit glyphs to ASCII", () => {
 test("card transcript input normalizes its limited character set", () => {
   assert.equal(hodlFilterCards("as, 10♥;td"), "AS 10H TD");
   assert.equal(hodlFilterCards("as <img>"), "AS IMG");
+  assert.equal(hodlFilterCards("AS 2C TD", true), "A\u2660 2\u2663 T\u2666");
+  assert.equal(hodlFilterCards("A\u2660 2\u2663 T\u2666", false), "AS 2C TD");
+  assert.equal(hodlFilterCards("AS 10H", true), "A\u2660 10\u2665");
   assert.equal(hodlCardTypedCharactersAllowed("aS 10♥, TD"), true);
   assert.equal(hodlCardTypedCharactersAllowed("B"), false);
 });
