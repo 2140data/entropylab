@@ -5,6 +5,7 @@ node_modules/
 
 # Build output: compiled by CI and committed back after merges to main.
 /entropylab.html
+/SHA256SUMS.txt
 /versions.json
 
 # Rust build output (the wasm artifact is committed as src/js/secp256k1-wasm-b64.js)
