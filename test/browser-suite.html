@@ -898,7 +898,7 @@
     state.downloadName = "";
     datButton.click();
     const dat = await (await until(() => state.lastBlob, "watch-only wallet.dat")).text();
-    assert(state.downloadName === "watch-only-wallet.dat", "Unexpected wallet.dat filename");
+    assert(state.downloadName === "entropylab-73c5da0a-watch-only-wallet.dat", "Unexpected wallet.dat filename");
     assert(dat.startsWith("SQLite format 3"), "wallet.dat is not a SQLite database");
     assert(dat.includes("walletdescriptor") && dat.includes("wpkh([") && dat.includes("tr(["), "wallet.dat is missing descriptor records");
     assert(dat.includes("activeexternalspk") && dat.includes("activeinternalspk"), "wallet.dat is missing active script records");
@@ -923,7 +923,7 @@
     state.downloadName = "";
     datButton.click();
     const dat = await (await until(() => state.lastBlob, "private wallet.dat")).text();
-    assert(state.downloadName === "private-wallet-secrets.dat", "Unexpected private wallet.dat filename");
+    assert(state.downloadName === "entropylab-73c5da0a-private-wallet-secrets.dat", "Unexpected private wallet.dat filename");
     assert(dat.startsWith("SQLite format 3"), "private wallet.dat is not a SQLite database");
     assert(dat.includes("walletdescriptorkey"), "Private wallet.dat is missing spending key records");
   });
