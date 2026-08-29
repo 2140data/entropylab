@@ -140,14 +140,10 @@ textarea { display: block; min-height: 96px; letter-spacing: 0.08em; }
 .dice-roll-invalid {
   color: var(--danger);
 }
-/* The decimal keypad shows the die reading over the hex character it enters,
-   so the transcript stays hex whichever die you are holding. */
-.dplus-key-face { display: block; line-height: 1.1; }
 /* On the 18-word coin turn the eight D8 keys become one Tails and one Heads. */
 .dice-input-pad.dplus button.dice-key-wide { grid-column: span 4; }
 .dice-input-pad.faces-1-6 button.dice-key-wide { grid-column: span 3; }
 .dice-input-pad button[hidden] { display: none; }
-.dplus-key-decimal { display: block; font-size: 11px; line-height: 1.1; color: var(--muted); }
 .seed-autocomplete-toggle {
   display: inline-flex; align-items: center; gap: 9px; min-height: 44px;
   margin-top: var(--space-component); padding: 9px 12px;
@@ -298,12 +294,6 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
     grid-template-rows: repeat(4, minmax(48px, auto));
   }
 }
-@media (max-width: 399px) {
-  /* The D16 faces carry two-part labels ("10/A"), so they run out of room
-     first on narrow phones. Shrink only that half of the pad; the D8 keys
-     1-8 are single characters and keep their full size. */
-  .dice-input-pad.dplus button:nth-child(n + 9) { font-size: 15px; }
-}
 .dice-fairness-toggle {
   display: inline-flex; align-items: center; gap: 8px; width: fit-content; min-height: 44px; padding: 0;
   border: 0; background: transparent; color: var(--muted); font-weight: 700; cursor: pointer;
@@ -374,13 +364,6 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
   background: var(--selection-accent); color: var(--selection-fg); border-color: var(--selection-accent);
 }
 .card-suit-pad button:disabled { cursor: not-allowed; opacity: 0.38; }
-/* Reuses the card suit buttons so the D16 choice reads as the same kind of
-   control: discrete pills in a grid, accent fill on the active one. */
-.dplus-die-pad { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.dplus-die-pad button { font-size: 15px; padding-inline: 10px; }
-@media (max-width: 399px) {
-  .dplus-die-pad { grid-template-columns: minmax(0, 1fr); }
-}
 .card-rank-pad { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .card-rank-pad.direct-card-rank-pad { grid-template-columns: repeat(8, minmax(0, 1fr)); }
 @media (min-width: 640px) {

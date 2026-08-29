@@ -585,7 +585,7 @@ ec.innerHTML = `
       <p>Ian Coleman BIP39: <a href="https://github.com/iancoleman/bip39" target="_blank" rel="noopener noreferrer">github.com/iancoleman/bip39</a> \u2014 pull <code>bip39-standalone.html</code> from Releases, or <code>src/js/index.js</code>, <code>entropy.js</code>, <code>jsbip39.js</code>, <code>wordlist_english.js</code>.</p>
       <p>bitaddress.org: <a href="https://github.com/pointbiz/bitaddress.org" target="_blank" rel="noopener noreferrer">github.com/pointbiz/bitaddress.org</a> \u2014 pull <code>bitaddress.org.html</code>, or <code>src/ninja.key.js</code>, <code>ninja.detailwallet.js</code>, <code>ninja.paperwallet.js</code>, <code>bitcoinjs-lib.eckey.js</code>.</p>
       <p>BitBox02 diceware: <a href="https://blog.bitbox.swiss/en/roll-the-dice-generate-your-own-seed/" target="_blank" rel="noopener noreferrer">roll-the-dice-generate-your-own-seed</a> \u2014 lookup table is the BIP39 English list in order.</p>
-      <p>D++ D8 &amp; D16 method: <a href="https://thesimplestbitcoinbook.net/wp-content/uploads/2023/09/Roll-Your-Own-Seed-Phrase-PDF.pdf" target="_blank" rel="noopener noreferrer">Roll Your Own Bitcoin Seed Phrase</a> \u2014 the published 24-word workflow uses one D8 and two D16 rolls per word, then a final D8.</p>
+      <p>D++ D8 &amp; D16 method: <a href="https://thesimplestbitcoinbook.net/wp-content/uploads/2023/09/Roll-Your-Own-Seed-Phrase-PDF.pdf" target="_blank" rel="noopener noreferrer">Roll Your Own Bitcoin Seed Phrase</a> \u2014 the published 24-word workflow uses one D8 labeled 1\u20138 and two hexadecimal D16 dice labeled 0\u2013F per word, then a final D8.</p>
       <p>Jade anti-exfil (sign-to-contract): <a href="https://blog.blockstream.com/anti-exfil-stopping-key-exfiltration/" target="_blank" rel="noopener noreferrer">Anti-Exfil: Stopping Key Exfiltration</a> \u2014 secp256k1-zkp <code>ecdsa_s2c</code> / <code>anti_exfil_host_verify</code>.</p>
     </section>
     <footer class="site-footer no-print">
@@ -594,7 +594,7 @@ ec.innerHTML = `
   </div>
 `;
 if (/^(www\.)?entropylab\.online$/i.test(location.hostname)) document.getElementById("online-warning")?.removeAttribute("hidden");
-var hodlKeyModes = ["dice", "cards", "hex", "seed", "key"], hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "\u2660", label: "Spades", red: false }, { code: "H", symbol: "\u2665", label: "Hearts", red: true }, { code: "C", symbol: "\u2663", label: "Clubs", red: false }, { code: "D", symbol: "\u2666", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, hodlCardColemanSymbols = false, Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], hodlDPlusNumberedD16 = false, ft = "", re = null, Ge = false, Zs = W("#modes"), at = W("#form"), dr = W("#out");
+var hodlKeyModes = ["dice", "cards", "hex", "seed", "key"], hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "\u2660", label: "Spades", red: false }, { code: "H", symbol: "\u2665", label: "Hearts", red: true }, { code: "C", symbol: "\u2663", label: "Clubs", red: false }, { code: "D", symbol: "\u2666", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, hodlCardColemanSymbols = false, Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], ft = "", re = null, Ge = false, Zs = W("#modes"), at = W("#form"), dr = W("#out");
 hodlKeyModes.forEach((e) => {
   let t = document.createElement("button"), active = e === Ne;
   t.type = "button";
@@ -1873,7 +1873,7 @@ function hodlDPlusStepChecksumLabel(step) {
   return step === "coin" ? "the final coin flip" : `the final ${hodlDPlusStepLabel(step)} checksum roll`;
 }
 // The roll turns each position in the final-word spec into a numbered pick:
-// d8 carries three bits (faces 1-8), d16 four bits (faces 0-F / 1-16), and a
+// d8 carries three bits (faces 1-8), hexadecimal d16 four bits (faces 0-F), and a
 // coin one bit (faces 1-4 Tails, 5-8 Heads).
 function hodlDPlusD16Value(face) {
   let normalized = String(face ?? "").toUpperCase();
@@ -1900,7 +1900,7 @@ function hodlDPlusTokens(value) {
   }
   return entries
 }
-function hodlDPlusRolls(value, targetWords = Pt, numberedD16 = hodlDPlusNumberedD16) {
+function hodlDPlusRolls(value, targetWords = Pt) {
   let config = hodlSeedConfig(targetWords),
     rolledTarget = config.partialWords,
     rolledCharacterTarget = rolledTarget * 3,
@@ -2000,14 +2000,14 @@ function hodlDPlusRolls(value, targetWords = Pt, numberedD16 = hodlDPlusNumbered
     words = wordSlots.filter(Boolean),
     notes = [`D++: ${completedGroups} of ${rolledTarget} positional D8 + D16 + D16 groups entered; ${validWordCount} valid (${rolledEntries.length} of ${rolledCharacterTarget} required results).`],
     warnings = [];
-  notes.push(numberedD16 ? "Decimal D16 notation: results read 1 through 16, where 16 is the zero of the underlying 0-15 range." : "Custom D++ D16 notation: results use hexadecimal 0 through F.");
+  notes.push("D++ D16 results use the hexadecimal faces 0 through F exactly as shown on the dice.");
   if (complete && finalWord) {
     let labels = finalInfo.map((info) => info.step === "coin" ? `D8 result ${info.value} read as ${Number(info.value) >= 5 ? "Heads" : "Tails"}` : `${hodlDPlusStepLabel(info.step)} result ${info.value}`).join(" and ");
     notes.push(`Final ${labels} selected checksum option ${finalIndex + 1} of ${candidates.length}: ${finalWord}.`);
   }
   if (waiting === "last-word") notes.push(`Choose 1 of ${config.candidates} checksum-valid final words to complete the ${config.words}-word seed.`);
   if (rejectedD8) notes.push(`Rejected ${rejectedD8} result${rejectedD8===1?"":"s"} that cannot be used for a D8 roll.`);
-  if (rejectedD16) notes.push(`Rejected ${rejectedD16} result${rejectedD16===1?"":"s"} that ${rejectedD16===1?"is":"are"} not valid for the selected D16 convention (${numberedD16?"1\u201316":"0\u2013F"}).`);
+  if (rejectedD16) notes.push(`Rejected ${rejectedD16} result${rejectedD16===1?"":"s"} that ${rejectedD16===1?"is":"are"} not a hexadecimal D16 face (0\u2013F).`);
   if (extraAfter) warnings.push(`${extraAfter} extra input${extraAfter===1?" was":"s were"} ignored after ${hodlDPlusFinalDescription(config.words)}.`);
   return {
     words,
@@ -2039,14 +2039,13 @@ function hodlDPlusRolls(value, targetWords = Pt, numberedD16 = hodlDPlusNumbered
     acceptedCharacters,
     targetWords: config.words,
     neededPartial: rolledTarget,
-    numberedD16,
     complete: complete && Boolean(finalWord)
   }
 }
 
-function hodlAnalyzeDiceInput(value, method = ge, targetWords = Pt, coinPositions = hodlDiceCoinPositions, numberedD16 = hodlDPlusNumberedD16) {
+function hodlAnalyzeDiceInput(value, method = ge, targetWords = Pt, coinPositions = hodlDiceCoinPositions) {
   if (method === "dplus") {
-    let parsed = hodlDPlusRolls(value, targetWords, numberedD16);
+    let parsed = hodlDPlusRolls(value, targetWords);
     return { invalidRanges: parsed.invalidRanges, invalidCount: parsed.invalidCount, coinDerivedCount: 0, acceptedRolls: parsed.acceptedCharacters, words: parsed.validWordCount, diceInWord: parsed.currentPosition ?? 0, mappedBits: parsed.bits, totalMappedBits: parsed.bits, complete: parsed.complete, coinTurn: false, dplus: parsed };
   }
   let config = hodlSeedConfig(targetWords), invalidRanges = [], acceptedRolls = [], coinPositionSet = new Set(coinPositions || []), words = 0, diceInWord = 0, mappedBits = 0, totalMappedBits = 0;
@@ -2147,9 +2146,9 @@ function hodlDiceFairnessAssess(rolls, labels, title) {
   let df = Math.max(1, sides - 1), cdf = expected > 0 ? hodlChiSquaredCdf(chi, df) : 0, enough = n >= minimum && minimum > 0, verdict = n ? hodlDiceFairnessVerdict(cdf, enough) : { id: "empty", label: "", tone: "muted" };
   return { title: title || "Die", sides, n, minimum, remaining: Math.max(0, minimum - n), expected, chi, cdf, df, counts, enough, verdict };
 }
-function hodlDiceFairnessSamples(value, method, targetWords = Pt, numberedD16 = hodlDPlusNumberedD16) {
+function hodlDiceFairnessSamples(value, method, targetWords = Pt) {
   if (method === "dplus") {
-    let parsed = hodlDPlusRolls(value, targetWords, numberedD16), d8 = [], d16 = [], coins = [];
+    let parsed = hodlDPlusRolls(value, targetWords), d8 = [], d16 = [], coins = [];
     for (let group of parsed.groups) group.faces.forEach((face, position) => {
       if (group.validity[position]) (position === 0 ? d8 : d16).push(face);
     });
@@ -2162,7 +2161,7 @@ function hodlDiceFairnessSamples(value, method, targetWords = Pt, numberedD16 = 
     });
     return [
       { id: "d8", title: "D8", rolls: d8, labels: ["1", "2", "3", "4", "5", "6", "7", "8"] },
-      { id: "d16", title: numberedD16 ? "D16 (1–16)" : "D16 (0–F)", rolls: d16, labels: numberedD16 ? ["1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "0"] : ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"] },
+      { id: "d16", title: "D16 (0–F)", rolls: d16, labels: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"] },
       { id: "coin", title: "Coin", rolls: coins, labels: ["Heads", "Tails"] }
     ];
   }
@@ -2192,8 +2191,8 @@ function hodlDiceFairnessSamples(value, method, targetWords = Pt, numberedD16 = 
   }
   return [{ id: "d6", title: "D6", rolls: hodlAnalyzeDiceInput(value, method, targetWords).acceptedRolls, labels: ["1", "2", "3", "4", "5", "6"] }];
 }
-function hodlDiceFairnessReports(value, method, targetWords = Pt, numberedD16 = hodlDPlusNumberedD16) {
-  return hodlDiceFairnessSamples(value, method, targetWords, numberedD16).map((sample) => hodlDiceFairnessAssess(sample.rolls, sample.labels, sample.title));
+function hodlDiceFairnessReports(value, method, targetWords = Pt) {
+  return hodlDiceFairnessSamples(value, method, targetWords).map((sample) => hodlDiceFairnessAssess(sample.rolls, sample.labels, sample.title));
 }
 function hodlDiceFairnessTone(reports) {
   let rank = { danger: 3, warn: 2, ok: 1, muted: 0 }, tone = "muted";
@@ -2292,8 +2291,8 @@ function hodlTrackDiceInputEdit(input) {
   }
   input.dataset.previousValue = current;
 }
-function hodlSanitizeDiceInput(input, method = ge, targetWords = Pt, numberedD16 = hodlDPlusNumberedD16) {
-  if (method === "dplus") return hodlSanitizeDPlusInput(input, targetWords, numberedD16);
+function hodlSanitizeDiceInput(input, method = ge, targetWords = Pt) {
+  if (method === "dplus") return hodlSanitizeDPlusInput(input, targetWords);
   let raw = input.value, selectionStart = input.selectionStart ?? raw.length, selectionEnd = input.selectionEnd ?? selectionStart, selectionDirection = input.selectionDirection || "none", positions = new Set(hodlDiceCoinPositions), digits = [];
   for (let index = 0; index < raw.length; index++) if (raw[index] >= "1" && raw[index] <= "6") digits.push({ value: raw[index], coin: positions.has(index) });
   let config = hodlSeedConfig(targetWords), clean = "", nextPositions = [], digitEnds = [0], words = 0, diceInWord = 0, separateNext = false;
@@ -2324,27 +2323,25 @@ function hodlSanitizeDiceInput(input, method = ge, targetWords = Pt, numberedD16
   input.setSelectionRange(cleanSelectionStart, cleanSelectionEnd, selectionDirection);
   return true;
 }
-// Characters that can ever be part of a roll. Anything else is dropped as you
-// type, so junk never reaches the transcript; rolls that are well-formed but
-// out of range (17, or 0 in decimal) are kept and highlighted for correction.
-function hodlDPlusAllowedCharacters(seed, numberedD16) {
+// Characters that can ever be part of the canonical D++ transcript.
+function hodlDPlusAllowedCharacters() {
   return new RegExp("[0-9A-Fa-f]")
 }
 
-function hodlDPlusSeparator(index, seed, numberedD16) {
+function hodlDPlusSeparator(index, seed) {
   if (index === 0) return "";
   let rolled = seed.partialWords * 3,
     wordBoundary = index < rolled ? index % 3 === 0 : index === rolled;
   return wordBoundary ? " " : ""
 }
 
-function hodlSanitizeDPlusInput(input, targetWords = Pt, numberedD16 = hodlDPlusNumberedD16) {
+function hodlSanitizeDPlusInput(input, targetWords = Pt) {
   let raw = input.value,
     selectionStart = input.selectionStart ?? raw.length,
     selectionEnd = input.selectionEnd ?? selectionStart,
     selectionDirection = input.selectionDirection || "none";
   let seed = hodlSeedConfig(targetWords),
-    allowed = hodlDPlusAllowedCharacters(seed, numberedD16),
+    allowed = hodlDPlusAllowedCharacters(),
     kept = "";
   for (let character of raw)
     if (allowed.test(character) || /[\s,;|]/.test(character)) kept += character;
@@ -2354,7 +2351,7 @@ function hodlSanitizeDPlusInput(input, targetWords = Pt, numberedD16 = hodlDPlus
   let clean = "",
     significantEnds = [0];
   tokens.forEach((token, index) => {
-    clean += hodlDPlusSeparator(index, seed, numberedD16);
+    clean += hodlDPlusSeparator(index, seed);
     for (let character of token) {
       clean += character;
       significantEnds.push(clean.length)
@@ -2558,7 +2555,7 @@ function hodlUpdateDiceButtons(input, analysis) {
       else if (coinTurn) reason = "Final D8, interpreted as a coin flip: 1\u20134 is Tails, 5\u20138 is Heads.";
       else if (disabled) reason = "This roll needs the D8, so use a result from 1 through 8.";
 
-      else reason = isD8 ? (turn === "checksum-d8" ? "Final D8: choose checksum option 1 through 8." : "D8 roll: choose result 1 through 8.") : hodlDPlusNumberedD16 ? "Decimal D16 roll: choose result 1 through 16." : "Custom D++ D16 roll: choose any hexadecimal result from 0 through F.";
+      else reason = isD8 ? (turn === "checksum-d8" ? "Final D8: choose checksum option 1 through 8." : "D8 roll: choose result 1 through 8.") : "Hexadecimal D16 roll: choose the face shown from 0 through F.";
     } else if (ge === "bitbox") {
       if (analysis.complete) {
         disabled = true;
@@ -4048,14 +4045,6 @@ function hodlRenderLastWordPicker(container, candidates, selected, onPick, setti
   container.appendChild(label);
 }
 
-function hodlUpdateDPlusDieControl() {
-  document.querySelectorAll("[data-dplus-die]").forEach(button => {
-    let active = (button.dataset.dplusDie === "numbered") === Boolean(hodlDPlusNumberedD16);
-    button.classList.toggle("active", active);
-    button.setAttribute("aria-pressed", String(active))
-  })
-}
-
 function hodlUpdateSeedLengthControl() {
   let section = document.getElementById("seed-length");
   if (!section) return;
@@ -4129,18 +4118,12 @@ function hodlRenderKeyForm() {
   }
   hodlUpdateSeedLengthControl();
   if (Ne === "dice") {
-    let dplusFaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "0"],
-      dplusPad = dplusFaces.map(face => {
-        let decimal = face === "0" ? 16 : Number.parseInt(face, 16),
-          label = hodlDPlusNumberedD16 && decimal >= 10 ? `<span class="dplus-key-face">${face}</span><span class="dplus-key-decimal">${decimal}</span>` : face,
-          aria = hodlDPlusNumberedD16 ? `D16 result ${decimal}, entered as ${face}` : `D16 result ${face}${/^[A-F]$/.test(face)?`, decimal ${decimal}`:""}`;
-        return `<button type="button" data-d="${face}" aria-label="${aria}">${label}</button>`
-      }).join("");
-    let diceLabel = ge === "dplus" ? `D++ rolls (D8, D16, D16; then ${hodlDPlusFinalDescription(config.words)})` : ge === "bitbox" ? "Dice rolls (1\u20134, then a 6th die interpreted as a coin flip)" : "Dice rolls (faces 1\u20136 only)";
-    let diceHelp = ge === "dplus" ? `For each of the first ${config.partialWords} words, enter the D8 result, then both D16 results. ${hodlDPlusFinalHelp(config.words)}` : ge === "bitbox" ? `${config.partialWords} lookup-table words fill one slot at a time, then choose a confirmed final checksum word. Use 1\u20134 for the first five rolls (if you get 5 or 6, roll again). The sixth roll is treated as the coin: 1–3 is Heads, 4–6 is Tails. Or flip a real coin!` : ge === "coleman" ? `Every rolled 6 becomes 0 before the complete digit string is hashed with SHA-256. This Dice [1-6] method matches the method used by Keystone. Any nonempty count produces a phrase, but use at least ${config.hashRolls} fair rolls before relying on it.` : `The original dice digit string is hashed with SHA-256. This Base 10 [0-9] method matches COLDCARD and SeedSigner. Any nonempty count produces a phrase, but use at least ${config.hashRolls} fair rolls before relying on it.`;
+    let dplusFaces = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"],
+      dplusPad = dplusFaces.map(face => `<button type="button" data-d="${face}" aria-label="Hexadecimal D16 result ${face}">${face}</button>`).join("");
+    let diceLabel = ge === "dplus" ? `D++ rolls (D8 1\u20138, D16 0\u2013F, D16 0\u2013F; then ${hodlDPlusFinalDescription(config.words)})` : ge === "bitbox" ? "Dice rolls (1\u20134, then a 6th die interpreted as a coin flip)" : "Dice rolls (faces 1\u20136 only)";
+    let diceHelp = ge === "dplus" ? `Enter the D8 face from 1\u20138, then both hexadecimal D16 faces from 0\u2013F exactly as shown on the dice. For example, 100 selects abandon and 8FF selects zoo. ${hodlDPlusFinalHelp(config.words)}` : ge === "bitbox" ? `${config.partialWords} lookup-table words fill one slot at a time, then choose a confirmed final checksum word. Use 1\u20134 for the first five rolls (if you get 5 or 6, roll again). The sixth roll is treated as the coin: 1–3 is Heads, 4–6 is Tails. Or flip a real coin!` : ge === "coleman" ? `Every rolled 6 becomes 0 before the complete digit string is hashed with SHA-256. This Dice [1-6] method matches the method used by Keystone. Any nonempty count produces a phrase, but use at least ${config.hashRolls} fair rolls before relying on it.` : `The original dice digit string is hashed with SHA-256. This Base 10 [0-9] method matches COLDCARD and SeedSigner. Any nonempty count produces a phrase, but use at least ${config.hashRolls} fair rolls before relying on it.`;
     let dicePlaceholder = ge === "dplus" ? "100 2AF…" : ge === "bitbox" ? "111111 222224\u2026" : "415263415263\u2026";
     let dicePad = ge === "dplus" ? `<div class="dice-input-pad dplus">${dplusPad}</div>` : `<div class="dice-input-pad faces-1-6">${[1,2,3,4,5,6].map(face=>`<button type="button" data-d="${face}">${face}</button>`).join("")}</div>`;
-    let dplusConvention = ge === "dplus" ? `<p class="label" id="dplus-die-label">Which type of D16 dice are you rolling?</p><div class="card-suit-pad dplus-die-pad" id="dplus-die" role="group" aria-labelledby="dplus-die-label"><button type="button" class="${hodlDPlusNumberedD16?"":"active"}" data-dplus-die="hex" aria-pressed="${hodlDPlusNumberedD16?"false":"true"}"><strong>Hex</strong> \xB7 0\u2013F</button><button type="button" class="${hodlDPlusNumberedD16?"active":""}" data-dplus-die="numbered" aria-pressed="${hodlDPlusNumberedD16?"true":"false"}"><strong>Decimal</strong> \xB7 1\u201316</button></div>` : "";
     at.innerHTML = `
       <p class="label">How to turn rolls into a ${config.words}-word seed</p>
       <div class="choice-grid">
@@ -4154,10 +4137,9 @@ function hodlRenderKeyForm() {
         <span><strong>BitBox diceware / Direct word selection</strong><span class="desc">Use five dice showing 1\u20134, then a coin (or 6th die: 1\u20133 heads, 4\u20136 tails). Build ${config.partialWords} lookup-table words, then choose 1 of ${config.candidates} valid final checksum words.</span></span>
       </label>
       <label class="choice"><input type="radio" name="dm" value="dplus" ${ge==="dplus"?"checked":""} />
-        <span><strong>D++ / Direct word selection</strong><span class="desc">Roll one 8-sided die and two 16-sided dice for each of the first ${config.partialWords} words, then ${hodlDPlusFinalDescription(config.words)} to select the valid checksum final word.</span></span>
+        <span><strong>D++ / Direct word selection</strong><span class="desc">Roll one D8 labeled 1\u20138 and two hexadecimal D16 dice labeled 0\u2013F for each of the first ${config.partialWords} words, then ${hodlDPlusFinalDescription(config.words)} to select the valid checksum final word.</span></span>
       </label>
       </div>
-      ${dplusConvention}
       <p class="label" id="dice-label">${diceLabel}</p>
       <p class="muted" id="dice-help">${diceHelp}</p>
       <div class="dice-input-shell"><pre class="dice-input-highlight" id="dice-highlight" aria-hidden="true"></pre><textarea id="dice" placeholder="${dicePlaceholder}" aria-describedby="dice-help dice-meta"></textarea></div>
@@ -4180,28 +4162,6 @@ function hodlRenderKeyForm() {
       hodlUpdateDice();
     };
     input.onscroll = () => hodlSyncDiceHighlight(input);
-    document.querySelectorAll("[data-dplus-die]").forEach(dplusButton => {
-      dplusButton.onclick = () => {
-        let numbered = dplusButton.dataset.dplusDie === "numbered";
-        if (numbered === hodlDPlusNumberedD16) return;
-        let state = hodlKeys[hodlActiveKey],
-          selectionStart = input.selectionStart ?? input.value.length,
-          selectionEnd = input.selectionEnd ?? selectionStart,
-          selectionDirection = input.selectionDirection || "none";
-        hodlDPlusNumberedD16 = numbered;
-        if (state) {
-          state.dplusNumberedD16 = hodlDPlusNumberedD16;
-          state.fields.dplusDice = input.value
-        }
-        hodlInvalidateLiveKeyResult();
-        hodlRenderKeyForm();
-        hodlRestoreFormFields(state);
-        let replacement = document.getElementById("dice");
-        if (replacement) replacement.setSelectionRange(Math.min(selectionStart, replacement.value.length), Math.min(selectionEnd, replacement.value.length), selectionDirection);
-        hodlUpdateDice();
-        hodlQueueMasterFingerprintPreview(0)
-      }
-    });
     at.querySelectorAll("input[name=dm]").forEach(radio => {
       radio.onchange = () => {
         let raw = input.value, lastWord = ft, previousMethod = ge, state = hodlKeys[hodlActiveKey];
@@ -4569,7 +4529,7 @@ function hodlUpdateDice() {
     let result = inputState.dplus || hodlDPlusRolls(input.value, config.words),
       status = "",
       selectingFinal = result.waiting === "last-word",
-      d16Range = hodlDPlusNumberedD16 ? "1\u201316" : "0\u2013F";
+      d16Range = "0\u2013F";
     if (ft && (!selectingFinal || !result.candidates.includes(ft))) {
       ft = "";
       let state = hodlKeys[hodlActiveKey];
@@ -5034,7 +4994,7 @@ function hodlInitMasterFingerprintPreview() {
     hodlQueueMasterFingerprintPreview();
   });
   panel.addEventListener("click", event => {
-    let target = event.target instanceof Element ? event.target.closest("#modes button, [data-seed-words], [data-dplus-die], [data-d], [data-lw], [data-card-suit], [data-card-rank], [data-direct-card-rank], #card-undo") : null;
+    let target = event.target instanceof Element ? event.target.closest("#modes button, [data-seed-words], [data-d], [data-lw], [data-card-suit], [data-card-rank], [data-direct-card-rank], #card-undo") : null;
     if (!target) return;
     hodlInvalidateLiveKeyResult();
     hodlQueueMasterFingerprintPreview();
@@ -6853,7 +6813,7 @@ function hodlPrivateKeyValues(fields) {
 }
 function hodlNewKeyState(name, keyId, keyNumber) {
   let id = keyId ?? hodlNextKeyId++, number = keyNumber ?? hodlNextKeyNumber++;
-  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: false, passphraseBip39Words: false, dplusNumberedD16: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", network: "mainnet", account: "0", count: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
+  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: false, passphraseBip39Words: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", network: "mainnet", account: "0", count: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
 }
 function hodlRestoreFormFields(state) {
   if (!state) return;
@@ -6866,8 +6826,6 @@ function hodlRestoreFormFields(state) {
   if (syncNumberBases) syncNumberBases.checked = Boolean(state.syncNumberBases);
   let seedAutocomplete = document.getElementById("seed-autocomplete");
   if (seedAutocomplete) seedAutocomplete.checked = Boolean(state.seedAutocomplete);
-  hodlDPlusNumberedD16 = Boolean(state.dplusNumberedD16);
-  hodlUpdateDPlusDieControl();
   ["dice", "hex", "bin", "base4", "base8", "base32", "base64", "seed", "seed-numbers", "key", "cards", "direct-cards"].forEach(id => {
     let el = document.getElementById(id);
     if (el) {
@@ -6905,7 +6863,7 @@ function hodlSetMode(mode) {
 function hodlKeyStateNeedsClear(state) {
   if (!state) return false;
   let fields = state.fields || {}, privateKeys = hodlPrivateKeyValues(fields), hasText = (id) => String(fields[id] ?? "").length > 0;
-  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || Boolean(state.seedAutocomplete) || Boolean(state.passphraseBip39Words) || Boolean(state.dplusNumberedD16) || Boolean(state.showCards) || Boolean(state.showDiceFairness) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.network ?? "mainnet") !== "mainnet" || String(fields.account ?? "0") !== "0" || String(fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
+  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || Boolean(state.seedAutocomplete) || Boolean(state.passphraseBip39Words) || Boolean(state.showCards) || Boolean(state.showDiceFairness) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.network ?? "mainnet") !== "mainnet" || String(fields.account ?? "0") !== "0" || String(fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
 }
 function hodlSyncKeyClearButton(capture = false) {
   if (capture) hodlCaptureKey();
@@ -6936,7 +6894,6 @@ function hodlCaptureKey() {
   if (seedAutocomplete) state.seedAutocomplete = seedAutocomplete.checked;
   let passphraseBip39Words = document.getElementById("passphrase-bip39-words");
   if (passphraseBip39Words) state.passphraseBip39Words = passphraseBip39Words.checked;
-  state.dplusNumberedD16 = Boolean(hodlDPlusNumberedD16);
   let showCards = document.getElementById("show-cards");
   if (showCards) state.showCards = showCards.checked;
   let fairnessToggle = document.getElementById("dice-fairness-toggle");
@@ -6984,7 +6941,6 @@ function hodlRestoreKey() {
     hodlSeedZeroIndexed = false;
     hodlCardColemanSymbols = false;
     hodlEntropyFormat = "bin";
-    hodlDPlusNumberedD16 = false;
     Pt = 24;
     hodlDiceCoinPositions = [];
     ft = "";
@@ -7023,7 +6979,6 @@ function hodlRestoreKey() {
   hodlSeedZeroIndexed = Boolean(state.seedZeroIndexed);
   hodlCardColemanSymbols = Boolean(state.cardColemanSymbols);
   hodlEntropyFormat = hodlNormalizeEntropyFormat(state.entropyFormat);
-  hodlDPlusNumberedD16 = Boolean(state.dplusNumberedD16);
   Pt = hodlSeedLengths[Number(state.targetWords)] ? Number(state.targetWords) : 24;
   hodlDiceCoinPositions = hodlNormalizeDiceCoinPositions(state.diceCoinPositions);
   ft = ge === "dplus" ? state.dplusLastWord || "" : ge === "bitbox" ? state.lastWord || "" : "";
