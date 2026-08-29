@@ -254,7 +254,10 @@ test("headless Firefox runs the hosted and offline suites", async () => {
     for (const browser of browsers) {
       browser.kill("SIGKILL");
     }
+    // Windows CI runners keep Firefox profile files locked briefly after
+    // SIGKILL; give the handles time to release before cleanup.
+    await new Promise((resolve) => setTimeout(resolve, 500));
     await new Promise((resolve) => server.close(resolve));
-    rmSync(workDir, { recursive: true, force: true });
+    rmSync(workDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
   }
 });
