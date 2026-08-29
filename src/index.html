@@ -77,12 +77,12 @@ This matches the method used by Keystone, and all rolls are included.</span></sp
         <span><strong>BitBox diceware / Direct word selection</strong>
         <span class="desc">Same as the BitBox02 lookup table: five dice
 showing 1–4, then a coin (or 6th die: 1–3 tails, 4–6 heads). 5 and 6 on
-the first five dice of a word are skipped (reroll). After 23 words, pick
- one of the 8 checksum words.</span></span>
+the first five dice of a word are skipped (reroll). After the lookup-table
+words, pick one of the checksum words.</span></span>
       </label>
       <label class="choice"><input type="radio" name="dm" value="dplus">
         <span><strong>D++ / Direct word selection</strong>
-        <span class="desc">For a 24-word seed, roll one D8 and two D16 dice for each of the first 23 words, then a final D8 for the checksum word.</span></span>
+        <span class="desc">Roll one D8 and two D16 dice for each lookup-table word, then use the per-size final rolls for the checksum word.</span></span>
       </label>
       </div>
       <p class="label" id="dice-label">Dice rolls (faces 1–6 only)</p>

@@ -2397,7 +2397,7 @@ function hodlUpdateDiceButtons(input, analysis) {
       }
     }
     if (ge === "dplus") {
-      // The 18-word seed ends on a D8 read as a coin. On that turn the eight D8
+      // A coin-flip step reads a D8 as one bit. On that turn the eight D8
       // keys collapse into one Tails key and one Heads key, each naming the
       // faces it stands for. Tapping enters the first face of its range; the
       // range is what decides the bit, so any face in it derives the same word,
@@ -2465,7 +2465,7 @@ function hodlBitsToTargetEntropy(bitString, sourceBits, method, notes, warnings,
 }
 function hodlDiceEntropy(value, method, targetWords = Pt) {
   let config = hodlSeedConfig(targetWords), notes = [], warnings = [];
-  if (method === "dplus") return { ok: false, error: `D++ directly selects ${config.partialWords} BIP39 words, then ${config.words === 24 ? "uses a final D8 roll" : "uses a checksum-valid word selection"} for the final word.`, notes, warnings };
+    if (method === "dplus") return { ok: false, error: `D++ directly selects ${config.partialWords} BIP39 words; ${hodlDPlusFinalDescription(config.words)} to finish with the final checksum word.`, notes, warnings };
   let parsed = Br(value), rolls = parsed.rolls;
   if (method === "bitbox") return { ok: false, error: `BitBox diceware uses ${config.partialWords} lookup-table words and a final checksum pick for a ${config.words}-word seed.`, notes, warnings };
   if (parsed.leftover.length) return { ok: false, error: `Dice must be faces 1\u20136. Ignored characters: ${JSON.stringify(parsed.leftover.slice(0, 24))}`, notes, warnings };
