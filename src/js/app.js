@@ -4941,12 +4941,6 @@ function hodlRenderLastWordPicker(container, candidates, selected, onPick, setti
     placeholder.dataset.customSelectPlaceholder = "true";
     select.appendChild(placeholder);
   }
-  if (settings.resettable) {
-    let reset = document.createElement("option");
-    reset.value = "";
-    reset.textContent = "-";
-    select.appendChild(reset);
-  }
   candidates.forEach((word) => {
     let option = document.createElement("option");
     option.value = word;
@@ -5358,7 +5352,7 @@ function hodlRenderKeyForm() {
       }
       let finalContext = analysis.finalContext, validation = hodlValidateTargetMnemonic(value, config.words), entered = analysis.tokens.length, progress = hodlSeedCountStatus(entered, config.words), remaining = Math.max(0, config.words - entered);
       if (finalContext) {
-        hodlRenderLastWordPicker(picker, finalContext.candidates, finalContext.selected, (word) => hodlReplaceSeedFinalWord(input, finalContext, word), { forceSelect: true, resettable: true, targetWords: config.words, placeholder: `Choose ${config.words === 18 ? "an" : "a"} ${config.words}th word` });
+        hodlRenderLastWordPicker(picker, finalContext.candidates, finalContext.selected, (word) => hodlReplaceSeedFinalWord(input, finalContext, word), { forceSelect: true, targetWords: config.words, placeholder: `Choose ${config.words === 18 ? "an" : "a"} ${config.words}th word` });
         if (!finalContext.finalToken) {
           meta.textContent = `${progress} \xB7 choose the final checksum word \xB7 ${finalContext.candidates.length} valid choices`;
           meta.className = "muted ok";
@@ -5502,7 +5496,7 @@ function hodlUpdateDice() {
       let state = hodlKeys[hodlActiveKey];
       if (state) state.dplusLastWord = ft;
       hodlUpdateDice();
-    }, { forceSelect: true, resettable: true, targetWords: config.words, placeholder: `Choose ${config.words === 18 ? "an" : "a"} ${config.words}th word` });
+    }, { forceSelect: true, targetWords: config.words, placeholder: `Choose ${config.words === 18 ? "an" : "a"} ${config.words}th word` });
     let meta = W("#dice-meta");
     meta.replaceChildren(document.createTextNode(status));
     // The next roll is the one thing to act on, so it carries the weight.
@@ -5532,7 +5526,7 @@ function hodlUpdateDice() {
       let state = hodlKeys[hodlActiveKey];
       if (state) state.lastWord = ft;
       hodlUpdateDice();
-    }, { forceSelect: true, resettable: true, targetWords: config.words, placeholder: `Choose ${config.words === 18 ? "an" : "a"} ${config.words}th word` });
+    }, { forceSelect: true, targetWords: config.words, placeholder: `Choose ${config.words === 18 ? "an" : "a"} ${config.words}th word` });
     hodlRenderDiceFairness(input.value, ge, config.words);
     hodlQueueMasterFingerprintPreview();
     return;
