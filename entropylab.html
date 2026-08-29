@@ -5301,22 +5301,26 @@ function hodlUpdateDice(){
     let result=inputState.dplus||hodlDPlusRolls(input.value,config.words),status="",selectingFinal=result.waiting==="last-word",d16Range=hodlDPlusNumberedD16?"1–16":"0–F";
     if(ft&&(!selectingFinal||!result.candidates.includes(ft))){ft="";let state=hodlKeys[hodlActiveKey];if(state)state.dplusLastWord=""}
     let selectedFinal=selectingFinal?ft:"",complete=result.complete||Boolean(selectedFinal);
-    if(result.waiting==="d8")status=`${result.completedGroups} of ${config.partialWords} groups entered \u00b7 word ${result.activeGroupIndex+1} \u00b7 D8 roll (1\u20138)`;
-    else if(result.waiting==="d16-first")status=`${result.completedGroups} of ${config.partialWords} groups entered \u00b7 word ${result.activeGroupIndex+1} \u00b7 first D16 roll (${d16Range})`;
-    else if(result.waiting==="d16-second")status=`${result.completedGroups} of ${config.partialWords} groups entered \u00b7 word ${result.activeGroupIndex+1} \u00b7 second D16 roll (${d16Range})`;
+    let rollPhrase="",rollRange="",groupsEntered=`${result.completedGroups} of ${config.partialWords} groups entered · word ${result.activeGroupIndex+1}`,rollsComplete=`${config.partialWords} of ${config.partialWords} word rolls complete`;
+    if(result.waiting==="d8"){status=groupsEntered;rollPhrase="D8 roll";rollRange=" (1–8)"}
+    else if(result.waiting==="d16-first"){status=groupsEntered;rollPhrase="first D16 roll";rollRange=` (${d16Range})`}
+    else if(result.waiting==="d16-second"){status=groupsEntered;rollPhrase="second D16 roll";rollRange=` (${d16Range})`}
     else if(result.waiting==="correction"){
       let invalid=result.firstInvalid,position=invalid?.final?(config.words===18?(invalid.position===1?"the final coin flip":"the final D16 checksum roll"):"the final D8 checksum roll"):`word ${(invalid?.groupIndex??0)+1}'s ${invalid?.position===0?"D8":invalid?.position===1?"first D16":"second D16"} roll`;
-      status=`${result.completedGroups} of ${config.partialWords} groups entered \u00b7 correct ${result.invalidRequiredCount} highlighted invalid result${result.invalidRequiredCount===1?"":"s"}, starting with ${position}`
+      status=`${result.completedGroups} of ${config.partialWords} groups entered · correct ${result.invalidRequiredCount} highlighted invalid result${result.invalidRequiredCount===1?"":"s"}, starting with ${position}`
     }
-    else if(selectingFinal)status=selectedFinal?`${config.words} of ${config.words} seed words \u00b7 checksum valid \u00b7 ready to derive`:`${config.partialWords} of ${config.partialWords} word rolls complete \u00b7 choose the final checksum word`;
-    else if(result.waiting==="checksum-d8")status=`${config.partialWords} of ${config.partialWords} word rolls complete \u00b7 final D8 checksum roll (1\u20138)`;
-    else if(result.waiting==="checksum-d16")status=`${config.partialWords} of ${config.partialWords} word rolls complete \u00b7 final D16 checksum roll (${d16Range})`;
-    else if(result.waiting==="checksum-coin")status=`${config.partialWords} of ${config.partialWords} word rolls complete \u00b7 final D8 as a coin flip (1–4 Heads, 5–8 Tails)`;
-    else status=`${config.words} of ${config.words} seed words \u00b7 checksum valid \u00b7 ready to derive`;
-    if(result.extraAfter)status+=` \u00b7 ${result.extraAfter} extra input${result.extraAfter===1?"":"s"} ignored`;
+    else if(selectingFinal)status=selectedFinal?`${config.words} of ${config.words} seed words · checksum valid · ready to derive`:`${rollsComplete} · choose the final checksum word`;
+    else if(result.waiting==="checksum-d8"){status=rollsComplete;rollPhrase="final D8 checksum roll";rollRange=" (1–8)"}
+    else if(result.waiting==="checksum-d16"){status=rollsComplete;rollPhrase="final D16 checksum roll";rollRange=` (${d16Range})`}
+    else if(result.waiting==="checksum-coin"){status=rollsComplete;rollPhrase="final D8 as a coin flip";rollRange=" (1–4 Heads, 5–8 Tails)"}
+    else status=`${config.words} of ${config.words} seed words · checksum valid · ready to derive`;
+    let statusTail=result.extraAfter?` · ${result.extraAfter} extra input${result.extraAfter===1?"":"s"} ignored`:"";
     let displayWords=result.wordSlots.slice();if(result.finalWord)displayWords.push(result.finalWord);else if(selectedFinal)displayWords.push(selectedFinal);hodlRenderDiceWordGrid(wordsBox,displayWords,config.words,!1);
     hodlRenderLastWordPicker(picker,selectingFinal?result.candidates:[],selectedFinal,word=>{ft=word;let state=hodlKeys[hodlActiveKey];if(state)state.dplusLastWord=ft;hodlUpdateDice()},{forceSelect:!0,resettable:!0,targetWords:config.words,placeholder:`Choose ${config.words===18?"an":"a"} ${config.words}th word`});
-    let meta=W("#dice-meta");meta.textContent=status+invalidStatus;meta.className="muted"+(complete&&!result.invalidCount?" ok":result.invalidCount?" err":"");hodlQueueMasterFingerprintPreview();return
+    let meta=W("#dice-meta");meta.replaceChildren(document.createTextNode(status));
+    // The next roll is the one thing to act on, so it carries the weight.
+    if(rollPhrase){let emphasis=document.createElement("strong");emphasis.textContent=rollPhrase;meta.append(document.createTextNode(" · "),emphasis,document.createTextNode(rollRange))}
+    meta.append(document.createTextNode(statusTail+invalidStatus));meta.className="muted"+(complete&&!result.invalidCount?" ok":result.invalidCount?" err":"");hodlQueueMasterFingerprintPreview();return
   }
   if(ge==="bitbox"){
     let result=hodlBitBoxRolls(input.value,config.words),status=result.waiting==="last-word"?`${result.words.length} words \u00b7 choose the final checksum word`:result.waiting==="coin"?`Word ${result.words.length+1} of ${result.neededPartial} \u00b7 coin / 6th die`:`Word ${result.words.length+1} of ${result.neededPartial} \u00b7 die ${result.diceInWord+1} of 5 (faces 1\u20134)`;if(result.extraAfter)status+=` \u00b7 ${result.extraAfter} extra input${result.extraAfter===1?"":"s"} ignored`;
