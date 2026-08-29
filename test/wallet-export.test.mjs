@@ -403,7 +403,7 @@ test("template, build script, and app wiring ship the export", () => {
   assert.match(app, /hodlSaveRecoveryControl\s*\(\s*\)\s*\{\s*return\s*`<div class="wallet-data-actions no-print">[^`]*\$\{hodlWalletDatControl\(\s*(?:false|!1)\s*\)\}/);
   assert.match(app, /id="download-wallet-dat"[^>]*>\$\{hodlWalletExport\.walletDatButtonLabel\(includePrivate\)\}/);
   assert.match(app, /hodlWalletExport\.hasDescriptors\(re\)/);
-  assert.match(app, /hodlWalletExport\.buildWalletDat\(\s*re\s*,\s*Ge\s*,\s*hodlWalletDatDeps\(\s*\)\s*\)/);
+  assert.match(app, /hodlWalletExport\.buildWalletDat\(\s*re\s*,\s*Ge\s*,\s*hodlWalletDatDeps\(\s*\)\s*,\s*creationTime\s*\)/);
   assert.match(app, /hodlWalletExport\.walletDatFilename\(re, Ge\)/);
   assert.match(app, /document\.getElementById\("download-wallet-dat"\)/);
   assert.match(css, /\.save-wallet-dat/);
@@ -457,8 +457,9 @@ class Blob {
 const document = {
   createElement: () => ({ click() { captured.name = this.download; } }),
   getElementById: (id) => elements.get(id) ?? null,
+  querySelectorAll: (selector) => [...elements.values()].filter((element) => element.matches?.(selector)),
 };
-let re = null, Ge = false;
+let re = null, Ge = false, hodlWalletDatBirthday = "genesis";
 const tr = (bytes) => sha256(bytes);
 const Cs = descriptorChecksum;
 const sr = { decode: b58checkDecode };
@@ -476,7 +477,8 @@ ${extract("function hodlWalletDatDeps", "function hodlFocusWalletResult")}
 ${sqliteSrc}
 ${walletSrc}
 const setResult = (value, flag) => { re = value; Ge = flag; };
-export { captured, elements, hodlPrivateDataControls, hodlSaveRecoveryControl, hodlDownloadWalletDat, hodlBindWalletResultActions, setResult };
+const setWalletDatBirthday = (value) => { hodlWalletDatBirthday = value; };
+export { captured, elements, hodlPrivateDataControls, hodlSaveRecoveryControl, hodlDownloadWalletDat, hodlBindWalletResultActions, setResult, setWalletDatBirthday };
 `;
 
 // Keep the transient harness out of test/ so parallel suites that list the
@@ -523,6 +525,49 @@ test("download handler emits a real wallet.dat through the app code path", { ski
       .map(([key, val]) => [bytesToHex(key), bytesToHex(val)]),
   );
   assert.deepEqual(asMap(report.rows), expected);
+});
+
+// Issue #95: a recovered wallet exported with the export time as its
+// descriptor birthday is not rescanned back to its real history by Bitcoin
+// Core. The download defaults to a genesis birthday (creation time 0) so
+// recovery discovers older transactions; "now" is written only on request.
+const readBackCreationTime = (bytes) => {
+  const report = sqliteReadBack(bytes);
+  const descriptorRow = report.rows.find(([key]) => key.startsWith("10" + "77616c6c657464657363726970746f72"));
+  const value = Buffer.from(descriptorRow[1], "hex");
+  return Number(value.readBigUInt64LE(1 + value[0]));
+};
+
+test("wallet.dat download defaults to a genesis birthday for recovery", { skip: !PYTHON_SQLITE }, () => {
+  ui.setResult(WATCH_ONLY_WALLET, false);
+  ui.setWalletDatBirthday("genesis");
+  ui.hodlDownloadWalletDat();
+  assert.equal(readBackCreationTime(new Uint8Array(ui.captured.blob.parts[0])), 0);
+});
+
+test("wallet.dat download writes the current time only for keys confirmed new", { skip: !PYTHON_SQLITE }, () => {
+  ui.setResult(PRIVATE_WALLET, true);
+  ui.setWalletDatBirthday("now");
+  const before = Math.floor(Date.now() / 1000) - 1;
+  ui.hodlDownloadWalletDat();
+  const after = Math.floor(Date.now() / 1000) + 1;
+  const creationTime = readBackCreationTime(new Uint8Array(ui.captured.blob.parts[0]));
+  assert.ok(creationTime >= before && creationTime <= after, `creation time ${creationTime} is not the export time`);
+  ui.setWalletDatBirthday("genesis");
+});
+
+test("the wallet.dat control offers the birthday choice with genesis as the safe default", () => {
+  ui.setResult(WATCH_ONLY_WALLET, false);
+  const html = ui.hodlSaveRecoveryControl();
+  assert.match(html, /data-wallet-dat-birthday/);
+  assert.match(html, /<option value="genesis" selected>Recovering keys/);
+  assert.match(html, /<option value="now">New keys/);
+  // The tradeoff and the manual repair path are explained next to the button.
+  assert.match(html, /wallet-dat-birthday-help/);
+  assert.match(html, /rescanblockchain 0/);
+  // The app reset keeps a stale "new keys" choice out of later derivations.
+  assert.match(app, /function hodlCalculateKey\(\) \{\s*W\("#error"\)\.textContent = "";\s*\n?[^}]*hodlWalletDatBirthday = "genesis";/);
+  assert.match(app, /hodlWalletDatBirthday === "now" \? Math\.floor\(Date\.now\(\) \/ 1000\) : 0/);
 });
 
 test("binding attaches the download to #download-wallet-dat and tolerates missing elements", () => {
