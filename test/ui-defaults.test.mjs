@@ -103,6 +103,16 @@ test("Seed phrase offers one-based or zero-based BIP39 word-number entry", () =>
   assert.match(appSource, /Ne === "seed" && hodlSeedMethod === "numbers"/);
 });
 
+test("hashed cards can match Ian Coleman's suit-symbol SHA-256 transcript", () => {
+  assert.match(appSource, /id="cards-ian-coleman"/);
+  assert.match(appSource, /Match Ian Coleman method/);
+  assert.match(appSource, /show and hash A\\u2660 2\\u2663 instead of AS 2C/);
+  assert.match(appSource, /function hodlCardsHashInput\(cards, coleman = false\)/);
+  assert.match(appSource, /transcript\.replace\(\/C\/g, "\\u2663"\)\.replace\(\/D\/g, "\\u2666"\)\.replace\(\/H\/g, "\\u2665"\)\.replace\(\/S\/g, "\\u2660"\)/);
+  assert.match(appSource, /hodlFilterCards\(value, hodlCardColemanSymbols\)/);
+  assert.match(appSource, /input\.value = hodlFilterCards\(input\.value, hodlCardColemanSymbols\)/);
+});
+
 test("Number bases offers exact Base 2, 4, 8, 16, Crockford Base32, and Base64-alphabet input", () => {
   assert.match(template, />Number bases<\/button>/);
   assert.doesNotMatch(template, />Hex or binary<\/button>/);

@@ -54,14 +54,16 @@ const hodlParseCards = new Function(
 )(hodlCardNeeded, hodlNormalizeCardToken, hodlCardWithoutReplacementBits);
 const Z = (input) => new Uint8Array(createHash("sha256").update(input).digest());
 const M = { encode: (bytes) => Buffer.from(bytes).toString("hex") };
+const hodlCardsHashInput = new Function(`${loadSlice("hodlCardsHashInput")}; return hodlCardsHashInput;`)();
 const hodlCardsEntropy = new Function(
   "hodlSeedConfig",
   "hodlParseCards",
   "Z",
   "TextEncoder",
   "M",
+  "hodlCardsHashInput",
   `${loadSlice("hodlCardsEntropy")}; return hodlCardsEntropy;`,
-)(hodlSeedConfig, hodlParseCards, Z, TextEncoder, M);
+)(hodlSeedConfig, hodlParseCards, Z, TextEncoder, M, hodlCardsHashInput);
 const hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"];
 const hodlCardSuits = [{ code: "S" }, { code: "H" }, { code: "C" }, { code: "D" }];
 const hodlCardSelectionState = new Function(
@@ -121,6 +123,9 @@ test("card tokens normalize 10 and suit glyphs to ASCII", () => {
 test("card transcript input normalizes its limited character set", () => {
   assert.equal(hodlFilterCards("as, 10♥;td"), "AS 10H TD");
   assert.equal(hodlFilterCards("as <img>"), "AS IMG");
+  assert.equal(hodlFilterCards("AS 2C TD", true), "A\u2660 2\u2663 T\u2666");
+  assert.equal(hodlFilterCards("A\u2660 2\u2663 T\u2666", false), "AS 2C TD");
+  assert.equal(hodlFilterCards("AS 10H", true), "A\u2660 10\u2665");
   assert.equal(hodlCardTypedCharactersAllowed("aS 10♥, TD"), true);
   assert.equal(hodlCardTypedCharactersAllowed("B"), false);
 });
@@ -166,9 +171,23 @@ test("24-word extra cards may repeat the first shuffle", () => {
 test("hashed transcript is SHA-256 of ASCII codes", () => {
   const transcript = "AS 2C TD";
   const digest = createHash("sha256").update(transcript, "utf8").digest("hex");
-  assert.match(app, /Z\(new TextEncoder\(\)\.encode\(parsed\.hashInput\)\)/);
+  assert.match(app, /Z\(new TextEncoder\(\)\.encode\(hashInput\)\)/);
   assert.equal(hodlParseCards(transcript, 12).hashInput, transcript);
+  assert.equal(hodlCardsHashInput(["AS", "2C", "TD"], false), transcript);
   assert.equal(digest.length, 64);
+});
+
+test("Ian Coleman hashed cards SHA-256 the suit-symbol transcript", () => {
+  assert.equal(hodlCardsHashInput(["AS", "2C", "TD"], true), "A\u2660 2\u2663 T\u2666");
+  const ascii = hodlCardsEntropy("AS 2C TD", 12, false);
+  const coleman = hodlCardsEntropy("AS 2C TD", 12, true);
+  assert.equal(ascii.ok, true);
+  assert.equal(coleman.ok, true);
+  assert.equal(ascii.method, "cards-sha256");
+  assert.equal(coleman.method, "ian-coleman-cards-sha256");
+  assert.notEqual(ascii.hex, coleman.hex);
+  assert.equal(coleman.hashInput, "A\u2660 2\u2663 T\u2666");
+  assert.equal(createHash("sha256").update("A\u2660 2\u2663 T\u2666", "utf8").digest("hex").slice(0, 32), coleman.hex);
 });
 
 test("one valid card produces a deterministic testing seed", () => {

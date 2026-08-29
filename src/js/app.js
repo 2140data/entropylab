@@ -594,7 +594,7 @@ ec.innerHTML = `
   </div>
 `;
 if (/^(www\.)?entropylab\.online$/i.test(location.hostname)) document.getElementById("online-warning")?.removeAttribute("hidden");
-var hodlKeyModes = ["dice", "cards", "hex", "seed", "key"], hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "\u2660", label: "Spades", red: false }, { code: "H", symbol: "\u2665", label: "Hearts", red: true }, { code: "C", symbol: "\u2663", label: "Clubs", red: false }, { code: "D", symbol: "\u2666", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], hodlDPlusNumberedD16 = false, ft = "", re = null, Ge = false, Zs = W("#modes"), at = W("#form"), dr = W("#out");
+var hodlKeyModes = ["dice", "cards", "hex", "seed", "key"], hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "\u2660", label: "Spades", red: false }, { code: "H", symbol: "\u2665", label: "Hearts", red: true }, { code: "C", symbol: "\u2663", label: "Clubs", red: false }, { code: "D", symbol: "\u2666", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, hodlCardColemanSymbols = false, Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], hodlDPlusNumberedD16 = false, ft = "", re = null, Ge = false, Zs = W("#modes"), at = W("#form"), dr = W("#out");
 hodlKeyModes.forEach((e) => {
   let t = document.createElement("button"), active = e === Ne;
   t.type = "button";
@@ -2545,11 +2545,23 @@ function hodlParseCards(raw, targetWords = Pt) {
   for (let i = 0; i < extraCount; i++) bits += Math.log2(52 - i);
   return { cards, invalid, duplicates, entries, invalidEntries, duplicateEntries, bits, needed, hashInput: cards.join(" ") };
 }
+function hodlCardsHashInput(cards, coleman = false) {
+  let transcript = (cards || []).join(" ");
+  if (!coleman) return transcript;
+  return transcript.replace(/C/g, "\u2663").replace(/D/g, "\u2666").replace(/H/g, "\u2665").replace(/S/g, "\u2660");
+}
 function hodlCardTokenCanContinue(token) {
   return /^(?:[A2-9TJQK]|1|10)$/i.test(String(token ?? ""));
 }
-function hodlFilterCards(value) {
-  return String(value ?? "").toUpperCase().replace(/\u2660/g, "S").replace(/\u2665/g, "H").replace(/\u2666/g, "D").replace(/\u2663/g, "C").replace(/[^0-9A-Z\s,.;:_|/-]/g, "").replace(/[\s,.;:_|/-]+/g, " ");
+function hodlFilterCards(value, coleman = false) {
+  let text = String(value ?? "").toUpperCase().replace(/\u2660/g, "S").replace(/\u2665/g, "H").replace(/\u2666/g, "D").replace(/\u2663/g, "C");
+  if (coleman) {
+    text = text.replace(/10([CDHS])/g, "10\0$1");
+    text = text.replace(/([A2-9TJQK])([CDHS])/g, (_, rank, suit) => rank + ({ C: "\u2663", D: "\u2666", H: "\u2665", S: "\u2660" })[suit]);
+    text = text.replace(/10\0([CDHS])/g, (_, suit) => "10" + ({ C: "\u2663", D: "\u2666", H: "\u2665", S: "\u2660" })[suit]);
+    return text.replace(/[^0-9A-Z\s,.;:_|/\-\u2660\u2663\u2665\u2666]/g, "").replace(/[\s,.;:_|/-]+/g, " ");
+  }
+  return text.replace(/[^0-9A-Z\s,.;:_|/-]/g, "").replace(/[\s,.;:_|/-]+/g, " ");
 }
 function hodlCardTypedCharactersAllowed(value) {
   return [...String(value ?? "")].every((character) => /[A2-9TJQKCDHS10\s,.;:_|/\-\u2660\u2663\u2665\u2666]/i.test(character));
@@ -2574,18 +2586,18 @@ function hodlDealtCardMarkup(card) {
   let rank = card.slice(0, -1), suit = hodlCardSuitMeta(card.slice(-1));
   return `<span class="dealt-card${suit.red ? " is-red" : ""}" title="${rank} of ${suit.label}"><span class="dealt-rank">${$t(rank === "T" ? "10" : rank)}</span><span class="dealt-suit">${suit.symbol}</span></span>`;
 }
-function hodlCardsEntropy(value, targetWords = Pt) {
+function hodlCardsEntropy(value, targetWords = Pt, coleman = false) {
   let config = hodlSeedConfig(targetWords), notes = [], warnings = [], parsed = hodlParseCards(value, config.words);
   if (parsed.invalid.length) return { ok: false, error: `Cards use rank then suit, like AS, 10H, or TD. Ignored: ${parsed.invalid.slice(0, 8).join(" ")}`, notes, warnings, parsed };
   if (parsed.duplicates.length) return { ok: false, error: `Do not repeat a card in the same shuffle. Repeated: ${parsed.duplicates[0]}.`, notes, warnings, parsed };
   if (!parsed.cards.length) return { ok: false, error: "Deal at least one card from a shuffled deck.", notes, warnings, parsed };
-  let required = parsed.needed.first + parsed.needed.extra;
+  let required = parsed.needed.first + parsed.needed.extra, hashInput = hodlCardsHashInput(parsed.cards, coleman);
   notes.push(`${parsed.cards.length} card${parsed.cards.length === 1 ? "" : "s"} \u2248 ${parsed.bits.toFixed(1)} bits.`);
-  notes.push("SHA-256 hashes the ASCII transcript (AS 2C TD), then the first " + config.bits + " bits become the selected " + config.words + "-word seed. One shuffled deck is about 225.6 bits.");
+  notes.push(coleman ? "SHA-256 hashes Ian Coleman's suit-symbol transcript (A\u2660 2\u2663 T\u2666), then the first " + config.bits + " bits become the selected " + config.words + "-word seed. One shuffled deck is about 225.6 bits." : "SHA-256 hashes the ASCII transcript (AS 2C TD), then the first " + config.bits + " bits become the selected " + config.words + "-word seed. One shuffled deck is about 225.6 bits.");
   if (parsed.cards.length < required) warnings.push(`Only ${parsed.cards.length} of ${required} recommended cards were entered. The ${config.words}-word phrase is deterministic, but its security cannot exceed the approximately ${parsed.bits.toFixed(1)} bits supplied. Use only for testing until the recommendation is met.`);
   if (parsed.cards.length > required) notes.push(`All ${parsed.cards.length} cards, including extras, are included in the hash.`);
-  let digest = Z(new TextEncoder().encode(parsed.hashInput)), bytes = digest.slice(0, config.bytes);
-  return { ok: true, bytes, hex: M.encode(bytes), bits: config.bits, sourceBits: parsed.bits, method: "cards-sha256", notes, warnings, parsed };
+  let digest = Z(new TextEncoder().encode(hashInput)), bytes = digest.slice(0, config.bytes);
+  return { ok: true, bytes, hex: M.encode(bytes), bits: config.bits, sourceBits: parsed.bits, method: coleman ? "ian-coleman-cards-sha256" : "cards-sha256", notes, warnings, parsed, hashInput };
 }
 function hodlCardSelectionState(cards, needed, selectedSuit = "", selectedRank = "") {
   let currentShuffle = cards.length < needed.first ? cards : cards.slice(needed.first), used = new Set(currentShuffle), available = [];
@@ -2745,12 +2757,12 @@ function hodlUpdateDirectCards() {
 function hodlSelectedCardsEntropy(targetWords = Pt) {
   let input = document.getElementById(hodlCardMethod === "direct" ? "direct-cards" : "cards");
   if (!input) return { ok: false, error: "Card input is unavailable." };
-  return hodlCardMethod === "direct" ? hodlDirectCardsEntropy(input.value, targetWords) : hodlCardsEntropy(input.value, targetWords);
+  return hodlCardMethod === "direct" ? hodlDirectCardsEntropy(input.value, targetWords) : hodlCardsEntropy(input.value, targetWords, hodlCardColemanSymbols);
 }
 function hodlUpdateCards() {
   let input = document.getElementById("cards");
   if (!input) return;
-  let config = hodlSeedConfig(), parsed = hodlRenderCardInputState(input, config.words), required = parsed.needed.first + parsed.needed.extra, entropy = hodlCardsEntropy(input.value, config.words), showCards = document.getElementById("show-cards")?.checked === true;
+  let config = hodlSeedConfig(), parsed = hodlRenderCardInputState(input, config.words), required = parsed.needed.first + parsed.needed.extra, entropy = hodlCardsEntropy(input.value, config.words, hodlCardColemanSymbols), showCards = document.getElementById("show-cards")?.checked === true;
   let selection = hodlCardSelectionState(parsed.cards, parsed.needed, hodlCardSuit, hodlCardRank);
   hodlCardSuit = selection.suit;
   hodlCardRank = selection.rank;
@@ -2773,7 +2785,7 @@ function hodlUpdateCards() {
   }
   let wordsBox = document.getElementById("dice-words"), preview = [];
   try {
-    if (parsed.cards.length && !parsed.invalid.length && !parsed.duplicates.length && !parsed.pending) preview = _n(Z(new TextEncoder().encode(parsed.hashInput)).slice(0, config.bytes)).split(" ");
+    if (parsed.cards.length && !parsed.invalid.length && !parsed.duplicates.length && !parsed.pending) preview = _n(Z(new TextEncoder().encode(hodlCardsHashInput(parsed.cards, hodlCardColemanSymbols))).slice(0, config.bytes)).split(" ");
   } catch {
   }
   hodlRenderDiceWordGrid(wordsBox, preview, config.words, parsed.cards.length < required);
@@ -4059,7 +4071,7 @@ function hodlRenderKeyForm() {
     if (!direct) hodlCardSuit = hodlCardRank = "";
     let suitPad = hodlCardSuits.map((suit) => `<button type="button" class="card-suit${suit.red ? " is-red" : ""}" data-card-suit="${suit.code}" aria-label="${suit.label}" aria-pressed="false">${suit.symbol}</button>`).join("");
     let rankPad = direct ? hodlDirectCardRanks.map((rank) => `<button type="button" data-direct-card-rank="${rank}" aria-label="Enter rank ${rank}">${rank}</button>`).join("") : hodlCardRanks.map((rank) => `<button type="button" data-card-rank="${rank}" aria-label="${rank === "T" ? "10" : rank}">${rank === "T" ? "10" : rank}</button>`).join("");
-    let inputId = direct ? "direct-cards" : "cards", inputLabel = direct ? "Rank-only draw transcript" : "Card transcript", inputHelp = direct ? `For each of the first ${config.partialWords} words, shuffle and draw from A\u20138 three times, then A\u20134 once. Each four-character group selects one word; spaces separate the groups. The shorter final group supplies the remaining entropy bits, and EntropyLab calculates the BIP39 checksum bits.` : `Each valid card updates a deterministic test seed. For real security, ${config.words === 24 ? "deal all 52 unique cards, shuffle again, then deal 6 more" : `deal ${needed.first} unique cards without putting them back`}. SHA-256 hashes the ASCII transcript (AS 2C TD).`, placeholder = direct ? "A284 37A2 \u2026" : "AS 2C 10H TD\u2026";
+    let inputId = direct ? "direct-cards" : "cards", inputLabel = direct ? "Rank-only draw transcript" : "Card transcript", inputHelp = direct ? `For each of the first ${config.partialWords} words, shuffle and draw from A\u20138 three times, then A\u20134 once. Each four-character group selects one word; spaces separate the groups. The shorter final group supplies the remaining entropy bits, and EntropyLab calculates the BIP39 checksum bits.` : `Each valid card updates a deterministic test seed. For real security, ${config.words === 24 ? "deal all 52 unique cards, shuffle again, then deal 6 more" : `deal ${needed.first} unique cards without putting them back`}. SHA-256 hashes the ASCII transcript (AS 2C TD).`, placeholder = direct ? "A284 37A2 \u2026" : hodlCardColemanSymbols ? "A\u2660 2\u2663 10\u2665 T\u2666\u2026" : "AS 2C 10H TD\u2026";
     at.innerHTML = `
       <p class="label">How to turn cards into a ${config.words}-word seed</p>
       <div class="choice-grid">
@@ -4067,6 +4079,7 @@ function hodlRenderKeyForm() {
         <label class="choice"><input type="radio" name="card-method" value="direct" ${direct ? "checked" : ""} /><span><strong>Direct word selection</strong><span class="desc">Ignore suits. Reshuffle and draw A\u20138, A\u20138, A\u20138, then A\u20134 for each full word. Finish with the shorter rank sequence shown for the checksum-valid final word.</span></span></label>
       </div>
       <p class="muted" id="cards-help">${inputHelp}</p>
+      ${direct ? "" : `<label class="seed-autocomplete-toggle seed-zero-index-toggle"><input type="checkbox" id="cards-ian-coleman" ${hodlCardColemanSymbols ? "checked" : ""} /><span><strong>Match Ian Coleman method</strong> <span class="seed-autocomplete-note">(show and hash A\u2660 2\u2663 instead of AS 2C)</span></span></label>`}
       <label class="field" id="cards-input-label" for="${inputId}">${inputLabel}</label>
       <div class="dice-input-shell cards-input-shell"><pre class="dice-input-highlight" id="cards-highlight" aria-hidden="true"></pre><textarea id="${inputId}" placeholder="${placeholder}" autocomplete="off" spellcheck="false" autocapitalize="characters" aria-labelledby="cards-input-label" aria-describedby="cards-help cards-meta"></textarea></div>
       ${hodlSeedMetaRowMarkup("cards-meta")}
@@ -4084,7 +4097,7 @@ function hodlRenderKeyForm() {
     };
     input.oninput = () => {
       if (!direct) hodlCardSuit = hodlCardRank = "";
-      hodlApplyFilteredInput(input, direct ? hodlFilterDirectCards : hodlFilterCards);
+      hodlApplyFilteredInput(input, direct ? hodlFilterDirectCards : (value) => hodlFilterCards(value, hodlCardColemanSymbols));
       direct ? hodlUpdateDirectCards() : hodlUpdateCards();
     };
     input.onscroll = () => hodlSyncDiceHighlight(input);
@@ -4127,6 +4140,19 @@ function hodlRenderKeyForm() {
       let visible = event.currentTarget.checked, state = hodlKeys[hodlActiveKey], dealt = document.getElementById("dealt-cards");
       if (state) state.showCards = visible;
       if (dealt) dealt.hidden = !visible;
+    };
+    let colemanToggle = document.getElementById("cards-ian-coleman");
+    if (colemanToggle) colemanToggle.onchange = () => {
+      hodlCardColemanSymbols = colemanToggle.checked;
+      input.value = hodlFilterCards(input.value, hodlCardColemanSymbols);
+      input.placeholder = hodlCardColemanSymbols ? "A\u2660 2\u2663 10\u2665 T\u2666\u2026" : "AS 2C 10H TD\u2026";
+      input.setSelectionRange(input.value.length, input.value.length);
+      if (state) {
+        state.cardColemanSymbols = hodlCardColemanSymbols;
+        state.fields.cards = input.value;
+      }
+      hodlInvalidateLiveKeyResult();
+      hodlUpdateCards();
     };
     hodlBindKeyFields();
     direct ? hodlUpdateDirectCards() : hodlUpdateCards();
@@ -6654,7 +6680,7 @@ function hodlPrivateKeyValues(fields) {
 }
 function hodlNewKeyState(name, keyId, keyNumber) {
   let id = keyId ?? hodlNextKeyId++, number = keyNumber ?? hodlNextKeyNumber++;
-  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: false, passphraseBip39Words: false, dplusNumberedD16: false, showCards: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", network: "mainnet", account: "0", count: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
+  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: false, passphraseBip39Words: false, dplusNumberedD16: false, showCards: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", network: "mainnet", account: "0", count: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
 }
 function hodlRestoreFormFields(state) {
   if (!state) return;
@@ -6706,7 +6732,7 @@ function hodlSetMode(mode) {
 function hodlKeyStateNeedsClear(state) {
   if (!state) return false;
   let fields = state.fields || {}, privateKeys = hodlPrivateKeyValues(fields), hasText = (id) => String(fields[id] ?? "").length > 0;
-  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || Boolean(state.seedAutocomplete) || Boolean(state.passphraseBip39Words) || Boolean(state.dplusNumberedD16) || Boolean(state.showCards) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.network ?? "mainnet") !== "mainnet" || String(fields.account ?? "0") !== "0" || String(fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
+  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || Boolean(state.seedAutocomplete) || Boolean(state.passphraseBip39Words) || Boolean(state.dplusNumberedD16) || Boolean(state.showCards) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.network ?? "mainnet") !== "mainnet" || String(fields.account ?? "0") !== "0" || String(fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
 }
 function hodlSyncKeyClearButton(capture = false) {
   if (capture) hodlCaptureKey();
@@ -6729,6 +6755,7 @@ function hodlCaptureKey() {
   state.cardMethod = hodlCardMethod;
   state.seedMethod = hodlSeedMethod;
   state.seedZeroIndexed = Boolean(hodlSeedZeroIndexed);
+  state.cardColemanSymbols = Boolean(hodlCardColemanSymbols);
   state.entropyFormat = hodlEntropyFormat;
   let syncNumberBases = document.getElementById("sync-number-bases");
   if (syncNumberBases) state.syncNumberBases = syncNumberBases.checked;
@@ -6780,6 +6807,7 @@ function hodlRestoreKey() {
     hodlCardMethod = "hashed";
     hodlSeedMethod = "words";
     hodlSeedZeroIndexed = false;
+    hodlCardColemanSymbols = false;
     hodlEntropyFormat = "bin";
     hodlDPlusNumberedD16 = false;
     Pt = 24;
@@ -6818,6 +6846,7 @@ function hodlRestoreKey() {
   hodlCardMethod = state.cardMethod === "direct" ? "direct" : "hashed";
   hodlSeedMethod = hodlNormalizeSeedMethod(state.seedMethod);
   hodlSeedZeroIndexed = Boolean(state.seedZeroIndexed);
+  hodlCardColemanSymbols = Boolean(state.cardColemanSymbols);
   hodlEntropyFormat = hodlNormalizeEntropyFormat(state.entropyFormat);
   hodlDPlusNumberedD16 = Boolean(state.dplusNumberedD16);
   Pt = hodlSeedLengths[Number(state.targetWords)] ? Number(state.targetWords) : 24;
