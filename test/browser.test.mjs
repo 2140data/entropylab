@@ -112,7 +112,7 @@ const stageSite = () => {
 
   const userJs = [
     'user_pref("browser.download.folderList", 2);',
-    `user_pref("browser.download.dir", "${downloadDir.replace(/\\/g, "/")}");`,
+    `user_pref("browser.download.dir", ${JSON.stringify(downloadDir)});`,
     'user_pref("browser.download.useDownloadDir", true);',
     'user_pref("browser.download.alwaysOpenPanel", false);',
     'user_pref("browser.helperApps.neverAsk.saveToDisk", "text/plain,application/octet-stream");',
