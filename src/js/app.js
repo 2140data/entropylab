@@ -5946,7 +5946,7 @@ function hodlRenderPsbt(psbt) {
     }
     let previous = tx.inputs[index], destination = witnessUtxo ? hodlAddr(witnessUtxo.script, network) : "(previous output details unavailable)", signatures = hodlPartialSigs(entries), tapSignatures = hodlTapSigs(entries), finalized = hodlFinalized(entries);
     tapSignatureCount += tapSignatures.length;
-    html.push("<p class='psbt-kv'><strong>Input " + index + "</strong> \xB7 " + hodlHexRev(previous.txid) + " : " + previous.vout + (witnessUtxo ? " \xB7 " + hodlSats(witnessUtxo.amount) + " BTC" : "") + "<br>" + $t(destination) + "<br>" + (signatures.length + tapSignatures.length ? signatures.length + tapSignatures.length + " signature(s) present" : finalized ? "Finalized input data present" : "Not signed yet") + "</p>");
+    html.push("<p class='psbt-kv'><strong>Input " + index + "</strong> \xB7 " + hodlHexRev(previous.txid) + " : " + previous.vout + (witnessUtxo ? " \xB7 " + hodlSats(witnessUtxo.amount) + " BTC claimed" : "") + "<br>" + $t(destination) + "<br>" + (signatures.length + tapSignatures.length ? signatures.length + tapSignatures.length + " signature(s) present" : finalized ? "Finalized input data present" : "Not signed yet") + "</p>");
     signatures.forEach(signature => {
       let parts = hodlSigParts(signature.der),
         looseR = parts ? parts.r : hodlDerRLoose(signature.der),
@@ -6027,9 +6027,10 @@ function hodlRenderPsbt(psbt) {
   });
   if (knownInputs === tx.inputs.length) {
     let outputSum = tx.outputs.reduce((sum, output) => sum + output.amount, 0n), fee = inputSum - outputSum;
-    if (fee >= 0n) html.push("<p class='psbt-kv'><strong>Fee (from PSBT fields)</strong> \xB7 " + hodlSats(fee) + " BTC</p>");
-    else html.push("<p class='psbt-bad'><strong>Invalid known amounts:</strong> outputs exceed inputs by " + hodlSats(-fee) + " BTC.</p>");
-  } else html.push("<p class='muted'>Fee unknown \u2014 some inputs do not include a witness UTXO amount.</p>");
+    if (fee >= 0n) html.push("<p class='psbt-kv'><strong>Unverified fee (PSBT witness UTXO claims)</strong> \xB7 " + hodlSats(fee) + " BTC</p>");
+    else html.push("<p class='psbt-bad'><strong>Inconsistent claimed amounts:</strong> outputs exceed claimed inputs by " + hodlSats(-fee) + " BTC.</p>");
+  } else html.push("<p class='muted'>Fee unknown — some inputs do not include a claimed witness UTXO amount.</p>");
+  html.push("<p class='muted'>Input amounts and any fee are unverified PSBT claims. This tool does not check them against previous transactions or the blockchain.</p>");
   html.push("<p class='label'>ECDSA nonce check</p>");
   let {
     reused,
