@@ -6049,6 +6049,35 @@ function hodlBip143(tx,index,scriptCode,amount,sighashType){
   return hodlH256(Os(hodlU32(tx.version),hodlH256(Os(...prevouts)),hodlH256(Os(...sequences)),input.txid,hodlU32(input.vout),hodlPushScript(scriptCode),hodlU64(amount),hodlU32(input.sequence),hodlH256(Os(...outputs)),hodlU32(tx.locktime),hodlU32(sighashType)))
 }
 function hodlSigParts(der){try{let compact=xe.Signature.fromBytes(der,"der").toBytes("compact");return{r:compact.slice(0,32),s:compact.slice(32)}}catch{return null}}
+function hodlPubId(pubkey){
+  try{try{return hodlPointBytes(hodlPointFrom(pubkey),!0)}catch{}
+    if(pubkey&&pubkey.length===33&&(pubkey[0]===2||pubkey[0]===3))return pubkey;
+    if(pubkey&&pubkey.length===65&&pubkey[0]===4){let compressed=new Uint8Array(33);compressed[0]=pubkey[64]&1?3:2;compressed.set(pubkey.slice(1,33),1);return compressed}
+  }catch{}
+  return pubkey
+}
+function hodlDerRLoose(der){
+  if(!der||der.length<8||der[0]!==0x30||der[1]>=0x80||2+der[1]>der.length)return null;
+  let offset=2,end=2+der[1],values=[];
+  while(offset<end){
+    if(der[offset]!==2||offset+2>end)return null;
+    let len=der[offset+1];if(len<1||len>33||offset+2+len>end)return null;
+    let raw=der.slice(offset+2,offset+2+len);while(raw.length>1&&raw[0]===0)raw=raw.slice(1);
+    if(!raw.length||raw.length>32||raw.every(b=>b===0))return null;
+    let out=new Uint8Array(32);out.set(raw,32-raw.length);values.push(out);offset+=2+len;
+  }
+  return values.length===2?values[0]:null
+}
+function hodlCompareNonces(rValues){
+  let reused=[],possible=[];
+  for(let first=0;first<rValues.length;first++)for(let second=first+1;second<rValues.length;second++){
+    let a=rValues[first],b=rValues[second];
+    if(!hodlEq(a.pubkey,b.pubkey)||!hodlEq(a.r,b.r))continue;
+    if(a.valid&&b.valid&&a.sighash&&b.sighash&&!hodlEq(a.sighash,b.sighash))reused.push([a,b]);
+    else if(a.input!==b.input)possible.push([a,b]);
+  }
+  return{reused,possible}
+}
 function hodlPrivForPub(pubkey){if(hodlPsbtPriv){let compressed=xe.getPublicKey(hodlPsbtPriv,!0),uncompressed=xe.getPublicKey(hodlPsbtPriv,!1);if(hodlEq(compressed,pubkey)||hodlEq(uncompressed,pubkey))return hodlPsbtPriv}if(hodlPsbtHd){try{let rootPubkey=hodlPsbtHd.publicKey;if(rootPubkey&&hodlEq(rootPubkey,pubkey))return hodlPsbtHd.privateKey}catch{}}return null}
 function hodlPrivFromPath(entries,pubkey){if(!hodlPsbtHd)return null;let rootFingerprint=Us(hodlPsbtHd.fingerprint);for(let derivation of hodlBip32(entries,pubkey)){if(M.encode(derivation.fingerprint)!==rootFingerprint)continue;try{let node=hodlPsbtHd;for(let index of derivation.path)node=node.deriveChild(index);if(node.publicKey&&hodlEq(node.publicKey,pubkey))return node.privateKey}catch{}}return null}
 function hodlPsbtWipeMem(){if(hodlPsbtPriv)try{hodlPsbtPriv.fill(0)}catch{}hodlPsbtPriv=null;if(hodlPsbtHd)try{let privateKey=hodlPsbtHd.privateKey;if(privateKey)privateKey.fill(0)}catch{}hodlPsbtHd=null;hodlPsbtSource="";hodlPsbtNote="No session key. Inspect-only mode."}
@@ -6122,31 +6151,31 @@ function hodlRfc6979Compare(sighash,privateKey,r){
   return {ok:!1,className:"psbt-warn",message:"Does not match plain RFC 6979 or Bitcoin Core-style low-r grind. Honest signers may add other auxiliary randomness. A mismatch alone is not evidence of compromise. Reused r on two different messages is the real alarm."};
 }
 function hodlRenderPsbt(psbt){
-  let network=hodlSelectedNetwork(document.getElementById("psbt-network")),transcript=hodlParseAntiExfil(document.getElementById("psbt-ax-transcript")?.value||""),tx=psbt.tx,inputSum=0n,knownInputs=0,html=[],rValues=[],rows=[],tapSignatureCount=0,ecdsaIndex=0;
+  let network=hodlSelectedNetwork(document.getElementById("psbt-network")),transcript=hodlParseAntiExfil(document.getElementById("psbt-ax-transcript")?.value||""),tx=psbt.tx,inputSum=0n,knownInputs=0,html=[],rValues=[],rows=[],tapSignatureCount=0,ecdsaIndex=0,uninspected=0;
   html.push("<p class='label'>Where this transaction sends bitcoin</p>");tx.outputs.forEach((output,index)=>{html.push("<p class='psbt-kv'><strong>Output "+index+"</strong> · "+hodlSats(output.amount)+" BTC<br>"+$t(hodlAddr(output.script,network))+"</p>")});
   psbt.inputs.forEach((entries,index)=>{
     let witnessUtxo=hodlWitUtxo(entries);if(witnessUtxo){inputSum+=witnessUtxo.amount;knownInputs++}let previous=tx.inputs[index],destination=witnessUtxo?hodlAddr(witnessUtxo.script,network):"(previous output details unavailable)",signatures=hodlPartialSigs(entries),tapSignatures=hodlTapSigs(entries),finalized=hodlFinalized(entries);tapSignatureCount+=tapSignatures.length;
     html.push("<p class='psbt-kv'><strong>Input "+index+"</strong> · "+hodlHexRev(previous.txid)+" : "+previous.vout+(witnessUtxo?" · "+hodlSats(witnessUtxo.amount)+" BTC":"")+"<br>"+$t(destination)+"<br>"+(signatures.length+tapSignatures.length?signatures.length+tapSignatures.length+" signature(s) present":finalized?"Finalized input data present":"Not signed yet")+"</p>");
     signatures.forEach(signature=>{
-      let parts=hodlSigParts(signature.der),scriptCode=hodlInputScriptCode(entries,witnessUtxo),sighash=witnessUtxo&&scriptCode?hodlBip143(tx,index,scriptCode,witnessUtxo.amount,signature.sighash):null,signatureValid=parts&&sighash?xe.verify(signature.der,sighash,signature.pubkey,{prehash:!1,format:"der",lowS:!1}):null,privateKey=hodlPrivForPub(signature.pubkey)||hodlPrivFromPath(entries,signature.pubkey),message="Need the matching key in this session to check RFC 6979 and low-r grind.",className="muted";
-      if(!parts){message="Signature is not strict DER and its nonce cannot be inspected.";className="psbt-warn"}
-      else{rValues.push({input:index,r:parts.r,s:parts.s,hex:M.encode(parts.r),pubkey:signature.pubkey,sighash,valid:signatureValid});if(signatureValid===!1){message="This signature does not verify against the reconstructed input digest.";className="psbt-warn"}else if(transcript){let opening=transcript.openings.length===1?transcript.openings[0]:transcript.openings[ecdsaIndex];if(!opening){message="No Jade opening R was provided for this signature.";className="psbt-warn"}else try{if(hodlAntiExfilCommitOk(parts.r,opening,transcript.host)){message="Matches Jade anti-exfil (sign-to-contract). Host entropy mixed into the nonce. Not a leak.";className="psbt-ok"}else{message="Does not match this Jade anti-exfil transcript. Signature r is not R + H(R||ρ)G.";className="psbt-warn";if(privateKey&&sighash)try{let cmp=hodlRfc6979Compare(sighash,privateKey,parts.r);if(cmp.ok){message+=" "+cmp.message;className=cmp.className}else message+=" Also does not match RFC 6979 or low-r grind."}catch(exception){message+=" "+(exception.message||String(exception))}}}catch(exception){message="Could not verify Jade anti-exfil: "+(exception.message||String(exception));className="psbt-warn"}}else if(privateKey&&sighash)try{let cmp=hodlRfc6979Compare(sighash,privateKey,parts.r);message=cmp.message;className=cmp.className}catch(exception){message="Could not recompute this signature: "+(exception.message||String(exception));className="psbt-warn"}else if(privateKey&&signature.sighash!==1){message="Matching key found, but this check currently supports SIGHASH_ALL without ANYONECANPAY only.";className="psbt-warn"}else if(privateKey&&!scriptCode){message="Matching key found, but this input script is not yet supported for RFC 6979 comparison.";className="psbt-warn"}}
+      let parts=hodlSigParts(signature.der),looseR=parts?parts.r:hodlDerRLoose(signature.der),scriptCode=hodlInputScriptCode(entries,witnessUtxo),sighash=witnessUtxo&&scriptCode?hodlBip143(tx,index,scriptCode,witnessUtxo.amount,signature.sighash):null,signatureValid=parts&&sighash?xe.verify(signature.der,sighash,signature.pubkey,{prehash:!1,format:"der",lowS:!1}):null,privateKey=hodlPrivForPub(signature.pubkey)||hodlPrivFromPath(entries,signature.pubkey),message="Need the matching key in this session to check RFC 6979 and low-r grind.",className="muted";
+      if(!parts&&!looseR){uninspected+=1;message="Signature is not DER and its nonce cannot be inspected.";className="psbt-warn"}
+      else{rValues.push({input:index,r:looseR,hex:M.encode(looseR),pubkey:hodlPubId(signature.pubkey),sighash,valid:parts?signatureValid:null});if(!parts){message="Signature is not strict DER. Its r value is still compared for nonce reuse.";className="psbt-warn"}else if(signatureValid===!1){message="This signature does not verify against the reconstructed input digest.";className="psbt-warn"}else if(transcript){let opening=transcript.openings.length===1?transcript.openings[0]:transcript.openings[ecdsaIndex];if(!opening){message="No Jade opening R was provided for this signature.";className="psbt-warn"}else try{if(hodlAntiExfilCommitOk(parts.r,opening,transcript.host)){message="Matches Jade anti-exfil (sign-to-contract). Host entropy mixed into the nonce. Not a leak.";className="psbt-ok"}else{message="Does not match this Jade anti-exfil transcript. Signature r is not R + H(R||ρ)G.";className="psbt-warn";if(privateKey&&sighash)try{let cmp=hodlRfc6979Compare(sighash,privateKey,parts.r);if(cmp.ok){message+=" "+cmp.message;className=cmp.className}else message+=" Also does not match RFC 6979 or low-r grind."}catch(exception){message+=" "+(exception.message||String(exception))}}}catch(exception){message="Could not verify Jade anti-exfil: "+(exception.message||String(exception));className="psbt-warn"}}else if(privateKey&&sighash)try{let cmp=hodlRfc6979Compare(sighash,privateKey,parts.r);message=cmp.message;className=cmp.className}catch(exception){message="Could not recompute this signature: "+(exception.message||String(exception));className="psbt-warn"}else if(privateKey&&signature.sighash!==1){message="Matching key found, but this check currently supports SIGHASH_ALL without ANYONECANPAY only.";className="psbt-warn"}else if(privateKey&&!scriptCode){message="Matching key found, but this input script is not yet supported for RFC 6979 comparison.";className="psbt-warn"}}
       ecdsaIndex+=1;
       rows.push({input:index,message,className,pubkey:M.encode(signature.pubkey)})
     })
   });
   if(knownInputs===tx.inputs.length){let outputSum=tx.outputs.reduce((sum,output)=>sum+output.amount,0n),fee=inputSum-outputSum;if(fee>=0n)html.push("<p class='psbt-kv'><strong>Fee (from PSBT fields)</strong> · "+hodlSats(fee)+" BTC</p>");else html.push("<p class='psbt-bad'><strong>Invalid known amounts:</strong> outputs exceed inputs by "+hodlSats(-fee)+" BTC.</p>")}else html.push("<p class='muted'>Fee unknown — some inputs do not include a witness UTXO amount.</p>");
-  html.push("<p class='label'>ECDSA nonce check</p>");let reused=[],possible=[];
-  for(let first=0;first<rValues.length;first++)for(let second=first+1;second<rValues.length;second++){let a=rValues[first],b=rValues[second];if(!hodlEq(a.pubkey,b.pubkey)||!hodlEq(a.r,b.r))continue;if(a.valid&&b.valid&&a.sighash&&b.sighash&&!hodlEq(a.sighash,b.sighash))reused.push([a,b]);else if(a.input!==b.input)possible.push([a,b])}
+  html.push("<p class='label'>ECDSA nonce check</p>");let{reused,possible}=hodlCompareNonces(rValues);
   if(reused.length)html.push("<p class='psbt-bad'><strong>Reused nonce detected for the same public key.</strong> The same r value appears on different message digests. If both signatures are valid, the private key can be recovered. Do not broadcast this transaction.</p>");
   else if(possible.length)html.push("<p class='psbt-warn'><strong>Possible repeated nonce for the same public key.</strong> The message digests could not both be reconstructed, so verify these signatures independently before treating this as a key leak.</p>");
+  else if(uninspected)html.push("<p class='psbt-warn'><strong>Incomplete nonce coverage.</strong> Some ECDSA signatures could not be inspected, so this is not a clean verdict.</p>");
   else if(rValues.length>=2)html.push("<p class='psbt-ok'>No repeated ECDSA nonce r values were found for the same public key in this PSBT.</p>");
-  else if(rValues.length===1)html.push("<p class='muted'>Only one strict ECDSA signature is present. Nonce reuse cannot be judged from this file alone.</p>");
-  else html.push("<p class='muted'>No strict ECDSA signatures are present, so there is no nonce to compare yet.</p>");
+  else if(rValues.length===1)html.push("<p class='muted'>Only one ECDSA signature with a readable r is present. Nonce reuse cannot be judged from this file alone.</p>");
+  else html.push("<p class='muted'>No ECDSA signatures with a readable r value are present, so there is no nonce to compare yet.</p>");
   if(rValues.length)html.push("<p class='psbt-kv'>r values:<br>"+rValues.map(value=>$t(value.hex)+" (input "+value.input+")").join("<br>")+"</p>");
   rows.forEach(row=>html.push("<p class='"+row.className+"'><strong>Input "+row.input+"</strong> pubkey "+$t(row.pubkey.slice(0,18))+"… — "+$t(row.message)+"</p>"));
   if(tapSignatureCount)html.push("<p class='muted'>This PSBT also contains "+tapSignatureCount+" Taproot / Schnorr signature(s). They are counted but their BIP340 nonces are not analyzed in this version.</p>");
-  html.push("<p class='muted'>RFC 6979 comparison currently covers SegWit v0 P2WPKH and P2WSH signatures using SIGHASH_ALL, including Bitcoin Core-style low-r grinding. Jade anti-exfil is secp256k1-zkp sign-to-contract and needs the USB host nonce plus signer opening; QR / sign_psbt Jade does not run it yet. BitBox anti-klepto is a different construction. Nonce reuse detection compares strict DER ECDSA signatures from the same public key.</p>");return html.join("")
+  html.push("<p class='muted'>RFC 6979 comparison currently covers SegWit v0 P2WPKH and P2WSH signatures using SIGHASH_ALL, including Bitcoin Core-style low-r grinding. Jade anti-exfil is secp256k1-zkp sign-to-contract and needs the USB host nonce plus signer opening; QR / sign_psbt Jade does not run it yet. BitBox anti-klepto is a different construction. Nonce reuse detection compares r values for the same secp256k1 point, including compressed and uncompressed encodings and recoverable non-strict DER. A clean verdict is not issued when a signature cannot be inspected.</p>");return html.join("")
 }
 var hodlAccountId="bip84",hodlNextKeyId=1,hodlNextKeyNumber=1,hodlKeys=[],hodlActiveKey=-1;
 function hodlKeyColor(id){let hue=Math.round((Number(id)*137.508+19)%360);return`oklch(61% 0.08 ${hue})`}
