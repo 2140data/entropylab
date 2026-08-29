@@ -724,7 +724,7 @@ test("the marketing card states its pitch as a list rather than a paragraph", ()
 test("the favicon ships inside the document instead of the assets directory", () => {
   assert.match(
     template,
-    /<title>EntropyLab<\/title><link rel="icon" type="image\/png" sizes="64x64" href="data:image\/png;base64,\/\*@@FAVICON@@\*\/">/,
+    /<title>EntropyLab — Offline Bitcoin Key &amp; Wallet Calculator<\/title><link rel="icon" type="image\/png" sizes="64x64" href="data:image\/png;base64,\/\*@@FAVICON@@\*\/">/,
   );
   // The inlined icon covers hosted and offline alike, so online.js no longer
   // layers a same-origin link over it.

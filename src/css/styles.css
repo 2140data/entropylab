@@ -71,7 +71,7 @@ html { overflow-y: scroll; scrollbar-gutter: stable; scroll-padding-top: calc(va
 html, body { margin: 0; min-width: var(--site-min-width); background: var(--bg); color: var(--fg); font-family: var(--sans); }
 body { min-height: 100vh; }
 h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; }
-h1 { font-size: 2rem; margin: 8px 0; }
+h1 { font-size: 1.5rem; margin: 8px 0; }
 h2 { font-size: 1.5rem; margin: 8px 0; }
 a { color: var(--accent); }
 button, select, textarea, input { font: inherit; }

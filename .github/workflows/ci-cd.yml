@@ -37,7 +37,7 @@ jobs:
       - name: Prepare static site
         run: |
           mkdir _site
-          cp entropylab.html _site/
+          cp entropylab.html robots.txt sitemap.xml llms.txt _site/
           cp entropylab.html _site/index.html
           cp -r assets _site/assets
           touch _site/.nojekyll

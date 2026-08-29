@@ -1,0 +1,20 @@
+# EntropyLab
+
+> Self-contained, air-gapped Bitcoin key and wallet calculator. Turn dice rolls, seed phrases, and private keys into wallet recovery information — entirely offline.
+
+EntropyLab is a single HTML file with no runtime dependencies. It is designed to be downloaded, moved to a computer that never goes online, and opened in a modern browser. The hosted copy at entropylab.online is for convenience only: do not enter seed phrases, private keys, or other secret wallet material into an internet-connected device.
+
+## What it does
+
+- Accepts dice rolls, coin flips, playing cards, hexadecimal entropy, BIP39 seed phrases (12–24 words), extended keys, WIF keys, raw private keys, and Casascius mini keys.
+- Derives BIP39 seeds, BIP32 extended keys, master fingerprints, addresses, and Bitcoin Core-compatible descriptors for legacy, nested SegWit, native SegWit, and Taproot; mainnet and testnet.
+- Builds multisignature wallets, including watch-only multisig from extended public keys alone.
+- Inspects PSBT v0 transactions: amounts, fees, repeated ECDSA nonces, and optional anti-exfil transcript checks.
+- Exports a Bitcoin Core wallet.dat (watch-only by default) with all derived descriptors imported.
+- Runs startup sanity checks on the host browser and refuses to render if they fail.
+
+## Links
+
+- Site: https://entropylab.online/
+- Source: https://github.com/w-s-bitcoin/entropylab
+- Releases: https://github.com/w-s-bitcoin/entropylab/releases
