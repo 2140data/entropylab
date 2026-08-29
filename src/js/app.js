@@ -1026,7 +1026,7 @@ function hodlDPlusRolls(value,targetWords=Pt,numberedD16=hodlDPlusNumberedD16){
   notes.push(numberedD16?"Decimal D16 notation: results read 1 through 16, where 16 is the zero of the underlying 0-15 range.":"Custom D++ D16 notation: results use hexadecimal 0 through F.");
   if(config.words===24&&finalRoll&&finalWord)notes.push(`Final D8 result ${finalRoll} selected checksum option ${finalRoll} of 8: ${finalWord}.`);
   if(finalRoll&&finalD16&&finalWord)notes.push(`Final D8 result ${finalRoll} and D16 result ${finalD16} selected checksum option ${(Number(finalRoll)-1)*16+hodlDPlusD16Value(finalD16,numberedD16)+1} of ${config.candidates}: ${finalWord}.`);
-  if(finalD16&&finalCoin&&finalWord)notes.push(`Final D16 result ${finalD16} and coin flip ${finalCoin} (${Number(finalCoin)>=5?"Tails":"Heads"}) selected checksum option ${hodlDPlusD16Value(finalD16,numberedD16)*2+(Number(finalCoin)>=5?1:0)+1} of ${config.candidates}: ${finalWord}.`);
+  if(finalD16&&finalCoin&&finalWord)notes.push(`Final D16 result ${finalD16} and final D8 result ${finalCoin}, read as ${Number(finalCoin)>=5?"Tails":"Heads"} selected checksum option ${hodlDPlusD16Value(finalD16,numberedD16)*2+(Number(finalCoin)>=5?1:0)+1} of ${config.candidates}: ${finalWord}.`);
   if(waiting==="last-word")notes.push(`Choose 1 of ${config.candidates} checksum-valid final words to complete the ${config.words}-word seed.`);
   if(rejectedD8)notes.push(`Rejected ${rejectedD8} result${rejectedD8===1?"":"s"} that cannot be used for a D8 roll.`);
   if(rejectedD16)notes.push(`Rejected ${rejectedD16} result${rejectedD16===1?"":"s"} that ${rejectedD16===1?"is":"are"} not valid for the selected D16 convention (${numberedD16?"1–16":"0–9 or A–F"}).`);
@@ -1056,12 +1056,7 @@ function hodlRandomDiceFace(min,max){
   let size=max-min+1,cryptoObject=globalThis.crypto;if(!cryptoObject||typeof cryptoObject.getRandomValues!=="function")throw new Error("Secure random selection is unavailable in this browser.");
   let bytes=new Uint8Array(1),limit=Math.floor(256/size)*size;do{cryptoObject.getRandomValues(bytes)}while(bytes[0]>=limit);return min+bytes[0]%size
 }
-function hodlDiceControlValue(button){
-  if(!button.dataset.coin)return button.dataset.d||"";
-  let low=Number(button.dataset.coinLow),high=Number(button.dataset.coinHigh);
-  if(!Number.isInteger(low)||!Number.isInteger(high))[low,high]=button.dataset.coin==="heads"?[1,3]:[4,6];
-  return String(hodlRandomDiceFace(low,high))
-}
+function hodlDiceControlValue(button){return button.dataset.coin==="heads"?String(hodlRandomDiceFace(1,3)):button.dataset.coin==="tails"?String(hodlRandomDiceFace(4,6)):button.dataset.d||""}
 function hodlNormalizeDiceCoinPositions(positions){return[...new Set((positions||[]).filter(Number.isInteger).filter(index=>index>=0))].sort((a,b)=>a-b)}
 function hodlRebaseDiceCoinPositions(start,end,insertedLength,markInserted=!1){
   let shift=insertedLength-(end-start),next=[];hodlDiceCoinPositions.forEach(index=>{if(index<start)next.push(index);else if(index>=end)next.push(index+shift)});if(markInserted)for(let index=0;index<insertedLength;index++)next.push(start+index);hodlDiceCoinPositions=hodlNormalizeDiceCoinPositions(next)
@@ -1180,21 +1175,16 @@ function hodlAnalyzeEntropyInput(value,format,targetWords=Pt){
 }
 function hodlRenderEntropyInputState(input,format,targetWords=Pt){let analysis=hodlAnalyzeEntropyInput(input.value,format,targetWords),invalid=analysis.invalidRanges.length>0;input.classList.toggle("bad",invalid);input.setAttribute("aria-invalid",String(invalid));hodlRenderInputHighlight(input,analysis.invalidRanges);return analysis}
 function hodlUpdateDiceButtons(input,analysis){
-  let form=input.closest("#form"),pad=form?.querySelector(".dice-input-pad");
-  // The final coin flip only exists once every D16 roll is in, so its pad stays
-  // out of the way until that turn rather than sitting there disabled.
-  let coinPad=form?.querySelector(".dplus-coin-pad");
-  if(coinPad)coinPad.hidden=!(ge==="dplus"&&analysis.dplus?.waiting==="checksum-coin");
-  if(!pad)return;pad.querySelectorAll("button[data-d]").forEach(button=>{
+  let pad=input.closest("#form")?.querySelector(".dice-input-pad");if(!pad)return;pad.querySelectorAll("button[data-d]").forEach(button=>{
     let disabled=!1,reason="";
     if(ge==="dplus"){
-      let turn=analysis.dplus?.waiting||"d8",isD8=turn==="d8"||turn==="checksum-d8",coinTurn=turn==="checksum-coin",correcting=turn==="correction",value=String(button.dataset.d||"").toUpperCase(),isCoin=/^[HT]$/.test(value);
-      disabled=turn==="complete"||turn==="last-word"||correcting||(coinTurn?!/^[1-8]$/.test(value):isCoin||(isD8&&!/^[1-8]$/.test(value))||(!isD8&&hodlDPlusD16Value(value)===null));
+      let turn=analysis.dplus?.waiting||"d8",isD8=turn==="d8"||turn==="checksum-d8",coinTurn=turn==="checksum-coin",correcting=turn==="correction",value=String(button.dataset.d||"").toUpperCase();
+      disabled=turn==="complete"||turn==="last-word"||correcting||(coinTurn||isD8?!/^[1-8]$/.test(value):hodlDPlusD16Value(value)===null);
       if(turn==="complete")reason="The rolled words and final checksum rolls are complete.";
       else if(turn==="last-word")reason=`All ${hodlSeedConfig().partialWords} rolled words are complete. Choose the final checksum word below.`;
       else if(correcting)reason="Correct the highlighted invalid result in its existing D++ position before continuing.";
-      else if(coinTurn&&disabled)reason="The final flip is a D8 roll: 1–4 is Heads, 5–8 is Tails.";
-      else if(coinTurn)reason="Final flip: 1–4 is Heads, 5–8 is Tails.";
+      else if(coinTurn&&disabled)reason="The final D8 is interpreted as a coin flip: 1–4 is Heads, 5–8 is Tails.";
+      else if(coinTurn)reason="Final D8, interpreted as a coin flip: 1–4 is Heads, 5–8 is Tails.";
       else if(disabled)reason="This roll needs the D8, so use a result from 1 through 8.";
       
       else reason=isD8?(turn==="checksum-d8"?"Final D8: choose checksum option 1 through 8.":"D8 roll: choose result 1 through 8."):hodlDPlusNumberedD16?"Decimal D16 roll: choose result 1 through 16.":"Custom D++ D16 roll: choose any hexadecimal result from 0 through F.";
@@ -1720,10 +1710,9 @@ function hodlRenderKeyForm(){
   if(Ne==="dice"){
     let dplusFaces=["1","2","3","4","5","6","7","8","9","A","B","C","D","E","F","0"],dplusPad=dplusFaces.map(face=>{let decimal=face==="0"?16:Number.parseInt(face,16),label=hodlDPlusNumberedD16&&decimal>=10?`<span class="dplus-key-face">${decimal}</span><span class="dplus-key-decimal">${face}</span>`:hodlDPlusNumberedD16?String(decimal):face,aria=hodlDPlusNumberedD16?`D16 result ${decimal}, entered as ${face}`:`D16 result ${face}${/^[A-F]$/.test(face)?`, decimal ${decimal}`:""}`;return`<button type="button" data-d="${face}" aria-label="${aria}">${label}</button>`}).join("");
     let diceLabel=ge==="dplus"?(config.words===24?"D++ rolls (D8, D16, D16; then a final D8)":"D++ rolls (D8, D16, D16)"):ge==="bitbox"?"Dice rolls (1–4, then coin / 6th die)":"Dice rolls (faces 1–6 only)";
-    let diceHelp=ge==="dplus"?`For each of the first ${config.partialWords} words, enter the D8 result, then both D16 results. ${config.words===24?"One final D8 roll selects the checksum word.":config.words===12?"One final D8 roll and one D16 roll select the checksum word.":"One final D16 roll and one coin flip select the checksum word: on the flip, 1–4 is Heads and 5–8 is Tails."}`:ge==="bitbox"?`${config.partialWords} lookup-table words fill one slot at a time, then choose a confirmed final checksum word. Use 1–4 for the first five rolls. On the sixth, Heads inserts an equivalent face from 1–3 and Tails inserts one from 4–6; that numeric choice does not add entropy.`:ge==="coleman"?`Every rolled 6 becomes 0 before the complete digit string is hashed with SHA-256. This Dice [1-6] method matches the method used by Keystone. Any nonempty count produces a phrase, but use at least ${config.hashRolls} fair rolls before relying on it.`:`The original dice digit string is hashed with SHA-256. This Base 10 [0-9] method matches COLDCARD and SeedSigner. Any nonempty count produces a phrase, but use at least ${config.hashRolls} fair rolls before relying on it.`;
+    let diceHelp=ge==="dplus"?`For each of the first ${config.partialWords} words, enter the D8 result, then both D16 results. ${config.words===24?"One final D8 roll selects the checksum word.":config.words===12?"One final D8 roll and one D16 roll select the checksum word.":"One final D16 roll and one final D8 roll select the checksum word. The final D8 is interpreted as a coin flip: 1–4 is Heads, 5–8 is Tails."}`:ge==="bitbox"?`${config.partialWords} lookup-table words fill one slot at a time, then choose a confirmed final checksum word. Use 1–4 for the first five rolls. On the sixth, Heads inserts an equivalent face from 1–3 and Tails inserts one from 4–6; that numeric choice does not add entropy.`:ge==="coleman"?`Every rolled 6 becomes 0 before the complete digit string is hashed with SHA-256. This Dice [1-6] method matches the method used by Keystone. Any nonempty count produces a phrase, but use at least ${config.hashRolls} fair rolls before relying on it.`:`The original dice digit string is hashed with SHA-256. This Base 10 [0-9] method matches COLDCARD and SeedSigner. Any nonempty count produces a phrase, but use at least ${config.hashRolls} fair rolls before relying on it.`;
     let dicePlaceholder=ge==="dplus"?`e.g. ${hodlDPlusNumberedD16?"1 16 16  2 10 15":"100 2AF"} …${config.words===24?" then final D8":""}`:ge==="bitbox"?"111111 222224…":"e.g. 415263415263…";
-    let dplusCoinPad=config.words===18?`<div class="dice-input-pad dplus-coin-pad" role="group" aria-label="Final coin flip"><button type="button" class="coin-button" data-d="H" data-coin="heads" data-coin-low="1" data-coin-high="4" aria-label="Final coin flip: Heads, enters a D8 face from 1 to 4">Heads (1–4)</button><button type="button" class="coin-button" data-d="T" data-coin="tails" data-coin-low="5" data-coin-high="8" aria-label="Final coin flip: Tails, enters a D8 face from 5 to 8">Tails (5–8)</button></div>`:"";
-    let dicePad=ge==="dplus"?`<div class="dice-input-pad dplus">${dplusPad}</div>${dplusCoinPad}`:`<div class="dice-input-pad with-coin">${[1,3,5].map(face=>`<button type="button" data-d="${face}">${face}</button>`).join("")}<button type="button" class="coin-button" data-d="H" data-coin="heads">Heads (1–3)</button>${[2,4,6].map(face=>`<button type="button" data-d="${face}">${face}</button>`).join("")}<button type="button" class="coin-button" data-d="T" data-coin="tails">Tails (4–6)</button></div>`;
+        let dicePad=ge==="dplus"?`<div class="dice-input-pad dplus">${dplusPad}</div>`:`<div class="dice-input-pad with-coin">${[1,3,5].map(face=>`<button type="button" data-d="${face}">${face}</button>`).join("")}<button type="button" class="coin-button" data-d="H" data-coin="heads">Heads (1–3)</button>${[2,4,6].map(face=>`<button type="button" data-d="${face}">${face}</button>`).join("")}<button type="button" class="coin-button" data-d="T" data-coin="tails">Tails (4–6)</button></div>`;
     let dplusConvention=ge==="dplus"?`<p class="label" id="dplus-die-label">Which D16 dice are you rolling?</p><div class="card-suit-pad dplus-die-pad" id="dplus-die" role="group" aria-labelledby="dplus-die-label"><button type="button" class="${hodlDPlusNumberedD16?"":"active"}" data-dplus-die="hex" aria-pressed="${hodlDPlusNumberedD16?"false":"true"}">Hex D16 · 0–F</button><button type="button" class="${hodlDPlusNumberedD16?"active":""}" data-dplus-die="numbered" aria-pressed="${hodlDPlusNumberedD16?"true":"false"}">Decimal D16 · 1–16</button></div>`:"";
     at.innerHTML=`
       <p class="label">How to turn rolls into a ${config.words}-word seed</p>
@@ -1873,7 +1862,7 @@ function hodlUpdateDice(){
     else if(selectingFinal)status=selectedFinal?`${config.words} of ${config.words} seed words \u00b7 checksum valid \u00b7 ready to derive`:`${config.partialWords} of ${config.partialWords} word rolls complete \u00b7 choose the final checksum word`;
     else if(result.waiting==="checksum-d8")status=`${config.partialWords} of ${config.partialWords} word rolls complete \u00b7 final D8 checksum roll (1\u20138)`;
     else if(result.waiting==="checksum-d16")status=`${config.partialWords} of ${config.partialWords} word rolls complete \u00b7 final D16 checksum roll (${d16Range})`;
-    else if(result.waiting==="checksum-coin")status=`${config.partialWords} of ${config.partialWords} word rolls complete \u00b7 final coin flip (1–4 Heads, 5–8 Tails)`;
+    else if(result.waiting==="checksum-coin")status=`${config.partialWords} of ${config.partialWords} word rolls complete \u00b7 final D8 as a coin flip (1–4 Heads, 5–8 Tails)`;
     else status=`${config.words} of ${config.words} seed words \u00b7 checksum valid \u00b7 ready to derive`;
     if(result.extraAfter)status+=` \u00b7 ${result.extraAfter} extra input${result.extraAfter===1?"":"s"} ignored`;
     let displayWords=result.wordSlots.slice();if(result.finalWord)displayWords.push(result.finalWord);else if(selectedFinal)displayWords.push(selectedFinal);hodlRenderDiceWordGrid(wordsBox,displayWords,config.words,!1);
