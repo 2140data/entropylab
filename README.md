@@ -93,7 +93,7 @@ To remove generated files, run `npm run clean`.
 ## Project structure
 
 ```
-├── assets/                 Static assets (logo, favicon)
+├── assets/                 Static assets (logo, favicon, social card)
 ├── scripts/
 │   ├── build.mjs           Locked-dependency esbuild and HTML assembly
 │   └── verify-site.mjs     Site artifact verification (npm run verify)
