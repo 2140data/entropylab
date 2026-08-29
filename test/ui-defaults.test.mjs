@@ -248,6 +248,10 @@ test("multisig script type and placeholders follow detected co-signer exports", 
   assert.match(app, /testnet\?"Upub":"Ypub"/);
   assert.match(app, /testnet\?"Vpub":"Zpub"/);
   assert.match(app, /kind==="p2tr"\)return`\[fingerprint\/86h\/\$\{coin\}\/0h\]\$\{testnet\?"tpub":"xpub"\}…`/);
+  assert.match(app, /if\(steps\[0\]!=="86h"\)return"BIP86 origin must start at 86h."/);
+  assert.match(app, /Taproot BIP86 requires a depth-3 account key at m\/86h\/coinh\/accounth/);
+  assert.doesNotMatch(app, /or BIP48 script 3h/);
+  assert.doesNotMatch(app, /if\(steps\[3\]==="3h"\)return"p2tr"/);
   assert.match(app, /summary\.legacyMixed\?"Legacy co-signer exports mix BIP45 and BIP87/);
   assert.match(app, /summary\.legacyScriptConflict\?"BIP87 account keys are script-agnostic/);
   assert.match(app, /BIP87 keys do not encode a script type\. Select Legacy P2SH/);

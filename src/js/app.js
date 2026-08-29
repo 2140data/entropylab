@@ -2126,21 +2126,12 @@ function hodlMultisigDerivationStandard(origin){
 function hodlOriginScriptError(origin,kind,network,legacyStandard="bip45"){
   let steps=hodlNormalizeOriginPath(origin.path).split("/");
   if(kind==="p2tr"){
+    if(steps[0]!=="86h")return"BIP86 origin must start at 86h.";
     let coin=network==="testnet"?"1h":"0h";
-    if(steps[0]==="86h"){
-      if(steps[1]!==coin)return`This ${network} Taproot origin should use ${coin} as the coin type.`;
-      if(steps.length!==3)return"BIP86 origin must be 86h/coin/account.";
-      if(!/^\d+h$/.test(steps[2]))return"BIP86 account index must be hardened.";
-      return""
-    }
-    if(steps[0]==="48h"){
-      if(steps[1]!==coin)return`This ${network} origin should use ${coin} as the coin type.`;
-      if(steps.length!==4)return"BIP48 Taproot origin must be 48h/coin/account/3h.";
-      if(!/^\d+h$/.test(steps[2]))return"BIP48 account index must be hardened.";
-      if(steps[3]!=="3h")return"BIP48 Taproot origin must end in 3h.";
-      return""
-    }
-    return"Taproot origin must be 86h/coin/account or 48h/coin/account/3h."
+    if(steps[1]!==coin)return`This ${network} BIP86 origin should use ${coin} as the coin type.`;
+    if(steps.length!==3)return"BIP86 origin must be 86h/coin/account.";
+    if(!/^\d+h$/.test(steps[2]))return"BIP86 account index must be hardened.";
+    return""
   }
   if(kind==="p2wsh"||kind==="p2sh-p2wsh"){
     if(steps[0]!=="48h")return"This script type's origin must start at 48h.";
@@ -2166,7 +2157,7 @@ function hodlOriginScriptError(origin,kind,network,legacyStandard="bip45"){
 function hodlMultisigAccountNumber(origin,kind){
   let steps=hodlNormalizeOriginPath(origin?.path).split("/");
   if(kind==="p2sh"&&steps[0]==="45h")return null;
-  let standard=kind==="p2tr"?(steps[0]==="48h"?"BIP48":"BIP86"):kind==="p2sh"?"BIP87":"BIP48",match=steps[2]?.match(/^(\d+)h$/);
+  let standard=kind==="p2tr"?"BIP86":kind==="p2sh"?"BIP87":"BIP48",match=steps[2]?.match(/^(\d+)h$/);
   if(!match)throw new Error(`${standard} account index must be hardened.`);
   let account=Number(match[1]);
   if(!Number.isSafeInteger(account)||account<0||account>0x7fffffff)throw new Error(`${standard} account index is out of range.`);
@@ -2186,7 +2177,6 @@ function hodlMultisigOriginScriptKind(origin){
   if(steps[0]!=="48h"||steps.length!==4)return null;
   if(steps[3]==="1h")return"p2sh-p2wsh";
   if(steps[3]==="2h")return"p2wsh";
-  if(steps[3]==="3h")return"p2tr";
   return null
 }
 function hodlMultisigScriptEvidence(parsed){
@@ -2422,9 +2412,9 @@ function hodlMultisigPrefixCompatible(parsed,kind){
 }
 function hodlMultisigAccountKeyError(parsed,kind,legacyStandard="bip45"){
   if(kind==="p2tr"){
-    if(parsed.depth===3){if(parsed.childNumber<0x80000000)return"A BIP86 account index must be hardened.";return""}
-    if(parsed.depth===4){if(parsed.childNumber!==0x80000003)return"BIP48 Taproot requires a script-account key ending in /3h.";return""}
-    return"Taproot requires a BIP86 account key at m/86h/coinh/accounth, or BIP48 script 3h."
+    if(parsed.depth!==3)return`Taproot BIP86 requires a depth-3 account key at m/86h/coinh/accounth; this key is depth ${parsed.depth}.`;
+    if(parsed.childNumber<0x80000000)return"A BIP86 account index must be hardened.";
+    return""
   }
   if(kind==="p2wsh"||kind==="p2sh-p2wsh"){
     let scriptIndex=kind==="p2wsh"?2:1,label=kind==="p2wsh"?"Native SegWit":"Nested SegWit",expected=0x80000000+scriptIndex;

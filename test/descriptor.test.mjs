@@ -144,7 +144,13 @@ test("origin path must match key depth and script", () => {
     /87h/,
   );
   assert.equal(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "86h/0h/0h" }, "p2tr", "mainnet"), "");
-  assert.equal(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "48h/0h/0h/3h" }, "p2tr", "mainnet"), "");
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "48h/0h/0h/3h" }, "p2tr", "mainnet"), /86h/);
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "84h/0h/0h" }, "p2tr", "mainnet"), /86h/);
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "48h/0h/0h/2h" }, "p2tr", "mainnet"), /86h/);
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "44h/0h/0h" }, "p2tr", "mainnet"), /86h/);
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "45h" }, "p2tr", "mainnet"), /86h/);
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "87h/0h/0h" }, "p2tr", "mainnet"), /86h/);
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "86h/0h/0h/0h" }, "p2tr", "mainnet"), /86h\/coin\/account/);
   assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "86h/1h/0h" }, "p2tr", "mainnet"), /0h/);
   assert.equal(hodlOriginPathIndexes("48h/1h/0h/2h").at(-1), 0x80000002);
 });
@@ -177,7 +183,7 @@ test("multisig script type is inferred from SLIP-132 prefixes and key origins", 
   assert.equal(hodlMultisigOriginScriptKind({ path: "48h/0h/0h/1h" }), "p2sh-p2wsh");
   assert.equal(hodlMultisigOriginScriptKind({ path: "48h/0h/0h/2h" }), "p2wsh");
   assert.equal(hodlMultisigOriginScriptKind({ path: "86h/0h/0h" }), "p2tr");
-  assert.equal(hodlMultisigOriginScriptKind({ path: "48h/0h/0h/3h" }), "p2tr");
+  assert.equal(hodlMultisigOriginScriptKind({ path: "48h/0h/0h/3h" }), null);
   assert.equal(hodlMultisigOriginScriptKind({ path: "84h/0h/0h" }), null);
   assert.equal(hodlMultisigDerivationStandard({ path: "45h" }), "bip45");
   assert.equal(hodlMultisigDerivationStandard({ path: "86h/0h/0h" }), "bip86");
