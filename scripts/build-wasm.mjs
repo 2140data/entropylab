@@ -3,9 +3,13 @@
 // src/js/secp256k1-wasm-b64.js (base64 + sha256 of the wasm bytes).
 //
 // The generated module is committed so that `npm run build` keeps working
-// with Node alone; CI rebuilds it and diffs against the committed copy to
-// prove the artifact is reproducible from the Rust sources and the pinned
-// toolchain (secp256k1-wasm/rust-toolchain.toml, Cargo.lock).
+// with Node alone. CI rebuilds it from the Rust sources (pinned by
+// secp256k1-wasm/rust-toolchain.toml and Cargo.lock) and runs the
+// secp256k1-wasm test suite against the fresh build, so a stale committed
+// copy cannot survive; the artifact job commits the runner's copy back
+// after each merge. Byte identity across machines is not asserted: the C
+// side compiles with the builder's clang. Build-host paths are remapped
+// below so the binary does not carry the builder's home directory.
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -17,10 +21,19 @@ const crateDir = join(root, "secp256k1-wasm");
 const wasmPath = join(crateDir, "target/wasm32-unknown-unknown/release/secp256k1_wasm.wasm");
 const outPath = join(root, "src/js/secp256k1-wasm-b64.js");
 
+// Without a remap, rustc bakes the builder's absolute paths (e.g.
+// /home/<user>/.cargo/...) into panicking code of registry sources, which
+// both fingerprints the build host and breaks cross-machine comparisons.
+const home = process.env.HOME ?? "";
+const rustflags = [
+  `--remap-path-prefix=${home}/.cargo/=cargo/`,
+  `--remap-path-prefix=${home}/.rustup/=rustup/`,
+].join(" ");
+
 execFileSync(
   "cargo",
   ["build", "--locked", "--release", "--target", "wasm32-unknown-unknown"],
-  { cwd: crateDir, stdio: "inherit" }
+  { cwd: crateDir, stdio: "inherit", env: { ...process.env, RUSTFLAGS: rustflags } }
 );
 
 const wasm = readFileSync(wasmPath);

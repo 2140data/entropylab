@@ -7776,4 +7776,24 @@ function hodlBoot() {
 }
 // Curve operations need the WebAssembly module instantiated first (async in
 // browsers; already resolved synchronously under Node for the test suite).
-secp256k1Ready.then(hodlBoot);
+// If the engine cannot boot — a CSP or browser that refuses the inline
+// module, a corrupted copy — the page is killed like a failed browser-check
+// barrage, because output from a broken secp256k1 engine cannot be trusted.
+const hodlCurveFailure = () => {
+  if (!document.body) return;
+  const rows = `<tr><td>secp256k1 WebAssembly module</td><td>Failed</td></tr>`;
+  document.body.innerHTML = `
+<main class="sanity-failure">
+  <div class="sanity-failure-card" role="alert">
+    <svg class="sanity-failure-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"></circle><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"></path></svg>
+    <h1 class="sanity-failure-title">Host failed basic sanity checks</h1>
+    <p class="sanity-failure-message">This page should not be used until checks passed.</p>
+    <table class="sanity-failure-table">
+      <thead><tr><th>Startup sanity check</th><th>Result</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p class="sanity-failure-advice">Open this file in a current, mainstream browser such as Firefox on a trusted, air-gapped computer.</p>
+  </div>
+</main>`;
+};
+secp256k1Ready.then(hodlBoot).catch(() => hodlCurveFailure());

@@ -76,14 +76,20 @@ bundles them with the application using esbuild, and inlines the result into a
 single self-contained HTML file. `package-lock.json` pins the complete
 dependency tree and the integrity hash of every downloaded package.
 
-secp256k1 curve operations are performed by libsecp256k1 0.8.0 compiled to
-WebAssembly from the pinned Rust crate in `secp256k1-wasm/` (exact crate
-versions in `secp256k1-wasm/Cargo.lock`, toolchain pinned by
-`rust-toolchain.toml`). The compiled artifact is committed as
+EntropyLab's own secp256k1 calls — public-key derivation, ECDSA signing and
+verification in PSBT inspection, and curve point math — run on
+libsecp256k1 0.8.0 compiled to WebAssembly from the pinned Rust crate in
+`secp256k1-wasm/` (exact crate versions in `secp256k1-wasm/Cargo.lock`,
+toolchain pinned by `rust-toolchain.toml`) via the facade in
+`src/js/secp256k1.js`. BIP32 extended-key derivation and address/script
+construction still run on `@noble/curves`, brought in by the bundled
+`@scure` libraries. The compiled artifact is committed as
 `src/js/secp256k1-wasm-b64.js`, so building the site needs only Node.js. CI
 rebuilds it from the Rust sources, runs its test suite against the fresh
-build, and commits it back to `rock` after each merge (same flow as the site
-artifact).
+build, and commits the runner's copy back to `rock` after each merge (the
+same flow as the site artifact; byte identity across machines is not
+asserted, since the C side compiles with the builder's clang, and build-host
+paths are remapped out of the binary).
 
 Requirements: Node.js 20.19 or newer.
 

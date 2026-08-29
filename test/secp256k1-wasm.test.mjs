@@ -42,6 +42,14 @@ test("committed WASM artifact is intact (sha256 in module header matches payload
   assert.equal(actual, declared[1]);
 });
 
+test("committed WASM carries no build-host paths (remapped at build time)", () => {
+  const source = readFileSync(join(root, "src/js/secp256k1-wasm-b64.js"), "utf8");
+  const payload = Buffer.from(source.match(/"([A-Za-z0-9+/=]+)"/)[1], "base64").toString("latin1");
+  for (const banned of ["/home/", "/Users/", ".cargo/", ".rustup/"]) {
+    assert.equal(payload.includes(banned), false, `build fingerprints the build host: ${banned}`);
+  }
+});
+
 test("getPublicKey(1) is the generator point, compressed and uncompressed", () => {
   assert.equal(bytesToHex(secp256k1.getPublicKey(KEY1, true)), G_COMPRESSED);
   const uncompressed = secp256k1.getPublicKey(KEY1, false);

@@ -139,6 +139,17 @@ test("the app never fetches, so the CSP forbids connections", () => {
   assert.doesNotMatch(read("src/js/online.js") + read("src/js/network-check.js") + read("src/js/browser-check.js"), /\bfetch\s*\(/);
 });
 
+test("the WASM boot chain has a failure path that kills the page", () => {
+  const app = read("src/js/app.js");
+  assert.match(
+    app,
+    /secp256k1Ready\.then\(hodlBoot\)\.catch\(/,
+    "app boot must catch secp256k1Ready rejection instead of leaving a dead page",
+  );
+  assert.match(app, /hodlCurveFailure/, "the boot rejection must render the sanity-failure kill screen");
+  assert.match(app, /<tr><td>secp256k1 WebAssembly module<\/td><td>Failed<\/td><\/tr>/);
+});
+
 test("third-party actions are immutable and deployment is test-gated", () => {
   const workflow = read(".github/workflows/ci-cd.yml");
   assert.doesNotMatch(workflow, /^\s*uses:\s*[^\s]+@(?![0-9a-f]{40}(?:\s|$))/m);
