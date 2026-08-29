@@ -17,9 +17,9 @@ function hodlFormatRecoverySheet(text) {
 
 (() => {
   const current = document.querySelector('meta[name="application-version"]')?.content || "v{{VERSION}}";
-  const currentFile = "entropylab-" + current.replace(/^v/, "") + ".html";
+  const currentFile = "entropylab.html";
   const labels = [...document.querySelectorAll(".site-version")];
-  const downloads = [...document.querySelectorAll('[download^="entropylab-"]')];
+  const downloads = [...document.querySelectorAll('[download^="entropylab"]')];
   let availableVersions = [{ version: current, file: currentFile }];
 
   downloads.forEach((link) => {
@@ -28,9 +28,11 @@ function hodlFormatRecoverySheet(text) {
   });
 
   const render = (versions) => {
+    // The evergreen entropylab.html is the canonical file; legacy versioned
+    // names stay allowlisted so older manifests keep working.
     const safe = versions.filter((item) =>
       /^v\d+(?:\.\d+)*$/.test(item.version) &&
-      /^entropylab-\d+(?:\.\d+)*\.html$/.test(item.file)
+      /^entropylab(?:-\d+(?:\.\d+)*)?\.html$/.test(item.file)
     );
 
     if (!safe.some((item) => item.version === current)) {

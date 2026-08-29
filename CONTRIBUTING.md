@@ -110,7 +110,7 @@ npm run ci            # test subset + build + verify, in order
 
 ### Edit sources, never the build output
 
-`index.html`, `entropylab-<version>.html` and `versions.json` are generated and
+`entropylab.html`, `index.html` and `versions.json` are generated and
 committed so the app can be downloaded directly. Change `src/` instead, then run
 `npm run build` and commit the regenerated files in the same commit. Hand-edited
 output will fail CI's reproducibility check.

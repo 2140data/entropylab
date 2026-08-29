@@ -218,7 +218,7 @@ test("the build inlines the module and the failure screen is styled", () => {
 });
 
 test("the compiled application ships the inlined barrage", () => {
-  const compiled = read("index.html");
+  const compiled = read("entropylab.html");
   assert.match(compiled, /Host failed basic sanity checks/);
   assert.match(compiled, /data-browser-checks|dataset\.browserChecks/);
   assert.doesNotMatch(compiled, /\/\*@@JS_BROWSER_CHECK@@\*\//);
