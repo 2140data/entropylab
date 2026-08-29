@@ -166,12 +166,18 @@ textarea { display: block; min-height: 96px; letter-spacing: 0.08em; }
 }
 .number-base-sync-status[hidden] { display: none; }
 .number-base-sync-status svg { display: block; width: 16px; height: 16px; }
-.passphrase-keyboard-tools { display: flex; margin-top: var(--space-component); }
-.passphrase-input-row { display: flex; align-items: stretch; gap: var(--space-control); margin-top: var(--space-control); }
-#passphrase-field .passphrase-input-row input { flex: 1 1 auto; min-width: 0; margin-top: 0; }
-.passphrase-keyboard-toggle-host { display: flex; align-items: stretch; }
-.passphrase-keyboard-toggle-host[hidden] { display: none; }
-.passphrase-keyboard-toggle-host .seed-keyboard-toggle { align-self: stretch; min-height: 0; height: auto; }
+.passphrase-field { margin-top: var(--space-component); font-size: 14px; font-weight: 600; }
+.passphrase-keyboard-tools { display: flex; align-items: stretch; gap: var(--space-control); margin-top: var(--space-control); }
+.passphrase-keyboard-tools[hidden] { display: none; }
+.passphrase-keyboard-tools .seed-keyboard-toggle { align-self: stretch; height: auto; }
+.passphrase-bip39-toggle { flex: 1 1 auto; margin-top: 0; }
+.dice-input-shell.passphrase-input-shell input {
+  position: relative; z-index: 1; margin-top: 0; background: transparent;
+  color: transparent; -webkit-text-fill-color: transparent; caret-color: var(--fg); line-height: 1.45;
+}
+.dice-input-shell.passphrase-input-shell input::placeholder { color: var(--faint); -webkit-text-fill-color: var(--faint); }
+.passphrase-input-shell .dice-input-highlight { white-space: pre; overflow-wrap: normal; word-break: normal; letter-spacing: 0; }
+.passphrase-bip39-status { margin: var(--space-control) 0 0; font-weight: 400; }
 .passphrase-keyboard-host .seed-keyboard { margin-top: var(--space-control); margin-right: auto; margin-left: 0; }
 .seed-keyboard-toggle {
   display: grid; place-items: center; flex: 0 0 44px; width: 44px; min-height: 44px; height: auto; padding: 5px;

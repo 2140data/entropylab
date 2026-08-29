@@ -564,18 +564,20 @@
     await chooseMode("Dice rolls");
     const dice = await until(() => document.getElementById("dice"), "dice input");
     const passphrase = document.getElementById("pass");
-    const passphraseInputRow = document.querySelector("#passphrase-field .passphrase-input-row");
+    const passphraseTools = document.getElementById("passphrase-keyboard-toggle-host");
     const fingerprintCards = document.getElementById("master-fingerprint-preview");
     const keyboardHost = document.getElementById("passphrase-keyboard-host");
     toggle = document.getElementById("passphrase-keyboard-toggle");
+    const bip39Passphrase = document.getElementById("passphrase-bip39-words");
     let keyboard = keyboardHost?.querySelector("[data-on-screen-keyboard]");
-    assert(toggle?.querySelector("svg") && keyboard, "Dice passphrase keyboard control is missing");
+    assert(toggle?.querySelector("svg") && bip39Passphrase && keyboard, "Dice passphrase keyboard controls are missing");
     assert(
-      passphraseInputRow.contains(toggle)
+      passphraseTools.contains(toggle)
+        && passphraseTools.contains(bip39Passphrase)
         && Boolean(toggle.compareDocumentPosition(passphrase) & Node.DOCUMENT_POSITION_FOLLOWING),
-      "Dice keyboard toggle is not directly left of the passphrase input",
+      "Dice keyboard toggle and BIP39-word checkbox are not above the passphrase input",
     );
-    assert(Math.abs(toggle.getBoundingClientRect().height - passphrase.getBoundingClientRect().height) < 0.5, "Passphrase toggle and input heights do not match");
+    assert(passphraseTools.getBoundingClientRect().bottom <= passphrase.getBoundingClientRect().top, "Passphrase tools overlap or follow the input");
     assert(
       Boolean(fingerprintCards.compareDocumentPosition(keyboardHost) & Node.DOCUMENT_POSITION_FOLLOWING),
       "Passphrase keyboard is not below the master fingerprint cards",
@@ -584,6 +586,34 @@
     toggle.click();
     assert(toggle.getAttribute("aria-expanded") === "true" && !keyboard.hidden, "Dice keyboard did not open");
     assert(!keyboard.querySelector("[data-seed-keyboard-mode]").disabled, "Passphrase keyboard mode is disabled");
+    input(passphrase, "Abandon  zoo");
+    bip39Passphrase.click();
+    equal(passphrase.value, "Abandon  zoo", "Enabling BIP39-word mode changed an existing passphrase");
+    assert(document.getElementById("passphrase-highlight").querySelectorAll(".dice-roll-invalid").length >= 2, "Invalid passphrase capitalization and spacing were not highlighted");
+    assert(keyboard.querySelector("[data-seed-keyboard-mode]").disabled, "BIP39-word mode did not lock the keyboard to lowercase letters");
+    input(passphrase, "");
+    for (const character of "abandon") {
+      const key = keyboard.querySelector(`[data-seed-key="${character}"]`);
+      assert(key && !key.disabled, `Valid BIP39 continuation ${character} was disabled`);
+      key.click();
+    }
+    const passphraseHighlight = document.getElementById("passphrase-highlight");
+    const passphraseRect = passphrase.getBoundingClientRect();
+    const passphraseHighlightRect = passphraseHighlight.getBoundingClientRect();
+    equal(passphraseHighlight.textContent, "abandon", "Valid passphrase text was not mirrored visibly");
+    equal(getComputedStyle(passphrase).backgroundColor, "rgba(0, 0, 0, 0)", "Passphrase input obscures its highlighted text mirror");
+    assert(
+      Math.abs(passphraseRect.x - passphraseHighlightRect.x) < 0.5
+        && Math.abs(passphraseRect.y - passphraseHighlightRect.y) < 0.5
+        && Math.abs(passphraseRect.width - passphraseHighlightRect.width) < 0.5
+        && Math.abs(passphraseRect.height - passphraseHighlightRect.height) < 0.5,
+      "Passphrase input and highlighted text mirror are misaligned",
+    );
+    const passphraseSpace = keyboard.querySelector(".seed-keyboard-space");
+    assert(!passphraseSpace.disabled, "Space was disabled after a complete BIP39 passphrase word");
+    passphraseSpace.click();
+    assert(passphraseSpace.disabled, "Space remained enabled before the next BIP39 word");
+    bip39Passphrase.click();
     input(passphrase, "");
     input(dice, "");
     keyboard.querySelector('[data-seed-key="a"]').click();

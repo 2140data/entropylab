@@ -31,6 +31,14 @@ test("top status banner omits the entropy RNG message", () => {
   assert.match(template, /<div class="kicker">Run Offline · Bring your own entropy<\/div>/);
 });
 
+test("optional BIP39 passphrase placeholders explain that blank means none", () => {
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /id="pass"[^>]*placeholder="Enter a BIP39 passphrase, or leave blank for none"/);
+    assert.match(markup, /id="psbt-pass"[^>]*placeholder="Enter a BIP39 passphrase, or leave blank for none"/);
+    assert.doesNotMatch(markup, /placeholder="Leave blank unless you set one"/);
+  }
+});
+
 test("every enabled button uses orange and black momentary press feedback", () => {
   assert.match(css, /button:not\(:disabled\):active \{[\s\S]*?background: var\(--selection-accent\) !important;[\s\S]*?color: var\(--selection-fg\) !important;[\s\S]*?border-color: var\(--selection-accent\) !important;/);
   assert.match(css, /button:not\(:disabled\):active \* \{ color: inherit !important; \}/);
@@ -255,13 +263,18 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /function hodlRenderPassphraseKeyboard\(\)/);
   assert.match(app, /passphrase=Ne==="dice"\|\|Ne==="hex"\|\|Ne==="seed"&&hodlSeedMethod==="numbers",enabled=passphrase\|\|privateKey/);
   assert.match(app, /hodlPassphraseKeyboardToggleMarkup\(\)/);
+  assert.match(app, /function hodlPassphraseBip39ToggleMarkup\(checked=hodlPassphraseBip39Enabled\(\)\)/);
+  assert.match(app, /function hodlAnalyzeBip39Passphrase\(value,activeCaret=null\)/);
+  assert.match(app, /function hodlPassphraseBip39CanEnterCharacter\(input,key\)/);
+  assert.match(app, /function hodlPassphraseBip39CanEnterSpace\(input\)/);
+  assert.match(app, /passphraseBip39Words:!1/);
   assert.match(app, /hodlPrivateKeyKeyboardToggleMarkup\(\)/);
   assert.match(app, /id="private-key-input-help"[\s\S]*hodlPrivateKeyKeyboardToggleMarkup\(\)[\s\S]*<textarea id="key"/);
   assert.match(app, /privateKey\?"key":"pass",privateKey\?"private-keyboard-toggle":"passphrase-keyboard-toggle"/);
   assert.match(app, /hodlRenderPassphraseKeyboard\(\);return/);
-  assert.match(template, /class="passphrase-input-row"[\s\S]*id="passphrase-keyboard-toggle-host" hidden[\s\S]*<input id="pass"/);
+  assert.match(template, /id="passphrase-field"[\s\S]*id="passphrase-keyboard-toggle-host" hidden[\s\S]*id="passphrase-highlight"[\s\S]*<input id="pass"/);
   assert.match(template, /id="master-fingerprint-preview"[\s\S]*id="passphrase-keyboard-host" hidden[\s\S]*id="key-settings"/);
-  assert.match(app, /keyboard\.querySelectorAll\("\[data-seed-character-key\]"\)\.forEach\(button=>\{button\.disabled=!1\}\)/);
+  assert.match(app, /button\.disabled=constrained\?!hodlPassphraseBip39CanEnterCharacter\(input,button\.dataset\.seedKey\):!1/);
   assert.match(app, /function hodlBindSeedKeyboardDelete\(getInput,button,applyDelete=hodlApplySeedKeyboardKey\)/);
   assert.match(appWhitespace, /setTimeout\(\(\)=>\{holdTimer=null;repeated=true;remove\(\);if\(!button\.disabled\)repeatTimer=setInterval\(remove,69\)\},420\)/);
   assert.match(app, /\["pointerup","pointercancel","pointerleave","lostpointercapture"\]/);
@@ -281,10 +294,10 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(appWhitespace, /addEventListener\("pointerdown",event=>\{event\.preventDefault\(\);activeInput\.focus/);
   assert.match(app, /function hodlFilterSeed\(e\)\{[^}]*hodlLooksExtendedKey\(value\)\?value:value\.toLowerCase\(\)/);
   assert.match(css, /\.seed-entry-tools\s*\{[^}]*align-items: stretch[^}]*margin-top: var\(--space-component\)/s);
-  assert.match(css, /\.passphrase-keyboard-tools \{[^}]*display: flex[^}]*margin-top: var\(--space-component\)/s);
-  assert.match(css, /\.passphrase-input-row \{[^}]*display: flex[^}]*align-items: stretch[^}]*gap: var\(--space-control\)/s);
-  assert.match(css, /#passphrase-field \.passphrase-input-row input \{[^}]*flex: 1 1 auto[^}]*margin-top: 0/s);
-  assert.match(css, /\.passphrase-keyboard-toggle-host \.seed-keyboard-toggle \{ align-self: stretch; min-height: 0; height: auto; \}/);
+  assert.match(css, /\.passphrase-keyboard-tools \{[^}]*display: flex[^}]*margin-top: var\(--space-control\)/s);
+  assert.match(css, /\.passphrase-keyboard-tools \{[^}]*display: flex[^}]*align-items: stretch[^}]*gap: var\(--space-control\)/s);
+  assert.match(css, /\.dice-input-shell\.passphrase-input-shell input \{[^}]*position: relative[^}]*margin-top: 0[^}]*background: transparent[^}]*color: transparent/s);
+  assert.match(css, /\.passphrase-bip39-toggle \{[^}]*flex: 1 1 auto[^}]*margin-top: 0/s);
   assert.match(css, /\.passphrase-keyboard-host \.seed-keyboard \{ margin-top: var\(--space-control\); margin-right: auto; margin-left: 0; \}/);
   assert.match(css, /\.seed-keyboard-toggle\s*\{[^}]*width: 44px[^}]*min-height: 44px[^}]*height: auto/s);
   assert.match(css, /\.seed-keyboard-toggle svg \{[^}]*width: 30px[^}]*height: 22px/s);
