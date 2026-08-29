@@ -189,7 +189,7 @@ test("Seed phrase offers one-based or zero-based BIP39 word-number entry", () =>
   assert.match(appSource, /\[0, 1, 2, 3, 4, 5, 6, 7, 8, 9\]/);
   assert.match(appSource, /id="seed-number-words" class="dice-word-grid"/);
   assert.match(css, /\.dice-input-pad\.seed-number-pad \{ grid-template-columns: repeat\(5/);
-  assert.match(appSource, /Ne === "seed" && hodlSeedMethod === "numbers"/);
+  assert.match(appSource, /passphrase = !privateKey/);
 });
 
 test("hashed cards can match Ian Coleman's suit-symbol SHA-256 transcript", () => {
@@ -360,7 +360,7 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /function hodlPrivateKeyKeyboardMarkup\(\)/);
   assert.match(app, /function hodlBindPassphraseKeyboard\(inputId="pass",toggleId="passphrase-keyboard-toggle",inputName="passphrase"\)/);
   assert.match(app, /function hodlRenderPassphraseKeyboard\(\)/);
-  assert.match(app, /passphrase=Ne==="dice"\|\|Ne==="hex"\|\|Ne==="seed"&&hodlSeedMethod==="numbers",enabled=passphrase\|\|privateKey/);
+  assert.match(app, /privateKey=Ne==="key",passphrase=!privateKey,enabled=passphrase\|\|privateKey/);
   assert.match(app, /hodlPassphraseKeyboardToggleMarkup\(\)/);
   assert.match(app, /function hodlPassphraseBip39ToggleMarkup\(checked=hodlPassphraseBip39Enabled\(\)\)/);
   assert.match(app, /function hodlAnalyzeBip39Passphrase\(value,activeCaret=null\)/);
@@ -384,7 +384,7 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(appWhitespace, /setTimeout\(\(\)=>\{holdTimer=null;repeated=true;remove\(\);if\(!button\.disabled\)repeatTimer=setInterval\(remove,69\)\},420\)/);
   assert.match(app, /\["pointerup","pointercancel","pointerleave","lostpointercapture"\]/);
   assert.match(appWhitespace, /if\(repeated\)\{event\.preventDefault\(\);repeated=false;return\}/);
-  assert.match(app, /function hodlAutocompleteSeedInput\(input,event,completeExisting=!1\)/);
+  assert.match(app, /function hodlAutocompleteSeedInput\(input,event,completeExisting=!1,wholeWordlist=!1\)/);
   assert.match(app, /toggle\.checked&&hodlAutocompleteSeedInput\(input,null,!0\)/);
   assert.match(app, /inputType:"insertReplacementText"/);
   assert.match(appWhitespace, /toggle\.checked;input\.focus\(\{preventScroll:true\}\)/);

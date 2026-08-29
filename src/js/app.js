@@ -4107,14 +4107,17 @@ function hodlApplyFilteredInput(input, filter) {
   input.setSelectionRange(filter(value.slice(0, start)).length, filter(value.slice(0, end)).length, direction);
   return true;
 }
-function hodlAutocompleteSeedInput(input, event, completeExisting = false) {
-  let toggle = document.getElementById("seed-autocomplete");
-  if (!toggle?.checked || !completeExisting && (event?.inputType !== "insertText" || event.isComposing) || input.selectionStart !== input.selectionEnd) return false;
+function hodlAutocompleteSeedInput(input, event, completeExisting = false, wholeWordlist = false) {
+  // The checkbox lives in the seed section, but the setting follows the key, so
+  // boxes in other modes (the passphrase) still obey it.
+  let toggle = document.getElementById("seed-autocomplete"),
+    enabled = toggle ? toggle.checked : Boolean(hodlKeys[hodlActiveKey]?.seedAutocomplete);
+  if (!enabled || !completeExisting && (event?.inputType !== "insertText" || event.isComposing) || input.selectionStart !== input.selectionEnd) return false;
   let caret = input.selectionStart ?? input.value.length, suffix = input.value.slice(caret);
   if (suffix && !/^\s/.test(suffix)) return false;
   let match = input.value.slice(0, caret).match(/([A-Za-z]+)$/);
   if (!match) return false;
-  let prefix = match[1].toLowerCase(), start = caret - match[1].length, finalContext = hodlSeedFinalWordContext(input.value, Pt), isFinalPrefix = Boolean(finalContext?.finalToken && finalContext.finalToken.start === start && finalContext.finalToken.end === caret), options = isFinalPrefix ? finalContext.candidates : Ae, minimumLength = isFinalPrefix ? 1 : 2;
+  let prefix = match[1].toLowerCase(), start = caret - match[1].length, finalContext = wholeWordlist ? null : hodlSeedFinalWordContext(input.value, Pt), isFinalPrefix = Boolean(finalContext?.finalToken && finalContext.finalToken.start === start && finalContext.finalToken.end === caret), options = isFinalPrefix ? finalContext.candidates : Ae, minimumLength = isFinalPrefix ? 1 : 2;
   if (prefix.length < minimumLength) return false;
   let matches = options.filter((word) => word.startsWith(prefix));
   if (matches.length !== 1) return false;
@@ -4658,7 +4661,7 @@ function hodlBindBase64Keyboard(input) {
   refresh();
 }
 function hodlRenderPassphraseKeyboard() {
-  let host = document.getElementById("passphrase-keyboard-host"), toggleHost = document.getElementById("passphrase-keyboard-toggle-host"), privateKey = Ne === "key", passphrase = Ne === "dice" || Ne === "hex" || Ne === "seed" && hodlSeedMethod === "numbers", enabled = passphrase || privateKey;
+  let host = document.getElementById("passphrase-keyboard-host"), toggleHost = document.getElementById("passphrase-keyboard-toggle-host"), privateKey = Ne === "key", passphrase = !privateKey, enabled = passphrase || privateKey;
   if (toggleHost) {
     toggleHost.hidden = !passphrase;
     toggleHost.innerHTML = passphrase ? hodlPassphraseKeyboardToggleMarkup() + hodlPassphraseBip39ToggleMarkup() : "";
@@ -5199,6 +5202,7 @@ function hodlRenderKeyForm() {
       hodlUpdateCards();
     };
     hodlBindKeyFields();
+    hodlRenderPassphraseKeyboard();
     direct ? hodlUpdateDirectCards() : hodlUpdateCards();
     return;
   }
@@ -5417,6 +5421,7 @@ function hodlRenderKeyForm() {
     bindMethodChoices(input);
     hodlBindSeedKeyboard(input, config.words);
     hodlBindKeyFields();
+    hodlRenderPassphraseKeyboard();
     update();
     return;
   }
@@ -5937,6 +5942,7 @@ function hodlInitMasterFingerprintPreview() {
     if (!["pass", "dice", "hex", "bin", "base4", "base8", "base32", "base64", "seed", "seed-numbers", "cards", "direct-cards"].includes(id)) return;
     if (id === "pass") {
       let state = hodlKeys[hodlActiveKey];
+      if (hodlPassphraseBip39Enabled()) hodlAutocompleteSeedInput(pass, event, false, true);
       if (state) state.fields.pass = pass.value;
       hodlRenderPassphraseInputState(pass);
     }
@@ -8761,7 +8767,7 @@ function hodlPrivateKeyValues(fields) {
 }
 function hodlNewKeyState(name, keyId, keyNumber) {
   let id = keyId ?? hodlNextKeyId++, number = keyNumber ?? hodlNextKeyNumber++;
-  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: false, passphraseBip39Words: false, brainWalletTrim: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", derivationScheme: "bip84", purpose: "84", purposeHarden: true, coinType: "0", coinTypeHarden: true, network: "mainnet", account: "0", accountHarden: true, schemeScriptIndex: "2", schemeScriptIndexHarden: true, customDerivationPath: "m/84'/0'/0'", customNetwork: "mainnet", branchStart: "0", branchHarden: false, branchRange: "2", addressStart: "0", addressHarden: false, addressRange: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
+  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: true, passphraseBip39Words: false, brainWalletTrim: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", derivationScheme: "bip84", purpose: "84", purposeHarden: true, coinType: "0", coinTypeHarden: true, network: "mainnet", account: "0", accountHarden: true, schemeScriptIndex: "2", schemeScriptIndexHarden: true, customDerivationPath: "m/84'/0'/0'", customNetwork: "mainnet", branchStart: "0", branchHarden: false, branchRange: "2", addressStart: "0", addressHarden: false, addressRange: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
 }
 function hodlRestoreFormFields(state) {
   if (!state) return;
@@ -8811,7 +8817,7 @@ function hodlSetMode(mode) {
 function hodlKeyStateNeedsClear(state) {
   if (!state) return false;
   let fields = state.fields || {}, privateKeys = hodlPrivateKeyValues(fields), hasText = (id) => String(fields[id] ?? "").length > 0;
-  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || Boolean(state.seedAutocomplete) || Boolean(state.passphraseBip39Words) || Boolean(state.brainWalletTrim) || Boolean(state.showCards) || Boolean(state.showDiceFairness) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.derivationScheme ?? "bip84") !== "bip84" || String(fields.purpose ?? "84") !== "84" || fields.purposeHarden === false || String(fields.coinType ?? (fields.network === "testnet" ? "1" : "0")) !== "0" || fields.coinTypeHarden === false || String(fields.account ?? "0") !== "0" || fields.accountHarden === false || String(fields.schemeScriptIndex ?? "2") !== "2" || fields.schemeScriptIndexHarden === false || String(fields.customDerivationPath ?? "m/84'/0'/0'") !== "m/84'/0'/0'" || String(fields.customNetwork ?? "mainnet") !== "mainnet" || String(fields.branchStart ?? "0") !== "0" || Boolean(fields.branchHarden) || String(fields.branchRange ?? "2") !== "2" || String(fields.addressStart ?? "0") !== "0" || Boolean(fields.addressHarden) || String(fields.addressRange ?? fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
+  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || state.seedAutocomplete === false || Boolean(state.passphraseBip39Words) || Boolean(state.brainWalletTrim) || Boolean(state.showCards) || Boolean(state.showDiceFairness) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.derivationScheme ?? "bip84") !== "bip84" || String(fields.purpose ?? "84") !== "84" || fields.purposeHarden === false || String(fields.coinType ?? (fields.network === "testnet" ? "1" : "0")) !== "0" || fields.coinTypeHarden === false || String(fields.account ?? "0") !== "0" || fields.accountHarden === false || String(fields.schemeScriptIndex ?? "2") !== "2" || fields.schemeScriptIndexHarden === false || String(fields.customDerivationPath ?? "m/84'/0'/0'") !== "m/84'/0'/0'" || String(fields.customNetwork ?? "mainnet") !== "mainnet" || String(fields.branchStart ?? "0") !== "0" || Boolean(fields.branchHarden) || String(fields.branchRange ?? "2") !== "2" || String(fields.addressStart ?? "0") !== "0" || Boolean(fields.addressHarden) || String(fields.addressRange ?? fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
 }
 function hodlSyncKeyClearButton(capture = false) {
   if (capture) hodlCaptureKey();
