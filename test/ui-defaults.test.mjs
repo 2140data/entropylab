@@ -837,3 +837,20 @@ test("dice rolls hide Pearson chi-squared fairness behind a text expand button",
   assert.match(template, /dicefairness\.johnellmore\.com/);
   assert.match(template, /How can I test whether a die is fair/);
 });
+
+test("card suit glyphs have explicit local symbol-font fallbacks (issue #104)", () => {
+  // ♠ ♥ ♦ ♣ (U+2660–U+2666) appear wherever cards are entered or displayed,
+  // but not every default UI font covers them (notably SF Mono on macOS).
+  // Both stacks must name local symbol fonts before the generic fallback so
+  // the suits render on Windows, macOS, and Linux.
+  for (const property of ["--sans", "--mono"]) {
+    const stack = css.match(new RegExp(`${property}: ([^;]+);`))?.[1] ?? "";
+    for (const family of ['"Segoe UI Symbol"', '"Apple Symbols"', '"Noto Sans Symbols"']) {
+      assert.ok(stack.includes(family), `${property} is missing the ${family} fallback`);
+    }
+    assert.ok(/, (sans-serif|monospace)$/.test(stack.trim()), `${property} must keep its generic fallback last`);
+  }
+  // Fonts are local system fonts only: no webfont may ever be downloaded.
+  assert.doesNotMatch(css, /@font-face|\.woff2?|fonts\.googleapis|fonts\.gstatic/);
+  assert.doesNotMatch(template, /@font-face|\.woff2?|fonts\.googleapis|fonts\.gstatic/);
+});
