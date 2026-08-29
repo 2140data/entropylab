@@ -913,6 +913,9 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .wallet-result-messages h3 { margin: 0 0 8px; }
 .wallet-result-messages ul { display: grid; gap: 7px; margin: 0; padding-left: 20px; }
 .wallet-result-messages li { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.address-match-field { margin: 22px 0 0; }
+.address-match-field input { font-family: var(--mono); }
+.address-match-field .hint { display: block; margin-top: var(--space-control); }
 .wallet-result-messages li.is-warning { color: var(--fg); }
 .wallet-result-messages li.is-warning::marker { color: var(--warn); }
 .wallet-data-fields { margin-top: 16px; }
@@ -3802,6 +3805,61 @@ function hodlRenderMultisigCosignerExport(exports,accountId){
   let items=Array.isArray(exports)?exports.filter(candidate=>candidate.accountId===accountId):[];
   return items.map(item=>ye(`Multisig co-signer ${item.prefix} · ${item.label}`,item.value)).join("")
 }
+function hodlNormalizeAddressCheck(value){
+  let text=String(value??"").trim();
+  if(!text)return"";
+  text=text.replace(/^bitcoin:/i,"").replace(/\?.*$/,"").trim();
+  if(/^(bc1|tb1|bcrt1)/i.test(text)){
+    if(/[A-Z]/.test(text)&&/[a-z]/.test(text))return text;
+    return text.toLowerCase();
+  }
+  return text
+}
+function hodlAddressesEqual(left,right){
+  if(!left||!right)return!1;
+  if(/^(bc1|tb1|bcrt1)/i.test(left)|| /^(bc1|tb1|bcrt1)/i.test(right))return left.toLowerCase()===right.toLowerCase();
+  return left===right
+}
+function hodlMatchDerivedAddress(raw,receive=[],change=[]){
+  let address=hodlNormalizeAddressCheck(raw);
+  if(!address)return{state:"empty"};
+  let find=(rows,chain)=>{
+    for(let row of rows||[])if(hodlAddressesEqual(address,String(row.address||"")))return{state:"match",chain,index:row.index,path:row.path,address:row.address};
+    return null
+  };
+  return find(receive,"receive")||find(change,"change")||{state:"miss",receiveCount:(receive||[]).length,changeCount:(change||[]).length}
+}
+function hodlAddressCheckRows(){
+  if(re?.kind==="msig")return{receive:re.receive||[],change:re.change||[]};
+  if(re?.kind==="hd"){
+    let id=hodlSelectedScriptType(),account=re.accounts.find(candidate=>candidate.def.id===id)||re.accounts[0];
+    return{receive:account?.receive||[],change:account?.change||[]}
+  }
+  return{receive:[],change:[]}
+}
+function hodlAddressMatchMarkup(){
+  return `<label class="field address-match-field">Check an address
+    <input id="address-match" autocomplete="off" spellcheck="false" placeholder="Paste bc1… or a 1… / 3… address">
+    <span class="field-note">Paste a receive or change address shown by another wallet. A match means that wallet computed the same derivation as this one.</span>
+    <span class="hint" id="address-match-status" role="status"></span>
+  </label>`
+}
+function hodlBindAddressMatch(){
+  let input=document.getElementById("address-match"),status=document.getElementById("address-match-status");
+  if(!input||!status)return;
+  let update=()=>{
+    let rows=hodlAddressCheckRows(),result=hodlMatchDerivedAddress(input.value,rows.receive,rows.change);
+    if(result.state==="empty"){status.textContent="";status.className="hint";return}
+    if(result.state==="match"){
+      let chain=result.chain==="receive"?"Receive":"Change";
+      status.textContent=`${chain} address #${result.index} of this wallet · ${hodlDisplayDerivationPath(result.path)}`;
+      status.className="hint ok";return
+    }
+    status.textContent=`No match in the ${result.receiveCount} receive + ${result.changeCount} change addresses derived here. Raise Addresses and derive again, or this is a different wallet.`;
+    status.className="hint bad"
+  };
+  input.oninput=update;update()
+}
 function hodlAddressTable(rows,label="Addresses",includeWif=false){
   let safeLabel=$t(includeWif?`${label} with WIF private keys`:label),tableClass=includeWif?"wallet-table-private":"wallet-table-public";
   let wifHeading=includeWif?'<th scope="col">WIF</th>':"";
@@ -3849,8 +3907,10 @@ function Qs(id){
         ${hodlAddressTable(account.receive,"Receive addresses",hasPrivate)}
         <h4 class="wallet-data-subtitle">Change</h4>
         ${hodlAddressTable(account.change,"Change addresses",hasPrivate)}
+        ${hodlAddressMatchMarkup()}
       </section>
-    </section>`
+    </section>`;
+  hodlBindAddressMatch()
 }
 function ye(label,value){return`<p><span class="muted">${$t(label)}</span><br><span class="mono">${$t(value??"\u2014")}</span></p>`}
 function hodlPrivateValue(value,className="secret private-field-value"){let mask="************",text=String(value??"\u2014");if(Ge)return`<span class="${className}">${$t(text)}</span>`;let bullets="\u2022".repeat(Math.max(Array.from(text).length,mask.length));return`<span class="${className} secret-placeholder"><span class="secret-placeholder-mask" aria-hidden="true">${bullets}</span><span class="secret-placeholder-message" aria-hidden="true">${mask}</span><span class="secret-placeholder-label">Private value hidden</span></span>`}
@@ -4012,6 +4072,7 @@ function hodlBindWalletResultActions(){
   if(save){let clean=save.cloneNode(!0);save.replaceWith(clean);clean.addEventListener("click",hodlDownloadRecoverySheet)}
   let walletDat=document.getElementById("download-wallet-dat");
   if(walletDat){let clean=walletDat.cloneNode(!0);walletDat.replaceWith(clean);clean.addEventListener("click",hodlDownloadWalletDat)}
+  hodlBindAddressMatch()
 }
 function hodlFocusWalletResult(){
   requestAnimationFrame(()=>dr.querySelector(".wallet-data-intro h2, .account-result-card > h2")?.focus({preventScroll:!1}))
@@ -5658,9 +5719,12 @@ function hodlShowMsig(){if(!re||re.kind!=="msig")return;Ge=!1;let accountLabel=r
         ${hodlAddressTable(re.receive,"Multisig receive addresses")}
         <h4 class="wallet-data-subtitle">Change</h4>
         ${hodlAddressTable(re.change,"Multisig change addresses")}
+        ${hodlAddressMatchMarkup()}
       </section>
       <p class="muted">Import the watch-only wallet descriptor into Sparrow or another wallet.</p>
-    </section>`}
+    </section>`;
+  hodlBindAddressMatch()
+}
 
 function hodlDiceCompare(){}
 var hodlPsbtPriv=null,hodlPsbtHd=null,hodlPsbtSource="",hodlPsbtNote="No session key. Inspect-only mode.";
