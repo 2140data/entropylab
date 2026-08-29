@@ -79,7 +79,7 @@ directly):
 
 - `index.html` — the self-contained application (open this file)
 - `entropylab-<version>.html` — versioned copy used by the download links
-- `versions.json` — version manifest used by the hosted version picker
+- `versions.json` — version manifest the hosted header reads to flag a newer release
 
 The version is declared once in `package.json` and substituted into the
 output at build time. After changing anything in `src/`, run `npm run build`
@@ -114,14 +114,14 @@ files, run `npm run clean`.
 │       ├── app.js          Application logic
 │       ├── sqlite-writer.js Minimal SQLite database file writer
 │       ├── wallet-export.js Bitcoin Core wallet.dat descriptor export
-│       ├── online.js       Hosted-site behavior and version picker
+│       ├── online.js       Hosted-site behavior and header version label
 │       ├── network-check.js Network adapter detection and warning
 │       ├── browser-check.js Startup browser sanity checks and kill-screen
 │       ├── enhanced-inputs.js
 │       └── repeat-inputs.js
 ├── index.html              Compiled application (generated, committed)
 ├── entropylab-*.html       Versioned copy of the compiled application
-├── versions.json           Version manifest for the hosted version picker
+├── versions.json           Version manifest for the hosted header version label
 └── versions/archived/      Historical releases excluded from the picker
 ```
 

@@ -46,7 +46,9 @@
     await test("offline mode keeps online-only presentation disabled", () => {
       const warning = document.getElementById("online-warning");
       const logo = document.querySelector(".site-logo");
-      assert(warning && warning.hidden, "Offline mode displayed the online warning");
+      // The banners are parked while their UI is reworked; restore them and
+      // this asserts the offline build still keeps the warning hidden.
+      assert(!warning || warning.hidden, "Offline mode displayed the online warning");
       assert(logo, "Header logo is missing");
       assert(
         getComputedStyle(logo).backgroundImage.startsWith('url("data:image/png;base64,'),
@@ -59,8 +61,10 @@
         .map((entry) => entry.name)
         .filter((url) => /^(https?|wss?):/i.test(url));
       assert(external.length === 0, "Offline mode loaded a network resource: " + external.join(", "));
-      const options = [...document.querySelectorAll(".version-select option")];
-      assert(options.length === 1 && options[0].value === currentFile, "Local version fallback is missing");
+      const label = document.querySelector(".site-version");
+      assert(label, "Header version label is missing");
+      equal(label.textContent.replace(/\s+/g, " ").trim(), currentVersion + " (Latest)");
+      assert(!label.querySelector("a"), "Offline version label offered a link");
     });
     await test("offline host passes the startup sanity-check barrage", () => {
       const root = document.documentElement;
@@ -132,7 +136,9 @@
     const warning = document.getElementById("online-warning");
     const logo = document.querySelector(".site-logo");
     const favicon = document.querySelector('link[rel="icon"]');
-    assert(warning && !warning.hidden, "Online warning was not displayed");
+    // Parked with the rest of the banners; restore them and this asserts the
+    // hosted build lights the warning up again.
+    assert(!warning || !warning.hidden, "Online warning was not displayed");
     assert(logo, "Header logo is missing");
     assert(
       getComputedStyle(logo).backgroundImage.startsWith('url("data:image/png;base64,'),
@@ -156,8 +162,17 @@
     );
     assert(manifest.status === 200, `Version manifest returned HTTP ${manifest.status}`);
     await wait(0);
-    const options = [...document.querySelectorAll(".version-select option")];
-    assert(options.length === 1 && options[0].value === currentFile, "Unsafe manifest entry was accepted");
+    // The manifest advertises v1.0.0 alongside a script-injecting entry and a
+    // path-traversal entry that claims a higher version. Only v1.0.0 may win.
+    const label = document.querySelector(".site-version");
+    equal(label.textContent.replace(/\s+/g, " ").trim(), currentVersion + " v1.0.0 available");
+    const update = label.querySelector("a.site-version-update");
+    assert(update, "Newer version was not offered");
+    const target = new URL(update.href);
+    assert(
+      target.origin === location.origin && target.pathname === "/entropylab-1.0.0.html",
+      "Unsafe manifest entry was accepted: " + update.getAttribute("href"),
+    );
     assert(window.__browserTestInjected !== true, "Manifest executed script");
   });
 

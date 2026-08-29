@@ -76,6 +76,7 @@ const stageSite = () => {
         { version: `v${appVersion}`, file: versionFile },
         { version: "<img src=x onerror=window.__browserTestInjected=true>", file: "javascript:window.__browserTestInjected=true" },
         { version: "v9.9.9", file: "../../outside.html" },
+        { version: "v1.0.0", file: "entropylab-1.0.0.html" },
       ],
     })}\n`,
     "utf8",

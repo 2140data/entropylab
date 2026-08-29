@@ -27,6 +27,7 @@
   --space-component: 16px;
   --space-section: 20px;
   --space-major: 32px; /* seams between the page's major sections */
+  --space-lede: 48px; /* the widest seam: where the pitch ends and the tool begins */
   --site-header-height: 52px; /* .header-button height plus 6px above and below */
   --display: "Iowan Old Style", Palatino, Georgia, serif;
   --sans: "Segoe UI", system-ui, sans-serif;
@@ -75,11 +76,15 @@ button { cursor: pointer; }
 .kicker { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px; margin: 16px 0; }
 /* Major seam above the closing Sources card. It collapses with the previous
-   card's 16px, so the larger value wins rather than the two adding up. The
-   matching seam below the marketing card lives on #workspace. */
+   card's 16px, so the larger value wins rather than the two adding up. The seam
+   below the marketing card lives on #workspace and is deliberately wider. */
 .sources { margin-top: var(--space-major); }
 .warn { background: color-mix(in oklab, var(--danger) 12%, var(--bg)); border-color: color-mix(in oklab, var(--danger) 40%, var(--border)); }
 .muted { color: var(--muted); font-size: 14px; line-height: 1.5; }
+/* The pitch is a set of discrete claims rather than prose, so it reads as a
+   list. The top margin stands in for the paragraph's, and dropping the
+   bottom one lets the card's own padding close it out. */
+.pitch-list { display: grid; gap: 7px; margin: var(--space-component) 0 0; padding-left: 20px; }
 .sources-heading { color: var(--fg); font-size: 1.17rem; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; }
 .tab, .btn {
@@ -393,37 +398,61 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 .ok { color: var(--ok); }
 /* Top padding sets the gap below the warning banners, which carry 12px of
    their own margin. */
-header { padding: var(--space-section) 0 var(--space-control); }
-header h1 { margin: 0; line-height: 1.15; }
 .site-header {
   position: fixed; top: 0; left: 0; right: 0; z-index: 40;
   background: var(--bg); border-bottom: 1px solid var(--border);
 }
+/* The tight gap belongs to the mark and wordmark, which read as one lockup.
+   Everything after them buys its own breathing room back with a margin. */
 .site-header-inner {
-  display: flex; align-items: center; gap: 12px; height: var(--site-header-height);
+  display: flex; align-items: center; gap: 6px; height: var(--site-header-height);
   max-width: 1000px; margin: 0 auto; padding: 0 16px;
 }
 /* Both marks are inlined as data URIs at build time; the light one wins when
    the light theme sets data-theme on the root element. */
 .site-logo {
-  flex: 0 0 auto; width: 32px; height: 32px;
+  flex: 0 0 auto; width: 36px; height: 36px;
   background: url("data:image/png;base64,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") center / contain no-repeat;
 }
 :root[data-theme="light"] .site-logo { background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAARGVYSWZNTQAqAAAACAABh2kABAAAAAEAAAAaAAAAAAADoAEAAwAAAAEAAQAAoAIABAAAAAEAAABgoAMABAAAAAEAAABgAAAAAKkzX04AAAHNaVRYdFhNTDpjb20uYWRvYmUueG1wAAAAAAA8eDp4bXBtZXRhIHhtbG5zOng9ImFkb2JlOm5zOm1ldGEvIiB4OnhtcHRrPSJYTVAgQ29yZSA2LjAuMCI+CiAgIDxyZGY6UkRGIHhtbG5zOnJkZj0iaHR0cDovL3d3dy53My5vcmcvMTk5OS8wMi8yMi1yZGYtc3ludGF4LW5zIyI+CiAgICAgIDxyZGY6RGVzY3JpcHRpb24gcmRmOmFib3V0PSIiCiAgICAgICAgICAgIHhtbG5zOmV4aWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20vZXhpZi8xLjAvIj4KICAgICAgICAgPGV4aWY6Q29sb3JTcGFjZT4xPC9leGlmOkNvbG9yU3BhY2U+CiAgICAgICAgIDxleGlmOlBpeGVsWERpbWVuc2lvbj4xMTIwPC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxZRGltZW5zaW9uPjExMjA8L2V4aWY6UGl4ZWxZRGltZW5zaW9uPgogICAgICA8L3JkZjpEZXNjcmlwdGlvbj4KICAgPC9yZGY6UkRGPgo8L3g6eG1wbWV0YT4KJiqbPQAAFr9JREFUeAHtXQu8XtOVX+t897v3iisRRDqewaioIkW8gsSjHmVEqVGPqEdRRkyZqlY9Ion6MaNmWoY2HqHeY5Cm4y2EeKQixVQ8WlOPJAhR5HUf33dW//+1z/7y3ZvUcHO/c3O5K3efs88++7X+a+21197nnC8ivdSLwBcZAf3CMT9mRKOsXzhE3irfJmMeLXU3/18cAVw3YnUpFLdWsXOsnK4tx04ZAvCtuwVQ190dqFn7t+w7qJCWR1gqu5jYZmhnA7F0PWlIElksD+O628En7587ARRv2HuHsqSnS6m0T1pMVpc64JxioJdTQm6CU6KFl3FaKejzI4DbRzQlLXXnA/xTraiNUgLEpXQpzpYQcEhCRc2mrxTooxOfDwFcf8C6hVLrTWmDDJfWMoCHnlv76U1xiSSVkv2lbPporwC6CoEb9l67kDTfZcXCUGmlxhNpqLsjToNDyoRRwBTcbI/IcQ+8FdK7/+jjsvu70cke/Hy/BkB6nRWTodYKI89ptQ6TrOr7sPvPQxIYDoDfZQL9L6UGWfyyk63VpFiPFkDSr/R9qU++YdR8aj3+acluV9PxUpB+AL6Ous+5VwqJSlkeldfbptQEyU5Wmo3NTpbuzmI37LW5qj4tia0mKa170mom/1SXJq+ndenNpjYABiiYJFp/0zaMhz3kmAef6M5ud2y7x07CMDQ/gLfTV9poVpKylewESZLHAf5TgHsAtD3NbA/NksL2Xy7HrlzgUxg90wRdN2IQDMshSlezrqBalovl9dLNqultUtCBUsbyyydjcMg5oaX8iLQ2nkuGVzbqkQJIkuJIKRb6uYa32ax0lbkXJJvUn64NhaEYCZnZweqrCPBbbbotsVFy0uTFKxv47E+PFADs+14Gg2+YZdXkFyJ9C7g+xdro9AD4Ok7HGBmtdpM1tx0gJ0+ZszKCzz71vDnghr1Xxb7C5rDxONmCVAuTpLnpAGlMBmEylmwt8GQidln56AfvWlmBj/3qeSOgUFoLnR/gDJjMkaPuf6eQ2OrY67lTm+VseDq72J92HlE+auUHnzz0vBHQZk3w9hvc/mv6AeZaYP7QBPAygeuwQA/FyEp/7nkjQJMCPKCs3wkm3J5NPU8AKaZdTr0kbq71cOp5AiDg8IC4vwPqFYDDkOehxG0HGH6OAUO8h1OekzBHGwFbOlcuC14ElHmq40ttfX1VIe4B/W3CXPGpqGN/4nU8f6pKOpspDwHshc6dhrBh1kmCSS+eAiGTEUSeYxzRLK7Ip/IQdnbOQFoAxTUf0cwOMXOFmuCiLtIbkXVd5GY7karrjmnsS6gztBevmTYX4SqEexBqRrUWwD7o+SRw3gCO3si4cNjIIRHB2aOIu1VhniydURIEkDRhhRuueGQGEjZ/QqTqaNiIFuuHWvshtXKf9TOXH3CK7eHsoCOdChHnRLbwNYT9Eb6FULMFXS0FQCb+BYHAUhDTEEh0YRwHP4S0CIxfVafL3yFpbrp0H4deUCHLvrw5YJG8gxLDEBq8suzQrs7QJ7+D9Opb7DOJ520Q7kUgD5MQKsJEvMuolgKgtf57hFcQHuh0j2kIOlKELK0Mmo45aHqWCq3j3U93TYWZhbAxQh+EhQhdTnHIdXnFqLANYT5UaR2c1+yyBoqoKfZas/VAl1XerqK+uFof4QOElnZ3uvAistKFVVaq4pC9FcrKfRs+h12jcmdFIhRrnATw7HFFqvqEsn0BzBW4TwN4B4K3+gn5O32rliaInboSYSeEQ4DUuhDGSMTnIXSeCiW8XIV5tkAvs9rJ6XyVHUr2x/V/QXv2xJke0M863O/Sy1qOAHaUdvhIhMsB/o44j0VYQcLUwl7T+tRG/89G7QT/WgR6QB8j1IxqLQB2nPaTPvwM4EVh0K6uEKEePI2BAKwyG6xQfVWFudV9NMKrCKMRliDUlPIQABmgDb0LkDXBcHx1hTgqww+l+xm0H1V2KQ1GbWsj0P3k6K055SUAMvKhc1MQehedJ3hBXMkF/Dtfzd8ouVqWTs8nF6r1JFzNRDEDjd6RNJ8n+xWLcriV/NHufCS9jCn1OeD7go6R5uqC7eJpAv1388Pkrh4Bsb4aybcdJ36RpwDaoVVIkm2T+nSU94LjkGJpxVNelVltF8gtdXVyrf5E3vX7VYf6JNUSd0O9tpq5obkJIE8ThFdj4T1G65GmbZwZ8DzRELPUX6Tiq/uyZV1RfmplnV66oHB8FfYhChGZvwnH2pa3G7dMic+SECuMI+GzlO1U3jwF4G1VPHe+Jgsipw4lT8iBgUDRQLVtw0JSvro8LrneLpPVI3eGEYBSeOlh6YI43uuCcwQ+N8uQpwDa7RvgVdnIbMWYKN4gdKkASRj6FK9YWVJIjy4v1N8uHr+Ku69JWReiokV4A44DoFJHF4BfXUXsRnVaTeJ5CsAnX3DhoOEVnmDGM7Yyv5KIVjNv1oZ1b50Ma5SWyc1jGjduOWbKa8Vy+Shk/BB5G7sYlbi7VyvBLtPdPAVQ0e6sF3zQ4lQxvFVsu68fzJRCCKaJbV1MIIRxDZu2HDt1csPilv2LUn5Gbj8U00rnqfkc2WThObIva4DdicLPDZfcGgr8+STcHi2wTNwxtQLuKglkubIUTtRpkthXitZ6X9t42WXJcY892fJ/w0+WQ7lt0zlaPEZ2Lhb1vqIku7EGtBV1oXMVdqJUbpMN+ha1K3Qzg83xzw7AH1LAQMnmBwef9xihePDtV1KwjfEc7N7y+GRcUhpzORD7zCtWu0j6p61yKqr+oRatKW0xbpewg5m8O/Q19LgmxzwF4NzBCwKfoALOIRbY5vIqTKougwoWeMvf466byICHMEhoQuxiS/Tb5bHJVUmhPGl5a4aOiNkYGQS5f8ta5US8u7sp3qTmB314wz1BJGhEJoEVMmsd2/2k61wFEPH2DmUjwAc9MFU4lkHTgTRHQJYZF0gn5pQLTwi4b2XsxCXyNXwc8Mu0JGPSMfoM7j+NvepXkQXfiGGVodKAIgMxYvg1zU6Q3dCkDi4tPNm05K3hcTNyLVUFRIO4Pwm0rryXpwB8vqFqcS2ACxdBNtk640QXxJFClF0ZGfc04uXYo3BIpGnit2FYveHBScEORNEDeY9fCEAILioC6m/AsjzS01LVRMObDJkyGEdlWKggcz6UpwCW5YiMk1WAAJWnfiMSlN+vqemeyDxQU8oGN1iE6wheONKEHMC5MCFZV2iUpBAoImYLSHMMhUvkCSML99LoigTwY2aea055CsChJE7OFZkOsXB2IRDnKpMToaRQWNoRZWmASOHBfvu2BIYVtjACzLFO1EMZ4RCKxsa8Hq/BBxZqgRUKlHWBF8yVC+UpAJ/YognyT+vIeTb83QPiIfBO3IgS/6i0VHcgGSYDTKKaNq2mshEessGoy2z88sDHH6iSG2/F83GkVIAMEa8KmXAnEqLogt+uyh9lEnPV7JynAJzJpaO8PU+AHppKzAIMQXdDnsxuKIG3+qLotoeL7PpjkbUGu3bLh2+YPHWp2LPXirYsMuGbE05B/VEjiFUzoBssRQNG5Nmr7CclmOpZl56zy9qdcpP0MixQ86P28yaB8CMgYdyVNUR9YuTgGPwNkWOmin3zek0a+5tOuyS1KWNNy3iosN/P1b77tNiQI7CBVCdYPYNQiJB6yOqKGIc2vMVEl/nOIPSGVdSY8hwB7VnJrAE4JTxBk5nDWQ+aix/WgLsJrd9ge9ER56p8+QBN2paYTbsoten4Nu8vb3PMWPrUZSrbHG/JbmdJeshNibxxcipTx4n+ie+DwajxURA13hviKPNG2QiCXzKJ9yPwuSlmngJw5uIc4BwTF0QAA+DBEWx7Enx8an06YDOVnc8U3eZ4rpREZ15j9sS/4cWWl2nvDW5jMOAtH5o+CRP00q0q24023ek0laPvV5t1l+kTF4m9+Yz7vVrAJOItohwrXJY+/wKIc4BvR4Ndqn5mlsP82waI+uDlhJ3OkGT7UyRt6Kfy0m9gbn4q+tZ0WhTVeiykFD8DsT5GRoI5YfZTKIQJ4uM5Jvf/SOWF68V2PMOSbb+L38raX2zmRNHHLjT76M0wSUeYMylklpDicLFQ/avSlhVTF6bkNtTQ53ZtgUG/DqqfccQ96no8sz/sbrVdf5xYgvdrbxpp9uuRBF8wuapygm1DqS0OEzlumtoxj6hte6JaC/z+BDalEe7n+y+Z3nmCpVcNEVs4T3ToiSpH3auy6tpwpEJblLvHEKnqWBRNVVLWtxqdcmsI/Y/MBcbjBMy5ALpPrwcTp9p626lsOMzzWrFRdQu8G7XelizNRVUgmB7982Mmj19i+tSlqb52r7lgWIpGhouNAYNUth4l2vSlgPTAr6htNMJNmwsBeTkFkPDkJ0QyoUTl8Js1PuQ5B0RWIrOBXYqDYPgBYqjrE/D586MmC+eaDRmV6FaHW/rMlQqwRee/wZEgsuBN0QfOou8athr4kLIVQuy3ttp2p4ju+H2xRpivlyfjqVrR0k33VSuu6sLwDrjXG7qUYFOpg9Hh7JIL5TkCnCkqr3OWtQz8cR3+mM6blEn5d1eZ3Hwkvv7d2ey1h0V2GK36vecl3f0csYY1VeFmcuFV2b8p4huOnU8VPXEmPKbzVebNEr1x/1RvPNDs6ctYNeoOg88vPJ5J358wh9S8j3kKwHmjc+ORIprGXwTctxZ4AxaEaQqtTPuuobIIHwj8Gg+sbjnI0vfwxuAe41RPminp0BPUGvoKRoykWx2udvx0lf1+gblgAd7BO9pk4nDRV+4JlSX1XqfP+N4ETB2GThQHdlPZJAUak6KvwOSaUp4myJnDCEicO/58WBjo7gRxIoDrCfOTYYBtS/36xaJbHCzp1TuJvjAJfv19IlsdYekwrIJH/kplN5xLLaIDBqsseBse0OkmM68RWbRAlJ+HwFQp94tinYSSzxccbrTjTfHgCYIHPiHSbl5modpRniPAmauMAIBNAPDHCRgc4jb/oPmeEeOEHpGtsoYmg4YLvE0IqkVk+nVmE4aITh2Lr8A2xNcHg9We/g+TK/HK6ZR/F21dYHgKwLpYqVOcbL01jjq+fRHvI1eCFzCYEaVimdxwya2hwJ/jEUxQ1jLBBkBQ0oz37MwtSn32P0XnzDCZO4MF1Qr4iYjdsT4YMFjS+88Xefv3knw81+TBH4it9iV8UjdO0j5rcM8OtbgQvEFcsZkK+Q4qm6MQcCel1KuITVdd1jSapwny1Sy4CcxlzEccmErsK3Io1Iv+carInB3xhhBen2O5NTcX+/qlic3+nenEXbEeWIj11yJsRWN47HO5yMa7q7zzvNkf7oBnBI+ILQVxO4h47EZrFHQf93i7A7E7pOXcCje6+thO8l1deYf6InOe7FAQVcAR1RVxUMhGs+HXZRgtpnOCXDjPZPGHlvQfhGsYeBbEkjqlsPpvBIE0pzLvJULMnzHDG8AoWtVq9UhwQWfCSSxshyKr44Hk3ASQ5wgAIlUUJmCHmyYI2upMR3udloDedkeLbjZSbfLxpi14u33BXLG7jwDgq4guXgS48BQGqBVKiy397Ul4SIAZ9r0XvRFbfX18iXC4pDMmIN3hpqiDfAO8PGaLO+JeNVSqulnraJ4C8N/wBEPOPrEKw48WIQCDo2NUwWfwN8U2PwiLKXwn/fyNxj0gmXVvqABWB5lDViiu/pE7n6icizRYLNvzYjW4p/LRG2YL5vlgwiF6XhwZlWbwtkumDl6FV1OJ1TiSpwmKbTnjmPaINxEnLAyZdoaollsteX1KyNMWvhTytcJ68Hb6Yr+ICouaOGJoWrgoY3AqoKm1+LELaP5rGdKs3kXgyRQdKg99sTg9VbLGvnreWh5il2vZRqXugGa49BGQJRAFRh3LtkUOim6yp5Qe+KHq3GcteedZxzrtt4nocdOx7fzfond9xwt5OdyFdXEj5riicoNnJIVGszdmiO47PjTasjBrkZdZq0gB2p6OlGiHvA+hUG2PuUkabMS2nFl397OUiIpRi2fPMJ39jNkOo5Nk1H0w80hsgf/v/gsMRx3s/yZ7Y32wimNN6DL0MqXOAHtliujCOaLf+Y3Ybj9ReQ87pG9OXTpKXGKh6FLc43Wlr7VFH7XnOQKiVjnsUNK2Kvz9HkYAwP5Y7VZsP+9ytunQ74kdMxXfzNxp5akXqr45Ezug47D90CTavAR2x0tAbd2g03YZP/pIB26mOuwskSHHhhzPTTThwm0RPlGGtad/yqwQHCrgswWFhF35q52mmoPPBvIUwPtsEIrnP1uA3zp/pQ7bBCSghGT47cSDPVrwtsjk0ZLOvBqC+JHZVt/WZPBB3GbQ9PHxovPeFMFWQ/AeUYr7z4RwjXVUd/hn0R1OxTZEH5VX/8dsKvK/9TTerkZ+/0aHI4YtEWv88Wsbs5fZD1zFn1TgN2u5UJ4C+EPG0TY841eHn6kry3swRQMwiTr2YYgABvokHB5v4xfobz/cZMZVIsOxC7rdCapfPcx0xhVwL6+RpKEfgF5VODckQ/eHsM4SaxqoBBzPhE1evcfXAfSMUCsOrvWIEHPuRohimTEfffH/UQPf3WybzQLBl2WZGlPgucaNZNWvh/MsNPgOwNga8SWt58sV+FLyFOxGOj7BXgSo3Dogk8uGbiWfYX55pCYjzpV0nW3wq7iLTesaiSnczmbsG/VRnf8qNP5C0RdvNW1thamiojv4oX4/Ij+ITgAW0NrWlkyoH5ueiCQ+use+h2yO+BCEWQg1p8wM17wdNjAb4SGETaHgezOhrPKvAH+eT8i4JtjuldKqeDxDjOMUhjuZdbfYtcNMJp1gXJThgwH1/xegGYu0B840+dX2ps/egOHVit+NDl6RC8jHF+tAG8H2oBi0v03np0l6Ce7Q8g3HCY/e5HEEN0k415zQpVxpD7T2ILTy9/jljl0hkSUt58khxTq5BRa56Fs+wJQ6GxbGmcnwXnoKJQSAocGrrq66wTCMDCjuW09J8tG74YUsVI4cPCKnnwKDSOBwYI3APoHlL7e12ZENY+U2ZOAS72GU2wXxgxGw8suH8hYA27sV4R8x9MbB7ziPbLaeJ6PqCnI5hNAXiy3+XxiBAJgbkKC4WTyDFmhx7vWpFLLxd0OZH38uNtxfDvFnX/GNgS4qpclp9WPK1zIPmjsbfbkQ0QcR8PYXRZwPkcO8aQM0+Dga3gCMnwgMJ7ADrWNke6xHL8QA2AOTZlgnV4O4vJ5W32c85onxKMAsnXMNNH9q6xI5p89F8gTbxa/eHIWJeCKyfIBiw5H0EtPzotjlvNqL7eyGCH/Mry/CmdC+n/EGANDmsbJLfSr7Ir4VTFKTbxjBZaTXCPQgs/hGJ6CEJQoY49f7+DIX7jIbJYG7HBU+HJBxIbT+xVIpvbexKNN0TPB1kH101nYrch6KcA/CF4b2AqfvIhDJO+Ep8lcKcyEsIbbExH872oWwhD7/P+TS8HIaoRZ1J22Bxi9HJ0bgjDWsTIJW3gHFfR4qiWWr22L2kUDFc4wjqUKRj3iv+sxMdQ0NshYeH2+NGwcjYFXn3xhPw73RCM8xU3dQ7Hh3tB3bhELKKAQCgf/t1IkAUjP5nVf7PnIHP6RAVhViCstEYjym0fWBlyn9kUijRPpfhCsQJiJgDd191J657usHW+bvfA5D2B2BC6GBCLBMTgQ7AhzBjQAzQ7zXMY3XDBxd7yHMRHgQgStfPPHpfmLnVmaKWh77WQ00+x2v/z8eMNf2Ui8CvQj0ItCLQC8CvQj0ItCLQC8CvQj0ItCLQC8CvQj0ItCLQC8C3YvAXwFWbVKlGcftrwAAAABJRU5ErkJggg=="); }
-/* min-width: 0 lets the row shrink on narrow screens; the version picker is
-   the only flexible item, so it ellipsizes instead of pushing controls out. */
+/* The wordmark takes the h1's display face, so the bar reads as the same brand
+   as the page title below it. Pure white and pure black rather than --fg, which
+   stops short of both ends: the wordmark wants the full contrast. */
+.site-title { flex: 0 0 auto; font-family: var(--display); font-size: 22px; font-weight: 600; letter-spacing: -0.02em; color: #ffffff; white-space: nowrap; }
+:root[data-theme="light"] .site-title { color: #000000; }
+/* The build stamps this version beside the logo. online.js swaps the tag for a
+   link to the newer file when versions.json advertises one. It takes the
+   kicker's accent and weight, but not its display tracking: this sits in a
+   dense row of controls rather than above a title. */
+.site-version {
+  flex: 0 0 auto; display: inline-flex; align-items: baseline; gap: 6px; margin-left: 6px; white-space: nowrap;
+  font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); font-weight: 600;
+}
+/* Version strings opt out of the uppercase, so the "v" prefix stays lowercase
+   wherever one appears in the label. */
+.site-version-number { text-transform: none; font-variant-numeric: tabular-nums; }
+/* The link keeps the accent and marks itself with an underline, so it never
+   leans on colour alone to read as a link. */
+a.site-version-tag { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+a.site-version-tag:hover { color: var(--fg); }
+a.site-version-tag:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+/* inline-block keeps the separator out from under the link's underline. */
+.site-version-update::before { content: "·"; display: inline-block; margin-right: 6px; }
+/* min-width: 0 lets the row shrink on narrow screens rather than pushing the
+   controls out of the bar. */
 .download-controls { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; margin-left: auto; min-width: 0; }
-.download-controls .custom-select { width: auto; min-width: 104px; margin: 0; }
 /* The download glyph sits left of the label at every width, and stands alone
    once the labels collapse. */
 .download-mark { display: block; flex: 0 0 auto; }
-/* Header controls sit below the app's default 44px so the bar stays slim. The
-   version picker's real button is generated beside its select, so it follows
-   the class instead of carrying it. Keep --site-header-height in step. */
-.header-button, .header-button + .custom-select .custom-select-button { min-height: 40px; font-size: 14px; }
-.download-controls .custom-select-button { gap: 8px; }
-.download-controls .custom-select-button > span:first-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.download-controls > a { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+/* Header controls sit below the app's default 44px so the bar stays slim.
+   Keep --site-header-height in step. */
+.header-button { min-height: 40px; font-size: 14px; }
+.download-controls > a { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+/* Centring puts the label's em box on the button's centre line, but a font's
+   ascent leaves more room above the caps than its descent leaves below, so the
+   glyphs land a pixel low next to a symmetric icon. This nudge is optical, not
+   layout: it moves the ink, not the box. */
+.control-label { position: relative; top: -1px; }
 .download-controls .btn:is(.download-html, .github-repo-link) { flex: 0 0 auto; }
 /* Square it off against the 40px header controls; the shared keyboard-toggle
    base is 44px wide and stays that way everywhere else in the app. */
@@ -438,7 +467,6 @@ header h1 { margin: 0; line-height: 1.15; }
   background: color-mix(in oklab, var(--ok) 23%, var(--surface)); color: var(--fg);
 }
 .btn:is(.download-html, .save-recovery-sheet, .save-wallet-dat):focus-visible { outline: 2px solid var(--ok); outline-offset: 2px; }
-.download-controls .github-repo-link { display: inline-flex; align-items: center; gap: 8px; }
 .github-mark { flex: 0 0 auto; }
 .download-controls .github-repo-link {
   border-color: color-mix(in oklab, var(--blue) 65%, var(--border));
@@ -537,7 +565,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .hint.bad { color: var(--danger); }
 .hint.ok { color: var(--ok); }
 .hint:empty, .err:empty { display: none; }
-#workspace { margin: var(--space-major) 0 4px; } /* major seam below the marketing card */
+#workspace { margin: var(--space-lede) 0 4px; } /* the pitch ends here and the tool begins */
 .segmented-control {
   display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; max-width: 100%; isolation: isolate;
 }
@@ -924,12 +952,16 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 /* Narrow screens: drop the control labels so the bar stays one row. Each
    control keeps its own aria-label, so nothing is lost to assistive tech. */
 @media (max-width: 719px) {
-  .site-header-inner { gap: 8px; padding: 0 12px; }
+  .site-header-inner { padding: 0 12px; }
   .control-label { display: none; }
   /* Icon-only: square them off against the 40px theme toggle. */
   .download-controls .btn:is(.download-html, .github-repo-link) { flex: 0 0 40px; width: 40px; padding: 0; justify-content: center; }
+  /* The wordmark gives back the width the icon-only buttons still need. */
+  .site-title { font-size: 19px; }
   .download-controls { gap: 6px; }
-  .download-controls .custom-select { min-width: 0; }
+  /* Only the version itself survives; an update link stays, since it is the
+     one header item that is news. */
+  .site-version-tag:not(.site-version-update) { display: none; }
 }
 @media (max-width: 520px) {
   .key-panel-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
@@ -959,8 +991,9 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   <div class="site-header no-print">
     <div class="site-header-inner">
       <span class="site-logo" aria-hidden="true"></span>
+      <span class="site-title">EntropyLab</span>
+      <span class="site-version"><span class="site-version-number">v0.1.3</span> <span class="site-version-tag">(Latest)</span></span>
       <div class="download-controls">
-        <select class="version-select header-button" aria-label="EntropyLab version"><option value="entropylab-0.1.3.html" selected>v0.1.3 (Latest)</option></select>
         <a class="btn secondary download-html header-button" href="entropylab-0.1.3.html" download="entropylab-0.1.3.html" aria-label="Download EntropyLab"><svg class="download-mark" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg><span class="control-label">Download</span></a>
         <a class="btn secondary github-repo-link header-button" href="https://github.com/w-s-bitcoin/entropylab" target="_blank" rel="noopener noreferrer" aria-label="View the EntropyLab GitHub repository in a new tab"><svg class="github-mark" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span class="control-label">GitHub</span></a>
         <button type="button" class="seed-keyboard-toggle theme-toggle header-button" id="theme-toggle" data-theme-mode="dark" aria-label="Theme: dark. Switch to light"><svg class="theme-icon-dark" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><svg class="theme-icon-light" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="theme-icon-system" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></button>
@@ -973,6 +1006,11 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
         <strong>JavaScript is required:</strong> EntropyLab performs wallet calculations locally inside your browser. With JavaScript disabled the calculator cannot derive keys or addresses. Enable JavaScript, then run this file offline on an air-gapped computer.
       </aside>
     </noscript>
+    <!-- Warning banners are parked here while their UI is reworked. Nothing else
+         has to change to bring them back: online.js, the app's inline runtime and
+         network-check.js all look these up by id and no-op when they are absent,
+         and both conditional asides keep their hidden attribute, so restoring the
+         block cannot flash a banner.
     <aside class="beta-warning no-print" role="alert">
       <strong>Beta software:</strong> EntropyLab is experimental and should be used only for testing. Do not rely on it to secure real bitcoin, and never test with funds you cannot afford to lose.
     </aside>
@@ -982,21 +1020,16 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
     <aside class="network-warning no-print" id="network-warning" role="alert" hidden>
       <strong>Network detected:</strong> This computer has an active network adapter — it is online and possibly connected to the internet. Do not enter wallet secrets here; disconnect from all networks (Wi-Fi and Ethernet) and use this file on an air-gapped computer.
     </aside>
-    <header>
-      <div>
-        <div class="kicker">EntropyLab v0.1.3 · Run Offline · Bring your own entropy</div>
-        <h1>EntropyLab — Air-Gapped Bitcoin Calculator</h1>
-        <p class="muted">This file never generates wallet entropy. Save it to USB and open it on a computer that never goes online.</p>
-      </div>
-    </header>
+    -->
     <section class="card">
-      <div class="kicker">Hold first. Sign later.</div>
-      <h2>You do not need a signing device to hold or receive bitcoin.</h2>
-      <p class="muted">A signing device is only required when you spend.
- Turn dice rolls or a seed you already have into receive addresses, load
- the xpub into Bitcoin Core or any watch-only wallet, and get paid. Keep
- the seed on this air-gapped machine. Carry only addresses and the xpub
-online.</p>
+      <div class="kicker">Run Offline · Bring your own entropy</div>
+      <h2>Hold or receive bitcoin without a signing device.</h2>
+      <ul class="pitch-list muted">
+        <li>Save this air-gapped bitcoin calculator to a removable drive and open it on a computer that never goes online.</li>
+        <li>Turn dice rolls or a seed you already have into receive addresses.</li>
+        <li>Export an xpub and load into Bitcoin Core or any watch-only wallet, and get paid.</li>
+        <li>Keep your private keys offline.</li>
+      </ul>
     </section>
     <div class="row no-print segmented-control" id="workspace"><button class="tab active" aria-pressed="true">Key Derivation</button><button class="tab" aria-pressed="false">Multi Signature</button><button class="tab" aria-pressed="false">PSBT / Nonce</button></div>
     <section class="key-manager no-print" id="key-manager">
@@ -3364,8 +3397,9 @@ zoo`.split(`
   <div class="site-header no-print">
     <div class="site-header-inner">
       <span class="site-logo" aria-hidden="true"></span>
+      <span class="site-title">EntropyLab</span>
+      <span class="site-version"><span class="site-version-number">v0.1.3</span> <span class="site-version-tag">(Latest)</span></span>
       <div class="download-controls">
-        <select class="version-select header-button" aria-label="EntropyLab version"><option value="entropylab-0.1.3.html" selected>v0.1.3 (Latest)</option></select>
         <a class="btn secondary download-html header-button" href="entropylab-0.1.3.html" download="entropylab-0.1.3.html" aria-label="Download EntropyLab"><svg class="download-mark" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg><span class="control-label">Download</span></a>
         <a class="btn secondary github-repo-link header-button" href="https://github.com/w-s-bitcoin/entropylab" target="_blank" rel="noopener noreferrer" aria-label="View the EntropyLab GitHub repository in a new tab"><svg class="github-mark" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span class="control-label">GitHub</span></a>
 <button type="button" class="seed-keyboard-toggle theme-toggle header-button" id="theme-toggle" data-theme-mode="dark" aria-label="Theme: dark. Switch to light"><svg class="theme-icon-dark" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><svg class="theme-icon-light" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="theme-icon-system" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></button>
@@ -3373,6 +3407,11 @@ zoo`.split(`
     </div>
   </div>
   <div class="wrap">
+    <!-- Warning banners are parked here while their UI is reworked. Nothing else
+         has to change to bring them back: online.js, the app's inline runtime and
+         network-check.js all look these up by id and no-op when they are absent,
+         and both conditional asides keep their hidden attribute, so restoring the
+         block cannot flash a banner.
     <aside class="beta-warning no-print" role="alert">
       <strong>Beta software:</strong> EntropyLab is experimental and should be used only for testing. Do not rely on it to secure real bitcoin, and never test with funds you cannot afford to lose.
     </aside>
@@ -3382,17 +3421,16 @@ zoo`.split(`
     <aside class="network-warning no-print" id="network-warning" role="alert" hidden>
       <strong>Network detected:</strong> This computer has an active network adapter — it is online and possibly connected to the internet. Do not enter wallet secrets here; disconnect from all networks (Wi-Fi and Ethernet) and use this file on an air-gapped computer.
     </aside>
-    <header>
-      <div>
-        <div class="kicker">EntropyLab v0.1.3 \xB7 Run Offline \xB7 Bring your own entropy</div>
-        <h1>EntropyLab — Air-Gapped Bitcoin Calculator</h1>
-        <p class="muted">This file never generates wallet entropy. Save it to USB and open it on a computer that never goes online.</p>
-      </div>
-    </header>
+    -->
     <section class="card">
-      <div class="kicker">Hold first. Sign later.</div>
-      <h2>You do not need a signing device to hold or receive bitcoin.</h2>
-      <p class="muted">A signing device is only required when you spend. Turn dice rolls or a seed you already have into receive addresses, load the xpub into Bitcoin Core or any watch-only wallet, and get paid. Keep the seed on this air-gapped machine. Carry only addresses and the xpub online.</p>
+      <div class="kicker">Run Offline · Bring your own entropy</div>
+      <h2>Hold or receive bitcoin without a signing device.</h2>
+      <ul class="pitch-list muted">
+        <li>Save this air-gapped bitcoin calculator to a removable drive and open it on a computer that never goes online.</li>
+        <li>Turn dice rolls or a seed you already have into receive addresses.</li>
+        <li>Export an xpub and load into Bitcoin Core or any watch-only wallet, and get paid.</li>
+        <li>Keep your private keys offline.</li>
+      </ul>
     </section>
     <div class="row no-print segmented-control" id="workspace" role="group" aria-label="Workspace"></div>
     <section class="key-manager no-print" id="key-manager">
@@ -6705,7 +6743,7 @@ function hodlFormatRecoverySheet(text) {
 (() => {
   const current = document.querySelector('meta[name="application-version"]')?.content || "v0.1.3";
   const currentFile = "entropylab-" + current.replace(/^v/, "") + ".html";
-  const selects = [...document.querySelectorAll(".version-select")];
+  const labels = [...document.querySelectorAll(".site-version")];
   const downloads = [...document.querySelectorAll('[download^="entropylab-"]')];
   let availableVersions = [{ version: current, file: currentFile }];
 
@@ -6736,15 +6774,29 @@ function hodlFormatRecoverySheet(text) {
     }, safe[0]);
     availableVersions = safe.map((item) => ({ ...item }));
 
-    selects.forEach((select) => {
-      select.replaceChildren(...safe.map((item) => {
-        const option = document.createElement("option");
-        option.value = item.file;
-        option.textContent = item.version + (item.version === latest.version ? " (Latest)" : "");
-        option.selected = item.version === current;
-        return option;
-      }));
-      select.onchange = () => location.assign(select.value);
+    // Every value below comes from the allowlist above, so the label is built
+    // from text nodes and a same-directory href only.
+    labels.forEach((label) => {
+      const number = document.createElement("span");
+      number.className = "site-version-number";
+      number.textContent = current;
+
+      let tag;
+      if (latest.version === current) {
+        tag = document.createElement("span");
+        tag.className = "site-version-tag";
+        tag.textContent = "(Latest)";
+      } else {
+        tag = document.createElement("a");
+        tag.className = "site-version-tag site-version-update";
+        tag.href = latest.file;
+        const newer = document.createElement("span");
+        newer.className = "site-version-number";
+        newer.textContent = latest.version;
+        tag.append(newer, " available");
+        tag.setAttribute("aria-label", "Open EntropyLab " + latest.version + ", newer than this " + current + " build");
+      }
+      label.replaceChildren(number, document.createTextNode(" "), tag);
     });
   };
 
