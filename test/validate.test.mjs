@@ -31,6 +31,7 @@ const requiredFiles = [
   "assets/entropylab_dark.png",
   "assets/entropylab_light.png",
   "assets/entropylab_banner.png",
+  "assets/entropylab-social.png",
   "scripts/build.mjs",
   "scripts/verify-site.mjs",
   "test/validate.test.mjs",
@@ -184,6 +185,40 @@ for (const file of htmlFiles) {
     assert.match(html, /:root\[data-theme="light"\] \.site-logo \{ background-image: url\("data:image\/png;base64,[A-Za-z0-9+/=]+"\); \}/);
   });
 }
+
+test("the document head declares its link-preview card", () => {
+  // Asserted on the template, not the committed artifact: CI rebuilds and
+  // commits entropylab.html only after a merge, so the committed artifact on a
+  // pull request predates any head change. The build stamps this markup into
+  // the output verbatim.
+  // The og:image URL is fetched only by link-preview crawlers, never by the
+  // app; browsers do not load it, so the offline CSP and the no-egress rule
+  // are unaffected. The asset ships in the deployed assets/ directory.
+  const template = read("src/index.html");
+  for (const tag of [
+    '<meta name="description" content="',
+    '<meta property="og:title" content="EntropyLab">',
+    '<meta property="og:type" content="website">',
+    '<meta property="og:url" content="https://entropylab.online/">',
+    '<meta property="og:description" content="',
+    '<meta property="og:image" content="https://entropylab.online/assets/entropylab-social.png">',
+    '<meta property="og:image:width" content="1200">',
+    '<meta property="og:image:height" content="630">',
+    '<meta name="twitter:card" content="summary_large_image">',
+    '<meta name="twitter:image" content="https://entropylab.online/assets/entropylab-social.png">',
+  ]) {
+    assert.ok(template.includes(tag), `src/index.html is missing ${tag}`);
+  }
+});
+
+test("the link-preview card asset is a 1200x630 PNG", () => {
+  const png = readFileSync(join(root, "assets/entropylab-social.png"));
+  const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  assert.ok(png.subarray(0, 8).equals(signature), "not a PNG file");
+  // IHDR width and height are the big-endian uint32s at bytes 16 and 20.
+  assert.equal(png.readUInt32BE(16), 1200, "social card width must be 1200");
+  assert.equal(png.readUInt32BE(20), 630, "social card height must be 630");
+});
 
 test("repository source has no unresolved merge markers", () => {
   const offenders = [];
