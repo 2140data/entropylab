@@ -37,6 +37,44 @@ const workingCrypto = () => {
   };
 };
 
+// A minimal in-memory localStorage stand-in for the disclaimer gate tests.
+const memoryStorage = (initial = {}) => ({
+  getItem: (key) => (key in initial ? initial[key] : null),
+  setItem: (key, value) => {
+    initial[key] = String(value);
+  },
+  dump: () => initial,
+});
+
+// A fake disclaimer overlay and accept button recording what the gate did.
+const disclaimerDom = () => {
+  const calls = { shown: false, focused: false, dismissed: false, removed: 0, onClick: null };
+  const overlay = {
+    hidden: true,
+    classList: {
+      add: (name) => {
+        if (name === "is-visible") calls.shown = true;
+        if (name === "is-dismissed") calls.dismissed = true;
+      },
+    },
+    remove: () => {
+      calls.removed += 1;
+    },
+  };
+  const accept = {
+    focus: () => {
+      calls.focused = true;
+    },
+    addEventListener: (type, fn) => {
+      if (type === "click") calls.onClick = fn;
+    },
+  };
+  return {
+    calls,
+    elements: { "beta-disclaimer": overlay, "beta-disclaimer-accept": accept },
+  };
+};
+
 const loadModule = (overrides = {}) => {
   const options = {
     secure: true,
@@ -46,6 +84,8 @@ const loadModule = (overrides = {}) => {
     textDecoderImpl: TextDecoder,
     hasBody: true,
     normalizeImpl: undefined, // when present in overrides, replaces String.prototype.normalize
+    elements: {}, // DOM elements the disclaimer gate can find, by id
+    storage: memoryStorage(),
     ...overrides,
   };
   const body = { innerHTML: PAGE };
@@ -54,6 +94,7 @@ const loadModule = (overrides = {}) => {
     window: { isSecureContext: options.secure },
     document: {
       documentElement,
+      getElementById: (id) => options.elements[id] ?? null,
       ...(options.hasBody ? { body } : {}),
     },
     crypto: options.cryptoImpl,
@@ -61,6 +102,10 @@ const loadModule = (overrides = {}) => {
     TextEncoder: options.textEncoderImpl,
     TextDecoder: options.textDecoderImpl,
     Uint8Array,
+    localStorage: options.storage,
+    // Run callbacks synchronously so assertions see the post-fade state.
+    requestAnimationFrame: (fn) => fn(),
+    setTimeout: (fn) => fn(),
   };
   const originalNormalize = String.prototype.normalize;
   if ("normalizeImpl" in overrides) String.prototype.normalize = overrides.normalizeImpl;
@@ -232,4 +277,65 @@ test("the compiled application ships the inlined barrage", () => {
   assert.match(compiled, /Host failed basic sanity checks/);
   assert.match(compiled, /data-browser-checks|dataset\.browserChecks/);
   assert.doesNotMatch(compiled, /\/\*@@JS_BROWSER_CHECK@@\*\//);
+});
+
+// The source token {{VERSION}} stands in for the running release here; the
+// build substitutes the package version into the compiled artifact (asserted
+// below), so acceptance recorded under one release never silences the next.
+test("the beta disclaimer shows on first boot and acceptance is stored for the running version", () => {
+  const { calls, elements } = disclaimerDom();
+  const storage = memoryStorage();
+  loadModule({ elements, storage });
+  assert.equal(elements["beta-disclaimer"].hidden, false, "the overlay was not revealed");
+  assert.ok(calls.shown, "the fade-in class was not applied");
+  assert.ok(calls.focused, "the accept button was not focused");
+  assert.equal(typeof calls.onClick, "function", "no accept handler was registered");
+  calls.onClick();
+  assert.equal(storage.dump()["entropylab-beta-accepted"], "{{VERSION}}");
+  assert.ok(calls.dismissed, "the fade-out class was not applied");
+  assert.equal(calls.removed, 1, "the overlay was not removed after the fade");
+});
+
+test("a stored acceptance for the running version skips the beta disclaimer", () => {
+  const { calls, elements } = disclaimerDom();
+  loadModule({ elements, storage: memoryStorage({ "entropylab-beta-accepted": "{{VERSION}}" }) });
+  assert.equal(elements["beta-disclaimer"].hidden, true, "the overlay was revealed");
+  assert.equal(calls.shown, false);
+  assert.equal(calls.removed, 1, "the accepted overlay was not removed outright");
+});
+
+test("an acceptance stored under another version re-asks", () => {
+  const { calls, elements } = disclaimerDom();
+  loadModule({ elements, storage: memoryStorage({ "entropylab-beta-accepted": "0.0.0" }) });
+  assert.equal(elements["beta-disclaimer"].hidden, false, "the overlay stayed hidden");
+  assert.ok(calls.shown, "the disclaimer did not re-ask");
+});
+
+test("unavailable storage fails open: the disclaimer still shows and dismissal still works", () => {
+  const { calls, elements } = disclaimerDom();
+  const throwingStorage = {
+    getItem() {
+      throw new Error("denied");
+    },
+    setItem() {
+      throw new Error("denied");
+    },
+  };
+  loadModule({ elements, storage: throwingStorage });
+  assert.equal(elements["beta-disclaimer"].hidden, false, "the overlay stayed hidden");
+  assert.ok(calls.shown, "the disclaimer did not show");
+  calls.onClick();
+  assert.ok(calls.dismissed, "the fade-out class was not applied");
+  assert.equal(calls.removed, 1, "the overlay was not removed after the fade");
+});
+
+test("the compiled disclaimer acceptance is keyed to the package version", () => {
+  ensureBuild();
+  const compiled = read("entropylab.html");
+  const { version } = JSON.parse(read("package.json"));
+  assert.match(compiled, /const KEY = "entropylab-beta-accepted";/);
+  assert.ok(
+    compiled.includes(`const VERSION = "${version}";`),
+    "the compiled gate does not embed the package version",
+  );
 });

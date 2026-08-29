@@ -559,8 +559,8 @@ test("private alternate account exports are visible without an accordion", () =>
 });
 
 test("top banners share one consistent gap", () => {
-  // The network banner left the group for the header status tag; the no-JS
-  // notice and the hosted-site warning still share the gap.
+  // The network banner left the group for the header status tag; the beta
+  // banner, the no-JS notice, and the hosted-site warning still share the gap.
   assert.match(
     css,
     /\.beta-warning, \.online-warning\s*\{[^}]*margin: 0 0 12px;/s,
@@ -570,24 +570,57 @@ test("top banners share one consistent gap", () => {
   assert.match(css, /\.card \{[^}]*margin: 16px 0; \}/);
 });
 
-test("the beta notice sits in the footer as fine print, not a banner", () => {
+test("the beta notice sits at the top of the page as a banner", () => {
   for (const markup of [template, app]) {
     const wrapper = markup.indexOf('<div class="wrap">');
     const live = markup.slice(wrapper).replace(/<!--[\s\S]*?-->/g, "");
-    // It reads as a closing disclaimer now, so it trails the sources card and
-    // drops the alert role the banner needed to announce itself on load.
-    const footer = live.match(/<footer class="site-footer no-print">[\s\S]*?<\/footer>/)?.[0];
-    assert.ok(footer, "the footer fine print is missing");
-    assert.match(footer, /<p class="fine-print">EntropyLab is designed to be used by advanced bitcoin users, and is otherwise for testing and educational purposes only\.<br>It is your responsibility to keep your private key and seed material air-gapped and offline\.<\/p>/);
-    assert.doesNotMatch(footer, /role="alert"|<strong>/);
-    assert.ok(live.indexOf("sources") < live.indexOf("site-footer"), "the footer must follow the sources card");
-    // The only .beta-warning left is the no-JS notice in the static template.
-    assert.doesNotMatch(live, /class="beta-warning[^"]*"[^>]*>\s*<strong>Beta software/);
+    // It is a load-time warning again, so it keeps the alert role and leads
+    // the wrap, ahead of the hosted-site warning and the pitch card.
+    assert.match(live, /<aside class="beta-warning no-print" role="alert">\s*<strong>Beta software:<\/strong> EntropyLab is experimental and should be used only for testing\. Do not rely on it to secure real bitcoin, and never test with funds you cannot afford to lose\.\s*<\/aside>/);
+    assert.ok(
+      live.indexOf("<strong>Beta software:") < live.indexOf('id="online-warning"'),
+      "the beta banner must precede the online warning",
+    );
+    assert.ok(
+      live.indexOf("<strong>Beta software:") < live.indexOf('class="kicker"'),
+      "the beta banner must precede the pitch card",
+    );
+    // The closing footer disclaimer is gone; the only other .beta-warning is
+    // the no-JS notice in the static template.
+    assert.doesNotMatch(live, /site-footer|fine-print/);
   }
-  assert.match(css, /\.site-footer \{\s*margin-top: var\(--space-lede\);[^}]*border-top: 1px solid var\(--border\);/s);
-  assert.match(css, /\.fine-print \{[^}]*color: var\(--faint\); font-size: 12px;/s);
-  assert.match(css, /\.fine-print \{\s*max-width: 700px; margin: 0 auto;/s);
-  assert.doesNotMatch(css, /\.fine-print strong/);
+  assert.doesNotMatch(css, /\.site-footer|\.fine-print/);
+});
+
+test("the beta disclaimer gates the page as a modal until accepted", () => {
+  // The overlay sits in the static template after the #btc-calc root: the
+  // application boot replaces that root's contents, so the gate must live
+  // outside it — and outside the runtime template — to survive boot.
+  const marker = template.indexOf("<!--/$-->");
+  const overlayAt = template.indexOf('<div class="disclaimer-overlay');
+  assert.ok(marker >= 0 && overlayAt > marker, "the disclaimer overlay must follow the #btc-calc root");
+  assert.ok(overlayAt < template.indexOf("/*@@JS_BROWSER_CHECK@@*/"), "the disclaimer overlay must ship before the scripts");
+  assert.doesNotMatch(appSource, /beta-disclaimer/, "the runtime template must not carry the disclaimer");
+  // It starts hidden: the reveal is scripted, so a no-JavaScript host never
+  // sees an overlay it cannot dismiss.
+  assert.match(
+    template,
+    /<div class="disclaimer-overlay no-print" id="beta-disclaimer" role="alertdialog" aria-modal="true" aria-labelledby="beta-disclaimer-title" aria-describedby="beta-disclaimer-text" hidden>/,
+  );
+  assert.match(template, /<p class="disclaimer-title" id="beta-disclaimer-title">Beta software<\/p>/);
+  assert.match(
+    template,
+    /<p class="disclaimer-text" id="beta-disclaimer-text">EntropyLab is experimental and can be dangerous:.*Do not use it in production, and never with funds you cannot afford to lose\.<\/p>/,
+  );
+  assert.match(template, /<button class="btn primary" id="beta-disclaimer-accept" type="button">I understand<\/button>/);
+  // The fade: transparent until .is-visible, faded out and inert once
+  // .is-dismissed, and motion-free when the user prefers reduced motion.
+  assert.match(css, /\.disclaimer-overlay \{\s*position: fixed; inset: 0;[^}]*opacity: 0; transition: opacity \.24s ease;/s);
+  assert.match(css, /\.disclaimer-overlay\[hidden\] \{ display: none; \}/);
+  assert.match(css, /\.disclaimer-overlay\.is-visible \{ opacity: 1; \}/);
+  assert.match(css, /\.disclaimer-overlay\.is-dismissed \{ opacity: 0; pointer-events: none; \}/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ \.disclaimer-overlay \{ transition: none; \} \}/);
+  assert.match(css, /\.disclaimer-card \{[^}]*border: 1px solid var\(--danger\);/s);
 });
 
 test("the lockup steps down again below 400px", () => {
@@ -644,10 +677,10 @@ test("the site header is fixed, carries the logo, and holds the version, downloa
     // The in-flow title block folded into the marketing card, so the wrapper
     // opens on that card and carries no second header of its own.
     const live = markup.slice(wrapper).replace(/<!--[\s\S]*?-->/g, "");
-    // The static template opens with a no-JS notice; the runtime one has no
-    // need of it. Both then carry the conditional warnings, which start hidden,
-    // so the card is the first thing either page actually renders.
-    assert.match(live, /<div class="wrap">\s*(?:<noscript>[\s\S]*?<\/noscript>\s*)?(?:<aside[^>]*online-warning[\s\S]*?<\/aside>\s*)*<section class="card">/);
+    // The wrapper opens on the beta banner; the static template follows with
+    // a no-JS notice the runtime page has no need of. Both then carry the
+    // conditional warnings, which start hidden.
+    assert.match(live, /<div class="wrap">\s*<aside class="beta-warning no-print" role="alert">[\s\S]*?<\/aside>\s*(?:<noscript>[\s\S]*?<\/noscript>\s*)?(?:<aside[^>]*online-warning[\s\S]*?<\/aside>\s*)*<section class="card">/);
     assert.doesNotMatch(markup.slice(wrapper), /<header>|download-controls/);
   }
   assert.doesNotMatch(css, /^header (\{|h1)/m);

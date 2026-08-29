@@ -10,7 +10,9 @@
 // entire page is killed and replaced with a centered failure report listing
 // the failed checks, because wallet output from a broken host cannot be
 // trusted. This script runs before the application scripts so a host broken
-// enough to crash them still gets the failure screen.
+// enough to crash them still gets the failure screen. A second,
+// independent unit at the bottom of this file gates the page on the beta
+// disclaimer.
 (() => {
   // Each check returns true when the browser behaves and throws or returns
   // false when it does not. Keep every check free of BigInt literal syntax
@@ -104,4 +106,45 @@
     <p class="sanity-failure-advice">Open this file in a current, mainstream browser such as Firefox on a trusted, air-gapped computer.</p>
   </div>
 </main>`;
+})();
+
+// Beta disclaimer: a modal gate the user must explicitly accept. The markup
+// ships in the static template outside #btc-calc so application boot (which
+// replaces that node's contents) cannot wipe it, and it starts hidden so a
+// host without JavaScript never sees an overlay it cannot dismiss — this
+// script is what reveals it (fade in), and acceptance fades it back out and
+// removes it from the document. Acceptance is remembered in localStorage,
+// the same site-settings store as the theme, keyed to this build's version:
+// every new release asks again. When storage is unavailable (file://
+// origins, private modes) the disclaimer simply shows on every load, which
+// is the safe direction for a wallet tool. When the sanity barrage above
+// has killed the page, the overlay is gone with it and this unit no-ops.
+(() => {
+  const overlay = document.getElementById("beta-disclaimer");
+  const accept = document.getElementById("beta-disclaimer-accept");
+  if (!overlay || !accept) return;
+  const KEY = "entropylab-beta-accepted";
+  const VERSION = "{{VERSION}}";
+  let accepted = false;
+  try {
+    accepted = localStorage.getItem(KEY) === VERSION;
+  } catch (e) {}
+  if (accepted) {
+    overlay.remove();
+    return;
+  }
+  overlay.hidden = false;
+  // Two frames: let the overlay paint once at opacity 0 so the is-visible
+  // class below actually runs the fade-in transition.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    overlay.classList.add("is-visible");
+    accept.focus();
+  }));
+  accept.addEventListener("click", () => {
+    try {
+      localStorage.setItem(KEY, VERSION);
+    } catch (e) {}
+    overlay.classList.add("is-dismissed");
+    setTimeout(() => overlay.remove(), 400);
+  });
 })();
