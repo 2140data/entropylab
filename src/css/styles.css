@@ -262,6 +262,9 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
 .dice-input-pad.entropy-keypad-bin { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .dice-input-pad.entropy-keypad.coin-phase { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .dice-input-pad.entropy-keypad-base4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.dice-input-pad.seed-number-pad { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.seed-number-pad .seed-number-next { grid-column: span 4; font-family: inherit; font-size: 14px; }
+.seed-number-pad .seed-number-delete svg { width: 20px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .dice-input-pad button {
   min-height: 48px; font-family: var(--mono); font-size: 18px;
   border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); color: var(--fg);
@@ -295,6 +298,7 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
 .card-suit-pad button.active {
   background: var(--selection-accent); color: var(--selection-fg); border-color: var(--selection-accent);
 }
+.card-suit-pad button:disabled { cursor: not-allowed; opacity: 0.38; }
 /* Reuses the card suit buttons so the D16 choice reads as the same kind of
    control: discrete pills in a grid, accent fill on the active one. */
 .dplus-die-pad { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -303,10 +307,14 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
   .dplus-die-pad { grid-template-columns: minmax(0, 1fr); }
 }
 .card-rank-pad { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.card-rank-pad.direct-card-rank-pad { grid-template-columns: repeat(8, minmax(0, 1fr)); }
 @media (min-width: 640px) {
   .card-rank-pad { grid-template-columns: repeat(13, minmax(0, 1fr)); }
 }
 .card-rank-pad button { font-size: 15px; }
+.card-rank-pad button.active {
+  background: var(--selection-accent); color: var(--selection-fg); border-color: var(--selection-accent);
+}
 .dealt-cards { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; min-height: 60px; }
 .dealt-cards[hidden] { display: none; }
 .card-controls-row {
@@ -345,6 +353,7 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
 .dealt-card.is-red { color: var(--playing-card-red); }
 .dealt-card .dealt-rank { font-size: 13px; }
 .dealt-card .dealt-suit { font-size: 16px; }
+.dealt-card.dealt-card-rank-only .dealt-rank { font-size: 18px; }
 .wordlist {
   display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 16px;
   font-family: var(--mono); font-size: 13px; margin-top: 12px;

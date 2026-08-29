@@ -591,7 +591,7 @@ ec.innerHTML = `
   </div>
 `;
 if (/^(www\.)?entropylab\.online$/i.test(location.hostname)) document.getElementById("online-warning")?.removeAttribute("hidden");
-var hodlKeyModes = ["dice", "cards", "hex", "seed", "key"], hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlCardSuits = [{ code: "S", symbol: "\u2660", label: "Spades", red: false }, { code: "H", symbol: "\u2665", label: "Hearts", red: true }, { code: "D", symbol: "\u2666", label: "Diamonds", red: true }, { code: "C", symbol: "\u2663", label: "Clubs", red: false }], hodlCardSuit = "S", Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], hodlDPlusNumberedD16 = false, ft = "", re = null, Ge = false, Zs = W("#modes"), at = W("#form"), dr = W("#out");
+var hodlKeyModes = ["dice", "cards", "hex", "seed", "key"], hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "\u2660", label: "Spades", red: false }, { code: "H", symbol: "\u2665", label: "Hearts", red: true }, { code: "C", symbol: "\u2663", label: "Clubs", red: false }, { code: "D", symbol: "\u2666", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], hodlDPlusNumberedD16 = false, ft = "", re = null, Ge = false, Zs = W("#modes"), at = W("#form"), dr = W("#out");
 hodlKeyModes.forEach((e) => {
   let t = document.createElement("button"), active = e === Ne;
   t.type = "button";
@@ -2584,10 +2584,177 @@ function hodlCardsEntropy(value, targetWords = Pt) {
   let digest = Z(new TextEncoder().encode(parsed.hashInput)), bytes = digest.slice(0, config.bytes);
   return { ok: true, bytes, hex: M.encode(bytes), bits: config.bits, sourceBits: parsed.bits, method: "cards-sha256", notes, warnings, parsed };
 }
+function hodlCardSelectionState(cards, needed, selectedSuit = "", selectedRank = "") {
+  let currentShuffle = cards.length < needed.first ? cards : cards.slice(needed.first), used = new Set(currentShuffle), available = [];
+  for (let suit of hodlCardSuits) for (let rank of hodlCardRanks) {
+    let card = rank + suit.code;
+    if (!used.has(card)) available.push(card);
+  }
+  let availableSuits = hodlCardSuits.map((suit) => suit.code).filter((suit) => available.some((card) => card.endsWith(suit))), availableRanks = hodlCardRanks.filter((rank) => available.some((card) => card.startsWith(rank)));
+  let suit = availableSuits.includes(selectedSuit) ? selectedSuit : "", rank = availableRanks.includes(selectedRank) ? selectedRank : "";
+  if (suit && rank && !available.includes(rank + suit)) suit = rank = "";
+  if (!suit && availableSuits.length === 1) suit = availableSuits[0];
+  if (!rank && availableRanks.length === 1) rank = availableRanks[0];
+  let compatibleSuits = rank ? availableSuits.filter((code) => available.includes(rank + code)) : availableSuits.slice(), compatibleRanks = suit ? availableRanks.filter((value) => available.includes(value + suit)) : availableRanks.slice();
+  if (suit && !rank && compatibleRanks.length === 1) rank = compatibleRanks[0];
+  if (rank && !suit && compatibleSuits.length === 1) suit = compatibleSuits[0];
+  compatibleSuits = rank ? availableSuits.filter((code) => available.includes(rank + code)) : availableSuits.slice();
+  compatibleRanks = suit ? availableRanks.filter((value) => available.includes(value + suit)) : availableRanks.slice();
+  let card = suit && rank && available.includes(rank + suit) ? rank + suit : "";
+  return { suit, rank, card, used, available, availableSuits, availableRanks, compatibleSuits, compatibleRanks };
+}
+function hodlToggleCardChoice(current, selected) {
+  return current === selected ? "" : selected;
+}
+function hodlCommitCardSelection(input, card) {
+  input.value = input.value.trim() ? `${input.value.trim()} ${card}` : card;
+  hodlCardSuit = "";
+  hodlCardRank = "";
+  input.dispatchEvent(new Event("input"));
+}
+function hodlDirectCardFinalRadices(targetWords = Pt) {
+  return { 12: [8, 8, 2], 15: [8, 8], 18: [8, 4], 21: [8, 2], 24: [8] }[hodlSeedConfig(targetWords).words];
+}
+function hodlDirectCardSteps(targetWords = Pt) {
+  let config = hodlSeedConfig(targetWords), steps = [];
+  for (let index = 0; index < config.partialWords; index++) steps.push(8, 8, 8, 4);
+  return steps.concat(hodlDirectCardFinalRadices(config.words));
+}
+function hodlDirectCardRankValue(rank) {
+  let normalized = String(rank ?? "").trim().toUpperCase();
+  return normalized === "A" ? 0 : /^[2-8]$/.test(normalized) ? Number(normalized) - 1 : -1;
+}
+function hodlDirectCardSeparator(index, targetWords = Pt) {
+  if (index === 0) return "";
+  let config = hodlSeedConfig(targetWords), fullWordDraws = config.partialWords * 4, finalDraws = hodlDirectCardFinalRadices(config.words).length;
+  if (index < fullWordDraws) return index % 4 === 0 ? " " : "";
+  return index === fullWordDraws || index === fullWordDraws + finalDraws ? " " : "";
+}
+function hodlFilterDirectCards(value, targetWords = Pt) {
+  let characters = String(value ?? "").toUpperCase().match(/[0-9A-Z]/g) || "", clean = "";
+  for (let index = 0; index < characters.length; index++) clean += hodlDirectCardSeparator(index, targetWords) + characters[index];
+  return clean;
+}
+function hodlParseDirectCards(raw, targetWords = Pt) {
+  let config = hodlSeedConfig(targetWords), steps = hodlDirectCardSteps(config.words), text = String(raw ?? "").toUpperCase(), entries = [...text.matchAll(/[^\s,.;:_|/-]/g)].map((match, position) => ({ token: match[0], start: match.index, end: match.index + 1, position })), invalidEntries = [], extraEntries = [], values = [], ranks = [];
+  for (let entry of entries) {
+    let max = steps[entry.position], value = hodlDirectCardRankValue(entry.token);
+    entry.max = max;
+    entry.value = value;
+    if (max === void 0) {
+      entry.extra = true;
+      extraEntries.push(entry);
+      continue;
+    }
+    if (value < 0 || value >= max) {
+      entry.invalid = true;
+      invalidEntries.push(entry);
+      values.push(null);
+      ranks.push(entry.token);
+      continue;
+    }
+    values.push(value);
+    ranks.push(entry.token);
+  }
+  let wordSlots = Array(config.partialWords).fill(""), allPartialValid = values.length >= config.partialWords * 4;
+  for (let wordIndex = 0; wordIndex < config.partialWords; wordIndex++) {
+    let group = values.slice(wordIndex * 4, wordIndex * 4 + 4);
+    if (group.length < 4 || group.some((value) => value === null)) {
+      allPartialValid = false;
+      continue;
+    }
+    let index = (((group[0] * 8) + group[1]) * 8 + group[2]) * 4 + group[3];
+    wordSlots[wordIndex] = Ae[index];
+  }
+  let candidates = allPartialValid ? hodlTargetLastWords(wordSlots.join(" "), config.words)?.candidates || [] : [], finalValues = values.slice(config.partialWords * 4), finalRadices = hodlDirectCardFinalRadices(config.words), finalIndex = 0, finalValid = finalValues.length === finalRadices.length && finalValues.every((value) => value !== null);
+  if (finalValid) finalValues.forEach((value, index) => finalIndex = finalIndex * finalRadices[index] + value);
+  let finalWord = finalValid ? candidates[finalIndex] || "" : "", complete = entries.length === steps.length && !invalidEntries.length && !extraEntries.length && Boolean(finalWord), expectedMax = steps[Math.min(entries.length, steps.length - 1)], words = finalWord ? [...wordSlots, finalWord] : wordSlots;
+  return { entries, invalidEntries, extraEntries, invalidRanges: [...invalidEntries, ...extraEntries].map((entry) => [entry.start, entry.end]), values, ranks, steps, wordSlots, words, candidates, finalWord, finalIndex, complete, expectedMax, config };
+}
+function hodlDirectCardsEntropy(value, targetWords = Pt) {
+  let parsed = hodlParseDirectCards(value, targetWords), config = parsed.config, notes = [], warnings = [];
+  if (parsed.invalidEntries.length) return { ok: false, error: `Correct the highlighted rank. This draw allows only Ace through ${parsed.invalidEntries[0].max}.`, notes, warnings, parsed };
+  if (parsed.extraEntries.length) return { ok: false, error: `The ${config.words}-word seed is complete. Remove ${parsed.extraEntries.length} extra card${parsed.extraEntries.length === 1 ? "" : "s"}.`, notes, warnings, parsed };
+  if (!parsed.complete) return { ok: false, error: `Enter ${parsed.steps.length - parsed.entries.length} more rank-only draw${parsed.steps.length - parsed.entries.length === 1 ? "" : "s"}.`, notes, warnings, parsed };
+  let mnemonic = [...parsed.wordSlots, parsed.finalWord].join(" ");
+  if (!Pn(mnemonic, Ae)) return { ok: false, error: "The direct card sequence did not produce a valid BIP39 checksum.", notes, warnings, parsed };
+  let bytes = Er(mnemonic, Ae);
+  notes.push(`${parsed.steps.length} independent rank-only card draws directly selected ${config.partialWords} BIP39 words and 1 of ${config.candidates} checksum-valid final words.`);
+  notes.push("Every draw is made after shuffling the indicated A\u20138, A\u20134, or A\u20132 card set; suits are ignored.");
+  return { ok: true, bytes, hex: M.encode(bytes), bits: config.bits, sourceBits: config.bits, method: "cards-direct", notes, warnings, parsed, mnemonic };
+}
+function hodlDirectCardSetLabel(max) {
+  return `A\u2013${max}`;
+}
+function hodlDirectCardStepStatus(parsed) {
+  if (parsed.complete) return `All ${parsed.steps.length} rank draws entered \xB7 checksum-valid ${parsed.config.words}-word seed ready to derive`;
+  let position = Math.min(parsed.entries.length, parsed.steps.length - 1), max = parsed.steps[position], partialDraws = parsed.config.partialWords * 4;
+  if (position < partialDraws) return `Word ${Math.floor(position / 4) + 1} of ${parsed.config.words} \xB7 draw ${position % 4 + 1} of 4 from ${hodlDirectCardSetLabel(max)}${position ? " after shuffling" : ""}`;
+  return `Final word \xB7 draw ${position - partialDraws + 1} of ${hodlDirectCardFinalRadices(parsed.config.words).length} from ${hodlDirectCardSetLabel(max)} after shuffling`;
+}
+function hodlDirectCardInstruction(parsed) {
+  if (parsed.complete) return "";
+  return `Shuffle ${hodlDirectCardSetLabel(parsed.expectedMax)} (any suit) before the ${parsed.entries.length ? "next" : "first"} draw.`;
+}
+function hodlHashedCardInstruction(parsed) {
+  let required = parsed.needed.first + parsed.needed.extra;
+  if (parsed.cards.length >= required) return "";
+  if (!parsed.cards.length) return "Shuffle a standard 52-card deck before the first draw.";
+  if (parsed.needed.extra && parsed.cards.length === parsed.needed.first) return "Shuffle the full 52-card deck again before the next draw.";
+  if (parsed.needed.extra && parsed.cards.length > parsed.needed.first) return "Deal the next card without replacement from the second shuffle.";
+  return "Deal the next card without replacement from the shuffled deck.";
+}
+function hodlDealtDirectCardMarkup(rank) {
+  return `<span class="dealt-card dealt-card-rank-only" title="Rank ${$t(rank)}"><span class="dealt-rank">${$t(rank)}</span></span>`;
+}
+function hodlUpdateDirectCards() {
+  let input = document.getElementById("direct-cards");
+  if (!input) return;
+  let parsed = hodlParseDirectCards(input.value, Pt), invalid = parsed.invalidRanges.length > 0, showCards = document.getElementById("show-cards")?.checked === true;
+  input.classList.toggle("bad", invalid);
+  input.setAttribute("aria-invalid", String(invalid));
+  hodlRenderInputHighlight(input, parsed.invalidRanges);
+  let dealt = document.getElementById("dealt-cards");
+  if (dealt) {
+    dealt.hidden = !showCards;
+    dealt.innerHTML = parsed.ranks.length ? `<p class="dealt-shuffle-label">Rank-only draws \xB7 ${parsed.ranks.length} of ${parsed.steps.length}</p>${parsed.ranks.map(hodlDealtDirectCardMarkup).join("")}` : `<p class="dealt-shuffle-label">Rank-only draws \xB7 No cards yet</p><span class="dealt-card dealt-card-placeholder" aria-hidden="true"></span>`;
+  }
+  let reshuffle = document.getElementById("cards-reshuffle");
+  if (reshuffle) {
+    let instruction = hodlDirectCardInstruction(parsed);
+    reshuffle.hidden = !instruction;
+    reshuffle.innerHTML = instruction ? `<strong>${instruction}</strong>` : "";
+  }
+  hodlRenderDiceWordGrid(document.getElementById("dice-words"), parsed.words, parsed.config.words, !parsed.complete);
+  let status = parsed.complete ? `${parsed.entries.length} of ${parsed.steps.length} rank draws entered \xB7 checksum-valid ${parsed.config.words}-word seed ready to derive` : `${parsed.entries.length} of ${parsed.steps.length} rank draws entered \xB7 ${hodlDirectCardStepStatus(parsed)}`;
+  if (parsed.invalidEntries.length) status += ` \xB7 ${parsed.invalidEntries.length} invalid rank${parsed.invalidEntries.length === 1 ? "" : "s"} highlighted`;
+  if (parsed.extraEntries.length) status += ` \xB7 ${parsed.extraEntries.length} extra card${parsed.extraEntries.length === 1 ? "" : "s"} highlighted`;
+  let meta = W("#cards-meta");
+  meta.textContent = status;
+  meta.className = "muted" + (invalid ? " err" : parsed.complete ? " ok" : "");
+  document.querySelectorAll("[data-direct-card-rank]").forEach((button) => {
+    button.disabled = hodlDirectCardRankValue(button.dataset.directCardRank) >= parsed.expectedMax || parsed.complete;
+  });
+  let undo = document.getElementById("card-undo");
+  if (undo) undo.disabled = !parsed.entries.length && !String(input.value || "").trim();
+  hodlQueueMasterFingerprintPreview();
+}
+function hodlSelectedCardsEntropy(targetWords = Pt) {
+  let input = document.getElementById(hodlCardMethod === "direct" ? "direct-cards" : "cards");
+  if (!input) return { ok: false, error: "Card input is unavailable." };
+  return hodlCardMethod === "direct" ? hodlDirectCardsEntropy(input.value, targetWords) : hodlCardsEntropy(input.value, targetWords);
+}
 function hodlUpdateCards() {
   let input = document.getElementById("cards");
   if (!input) return;
   let config = hodlSeedConfig(), parsed = hodlRenderCardInputState(input, config.words), required = parsed.needed.first + parsed.needed.extra, entropy = hodlCardsEntropy(input.value, config.words), showCards = document.getElementById("show-cards")?.checked === true;
+  let selection = hodlCardSelectionState(parsed.cards, parsed.needed, hodlCardSuit, hodlCardRank);
+  hodlCardSuit = selection.suit;
+  hodlCardRank = selection.rank;
+  if (selection.card && !parsed.invalidRanges.length) {
+    hodlCommitCardSelection(input, selection.card);
+    return;
+  }
   let dealt = document.getElementById("dealt-cards");
   if (dealt) {
     dealt.hidden = !showCards;
@@ -2597,10 +2764,9 @@ function hodlUpdateCards() {
   }
   let reshuffle = document.getElementById("cards-reshuffle");
   if (reshuffle) {
-    let needSecond = config.words === 24 && parsed.cards.length >= 52 && parsed.cards.length < required && !parsed.invalid.length && !parsed.duplicates.length;
-    reshuffle.hidden = !needSecond;
-    let left = Math.max(0, required - parsed.cards.length);
-    if (needSecond) reshuffle.innerHTML = parsed.cards.length === 52 ? `<strong>Shuffle the deck again now.</strong> Then deal 6 more cards. Repeats from the first 52 are fine.` : `<strong>Second shuffle.</strong> Deal ${left} more card${left === 1 ? "" : "s"}. Repeats from the first shuffle are fine.`;
+    let instruction = hodlHashedCardInstruction(parsed);
+    reshuffle.hidden = !instruction;
+    reshuffle.innerHTML = instruction ? `<strong>${instruction}</strong>` : "";
   }
   let wordsBox = document.getElementById("dice-words"), preview = [];
   try {
@@ -2620,31 +2786,35 @@ function hodlUpdateCards() {
   meta.textContent = status;
   meta.className = "muted" + (invalid ? " err" : !missing && entropy.ok ? " ok" : "");
   document.querySelectorAll("[data-card-suit]").forEach((button) => {
-    let active = button.getAttribute("data-card-suit") === hodlCardSuit;
+    let suit = button.getAttribute("data-card-suit"), active = suit === hodlCardSuit, exhausted = !selection.availableSuits.includes(suit), incompatible = Boolean(hodlCardRank) && !selection.compatibleSuits.includes(suit), locked = Boolean(hodlCardSuit) && !active;
     button.classList.toggle("active", active);
     button.setAttribute("aria-pressed", String(active));
+    button.disabled = exhausted || incompatible || locked;
+    button.title = exhausted ? "Every card in this suit has already been dealt in this shuffle." : incompatible ? `The ${hodlCardRank === "T" ? "10" : hodlCardRank} of this suit has already been dealt.` : locked ? "Finish the selected card using the rank row." : active ? "Suit selected. Click again to clear it, or choose an available rank." : "Select this suit first.";
   });
-  let used = new Set(parsed.cards.length < parsed.needed.first ? parsed.cards : parsed.cards.slice(parsed.needed.first));
   document.querySelectorAll("[data-card-rank]").forEach((button) => {
-    let card = button.getAttribute("data-card-rank") + hodlCardSuit;
-    button.disabled = used.has(card);
+    let rank = button.getAttribute("data-card-rank"), active = rank === hodlCardRank, exhausted = !selection.availableRanks.includes(rank), incompatible = Boolean(hodlCardSuit) && !selection.compatibleRanks.includes(rank), locked = Boolean(hodlCardRank) && !active;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+    button.disabled = exhausted || incompatible || locked;
+    button.title = exhausted ? `Every ${rank === "T" ? "10" : rank} has already been dealt in this shuffle.` : incompatible ? `The ${rank === "T" ? "10" : rank} of the selected suit has already been dealt.` : locked ? "Finish the selected card using the suit row." : active ? "Rank selected. Click again to clear it, or choose an available suit." : "Select this rank first.";
   });
   let undo = document.getElementById("card-undo");
   if (undo) undo.disabled = !parsed.cards.length && !String(input.value || "").trim();
   hodlQueueMasterFingerprintPreview();
 }
-function hodlAppendCard(rank) {
-  let input = document.getElementById("cards");
-  if (!input) return;
-  let card = hodlNormalizeCardToken(rank + hodlCardSuit);
-  if (!card) return;
-  input.value = input.value.trim() ? `${input.value.trim()} ${card}` : card;
-  input.dispatchEvent(new Event("input"));
+function hodlSetInputValueAtEnd(input, value) {
+  input.value = value;
+  input.focus({ preventScroll: true });
+  input.setSelectionRange(input.value.length, input.value.length);
 }
 function hodlUndoCard() {
-  let input = document.getElementById("cards");
+  let input = document.getElementById(hodlCardMethod === "direct" ? "direct-cards" : "cards");
   if (!input) return;
-  input.value = input.value.trim().split(/[\s,]+/).slice(0, -1).join(" ");
+  hodlCardSuit = "";
+  hodlCardRank = "";
+  let value = hodlCardMethod === "direct" ? hodlFilterDirectCards(input.value.replace(/[^0-9A-Z]/gi, "").slice(0, -1), Pt) : input.value.trim().split(/[\s,]+/).slice(0, -1).join(" ");
+  hodlSetInputValueAtEnd(input, value);
   input.dispatchEvent(new Event("input"));
 }
 function hodlSeedCountStatus(count, targetWords = Pt) {
@@ -2659,6 +2829,46 @@ function hodlValidateTargetMnemonic(value, targetWords = Pt) {
     return { ok: false, words, error, unknown: [] };
   }
   return Mt(words.join(" "));
+}
+function hodlNormalizeSeedMethod(method) {
+  return method === "numbers" ? "numbers" : "words";
+}
+function hodlFilterSeedNumbers(value, zeroIndexed = false) {
+  let clean = String(value ?? "").replace(/[^0-9\s]/g, "").replace(/\s+/g, " ");
+  if (zeroIndexed) return clean;
+  return clean.replace(/(^| )0+(?=\d)/g, "$1").replace(/(^| )0(?= |$)/g, "$1").replace(/ {2,}/g, " ").replace(/^ /, "");
+}
+function hodlParseSeedNumbers(value, targetWords = Pt, zeroIndexed = hodlSeedZeroIndexed) {
+  let config = hodlSeedConfig(targetWords), text = String(value ?? ""), entries = [...text.matchAll(/\d+/g)].map((match, position) => {
+    let number = Number(match[0]), index = zeroIndexed ? number : number - 1, valid = !/^0\d+/.test(match[0]) && Number.isSafeInteger(number) && index >= 0 && index < Ae.length;
+    return { token: match[0], number, index, valid, position, start: match.index, end: match.index + match[0].length };
+  }), invalidEntries = entries.filter((entry) => !entry.valid), extraEntries = entries.slice(config.words), wordSlots = entries.slice(0, config.words).map((entry) => entry.valid ? Ae[entry.index] : ""), phrase = wordSlots.length === config.words && wordSlots.every(Boolean) ? wordSlots.join(" ") : "", checksumInvalid = Boolean(phrase && !Pn(phrase, Ae)), invalidRanges = [...invalidEntries, ...extraEntries].map((entry) => [entry.start, entry.end]);
+  if (checksumInvalid && entries[config.words - 1]) invalidRanges.push([entries[config.words - 1].start, entries[config.words - 1].end]);
+  return { entries, invalidEntries, extraEntries, invalidRanges, wordSlots, phrase, checksumInvalid, complete: Boolean(phrase && !checksumInvalid && !extraEntries.length), config, zeroIndexed: Boolean(zeroIndexed), minimum: zeroIndexed ? 0 : 1, maximum: zeroIndexed ? 2047 : 2048 };
+}
+function hodlSeedWordsToNumbers(value, zeroIndexed = hodlSeedZeroIndexed) {
+  if (hodlLooksExtendedKey(value)) return "";
+  let words = Rn(value).split(" ").filter(Boolean), indices = words.map((word) => hodlBip39WordIndex.get(word));
+  return words.length && indices.every((index) => Number.isInteger(index)) ? indices.map((index) => index + (zeroIndexed ? 0 : 1)).join(" ") : "";
+}
+function hodlSeedNumbersToWords(value, zeroIndexed = hodlSeedZeroIndexed, targetWords = Pt) {
+  let parsed = hodlParseSeedNumbers(value, targetWords, zeroIndexed);
+  return parsed.entries.length && !parsed.invalidEntries.length && !parsed.extraEntries.length ? parsed.wordSlots.join(" ") : "";
+}
+function hodlTranslateSeedNumberIndex(value, toZeroIndexed) {
+  let oldMinimum = toZeroIndexed ? 1 : 0, oldMaximum = toZeroIndexed ? 2048 : 2047;
+  return String(value ?? "").replace(/\d+/g, (token) => {
+    let number = Number(token);
+    return Number.isSafeInteger(number) && number >= oldMinimum && number <= oldMaximum ? String(number + (toZeroIndexed ? -1 : 1)) : token;
+  });
+}
+function hodlSelectedSeedInput(targetWords = Pt) {
+  if (hodlSeedMethod === "numbers") {
+    let input = document.getElementById("seed-numbers"), parsed = hodlParseSeedNumbers(input?.value ?? "", targetWords, hodlSeedZeroIndexed);
+    return { value: parsed.phrase, extended: false, parsed };
+  }
+  let value = document.getElementById("seed")?.value.trim() || "";
+  return { value, extended: hodlLooksExtendedKey(value), parsed: null };
 }
 function hodlTargetLastWords(value, targetWords = Pt) {
   let words = Rn(value).split(" ").filter(Boolean), config = hodlSeedConfig(targetWords);
@@ -2721,6 +2931,13 @@ function hodlRenderSeedInputState(input, targetWords = Pt) {
   input.setAttribute("aria-invalid", String(analysis.invalidRanges.length > 0));
   hodlRenderInputHighlight(input, analysis.invalidRanges);
   return analysis;
+}
+function hodlRenderSeedNumberInputState(input, targetWords = Pt, zeroIndexed = hodlSeedZeroIndexed) {
+  let parsed = hodlParseSeedNumbers(input?.value ?? "", targetWords, zeroIndexed), invalid = parsed.invalidRanges.length > 0;
+  input.classList.toggle("bad", invalid);
+  input.setAttribute("aria-invalid", String(invalid));
+  hodlRenderInputHighlight(input, parsed.invalidRanges);
+  return parsed;
 }
 function hodlApplyFilteredInput(input, filter) {
   let value = input.value, clean = filter(value);
@@ -3028,7 +3245,80 @@ function hodlApplySeedKeyboardKey(input, key, deleteBackward = false) {
   input.dispatchEvent(event);
   input.focus({ preventScroll: true });
 }
-function hodlBindSeedKeyboardDelete(getInput, button) {
+function hodlApplySeedNumberPadKey(input, key, deleteBackward = false) {
+  if (!input) return;
+  if (deleteBackward && input.selectionStart === input.selectionEnd) {
+    let caret = input.selectionStart ?? input.value.length;
+    if (caret > 1 && input.value[caret - 1] === " ") {
+      input.setSelectionRange(caret - 2, caret - 1);
+    }
+  }
+  hodlApplySeedKeyboardKey(input, key, deleteBackward);
+}
+function hodlSeedNumberCanInsertDigit(input, digit, zeroIndexed = hodlSeedZeroIndexed) {
+  if (!input || !/^\d$/.test(String(digit))) return false;
+  if (zeroIndexed || String(digit) !== "0") return true;
+  let start = input.selectionStart ?? input.value.length;
+  return !/(?:^|\s)$/.test(input.value.slice(0, start));
+}
+function hodlAutocompleteSeedNumberInput(input, event, targetWords = Pt, zeroIndexed = hodlSeedZeroIndexed) {
+  if (!input || event?.inputType !== "insertText" || !/^\d+$/.test(event.data || "") || input.selectionStart !== input.selectionEnd) return false;
+  let caret = input.selectionStart ?? input.value.length, suffix = input.value.slice(caret);
+  if (suffix && /^\s/.test(suffix) || /^\d/.test(suffix)) return false;
+  let match = input.value.slice(0, caret).match(/(\d+)$/);
+  if (!match) return false;
+  let number = Number(match[1]), maximum = zeroIndexed ? 2047 : 2048, priorCount = (input.value.slice(0, caret - match[1].length).match(/\d+/g) || []).length;
+  if (number <= 204 || number > maximum || priorCount >= hodlSeedConfig(targetWords).words - 1) return false;
+  input.setRangeText(" ", caret, caret, "end");
+  return true;
+}
+function hodlHandleSeedNumberSeparatorDelete(input, event) {
+  if (input.selectionStart !== input.selectionEnd) return;
+  let caret = input.selectionStart ?? 0, start = caret, end = caret;
+  if (event.inputType === "deleteContentBackward" && caret > 1 && input.value[caret - 1] === " ") {
+    start = caret - 2;
+    end = caret - 1;
+  } else if (event.inputType === "deleteContentForward" && input.value[caret] === " " && caret + 1 < input.value.length) {
+    start = caret + 1;
+    end = caret + 2;
+  } else return;
+  event.preventDefault();
+  input.setRangeText("", start, end, "end");
+  input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: event.inputType }));
+}
+function hodlUpdateSeedNumberPad(input, parsed = hodlParseSeedNumbers(input?.value ?? "", Pt, hodlSeedZeroIndexed)) {
+  let pad = document.querySelector(".seed-number-pad"), start = input?.selectionStart ?? 0, end = input?.selectionEnd ?? start;
+  if (!pad || !input) return;
+  let deleteButton = pad.querySelector("[data-seed-number-delete]"), nextButton = pad.querySelector("[data-seed-number-space]"), last = parsed.entries.at(-1), canFinishWord = Boolean(last?.valid && parsed.entries.length < parsed.config.words && !/\s$/.test(input.value));
+  if (deleteButton) deleteButton.disabled = start === end && start === 0;
+  if (nextButton) nextButton.disabled = !canFinishWord;
+  pad.querySelectorAll("[data-seed-number-digit]").forEach((button) => {
+    button.disabled = parsed.entries.length >= parsed.config.words && /\s$/.test(input.value) || !hodlSeedNumberCanInsertDigit(input, button.dataset.seedNumberDigit || "", hodlSeedZeroIndexed);
+  });
+}
+function hodlBindSeedNumberPad(input, update) {
+  let pad = document.querySelector(".seed-number-pad");
+  if (!pad || !input) return;
+  pad.querySelectorAll("button").forEach((button) => button.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    input.focus({ preventScroll: true });
+  }));
+  pad.querySelectorAll("[data-seed-number-digit]").forEach((button) => {
+    button.onclick = () => {
+      let digit = button.dataset.seedNumberDigit || "";
+      if (hodlSeedNumberCanInsertDigit(input, digit, hodlSeedZeroIndexed)) hodlApplySeedNumberPadKey(input, digit);
+    };
+  });
+  let next = pad.querySelector("[data-seed-number-space]");
+  if (next) next.onclick = () => hodlApplySeedNumberPadKey(input, " ");
+  let remove = pad.querySelector("[data-seed-number-delete]");
+  if (remove) hodlBindSeedKeyboardDelete(() => input, remove, hodlApplySeedNumberPadKey);
+  ["focus", "click", "keyup", "select"].forEach((type) => input.addEventListener(type, () => {
+    let parsed = update();
+    hodlUpdateSeedNumberPad(input, parsed);
+  }));
+}
+function hodlBindSeedKeyboardDelete(getInput, button, applyDelete = hodlApplySeedKeyboardKey) {
   if (typeof getInput !== "function" || !button) return;
   let holdTimer = null, repeatTimer = null, repeated = false, pointerId = null;
   let stop = () => {
@@ -3053,7 +3343,7 @@ function hodlBindSeedKeyboardDelete(getInput, button) {
       stop();
       return;
     }
-    hodlApplySeedKeyboardKey(input, "", true);
+    applyDelete(input, "", true);
   };
   button.addEventListener("pointerdown", (event) => {
     if (event.button !== 0 || button.disabled) return;
@@ -3190,7 +3480,7 @@ function hodlBindBase64Keyboard(input) {
   refresh();
 }
 function hodlRenderPassphraseKeyboard() {
-  let host = document.getElementById("passphrase-keyboard-host"), toggleHost = document.getElementById("passphrase-keyboard-toggle-host"), privateKey = Ne === "key", passphrase = Ne === "dice" || Ne === "hex", enabled = passphrase || privateKey;
+  let host = document.getElementById("passphrase-keyboard-host"), toggleHost = document.getElementById("passphrase-keyboard-toggle-host"), privateKey = Ne === "key", passphrase = Ne === "dice" || Ne === "hex" || Ne === "seed" && hodlSeedMethod === "numbers", enabled = passphrase || privateKey;
   if (toggleHost) {
     toggleHost.hidden = !passphrase;
     toggleHost.innerHTML = passphrase ? hodlPassphraseKeyboardToggleMarkup() : "";
@@ -3511,7 +3801,7 @@ function hodlUpdateSeedLengthControl() {
     help.textContent = `${config.words} words require exactly ${format.digits} ${format.unit}.${format.remainderBits ? format.binaryRemainder ? ` Enter ${format.fullDigits} complete ${format.shortLabel} characters followed by ${format.remainderBits} coin flip${format.remainderBits === 1 ? "" : "s"}, using Heads (0) or Tails (1).` : ` The final character contributes ${format.remainderBits} bit${format.remainderBits === 1 ? "" : "s"} and must be one of ${[...format.finalCharacters].join(", ")}.` : ""}`;
     return;
   }
-  help.textContent = Ne === "seed" ? `Enter exactly ${config.words} BIP39 words. Extended keys ignore this selection.` : Ne === "cards" ? config.words === 24 ? "24 words need 256 bits. One deck is about 225.6 bits, so deal 52 unique cards, shuffle again, then deal 6 more." : `${config.words} words need ${config.bits} bits. Deal ${hodlCardNeeded(config.words).first} unique cards from one shuffled deck.` : `${config.words} words use ${config.bits} bits of BIP39 entropy.`;
+  help.textContent = Ne === "seed" ? hodlSeedMethod === "numbers" ? `Enter exactly ${config.words} BIP39 word numbers using ${hodlSeedZeroIndexed ? "0 through 2047" : "1 through 2048"}.` : `Enter exactly ${config.words} BIP39 words. Extended keys ignore this selection.` : Ne === "cards" ? hodlCardMethod === "direct" ? `${config.words} words use ${config.partialWords} complete 11-bit rank selections plus ${hodlDirectCardFinalRadices(config.words).length} final rank draw${hodlDirectCardFinalRadices(config.words).length === 1 ? "" : "s"}.` : config.words === 24 ? "24 words need 256 bits. One deck is about 225.6 bits, so deal 52 unique cards, shuffle again, then deal 6 more." : `${config.words} words need ${config.bits} bits. Deal ${hodlCardNeeded(config.words).first} unique cards from one shuffled deck.` : `${config.words} words use ${config.bits} bits of BIP39 entropy.`;
 }
 function hodlInvalidateActiveKeyOutput() {
   re = null;
@@ -3671,38 +3961,71 @@ function hodlRenderKeyForm() {
     return;
   }
   if (Ne === "cards") {
-    let needed = hodlCardNeeded(config.words), showCards = Boolean(hodlKeys[hodlActiveKey]?.showCards), suitPad = hodlCardSuits.map((suit) => `<button type="button" class="card-suit${suit.red ? " is-red" : ""}${suit.code === hodlCardSuit ? " active" : ""}" data-card-suit="${suit.code}" aria-label="${suit.label}" aria-pressed="${suit.code === hodlCardSuit}">${suit.symbol}</button>`).join("");
-    let rankPad = hodlCardRanks.map((rank) => `<button type="button" data-card-rank="${rank}" aria-label="${rank === "T" ? "10" : rank}">${rank === "T" ? "10" : rank}</button>`).join("");
+    let state = hodlKeys[hodlActiveKey], needed = hodlCardNeeded(config.words), showCards = Boolean(state?.showCards), direct = hodlCardMethod === "direct";
+    if (!direct) hodlCardSuit = hodlCardRank = "";
+    let suitPad = hodlCardSuits.map((suit) => `<button type="button" class="card-suit${suit.red ? " is-red" : ""}" data-card-suit="${suit.code}" aria-label="${suit.label}" aria-pressed="false">${suit.symbol}</button>`).join("");
+    let rankPad = direct ? hodlDirectCardRanks.map((rank) => `<button type="button" data-direct-card-rank="${rank}" aria-label="Enter rank ${rank}">${rank}</button>`).join("") : hodlCardRanks.map((rank) => `<button type="button" data-card-rank="${rank}" aria-label="${rank === "T" ? "10" : rank}">${rank === "T" ? "10" : rank}</button>`).join("");
+    let inputId = direct ? "direct-cards" : "cards", inputLabel = direct ? "Rank-only draw transcript" : "Card transcript", inputHelp = direct ? `For each of the first ${config.partialWords} words, shuffle and draw from A\u20138 three times, then A\u20134 once. Each four-character group selects one word; spaces separate the groups. The shorter final group supplies the remaining entropy bits, and EntropyLab calculates the BIP39 checksum bits.` : `Each valid card updates a deterministic test seed. For real security, ${config.words === 24 ? "deal all 52 unique cards, shuffle again, then deal 6 more" : `deal ${needed.first} unique cards without putting them back`}. SHA-256 hashes the ASCII transcript (AS 2C TD).`, placeholder = direct ? "A284 37A2 \u2026" : "AS 2C 10H TD\u2026";
     at.innerHTML = `
-      <p class="label">Playing cards</p>
-      <p class="muted" id="cards-help">Each valid card updates a deterministic test seed. For real security, ${config.words === 24 ? "deal all 52 unique cards, shuffle again, then deal 6 more" : `deal ${needed.first} unique cards without putting them back`}. SHA-256 hashes the ASCII transcript (AS 2C TD).</p>
-      <label class="field" id="cards-input-label" for="cards">Card transcript</label>
-      <div class="dice-input-shell cards-input-shell"><pre class="dice-input-highlight" id="cards-highlight" aria-hidden="true"></pre><textarea id="cards" placeholder="AS 2C 10H TD\u2026" autocomplete="off" spellcheck="false" autocapitalize="characters" aria-labelledby="cards-input-label" aria-describedby="cards-help cards-meta"></textarea></div>
+      <p class="label">How to turn cards into a ${config.words}-word seed</p>
+      <div class="choice-grid">
+        <label class="choice"><input type="radio" name="card-method" value="hashed" ${direct ? "" : "checked"} /><span><strong>Hashed card transcript</strong><span class="desc">Deal unique rank-and-suit cards without replacement. SHA-256 hashes the complete transcript; ${config.words === 24 ? "58 cards across two shuffles are recommended" : `${needed.first} cards are recommended`}.</span></span></label>
+        <label class="choice"><input type="radio" name="card-method" value="direct" ${direct ? "checked" : ""} /><span><strong>Direct word selection</strong><span class="desc">Ignore suits. Reshuffle and draw A\u20138, A\u20138, A\u20138, then A\u20134 for each full word. Finish with the shorter rank sequence shown for the checksum-valid final word.</span></span></label>
+      </div>
+      <p class="muted" id="cards-help">${inputHelp}</p>
+      <label class="field" id="cards-input-label" for="${inputId}">${inputLabel}</label>
+      <div class="dice-input-shell cards-input-shell"><pre class="dice-input-highlight" id="cards-highlight" aria-hidden="true"></pre><textarea id="${inputId}" placeholder="${placeholder}" autocomplete="off" spellcheck="false" autocapitalize="characters" aria-labelledby="cards-input-label" aria-describedby="cards-help cards-meta"></textarea></div>
       ${hodlSeedMetaRowMarkup("cards-meta")}
-      <div class="card-suit-pad" role="group" aria-label="Suit">${suitPad}</div>
-      <div class="card-rank-pad dice-input-pad" role="group" aria-label="Rank">${rankPad}</div>
+      ${direct ? "" : `<div class="card-suit-pad" role="group" aria-label="Suit">${suitPad}</div>`}
+      <div class="card-rank-pad dice-input-pad${direct ? " direct-card-rank-pad" : ""}" role="group" aria-label="${direct ? "Rank-only draw" : "Rank"}">${rankPad}</div>
       <div class="card-controls-row"><button class="card-undo-button seed-keyboard-delete" id="card-undo" type="button" aria-label="Undo last card" title="Undo last card" disabled><svg viewBox="0 0 24 18" aria-hidden="true" focusable="false"><path d="M9 2h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9L2 9l7-7Z"/><path d="m12 6 6 6m0-6-6 6"/></svg></button><label class="seed-autocomplete-toggle card-visibility-toggle"><input type="checkbox" id="show-cards" aria-controls="dealt-cards" ${showCards ? "checked" : ""} /><span>Show cards</span></label></div>
-      <div class="dealt-cards" id="dealt-cards" aria-live="polite"${showCards ? "" : " hidden"}></div>
       <aside class="cards-reshuffle" id="cards-reshuffle" hidden></aside>
+      <div class="dealt-cards" id="dealt-cards" aria-live="polite"${showCards ? "" : " hidden"}></div>
       <div id="dice-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div>
     `;
-    let input = document.getElementById("cards");
-    input.onbeforeinput = (event) => {
+    let input = document.getElementById(inputId);
+    input.onbeforeinput = direct ? (event) => hodlHandleGroupedSeparatorDelete(input, event) : (event) => {
       if (event.inputType === "insertText" && event.data && !hodlCardTypedCharactersAllowed(event.data)) event.preventDefault();
     };
     input.oninput = () => {
-      hodlApplyFilteredInput(input, hodlFilterCards);
-      hodlUpdateCards();
+      if (!direct) hodlCardSuit = hodlCardRank = "";
+      hodlApplyFilteredInput(input, direct ? hodlFilterDirectCards : hodlFilterCards);
+      direct ? hodlUpdateDirectCards() : hodlUpdateCards();
     };
     input.onscroll = () => hodlSyncDiceHighlight(input);
+    at.querySelectorAll('input[name="card-method"]').forEach((radio) => {
+      radio.onchange = () => {
+        if (state) {
+          state.fields[direct ? "directCards" : "cards"] = input.value;
+          state.cardMethod = radio.value;
+        }
+        hodlCardMethod = radio.value;
+        hodlInvalidateLiveKeyResult();
+        hodlRenderKeyForm();
+        hodlRestoreFormFields(state);
+        hodlQueueMasterFingerprintPreview(0);
+      };
+    });
     at.querySelectorAll("[data-card-suit]").forEach((button) => {
       button.onclick = () => {
-        hodlCardSuit = button.getAttribute("data-card-suit");
+        hodlCardSuit = hodlToggleCardChoice(hodlCardSuit, button.getAttribute("data-card-suit"));
         hodlUpdateCards();
       };
     });
     at.querySelectorAll("[data-card-rank]").forEach((button) => {
-      button.onclick = () => hodlAppendCard(button.getAttribute("data-card-rank"));
+      button.onclick = () => {
+        hodlCardRank = hodlToggleCardChoice(hodlCardRank, button.getAttribute("data-card-rank"));
+        hodlUpdateCards();
+      };
+    });
+    at.querySelectorAll("[data-direct-card-rank]").forEach((button) => {
+      button.onclick = () => {
+        let rank = button.getAttribute("data-direct-card-rank");
+        let start = Number.isInteger(input.selectionStart) ? input.selectionStart : input.value.length, end = Number.isInteger(input.selectionEnd) ? input.selectionEnd : start;
+        input.focus({ preventScroll: true });
+        input.setRangeText(rank, start, end, "end");
+        input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: rank }));
+      };
     });
     document.getElementById("card-undo").onclick = hodlUndoCard;
     document.getElementById("show-cards").onchange = (event) => {
@@ -3711,7 +4034,7 @@ function hodlRenderKeyForm() {
       if (dealt) dealt.hidden = !visible;
     };
     hodlBindKeyFields();
-    hodlUpdateCards();
+    direct ? hodlUpdateDirectCards() : hodlUpdateCards();
     return;
   }
   if (Ne === "hex") {
@@ -3769,8 +4092,90 @@ function hodlRenderKeyForm() {
     return;
   }
   if (Ne === "seed") {
-    let autocompleteEnabled = Boolean(hodlKeys[hodlActiveKey]?.seedAutocomplete);
-    at.innerHTML = `<p class="label">Your ${config.words}-word seed phrase</p><p class="muted" id="seed-help">Enter exactly ${config.words} English BIP39 words. You can also paste an extended key here; the selected phrase length does not apply to extended keys. With ${config.partialWords} compatible diceware words, choose the final checksum word below.</p><div class="seed-entry-tools">${hodlSeedKeyboardToggleMarkup()}<label class="seed-autocomplete-toggle"><input type="checkbox" id="seed-autocomplete" ${autocompleteEnabled ? "checked" : ""} /><span>Autocomplete BIP39 words <span class="seed-autocomplete-note">(2+ letters normally; 1+ for a unique checksum word)</span></span></label></div><div class="dice-input-shell seed-input-shell"><pre class="dice-input-highlight" id="seed-highlight" aria-hidden="true"></pre><textarea id="seed" placeholder="Enter exactly ${config.words} BIP39 words" aria-describedby="seed-help seed-meta" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div><p class="muted" id="seed-meta" aria-live="polite"></p>${hodlSeedKeyboardMarkup()}<div id="last-words" class="row" style="margin-top:8px"></div>`;
+    let state = hodlKeys[hodlActiveKey], autocompleteEnabled = Boolean(state?.seedAutocomplete), numbers = hodlSeedMethod === "numbers", choices = `<p class="label">How to enter a seed phrase</p><div class="choice-grid seed-method-grid"><label class="choice"><input type="radio" name="seed-method" value="words" ${numbers ? "" : "checked"} /><span><strong>Direct word entry</strong><span class="desc">Type or paste the English BIP39 words themselves.</span></span></label><label class="choice"><input type="radio" name="seed-method" value="numbers" ${numbers ? "checked" : ""} /><span><strong>BIP39 word numbers</strong><span class="desc">Enter each word's position in the standard English list, using 1 through 2048 by default.</span></span></label></div>`;
+    let bindMethodChoices = (input) => at.querySelectorAll('input[name="seed-method"]').forEach((radio) => {
+      radio.onchange = () => {
+        if (!radio.checked) return;
+        let next = hodlNormalizeSeedMethod(radio.value), currentValue = input.value;
+        if (state) {
+          if (numbers) state.fields.seedNumbers = currentValue;
+          else state.fields.seed = currentValue;
+          if (next === "numbers") {
+            let converted = hodlSeedWordsToNumbers(currentValue, hodlSeedZeroIndexed);
+            if (converted || !currentValue.trim()) state.fields.seedNumbers = converted;
+          } else {
+            let converted = hodlSeedNumbersToWords(currentValue, hodlSeedZeroIndexed, config.words);
+            if (converted || !currentValue.trim()) state.fields.seed = converted;
+          }
+          state.seedMethod = next;
+        }
+        hodlSeedMethod = next;
+        hodlInvalidateActiveKeyOutput();
+        hodlRenderKeyForm();
+        hodlRestoreFormFields(state);
+        hodlUpdateSeedLengthControl();
+        hodlQueueMasterFingerprintPreview(0);
+      };
+    });
+    if (numbers) {
+      let range = hodlSeedZeroIndexed ? "0 through 2047" : "1 through 2048";
+      at.innerHTML = `${choices}<p class="label" id="seed-number-label">Your ${config.words} BIP39 word numbers</p><p class="muted" id="seed-number-help">Enter one ${range} number for each word, separated by spaces. The corresponding BIP39 words appear below.</p><label class="seed-autocomplete-toggle seed-zero-index-toggle"><input type="checkbox" id="seed-zero-index" ${hodlSeedZeroIndexed ? "checked" : ""} /><span><strong>Use zero-indexed word numbers</strong> <span class="seed-autocomplete-note">(0–2047 instead of the default 1–2048)</span></span></label><div class="dice-input-shell seed-number-input-shell"><pre class="dice-input-highlight" id="seed-number-highlight" aria-hidden="true"></pre><textarea id="seed-numbers" inputmode="numeric" placeholder="${hodlSeedZeroIndexed ? "0 1 2" : "1 2 3"} …" aria-labelledby="seed-number-label" aria-describedby="seed-number-help seed-number-meta" autocomplete="off" spellcheck="false"></textarea></div>${hodlSeedMetaRowMarkup("seed-number-meta", true)}<div class="dice-input-pad seed-number-pad" role="group" aria-label="BIP39 word number keypad">${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => `<button type="button" data-seed-number-digit="${digit}" aria-label="Enter ${digit}">${digit}</button>`).join("")}<button type="button" class="seed-keyboard-delete seed-number-delete" data-seed-number-delete aria-label="Delete previous digit"><svg viewBox="0 0 24 18" aria-hidden="true" focusable="false"><path d="M9 2h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9L2 9l7-7Z"/><path d="m12 6 6 6m0-6-6 6"/></svg></button><button type="button" class="seed-number-next" data-seed-number-space>Next word</button></div><div id="seed-number-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div>`;
+      let input = document.getElementById("seed-numbers"), update = () => {
+        let parsed = hodlRenderSeedNumberInputState(input, config.words, hodlSeedZeroIndexed), meta = W("#seed-number-meta"), entered = parsed.entries.length, progress = `${entered} of ${config.words} BIP39 word numbers entered`, remaining = Math.max(0, config.words - entered);
+        hodlRenderDiceWordGrid(document.getElementById("seed-number-words"), parsed.wordSlots, config.words, false);
+        if (parsed.extraEntries.length) {
+          meta.textContent = `${entered} entered · ${config.words} required · ${parsed.extraEntries.length} extra highlighted · remove to continue`;
+          meta.className = "muted err";
+        } else if (parsed.invalidEntries.length) {
+          let invalid = parsed.invalidEntries[0];
+          meta.textContent = `${progress} · Word ${invalid.position + 1} number “${invalid.token}” is outside ${parsed.minimum}–${parsed.maximum} · correct to continue`;
+          meta.className = "muted err";
+        } else if (parsed.checksumInvalid) {
+          meta.textContent = `${progress} · BIP39 checksum invalid · final word number highlighted`;
+          meta.className = "muted err";
+        } else if (parsed.complete) {
+          meta.textContent = `${progress} · checksum valid · ready to derive`;
+          meta.className = "muted ok";
+        } else {
+          meta.textContent = `${progress} · ${remaining} remaining · valid range ${parsed.minimum}–${parsed.maximum}`;
+          meta.className = "muted";
+        }
+        hodlUpdateSeedNumberPad(input, parsed);
+        hodlQueueMasterFingerprintPreview();
+        return parsed;
+      };
+      let zeroToggle = document.getElementById("seed-zero-index");
+      zeroToggle.onchange = () => {
+        hodlSeedZeroIndexed = zeroToggle.checked;
+        input.value = hodlTranslateSeedNumberIndex(input.value, hodlSeedZeroIndexed);
+        input.setSelectionRange(input.value.length, input.value.length);
+        if (state) {
+          state.seedZeroIndexed = hodlSeedZeroIndexed;
+          state.fields.seedNumbers = input.value;
+        }
+        document.getElementById("seed-number-help").textContent = `Enter one ${hodlSeedZeroIndexed ? "0 through 2047" : "1 through 2048"} number for each word, separated by spaces. The corresponding BIP39 words appear below.`;
+        input.placeholder = `${hodlSeedZeroIndexed ? "0 1 2" : "1 2 3"} …`;
+        hodlUpdateSeedLengthControl();
+        update();
+      };
+      input.onbeforeinput = (event) => {
+        if (event.inputType === "insertText" && event.data === "0" && !hodlSeedNumberCanInsertDigit(input, event.data, hodlSeedZeroIndexed)) event.preventDefault();
+        else hodlHandleSeedNumberSeparatorDelete(input, event);
+      };
+      input.oninput = (event) => {
+        hodlApplyFilteredInput(input, (value) => hodlFilterSeedNumbers(value, hodlSeedZeroIndexed));
+        hodlAutocompleteSeedNumberInput(input, event, config.words, hodlSeedZeroIndexed);
+        update();
+      };
+      input.onscroll = () => hodlSyncDiceHighlight(input);
+      bindMethodChoices(input);
+      hodlBindSeedNumberPad(input, update);
+      hodlBindKeyFields();
+      hodlRenderPassphraseKeyboard();
+      update();
+      return;
+    }
+    at.innerHTML = `${choices}<p class="label">Your ${config.words}-word seed phrase</p><p class="muted" id="seed-help">Enter exactly ${config.words} English BIP39 words. You can also paste an extended key here; the selected phrase length does not apply to extended keys. With ${config.partialWords} compatible diceware words, choose the final checksum word below.</p><div class="seed-entry-tools">${hodlSeedKeyboardToggleMarkup()}<label class="seed-autocomplete-toggle"><input type="checkbox" id="seed-autocomplete" ${autocompleteEnabled ? "checked" : ""} /><span>Autocomplete BIP39 words <span class="seed-autocomplete-note">(2+ letters normally; 1+ for a unique checksum word)</span></span></label></div><div class="dice-input-shell seed-input-shell"><pre class="dice-input-highlight" id="seed-highlight" aria-hidden="true"></pre><textarea id="seed" placeholder="Enter exactly ${config.words} BIP39 words" aria-describedby="seed-help seed-meta" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div><p class="muted" id="seed-meta" aria-live="polite"></p>${hodlSeedKeyboardMarkup()}<div id="last-words" class="row" style="margin-top:8px"></div>`;
     let input = document.getElementById("seed"), update = () => {
       let rawValue = input.value, value = rawValue.trim(), meta = W("#seed-meta"), picker = W("#last-words"), analysis = hodlRenderSeedInputState(input, config.words);
       if (hodlLooksExtendedKey(value)) {
@@ -3842,6 +4247,7 @@ function hodlRenderKeyForm() {
     input.onblur = (event) => {
       if (!event.relatedTarget?.closest?.("#seed-keyboard,.seed-autocomplete-toggle")) update();
     };
+    bindMethodChoices(input);
     hodlBindSeedKeyboard(input, config.words);
     hodlBindKeyFields();
     update();
@@ -4158,14 +4564,13 @@ function hodlCanDeriveCurrentKey() {
       return hodlDiceEntropy(input.value, ge, Pt).ok;
     }
     if (Ne === "cards") {
-      let input = document.getElementById("cards");
-      return input ? hodlCardsEntropy(input.value, Pt).ok : false;
+      return hodlSelectedCardsEntropy(Pt).ok;
     }
     if (Ne === "hex") return hodlSelectedEntropy().ok;
     if (Ne === "seed") {
-      let value = document.getElementById("seed")?.value.trim() || "";
+      let selected = hodlSelectedSeedInput(Pt), value = selected.value;
       if (!value) return false;
-      if (hodlLooksExtendedKey(value)) return hodlUsableSinglesigImport(value, hodlSelectedNetwork(document.getElementById("network")));
+      if (selected.extended) return hodlUsableSinglesigImport(value, hodlSelectedNetwork(document.getElementById("network")));
       return hodlValidateTargetMnemonic(value, Pt).ok;
     }
     return hodlPrivateKeyInputIsValid();
@@ -4206,9 +4611,7 @@ function hodlFingerprintMnemonic() {
       return entropy.ok ? _n(entropy.bytes) : null;
     }
     if (Ne === "cards") {
-      let input = document.getElementById("cards");
-      if (!input) return null;
-      let entropy = hodlCardsEntropy(input.value, Pt);
+      let entropy = hodlSelectedCardsEntropy(Pt);
       return entropy.ok ? _n(entropy.bytes) : null;
     }
     if (Ne === "hex") {
@@ -4216,8 +4619,8 @@ function hodlFingerprintMnemonic() {
       return entropy.ok ? _n(entropy.bytes) : null;
     }
     if (Ne === "seed") {
-      let value = document.getElementById("seed")?.value.trim() || "";
-      if (!value || hodlLooksExtendedKey(value)) return null;
+      let selected = hodlSelectedSeedInput(Pt), value = selected.value;
+      if (!value || selected.extended) return null;
       let validation = hodlValidateTargetMnemonic(value, Pt);
       return validation.ok ? validation.words.join(" ") : null;
     }
@@ -4310,7 +4713,7 @@ function hodlInitMasterFingerprintPreview() {
   if (!panel || !pass) return;
   panel.addEventListener("input", (event) => {
     let id = event.target?.id;
-    if (!["pass", "dice", "hex", "bin", "base4", "base8", "base32", "base64", "seed", "cards"].includes(id)) return;
+    if (!["pass", "dice", "hex", "bin", "base4", "base8", "base32", "base64", "seed", "seed-numbers", "cards", "direct-cards"].includes(id)) return;
     if (id === "pass") {
       let state = hodlKeys[hodlActiveKey];
       if (state) state.fields.pass = pass.value;
@@ -4320,12 +4723,12 @@ function hodlInitMasterFingerprintPreview() {
   });
   panel.addEventListener("change", (event) => {
     let target = event.target;
-    if (!(target instanceof Element) || !target.matches('input[name="dm"], input[name="entropy-format"], select[aria-label^="Valid final word"]')) return;
+    if (!(target instanceof Element) || !target.matches('input[name="dm"], input[name="card-method"], input[name="seed-method"], #seed-zero-index, input[name="entropy-format"], select[aria-label^="Valid final word"]')) return;
     hodlInvalidateLiveKeyResult();
     hodlQueueMasterFingerprintPreview();
   });
   panel.addEventListener("click", event => {
-    let target = event.target instanceof Element ? event.target.closest("#modes button, [data-seed-words], [data-dplus-die], [data-d], [data-lw], [data-card-suit], [data-card-rank], #card-undo") : null;
+    let target = event.target instanceof Element ? event.target.closest("#modes button, [data-seed-words], [data-dplus-die], [data-d], [data-lw], [data-card-suit], [data-card-rank], [data-direct-card-rank], #card-undo") : null;
     if (!target) return;
     hodlInvalidateLiveKeyResult();
     hodlQueueMasterFingerprintPreview();
@@ -4381,7 +4784,7 @@ function hodlCalculateKey() {
         re = on(entropy, passphrase, network, count, account);
       }
     } else if (Ne === "cards") {
-      let entropy = hodlCardsEntropy(document.getElementById("cards").value, Pt);
+      let entropy = hodlSelectedCardsEntropy(Pt);
       if (!entropy.ok) throw new Error(entropy.error);
       re = on(entropy, passphrase, network, count, account);
     } else if (Ne === "hex") {
@@ -4389,9 +4792,10 @@ function hodlCalculateKey() {
       if (!entropy.ok) throw new Error(entropy.error);
       re = on(entropy, passphrase, network, count, account);
     } else if (Ne === "seed") {
-      let value = document.getElementById("seed").value.trim();
-      if (hodlLooksExtendedKey(value)) re = Po(value, network, count, account);
+      let selected = hodlSelectedSeedInput(Pt), value = selected.value;
+      if (selected.extended) re = Po(value, network, count, account);
       else {
+        if (hodlSeedMethod === "numbers" && !selected.parsed?.complete) throw new Error(selected.parsed?.invalidEntries.length ? `Word numbers must be between ${selected.parsed.minimum} and ${selected.parsed.maximum}.` : selected.parsed?.extraEntries.length ? `Enter exactly ${Pt} BIP39 word numbers.` : selected.parsed?.checksumInvalid ? "The entered word numbers do not have a valid BIP39 checksum." : `Enter exactly ${Pt} BIP39 word numbers before deriving the wallet.`);
         let validation = hodlValidateTargetMnemonic(value, Pt);
         if (!validation.ok) throw new Error(validation.error);
         re = ar(validation.words.join(" "), passphrase, network, count, void 0, account);
@@ -6139,7 +6543,7 @@ function hodlPrivateKeyValues(fields) {
 }
 function hodlNewKeyState(name, keyId, keyNumber) {
   let id = keyId ?? hodlNextKeyId++, number = keyNumber ?? hodlNextKeyNumber++;
-  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: false, dplusNumberedD16: false, showCards: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", network: "mainnet", account: "0", count: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", seed: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
+  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: false, dplusNumberedD16: false, showCards: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", network: "mainnet", account: "0", count: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
 }
 function hodlRestoreFormFields(state) {
   if (!state) return;
@@ -6154,10 +6558,10 @@ function hodlRestoreFormFields(state) {
   if (seedAutocomplete) seedAutocomplete.checked = Boolean(state.seedAutocomplete);
   hodlDPlusNumberedD16 = Boolean(state.dplusNumberedD16);
   hodlUpdateDPlusDieControl();
-  ["dice", "hex", "bin", "base4", "base8", "base32", "base64", "seed", "key", "cards"].forEach(id => {
+  ["dice", "hex", "bin", "base4", "base8", "base32", "base64", "seed", "seed-numbers", "key", "cards", "direct-cards"].forEach(id => {
     let el = document.getElementById(id);
     if (el) {
-      el.value = id === "dice" && ge === "dplus" ? state.fields.dplusDice || "" : id === "key" ? privateKeys[restoredKeyKind] || "" : state.fields[id] || "";
+      el.value = id === "dice" && ge === "dplus" ? state.fields.dplusDice || "" : id === "key" ? privateKeys[restoredKeyKind] || "" : id === "direct-cards" ? state.fields.directCards || "" : id === "seed-numbers" ? state.fields.seedNumbers || "" : state.fields[id] || "";
       if (id === "key") el.dataset.privateKeyKind = restoredKeyKind;
       if (id === "dice") {
         el.dataset.previousValue = el.value;
@@ -6174,6 +6578,8 @@ function hodlSetMode(mode) {
   let state = hodlKeys[hodlActiveKey];
   if (state) state.mode = mode;
   Ne = mode;
+  hodlSeedMethod = hodlNormalizeSeedMethod(state?.seedMethod);
+  hodlSeedZeroIndexed = Boolean(state?.seedZeroIndexed);
   hodlEntropyFormat = hodlNormalizeEntropyFormat(state?.entropyFormat);
   [...Zs.children].forEach((button, index) => {
     let active = hodlKeyModes[index] === Ne;
@@ -6189,7 +6595,7 @@ function hodlSetMode(mode) {
 function hodlKeyStateNeedsClear(state) {
   if (!state) return false;
   let fields = state.fields || {}, privateKeys = hodlPrivateKeyValues(fields), hasText = (id) => String(fields[id] ?? "").length > 0;
-  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || Boolean(state.seedAutocomplete) || Boolean(state.dplusNumberedD16) || Boolean(state.showCards) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.network ?? "mainnet") !== "mainnet" || String(fields.account ?? "0") !== "0" || String(fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "seed", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
+  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || Boolean(state.seedAutocomplete) || Boolean(state.dplusNumberedD16) || Boolean(state.showCards) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.network ?? "mainnet") !== "mainnet" || String(fields.account ?? "0") !== "0" || String(fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
 }
 function hodlSyncKeyClearButton(capture = false) {
   if (capture) hodlCaptureKey();
@@ -6209,6 +6615,9 @@ function hodlCaptureKey() {
   let state = hodlKeys[hodlActiveKey];
   state.mode = Ne;
   state.diceMethod = ge;
+  state.cardMethod = hodlCardMethod;
+  state.seedMethod = hodlSeedMethod;
+  state.seedZeroIndexed = Boolean(hodlSeedZeroIndexed);
   state.entropyFormat = hodlEntropyFormat;
   let syncNumberBases = document.getElementById("sync-number-bases");
   if (syncNumberBases) state.syncNumberBases = syncNumberBases.checked;
@@ -6230,6 +6639,10 @@ function hodlCaptureKey() {
     let el = document.getElementById(id);
     if (el) state.fields[id] = el.value;
   });
+  let directCards = document.getElementById("direct-cards");
+  if (directCards) state.fields.directCards = directCards.value;
+  let seedNumbers = document.getElementById("seed-numbers");
+  if (seedNumbers) state.fields.seedNumbers = seedNumbers.value;
   state.fields.network = hodlSelectedNetwork(document.getElementById("network"));
   let dice = document.getElementById("dice");
   if (dice) state.fields[ge === "dplus" ? "dplusDice" : "dice"] = dice.value;
@@ -6251,6 +6664,9 @@ function hodlRestoreKey() {
   if (!state) {
     Ne = "dice";
     ge = "coldcard";
+    hodlCardMethod = "hashed";
+    hodlSeedMethod = "words";
+    hodlSeedZeroIndexed = false;
     hodlEntropyFormat = "bin";
     hodlDPlusNumberedD16 = false;
     Pt = 24;
@@ -6283,6 +6699,9 @@ function hodlRestoreKey() {
   }
   Ne = state.mode;
   ge = state.diceMethod;
+  hodlCardMethod = state.cardMethod === "direct" ? "direct" : "hashed";
+  hodlSeedMethod = hodlNormalizeSeedMethod(state.seedMethod);
+  hodlSeedZeroIndexed = Boolean(state.seedZeroIndexed);
   hodlEntropyFormat = hodlNormalizeEntropyFormat(state.entropyFormat);
   hodlDPlusNumberedD16 = Boolean(state.dplusNumberedD16);
   Pt = hodlSeedLengths[Number(state.targetWords)] ? Number(state.targetWords) : 24;
@@ -7005,7 +7424,7 @@ function hodlInitSecretFieldAutoClear() {
     Ge = false;
     ft = "";
     hodlDiceCoinPositions = [];
-    for (let id of ["dice", "hex", "bin", "base4", "base8", "base32", "base64", "seed", "key", "pass", "cards"]) {
+    for (let id of ["dice", "hex", "bin", "base4", "base8", "base32", "base64", "seed", "seed-numbers", "key", "pass", "cards", "direct-cards"]) {
       let field = document.getElementById(id);
       if (field) field.value = "";
     }

@@ -56,10 +56,28 @@ test("single-key network selector is half width on wide screens and full width o
 
 test("entropy progress messages sit directly below their inputs and above keypads", () => {
   assert.match(app, /<textarea id="dice"[^>]*><\/textarea><\/div>\s*\$\{hodlSeedMetaRowMarkup\("dice-meta",!0\)\}\s*\$\{dicePad\}/);
-  assert.match(app, /<textarea id="cards"[^>]*><\/textarea><\/div>\s*\$\{hodlSeedMetaRowMarkup\("cards-meta"\)\}\s*<div class="card-suit-pad"/);
+  assert.match(appSource, /<textarea id="\$\{inputId\}"[^>]*><\/textarea><\/div>\s*\$\{hodlSeedMetaRowMarkup\("cards-meta"\)\}/);
   assert.match(app, /<textarea id="\$\{inputId\}"[\s\S]*?<\/textarea><\/div>\s*\$\{hodlSeedMetaRowMarkup\("entropy-meta",!0\)\}\s*\$\{base64Keyboard\}\s*\$\{entropyPad\}/);
   assert.match(app, /<textarea id="seed"[^>]*><\/textarea><\/div><p class="muted" id="seed-meta"[^>]*><\/p>\$\{hodlSeedKeyboardMarkup\(\)\}/);
   assert.match(app, /<textarea id="key"[^>]*><\/textarea><\/div><p class="muted" id="private-key-meta"[^>]*><\/p>/);
+});
+
+test("Seed phrase offers one-based or zero-based BIP39 word-number entry", () => {
+  assert.match(appSource, /name="seed-method" value="words"/);
+  assert.match(appSource, /name="seed-method" value="numbers"/);
+  assert.match(appSource, />Direct word entry</);
+  assert.match(appSource, />BIP39 word numbers</);
+  assert.match(appSource, /id="seed-zero-index"/);
+  assert.match(appSource, /0–2047 instead of the default 1–2048/);
+  assert.match(appSource, /function hodlTranslateSeedNumberIndex\(value, toZeroIndexed\)/);
+  assert.match(appSource, /function hodlSeedNumberCanInsertDigit\(input, digit, zeroIndexed = hodlSeedZeroIndexed\)/);
+  assert.match(appSource, /function hodlAutocompleteSeedNumberInput\(input, event, targetWords = Pt, zeroIndexed = hodlSeedZeroIndexed\)/);
+  assert.match(appSource, /number <= 204 \|\| number > maximum/);
+  assert.match(appSource, /class="dice-input-pad seed-number-pad"/);
+  assert.match(appSource, /\[0, 1, 2, 3, 4, 5, 6, 7, 8, 9\]/);
+  assert.match(appSource, /id="seed-number-words" class="dice-word-grid"/);
+  assert.match(css, /\.dice-input-pad\.seed-number-pad \{ grid-template-columns: repeat\(5/);
+  assert.match(appSource, /Ne === "seed" && hodlSeedMethod === "numbers"/);
 });
 
 test("Number bases offers exact Base 2, 4, 8, 16, Crockford Base32, and Base64-alphabet input", () => {
@@ -102,8 +120,36 @@ test("dealt playing cards use theme-appropriate surfaces", () => {
 
 test("card undo uses the keyboard delete icon and one rank-grid column", () => {
   assert.match(app, /class="card-undo-button seed-keyboard-delete" id="card-undo"[^>]*aria-label="Undo last card"[^>]*><svg viewBox="0 0 24 18"/);
+  assert.match(appSource, /function hodlSetInputValueAtEnd\(input, value\)/);
+  assert.match(appSource, /hodlSetInputValueAtEnd\(input, value\);\s*input\.dispatchEvent\(new Event\("input"\)\)/);
   assert.match(css, /\.card-controls-row \{[\s\S]*?grid-template-columns: repeat\(7, minmax\(0, 1fr\)\)/);
   assert.match(css, /@media \(min-width: 640px\) \{\s*\.card-controls-row \{ grid-template-columns: repeat\(13, minmax\(0, 1fr\)\); \}/);
+});
+
+test("Cards offers isolated hashed and direct word-selection methods", () => {
+  assert.match(app, /name="card-method" value="hashed"/);
+  assert.match(app, /name="card-method" value="direct"/);
+  assert.match(app, />Direct word selection</);
+  assert.match(appSource, /fields: \{[^}]*cards: "", directCards: ""/);
+  assert.match(appSource, /direct \? "" : `<div class="card-suit-pad"/);
+  assert.match(appSource, /hodlDirectCardRanks = \["A", "2", "3", "4", "5", "6", "7", "8"\]/);
+  assert.match(appSource, /dealt-card dealt-card-rank-only/);
+  assert.match(appSource, /Each four-character group selects one word; spaces separate the groups/);
+  assert.match(appSource, /placeholder = direct \? "A284 37A2/);
+  assert.match(appSource, /input\.onbeforeinput = direct \? \(event\) => hodlHandleGroupedSeparatorDelete/);
+  assert.match(appSource, /<aside class="cards-reshuffle" id="cards-reshuffle" hidden><\/aside>\s*<div class="dealt-cards" id="dealt-cards"/);
+  assert.match(appSource, /Shuffle \$\{hodlDirectCardSetLabel\(parsed\.expectedMax\)\} \(any suit\) before the \$\{parsed\.entries\.length \? "next" : "first"\} draw\./);
+  assert.doesNotMatch(appSource, /Shuffle before the next draw\./);
+});
+
+test("hashed card buttons begin unselected and order suits Spades, Hearts, Clubs, Diamonds", () => {
+  assert.match(appSource, /hodlCardSuits = \[\{ code: "S"[^\]]*\{ code: "H"[^\]]*\{ code: "C"[^\]]*\{ code: "D"/);
+  assert.match(appSource, /hodlCardSuit = "", hodlCardRank = ""/);
+  assert.match(appSource, /aria-pressed="false">\$\{suit\.symbol\}/);
+  assert.match(appSource, /function hodlCardSelectionState\(cards, needed, selectedSuit = "", selectedRank = ""\)/);
+  assert.match(appSource, /function hodlToggleCardChoice\(current, selected\)/);
+  assert.match(appSource, /hodlCardSuit = hodlToggleCardChoice\(hodlCardSuit, button\.getAttribute\("data-card-suit"\)\)/);
+  assert.match(appSource, /hodlCardRank = hodlToggleCardChoice\(hodlCardRank, button\.getAttribute\("data-card-rank"\)\)/);
 });
 
 test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
@@ -192,7 +238,7 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /function hodlPrivateKeyKeyboardMarkup\(\)/);
   assert.match(app, /function hodlBindPassphraseKeyboard\(inputId="pass",toggleId="passphrase-keyboard-toggle",inputName="passphrase"\)/);
   assert.match(app, /function hodlRenderPassphraseKeyboard\(\)/);
-  assert.match(app, /passphrase=Ne==="dice"\|\|Ne==="hex",enabled=passphrase\|\|privateKey/);
+  assert.match(app, /passphrase=Ne==="dice"\|\|Ne==="hex"\|\|Ne==="seed"&&hodlSeedMethod==="numbers",enabled=passphrase\|\|privateKey/);
   assert.match(app, /hodlPassphraseKeyboardToggleMarkup\(\)/);
   assert.match(app, /hodlPrivateKeyKeyboardToggleMarkup\(\)/);
   assert.match(app, /id="private-key-input-help"[\s\S]*hodlPrivateKeyKeyboardToggleMarkup\(\)[\s\S]*<textarea id="key"/);
@@ -201,7 +247,7 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(template, /class="passphrase-input-row"[\s\S]*id="passphrase-keyboard-toggle-host" hidden[\s\S]*<input id="pass"/);
   assert.match(template, /id="master-fingerprint-preview"[\s\S]*id="passphrase-keyboard-host" hidden[\s\S]*id="key-settings"/);
   assert.match(app, /keyboard\.querySelectorAll\("\[data-seed-character-key\]"\)\.forEach\(button=>\{button\.disabled=!1\}\)/);
-  assert.match(app, /function hodlBindSeedKeyboardDelete\(getInput,button\)/);
+  assert.match(app, /function hodlBindSeedKeyboardDelete\(getInput,button,applyDelete=hodlApplySeedKeyboardKey\)/);
   assert.match(appWhitespace, /setTimeout\(\(\)=>\{holdTimer=null;repeated=true;remove\(\);if\(!button\.disabled\)repeatTimer=setInterval\(remove,69\)\},420\)/);
   assert.match(app, /\["pointerup","pointercancel","pointerleave","lostpointercapture"\]/);
   assert.match(appWhitespace, /if\(repeated\)\{event\.preventDefault\(\);repeated=false;return\}/);
