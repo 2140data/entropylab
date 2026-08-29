@@ -368,10 +368,16 @@ test("button gating: only HD wallets with descriptors", () => {
   assert.equal(hasDescriptors(WATCH_ONLY_WALLET), true);
 });
 
-test("filename announces watch-only vs secrets", () => {
+test("filename announces the wallet fingerprint and watch-only vs secrets", () => {
   const { walletDatFilename } = loadModule();
-  assert.equal(walletDatFilename(false), "watch-only-wallet.dat");
-  assert.equal(walletDatFilename(true), "private-wallet-secrets.dat");
+  const wallet = { masterFingerprint: "73C5DA0A" };
+  // Unique, identifiable files: the master XFP names the wallet (issue #77).
+  assert.equal(walletDatFilename(wallet, false), "entropylab-73c5da0a-watch-only-wallet.dat");
+  assert.equal(walletDatFilename(wallet, true), "entropylab-73c5da0a-private-wallet-secrets.dat");
+  assert.equal(walletDatFilename(wallet), "entropylab-73c5da0a-watch-only-wallet.dat");
+  // Without a usable fingerprint the names fall back to the plain forms.
+  assert.equal(walletDatFilename(null, false), "watch-only-wallet.dat");
+  assert.equal(walletDatFilename({ masterFingerprint: "not-an-xfp" }, true), "private-wallet-secrets.dat");
   assert.equal(walletDatFilename(), "watch-only-wallet.dat");
 });
 
@@ -398,7 +404,7 @@ test("template, build script, and app wiring ship the export", () => {
   assert.match(app, /id="download-wallet-dat"[^>]*>\$\{hodlWalletExport\.walletDatButtonLabel\(includePrivate\)\}/);
   assert.match(app, /hodlWalletExport\.hasDescriptors\(re\)/);
   assert.match(app, /hodlWalletExport\.buildWalletDat\(\s*re\s*,\s*Ge\s*,\s*hodlWalletDatDeps\(\s*\)\s*\)/);
-  assert.match(app, /hodlWalletExport\.walletDatFilename\(Ge\)/);
+  assert.match(app, /hodlWalletExport\.walletDatFilename\(re, Ge\)/);
   assert.match(app, /document\.getElementById\("download-wallet-dat"\)/);
   assert.match(css, /\.save-wallet-dat/);
 });

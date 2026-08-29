@@ -1447,7 +1447,7 @@ function hodlDownloadWalletDat() {
   if (!re || !hodlWalletExport.hasDescriptors(re)) return;
   let bytes = hodlWalletExport.buildWalletDat(re, Ge, hodlWalletDatDeps()), blob = new Blob([bytes], { type: "application/octet-stream" }), url = URL.createObjectURL(blob), link = document.createElement("a");
   link.href = url;
-  link.download = hodlWalletExport.walletDatFilename(Ge);
+  link.download = hodlWalletExport.walletDatFilename(re, Ge);
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1e3);
 }

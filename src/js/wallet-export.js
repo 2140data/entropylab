@@ -239,8 +239,17 @@ var hodlWalletExport = (() => {
     });
   };
 
-  const walletDatFilename = (includePrivate = false) =>
-    includePrivate ? "private-wallet-secrets.dat" : "watch-only-wallet.dat";
+  // Name the file after the wallet's master fingerprint (XFP) so exports are
+  // unique and identifiable when a user keeps wallets for several seeds; the
+  // reveal state suffix still says which variant the file contains. Falls
+  // back to the plain name when the wallet has no fingerprint.
+  const walletDatFilename = (wallet, includePrivate = false) => {
+    const base = includePrivate ? "private-wallet-secrets" : "watch-only-wallet";
+    const fingerprint = typeof wallet?.masterFingerprint === "string" && /^[0-9a-fA-F]{8}$/.test(wallet.masterFingerprint)
+      ? wallet.masterFingerprint.toLowerCase()
+      : null;
+    return fingerprint ? `entropylab-${fingerprint}-${base}.dat` : `${base}.dat`;
+  };
 
   const walletDatButtonLabel = (includePrivate = false) =>
     includePrivate ? "Download wallet.dat with secrets (xprvs)" : "Download watch-only wallet.dat";
