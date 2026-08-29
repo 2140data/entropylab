@@ -25,7 +25,29 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const read = (path) => readFileSync(join(root, path), "utf8");
-const firefoxBin = process.env.FIREFOX_BINARY ?? "firefox";
+
+const resolveFirefox = () => {
+  if (process.env.FIREFOX_BINARY) return process.env.FIREFOX_BINARY;
+  const tryRun = (bin) => {
+    try {
+      const result = spawnSync(bin, ["--version"], { stdio: "pipe" });
+      if (result.status === 0) return bin;
+    } catch {}
+    return null;
+  };
+  const found = tryRun("firefox");
+  if (found) return found;
+  const macPaths = [
+    "/Applications/Firefox Developer Edition.app/Contents/MacOS/firefox",
+    "/Applications/Firefox.app/Contents/MacOS/firefox",
+  ];
+  for (const p of macPaths) {
+    if (existsSync(p)) return p;
+  }
+  return "firefox";
+};
+
+const firefoxBin = resolveFirefox();
 
 const appVersion = JSON.parse(read("package.json")).version;
 const appFile = "entropylab.html";
