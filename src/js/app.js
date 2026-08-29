@@ -1727,7 +1727,7 @@ function hodlRenderKeyForm(){
         <span><strong>BitBox diceware / Direct word selection</strong><span class="desc">Use five dice showing 1\u20134, then a coin (or 6th die: 1\u20133 heads, 4\u20136 tails). Build ${config.partialWords} lookup-table words, then choose 1 of ${config.candidates} valid final checksum words.</span></span>
       </label>
       <label class="choice"><input type="radio" name="dm" value="dplus" ${ge==="dplus"?"checked":""} />
-        <span><strong>D++ / Direct word selection</strong><span class="desc">Roll one 8-sided die and two 16-sided dice for each of the first ${config.partialWords} words, then ${config.words===24?"roll the D8 once more to select the checksum-valid final word":`choose 1 of ${config.candidates} checksum-valid final words from the dropdown`}.</span></span>
+        <span><strong>D++ / Direct word selection</strong><span class="desc">Roll one 8-sided die and two 16-sided dice for each of the first ${config.partialWords} words, then ${config.words===24?"roll the D8 once more":config.words===12?"roll a final D8 and D16":"roll a final D16 and D8"} to select the valid checksum final word.</span></span>
       </label>
       </div>
       ${dplusConvention}
