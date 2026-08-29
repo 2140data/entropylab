@@ -421,13 +421,16 @@ test("Legacy multisig defaults to BIP45 and offers BIP87 accounts only for Legac
   assert.match(app, /legacyScriptConflict=standards\.includes\("bip87"\)&&summary\.kinds\.some\(kind=>kind!=="p2sh"\)/);
 });
 
-test("the master fingerprint cards carry a LifeHash image next to the hex", () => {
-  // Both cards get a LifeHash img beside the fingerprint value.
-  assert.match(app, /id="base-master-fingerprint-card"[\s\S]*?id="base-master-fingerprint-lifehash"/);
-  assert.match(app, /id="passphrase-master-fingerprint-card"[\s\S]*?id="passphrase-master-fingerprint-lifehash"/);
+test("the master fingerprint cards reserve a compact empty square for each LifeHash", () => {
+  // Both cards keep a frame beside the value, while the image itself starts hidden.
+  assert.match(app, /id="base-master-fingerprint-card"[\s\S]*?class="master-fingerprint-lifehash-frame"[\s\S]*?id="base-master-fingerprint-lifehash"[^>]*hidden/);
+  assert.match(app, /id="passphrase-master-fingerprint-card"[\s\S]*?class="master-fingerprint-lifehash-frame"[\s\S]*?id="passphrase-master-fingerprint-lifehash"[^>]*hidden/);
   // The card setter renders the deterministic icon for the shown fingerprint.
   assert.match(app, /function hodlSetMasterFingerprintCard\(card,valueNode,value,imageNode\)/);
   assert.match(app, /hodlLifeHash\.fromFingerprint\(value\)/);
+  assert.match(appSource, /imageNode\.hidden = true;\s*imageNode\.removeAttribute\("src"\);/);
+  assert.match(appSource, /imageNode\.src = url;\s*imageNode\.hidden = false;/);
+  assert.match(css, /\.master-fingerprint-lifehash-frame \{[^}]*width: 40px; height: 40px;/);
   // Crisp pixels per the LifeHash presentation guidance.
   assert.match(css, /\.master-fingerprint-lifehash \{[^}]*image-rendering: pixelated;/);
 });
