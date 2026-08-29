@@ -420,9 +420,12 @@ ec.innerHTML = `
         <p class="muted" id="seed-length-help">24 words use 256 bits of BIP39 entropy.</p>
       </section>
       <div id="form" class="key-form"></div>
-      <label class="field" id="passphrase-field">Optional BIP39 passphrase
-        <span class="passphrase-input-row"><span class="passphrase-keyboard-toggle-host" id="passphrase-keyboard-toggle-host" hidden></span><input id="pass" autocomplete="off" placeholder="Leave blank unless you set one" /></span>
-      </label>
+      <div class="passphrase-field" id="passphrase-field">
+        <label for="pass">Optional BIP39 passphrase</label>
+        <div class="passphrase-keyboard-tools" id="passphrase-keyboard-toggle-host" hidden></div>
+        <div class="dice-input-shell passphrase-input-shell"><pre class="dice-input-highlight" id="passphrase-highlight" aria-hidden="true"></pre><input id="pass" autocomplete="off" spellcheck="false" placeholder="Enter a BIP39 passphrase, or leave blank for none" aria-describedby="passphrase-bip39-status" /></div>
+        <p class="muted passphrase-bip39-status" id="passphrase-bip39-status" aria-live="polite" hidden></p>
+      </div>
       <div class="master-fingerprint-preview" id="master-fingerprint-preview" role="status" aria-live="polite" aria-atomic="true">
         <p class="label master-fingerprint-heading">Master fingerprint</p>
         <div class="master-fingerprint-card is-disabled" id="base-master-fingerprint-card" role="group" data-state="unavailable" aria-label="Base seed master fingerprint unavailable">
@@ -555,7 +558,7 @@ ec.innerHTML = `
         </label>
         <div>
           <label class="field">Optional BIP39 passphrase
-            <input id="psbt-pass" autocomplete="off" placeholder="Leave blank unless you set one">
+            <input id="psbt-pass" autocomplete="off" placeholder="Enter a BIP39 passphrase, or leave blank for none">
           </label>
           <label class="field">Address network
             <select id="psbt-network"><option value="mainnet" selected>Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
@@ -2932,6 +2935,63 @@ function hodlRenderSeedInputState(input, targetWords = Pt) {
   hodlRenderInputHighlight(input, analysis.invalidRanges);
   return analysis;
 }
+function hodlPassphraseBip39Enabled() {
+  let toggle = document.getElementById("passphrase-bip39-words");
+  if (toggle) return toggle.checked;
+  return Boolean(hodlKeys[hodlActiveKey]?.passphraseBip39Words);
+}
+function hodlAnalyzeBip39Passphrase(value, activeCaret = null) {
+  value = String(value ?? "");
+  let tokens = [...value.matchAll(/\S+/g)].map((match) => ({
+    word: match[0],
+    start: match.index,
+    end: match.index + match[0].length
+  })), invalidRanges = [], incomplete = false, completeWords = 0;
+  tokens.forEach((token, index) => {
+    let listed = hodlBip39WordSet.has(token.word), active = activeCaret !== null && token.start < activeCaret && activeCaret <= token.end,
+      prefix = active && /^[a-z]+$/.test(token.word) && Ae.some((word) => word.startsWith(token.word));
+    if (listed) completeWords += 1;
+    else if (prefix) incomplete = true;
+    else invalidRanges.push([token.start, token.end]);
+    let gapStart = index ? tokens[index - 1].end : 0, gap = value.slice(gapStart, token.start);
+    if (gap && (index === 0 || gap !== " ")) invalidRanges.push([gapStart, token.start]);
+  });
+  let suffixStart = tokens.at(-1)?.end ?? 0, suffix = value.slice(suffixStart), trailingSeparator = suffix === " ";
+  if (suffix && !(tokens.length && suffix === " " && completeWords === tokens.length)) invalidRanges.push([suffixStart, value.length]);
+  return { tokens, invalidRanges, incomplete, completeWords, trailingSeparator };
+}
+function hodlRenderPassphraseInputState(input, enabled = hodlPassphraseBip39Enabled()) {
+  if (!input) return null;
+  let caret = enabled && document.activeElement === input ? input.selectionStart ?? input.value.length : null,
+    analysis = enabled ? hodlAnalyzeBip39Passphrase(input.value, caret) : { tokens: [], invalidRanges: [], incomplete: false, completeWords: 0 },
+    invalid = enabled && analysis.invalidRanges.length > 0, status = document.getElementById("passphrase-bip39-status");
+  input.classList.toggle("bad", invalid);
+  input.setAttribute("aria-invalid", String(invalid));
+  input.setAttribute("autocapitalize", enabled ? "off" : "sentences");
+  hodlRenderInputHighlight(input, analysis.invalidRanges);
+  if (status) {
+    status.hidden = !enabled;
+    if (enabled) {
+      if (invalid) {
+        status.textContent = `${analysis.invalidRanges.length} passphrase ${analysis.invalidRanges.length === 1 ? "inconsistency" : "inconsistencies"} highlighted \xB7 use complete lowercase English BIP39 words separated by single spaces`;
+        status.className = "muted passphrase-bip39-status err";
+      } else if (analysis.incomplete) {
+        status.textContent = `${analysis.completeWords} complete BIP39 word${analysis.completeWords === 1 ? "" : "s"} \xB7 finish the current word`;
+        status.className = "muted passphrase-bip39-status";
+      } else if (analysis.trailingSeparator) {
+        status.textContent = `${analysis.completeWords} complete BIP39 word${analysis.completeWords === 1 ? "" : "s"} \xB7 start the next word or remove the final space`;
+        status.className = "muted passphrase-bip39-status";
+      } else if (input.value) {
+        status.textContent = `${analysis.completeWords} lowercase BIP39 passphrase word${analysis.completeWords === 1 ? "" : "s"} entered`;
+        status.className = "muted passphrase-bip39-status ok";
+      } else {
+        status.textContent = "Use complete lowercase English BIP39 words separated by single spaces.";
+        status.className = "muted passphrase-bip39-status";
+      }
+    }
+  }
+  return analysis;
+}
 function hodlRenderSeedNumberInputState(input, targetWords = Pt, zeroIndexed = hodlSeedZeroIndexed) {
   let parsed = hodlParseSeedNumbers(input?.value ?? "", targetWords, zeroIndexed), invalid = parsed.invalidRanges.length > 0;
   input.classList.toggle("bad", invalid);
@@ -2970,6 +3030,9 @@ function hodlSeedKeyboardToggleMarkup() {
 }
 function hodlPassphraseKeyboardToggleMarkup() {
   return hodlKeyboardToggleMarkup("passphrase-keyboard-toggle", "on-screen passphrase keyboard");
+}
+function hodlPassphraseBip39ToggleMarkup(checked = hodlPassphraseBip39Enabled()) {
+  return `<label class="seed-autocomplete-toggle passphrase-bip39-toggle"><input type="checkbox" id="passphrase-bip39-words" ${checked ? "checked" : ""} /><span><strong>Build passphrase from BIP39 words</strong> <span class="seed-autocomplete-note">(lowercase words separated by single spaces)</span></span></label>`;
 }
 function hodlPrivateKeyKeyboardToggleMarkup() {
   return `<div class="passphrase-keyboard-tools">${hodlKeyboardToggleMarkup("private-keyboard-toggle", "on-screen private key keyboard")}</div>`;
@@ -3075,16 +3138,36 @@ function hodlUpdateSeedKeyboardKeys(input, targetWords = Pt) {
   let remove = keyboard.querySelector("[data-seed-delete]"), start = input.selectionStart ?? input.value.length, end = input.selectionEnd ?? start;
   if (remove) remove.disabled = start === end && start === 0;
 }
+function hodlPassphraseBip39CanEnterCharacter(input, key) {
+  let character = String(key ?? "");
+  if (!/^[a-z]$/.test(character)) return false;
+  let start = input.selectionStart ?? input.value.length, end = input.selectionEnd ?? start,
+    value = input.value.slice(0, start) + character + input.value.slice(end), caret = start + 1,
+    analysis = hodlAnalyzeBip39Passphrase(value, caret);
+  return analysis.invalidRanges.length === 0;
+}
+function hodlPassphraseBip39CanEnterSpace(input) {
+  let start = input.selectionStart ?? input.value.length, end = input.selectionEnd ?? start,
+    value = input.value.slice(0, start) + " " + input.value.slice(end), analysis = hodlAnalyzeBip39Passphrase(value);
+  return analysis.invalidRanges.length === 0 && analysis.tokens.length > 0 && analysis.completeWords === analysis.tokens.length;
+}
 function hodlUpdatePassphraseKeyboardKeys(input) {
   let keyboard = document.getElementById("seed-keyboard");
   if (!keyboard || !input) return;
+  let constrained = hodlPassphraseBip39Enabled(), modeButton = keyboard.querySelector("[data-seed-keyboard-mode]");
+  if (constrained && modeButton && keyboard.dataset.seedKeyboardLayout !== "lower") hodlSetSeedKeyboardLayout(keyboard, modeButton, "lower");
+  if (modeButton) {
+    modeButton.disabled = constrained;
+    modeButton.setAttribute("aria-label", constrained ? "Character mode switching is unavailable while building a passphrase from BIP39 words" : "Change passphrase character mode");
+  }
   keyboard.querySelectorAll("[data-seed-character-key]").forEach((button) => {
-    button.disabled = false;
+    button.disabled = constrained ? !hodlPassphraseBip39CanEnterCharacter(input, button.dataset.seedKey) : false;
   });
   let space = keyboard.querySelector(".seed-keyboard-space");
-  if (space) space.disabled = false;
+  if (space) space.disabled = constrained ? !hodlPassphraseBip39CanEnterSpace(input) : false;
   let remove = keyboard.querySelector("[data-seed-delete]"), start = input.selectionStart ?? input.value.length, end = input.selectionEnd ?? start;
   if (remove) remove.disabled = start === end && start === 0;
+  hodlRenderPassphraseInputState(input, constrained);
 }
 function hodlUpdateBase64KeyboardKeys(input) {
   let keyboard = document.getElementById("base64-keyboard");
@@ -3416,7 +3499,7 @@ function hodlBindSeedKeyboard(input, targetWords = Pt) {
   activate(input);
 }
 function hodlBindPassphraseKeyboard(inputId = "pass", toggleId = "passphrase-keyboard-toggle", inputName = "passphrase") {
-  let toggle = document.getElementById(toggleId), keyboard = document.getElementById("seed-keyboard"), input = document.getElementById(inputId), modeButton = keyboard?.querySelector("[data-seed-keyboard-mode]");
+  let toggle = document.getElementById(toggleId), keyboard = document.getElementById("seed-keyboard"), input = document.getElementById(inputId), modeButton = keyboard?.querySelector("[data-seed-keyboard-mode]"), bip39Toggle = document.getElementById("passphrase-bip39-words");
   if (!toggle || !keyboard || !input) return;
   let privateKey = inputId === "key", refresh = () => privateKey ? hodlUpdatePrivateKeyKeyboardKeys(input) : hodlUpdatePassphraseKeyboardKeys(input);
   toggle.onclick = () => {
@@ -3441,8 +3524,14 @@ function hodlBindPassphraseKeyboard(inputId = "pass", toggleId = "passphrase-key
       refresh();
     };
   }
-  ;
-  ["input", "focus", "click", "keyup", "select"].forEach((type) => input.addEventListener(type, refresh));
+  if (!privateKey && bip39Toggle) bip39Toggle.onchange = () => {
+    let state = hodlKeys[hodlActiveKey];
+    if (state) state.passphraseBip39Words = bip39Toggle.checked;
+    if (bip39Toggle.checked && modeButton) hodlSetSeedKeyboardLayout(keyboard, modeButton, "lower");
+    refresh();
+    hodlSyncKeyClearButton();
+  };
+  ["input", "focus", "blur", "click", "keyup", "select"].forEach((type) => input.addEventListener(type, refresh));
   if (privateKey) {
     document.querySelectorAll('input[name="kk"]').forEach((radio) => radio.addEventListener("change", refresh));
     document.getElementById("network")?.addEventListener("change", refresh);
@@ -3483,12 +3572,13 @@ function hodlRenderPassphraseKeyboard() {
   let host = document.getElementById("passphrase-keyboard-host"), toggleHost = document.getElementById("passphrase-keyboard-toggle-host"), privateKey = Ne === "key", passphrase = Ne === "dice" || Ne === "hex" || Ne === "seed" && hodlSeedMethod === "numbers", enabled = passphrase || privateKey;
   if (toggleHost) {
     toggleHost.hidden = !passphrase;
-    toggleHost.innerHTML = passphrase ? hodlPassphraseKeyboardToggleMarkup() : "";
+    toggleHost.innerHTML = passphrase ? hodlPassphraseKeyboardToggleMarkup() + hodlPassphraseBip39ToggleMarkup() : "";
   }
   if (!host) return;
   host.hidden = !enabled;
   host.innerHTML = enabled ? privateKey ? hodlPrivateKeyKeyboardMarkup() : hodlPassphraseKeyboardMarkup() : "";
   if (enabled) hodlBindPassphraseKeyboard(privateKey ? "key" : "pass", privateKey ? "private-keyboard-toggle" : "passphrase-keyboard-toggle", privateKey ? "private key" : "passphrase");
+  else hodlRenderPassphraseInputState(document.getElementById("pass"));
 }
 function hodlReplaceSeedFinalWord(input, context, word) {
   if (!input || !context) return;
@@ -4545,7 +4635,14 @@ function hodlPrivateKeyInputIsValid() {
 }
 function hodlCanDeriveCurrentKey() {
   try {
-    if (Ne !== "key") hodlReadAccount();
+    if (Ne !== "key") {
+      hodlReadAccount();
+      let passphrase = document.getElementById("pass");
+      if (hodlPassphraseBip39Enabled() && passphrase?.value) {
+        let passphraseAnalysis = hodlAnalyzeBip39Passphrase(passphrase.value);
+        if (passphraseAnalysis.invalidRanges.length || passphraseAnalysis.incomplete || passphraseAnalysis.trailingSeparator) return false;
+      }
+    }
     if (Ne === "dice") {
       let input = document.getElementById("dice");
       if (!input) return false;
@@ -4723,10 +4820,12 @@ function hodlInitMasterFingerprintPreview() {
     if (id === "pass") {
       let state = hodlKeys[hodlActiveKey];
       if (state) state.fields.pass = pass.value;
+      hodlRenderPassphraseInputState(pass);
     }
     hodlInvalidateLiveKeyResult();
     hodlQueueMasterFingerprintPreview();
   });
+  ["focus", "blur"].forEach((type) => pass.addEventListener(type, () => hodlRenderPassphraseInputState(pass)));
   panel.addEventListener("change", (event) => {
     let target = event.target;
     if (!(target instanceof Element) || !target.matches('input[name="dm"], input[name="card-method"], input[name="seed-method"], #seed-zero-index, input[name="entropy-format"], select[aria-label^="Valid final word"]')) return;
@@ -4745,6 +4844,10 @@ function hodlCalculateKey() {
   W("#error").textContent = "";
   try {
     let network = hodlSelectedNetwork(document.getElementById("network")), count = Number(document.getElementById("count").value), passphrase = document.getElementById("pass").value, scriptType = hodlSelectedScriptType(), account = Ne === "key" ? 0 : hodlReadAccount();
+    if (Ne !== "key" && hodlPassphraseBip39Enabled() && passphrase) {
+      let passphraseAnalysis = hodlAnalyzeBip39Passphrase(passphrase);
+      if (passphraseAnalysis.invalidRanges.length || passphraseAnalysis.incomplete || passphraseAnalysis.trailingSeparator) throw new Error("Correct the highlighted BIP39-word passphrase inconsistencies before deriving.");
+    }
     if (Ne === "dice") {
       if (ge === "dplus") {
         let parsed = hodlDPlusRolls(document.getElementById("dice").value, Pt);
@@ -6549,7 +6652,7 @@ function hodlPrivateKeyValues(fields) {
 }
 function hodlNewKeyState(name, keyId, keyNumber) {
   let id = keyId ?? hodlNextKeyId++, number = keyNumber ?? hodlNextKeyNumber++;
-  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: false, dplusNumberedD16: false, showCards: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", network: "mainnet", account: "0", count: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
+  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: false, passphraseBip39Words: false, dplusNumberedD16: false, showCards: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", network: "mainnet", account: "0", count: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
 }
 function hodlRestoreFormFields(state) {
   if (!state) return;
@@ -6601,7 +6704,7 @@ function hodlSetMode(mode) {
 function hodlKeyStateNeedsClear(state) {
   if (!state) return false;
   let fields = state.fields || {}, privateKeys = hodlPrivateKeyValues(fields), hasText = (id) => String(fields[id] ?? "").length > 0;
-  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || Boolean(state.seedAutocomplete) || Boolean(state.dplusNumberedD16) || Boolean(state.showCards) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.network ?? "mainnet") !== "mainnet" || String(fields.account ?? "0") !== "0" || String(fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
+  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || Boolean(state.seedAutocomplete) || Boolean(state.passphraseBip39Words) || Boolean(state.dplusNumberedD16) || Boolean(state.showCards) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.network ?? "mainnet") !== "mainnet" || String(fields.account ?? "0") !== "0" || String(fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
 }
 function hodlSyncKeyClearButton(capture = false) {
   if (capture) hodlCaptureKey();
@@ -6629,6 +6732,8 @@ function hodlCaptureKey() {
   if (syncNumberBases) state.syncNumberBases = syncNumberBases.checked;
   let seedAutocomplete = document.getElementById("seed-autocomplete");
   if (seedAutocomplete) state.seedAutocomplete = seedAutocomplete.checked;
+  let passphraseBip39Words = document.getElementById("passphrase-bip39-words");
+  if (passphraseBip39Words) state.passphraseBip39Words = passphraseBip39Words.checked;
   state.dplusNumberedD16 = Boolean(hodlDPlusNumberedD16);
   let showCards = document.getElementById("show-cards");
   if (showCards) state.showCards = showCards.checked;
@@ -6688,7 +6793,10 @@ function hodlRestoreKey() {
     });
     hodlRenderKeyForm();
     let pass2 = document.getElementById("pass");
-    if (pass2) pass2.value = "";
+    if (pass2) {
+      pass2.value = "";
+      hodlRenderPassphraseInputState(pass2, false);
+    }
     hodlSyncSelect(document.getElementById("script-type"), "bip84");
     hodlSyncSelect(document.getElementById("network"), "mainnet");
     let account2 = document.getElementById("account");
@@ -6720,7 +6828,10 @@ function hodlRestoreKey() {
   });
   hodlRenderKeyForm();
   let pass = document.getElementById("pass");
-  if (pass) pass.value = state.fields.pass || "";
+  if (pass) {
+    pass.value = state.fields.pass || "";
+    hodlRenderPassphraseInputState(pass, Boolean(state.passphraseBip39Words));
+  }
   hodlAccountId = state.accountId || state.fields.script || "bip84";
   hodlSyncSelect(document.getElementById("script-type"), hodlAccountId);
   state.fields.network = state.fields.network === "testnet" ? "testnet" : "mainnet";

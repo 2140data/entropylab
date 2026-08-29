@@ -93,9 +93,12 @@ words, pick one of the checksum words.</span></span>
       <div id="dice-words" class="dice-word-grid" aria-label="24 seed-word slots"></div>
       <div id="last-words" class="row" style="margin-top:8px"></div>
     </div>
-      <label class="field" id="passphrase-field">Optional BIP39 passphrase
-        <span class="passphrase-input-row"><span class="passphrase-keyboard-toggle-host" id="passphrase-keyboard-toggle-host" hidden></span><input id="pass" autocomplete="off" placeholder="Leave blank unless you set one"></span>
-      </label>
+      <div class="passphrase-field" id="passphrase-field">
+        <label for="pass">Optional BIP39 passphrase</label>
+        <div class="passphrase-keyboard-tools" id="passphrase-keyboard-toggle-host" hidden></div>
+        <div class="dice-input-shell passphrase-input-shell"><pre class="dice-input-highlight" id="passphrase-highlight" aria-hidden="true"></pre><input id="pass" autocomplete="off" spellcheck="false" placeholder="Enter a BIP39 passphrase, or leave blank for none" aria-describedby="passphrase-bip39-status"></div>
+        <p class="muted passphrase-bip39-status" id="passphrase-bip39-status" aria-live="polite" hidden></p>
+      </div>
       <div class="master-fingerprint-preview" id="master-fingerprint-preview" role="status" aria-live="polite" aria-atomic="true">
         <p class="label master-fingerprint-heading">Master fingerprint</p>
         <div class="master-fingerprint-card is-disabled" id="base-master-fingerprint-card" role="group" data-state="unavailable" aria-label="Base seed master fingerprint unavailable">
@@ -226,7 +229,7 @@ words, pick one of the checksum words.</span></span>
         </label>
         <div>
           <label class="field">Optional BIP39 passphrase
-            <input id="psbt-pass" autocomplete="off" placeholder="Leave blank unless you set one">
+            <input id="psbt-pass" autocomplete="off" placeholder="Enter a BIP39 passphrase, or leave blank for none">
           </label>
           <label class="field">Address network
             <select id="psbt-network"><option value="mainnet" selected="selected">Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
