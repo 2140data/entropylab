@@ -18,6 +18,7 @@ import {
   spendPrivForOutput,
   bytesToHex as hodlSpBytesToHex,
 } from "./bip352.js";
+import { inspectPsbtInscriptions, describeEnvelope } from "./inscription.js";
 import { createBase58check as fi, hex as M } from "@scure/base";
 import { HDKey as Gt } from "@scure/bip32";
 import { entropyToMnemonic as bi, mnemonicToEntropy as Er, mnemonicToSeedSync as wi, validateMnemonic as Pn } from "@scure/bip39";
@@ -734,7 +735,7 @@ ec.innerHTML = `
     <section class="card no-print" id="psbt-card" role="tabpanel" hidden>
       <div class="kicker">Inspect first. Sign elsewhere.</div>
       <h2>Read a PSBT. Check its ECDSA nonces.</h2>
-      <p class="muted psbt-intro">Inspecting a PSBT v0 does not require a private key. EntropyLab can show outputs, PSBT-provided input amounts and fees, signatures, and repeated ECDSA nonce values. Optional Jade anti-exfil transcripts (host nonce \u03C1 and signer opening R) are checked without a key. Loading a matching key additionally checks whether supported signatures match plain RFC 6979 or Bitcoin Core-style low-r grinding; a mismatch alone is not evidence of a compromised signer.</p>
+      <p class="muted psbt-intro">Inspecting a PSBT v0 does not require a private key. EntropyLab can show outputs, PSBT-provided input amounts and fees, signatures, and repeated ECDSA nonce values. Optional Jade anti-exfil transcripts (host nonce \u03C1 and signer opening R) are checked without a key. Finalized taproot witnesses and tap-leaf scripts are scanned for inscription envelopes (OP_FALSE OP_IF "ord"); this does not number sats or fetch content from the chain. Loading a matching key additionally checks whether supported signatures match plain RFC 6979 or Bitcoin Core-style low-r grinding; a mismatch alone is not evidence of a compromised signer.</p>
       <label class="field">PSBT v0 (base64 or hex)
         <textarea id="psbt-text" placeholder="cHNidP8B..." spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
       </label>
@@ -773,8 +774,9 @@ ec.innerHTML = `
       <p>BitBox02 diceware: <a href="https://blog.bitbox.swiss/en/roll-the-dice-generate-your-own-seed/" target="_blank" rel="noopener noreferrer">roll-the-dice-generate-your-own-seed</a> \u2014 lookup table is the BIP39 English list in order.</p>
       <p>D++ D8 &amp; D16 method: <a href="https://thesimplestbitcoinbook.net/wp-content/uploads/2023/09/Roll-Your-Own-Seed-Phrase-PDF.pdf" target="_blank" rel="noopener noreferrer">Roll Your Own Bitcoin Seed Phrase</a> \u2014 the published 24-word workflow uses one D8 labeled 1\u20138 and two hexadecimal D16 dice labeled 0\u2013F per word, then a final D8.</p>
       <p>Jade anti-exfil (sign-to-contract): <a href="https://blog.blockstream.com/anti-exfil-stopping-key-exfiltration/" target="_blank" rel="noopener noreferrer">Anti-Exfil: Stopping Key Exfiltration</a> \u2014 secp256k1-zkp <code>ecdsa_s2c</code> / <code>anti_exfil_host_verify</code>.</p>
-      <p>BIP-85 deterministic entropy: <a href="https://github.com/bitcoin/bips/blob/master/bip-0085.mediawiki" target="_blank" rel="noopener noreferrer">bip-0085.mediawiki</a> \u2014 HMAC-SHA512 of a fully hardened child; English BIP-39 / WIF / XPRV / HEX / password applications match COLDCARD.</p>
-      <p>BIP-352 Silent Payments: <a href="https://github.com/bitcoin/bips/blob/master/bip-0352.mediawiki" target="_blank" rel="noopener noreferrer">bips/bip-0352</a> \u2014 reusable <code>sp1q\u2026</code> addresses and unique taproot outputs. Descriptors: <a href="https://github.com/bitcoin/bips/blob/master/bip-0392.mediawiki" target="_blank" rel="noopener noreferrer">BIP-392</a>.</p>
+      <p>BIP-85 deterministic entropy: <a href="https://github.com/bitcoin/bips/blob/master/bip-0085.mediawiki" target="_blank" rel="noopener noreferrer">bip-0085.mediawiki</a> — HMAC-SHA512 of a fully hardened child; English BIP-39 / WIF / XPRV / HEX / password applications match COLDCARD.</p>
+      <p>BIP-352 Silent Payments: <a href="https://github.com/bitcoin/bips/blob/master/bip-0352.mediawiki" target="_blank" rel="noopener noreferrer">bips/bip-0352</a> — reusable <code>sp1q…</code> addresses and unique taproot outputs. Descriptors: <a href="https://github.com/bitcoin/bips/blob/master/bip-0392.mediawiki" target="_blank" rel="noopener noreferrer">BIP-392</a>.</p>
+      <p>Inscription envelopes: <a href="https://docs.ordinals.com/inscriptions.html" target="_blank" rel="noopener noreferrer">docs.ordinals.com/inscriptions</a> — <code>OP_FALSE OP_IF "ord"</code> parser only. This tool does not create inscriptions or number sats.</p>
     </section>
   </div>
 `;
@@ -8073,6 +8075,12 @@ function hodlRenderPsbt(psbt) {
     tapSignatureCount = 0,
     ecdsaIndex = 0,
     uninspected = 0;
+  let inscriptionReport = { inputs: [], envelopes: [] };
+  try {
+    inscriptionReport = inspectPsbtInscriptions(psbt);
+  } catch {
+    inscriptionReport = { inputs: [], envelopes: [] };
+  }
   try {
     transcript = hodlParseAntiExfil(document.getElementById("psbt-ax-transcript")?.value || "");
   } catch (exception) {
@@ -8109,6 +8117,11 @@ function hodlRenderPsbt(psbt) {
     }
     tapSignatureCount += tapSignatures.length;
     html.push("<p class='psbt-kv'><strong>Input " + index + "</strong> \xB7 " + hodlHexRev(previous.txid) + " : " + previous.vout + (witnessUtxo ? " \xB7 " + hodlSats(witnessUtxo.amount) + " BTC claimed" : "") + "<br>" + $t(destination) + "<br>" + (signatures.length + tapSignatures.length ? signatures.length + tapSignatures.length + " signature(s) present" : finalized ? "Finalized input data present" : "Not signed yet") + (declaredSighashError ? "<br>Declared sighash policy unreadable: " + $t(declaredSighashError) : "<br>Signature policy: " + $t(declaredLabel)) + "</p>");
+    let inputEnvelopes = (inscriptionReport.inputs[index] && inscriptionReport.inputs[index].envelopes) || [];
+    inputEnvelopes.forEach((envelope) => {
+      let className = envelope.unrecognizedEven || envelope.bodyBytes > 100000 ? "psbt-bad" : "psbt-warn";
+      html.push("<p class='" + className + "'><strong>Inscription envelope</strong> \xB7 input " + index + " \xB7 #" + envelope.envelopeIndex + " \xB7 " + $t(envelope.source) + "<br>" + describeEnvelope(envelope).map($t).join("<br>") + "</p>");
+    });
     if (declaredSighashError) html.push("<p class='psbt-bad'><strong>Policy problem:</strong> input " + index + " declares a malformed sighash policy. Do not sign until its policy is known.</p>");
     else if (declaredSighash !== null && declaredSighash !== 1) html.push("<p class='psbt-bad'><strong>Policy problem:</strong> input " + index + " requests " + $t(declaredLabel) + "; that policy does not commit to all shown outputs. Do not accept the displayed outputs as what a signature will authorize.</p>");
     signatures.forEach(signature => {
@@ -8202,6 +8215,9 @@ function hodlRenderPsbt(psbt) {
     else html.push("<p class='psbt-bad'><strong>Inconsistent claimed amounts:</strong> outputs exceed claimed inputs by " + hodlSats(-fee) + " BTC.</p>");
   } else html.push("<p class='muted'>Fee unknown — some inputs do not include a claimed witness UTXO amount.</p>");
   html.push("<p class='muted'>Input amounts and any fee are unverified PSBT claims. This tool does not check them against previous transactions or the blockchain.</p>");
+  if (inscriptionReport.envelopes.length) {
+    html.push("<p class='psbt-warn'><strong>" + inscriptionReport.envelopes.length + " inscription envelope" + (inscriptionReport.envelopes.length === 1 ? "" : "s") + " in this PSBT.</strong> This is what the file reveals in witness or tap-leaf scripts. EntropyLab does not number sats, fetch content from the chain, or render binary payloads.</p>");
+  }
   html.push("<p class='label'>ECDSA nonce check</p>");
   if (transcriptError) html.push("<p class='psbt-warn'><strong>Jade anti-exfil transcript not used:</strong> " + $t(transcriptError) + "</p>");
   let {
@@ -8217,7 +8233,7 @@ function hodlRenderPsbt(psbt) {
   if (rValues.length) html.push("<p class='psbt-kv'>r values:<br>" + rValues.map(value => $t(value.hex) + " (input " + value.input + ")").join("<br>") + "</p>");
   rows.forEach(row => html.push("<p class='" + row.className + "'><strong>Input " + row.input + "</strong> pubkey " + $t(row.pubkey.slice(0, 18)) + "\u2026 \u2014 " + $t(row.message) + "</p>"));
   if (tapSignatureCount) html.push("<p class='muted'>This PSBT also contains " + tapSignatureCount + " Taproot / Schnorr signature(s). They are counted but their BIP340 nonces are not analyzed in this version.</p>");
-  html.push("<p class='muted'>RFC 6979 comparison currently covers SegWit v0 P2WPKH and P2WSH signatures using SIGHASH_ALL, including Bitcoin Core-style low-r grinding. Jade anti-exfil is secp256k1-zkp sign-to-contract and needs the USB host nonce plus signer opening; QR / sign_psbt Jade does not run it yet. BitBox anti-klepto is a different construction. Nonce reuse detection compares r values for the same secp256k1 point, including signatures carried by finalized scriptSig/witness fields, compressed and uncompressed encodings, and recoverable non-strict DER. A clean verdict is not issued when a signature cannot be inspected.</p>");
+  html.push("<p class='muted'>RFC 6979 comparison currently covers SegWit v0 P2WPKH and P2WSH signatures using SIGHASH_ALL, including Bitcoin Core-style low-r grinding. Jade anti-exfil is secp256k1-zkp sign-to-contract and needs the USB host nonce plus signer opening; QR / sign_psbt Jade does not run it yet. BitBox anti-klepto is a different construction. Nonce reuse detection compares r values for the same secp256k1 point, including signatures carried by finalized scriptSig/witness fields, compressed and uncompressed encodings, and recoverable non-strict DER. A clean verdict is not issued when a signature cannot be inspected. Inscription detection reads OP_FALSE OP_IF \"ord\" envelopes in tap-leaf scripts and finalized witnesses; it does not number sats.</p>");
   return html.join("")
 }
 var hodlAccountId = "bip84",
