@@ -78,7 +78,7 @@ test("entropy progress messages sit directly below their inputs and above keypad
 });
 
 test("seed phrase copy controls sit immediately above every numbered word grid", () => {
-  assert.match(appSource, /\$\{dicePad\}\s*<div class="dice-fairness-tools">[\s\S]*?<\/aside>\s*\$\{hodlSeedCopyRowMarkup\(\)\}\s*<div id="dice-words"/);
+  assert.match(appSource, /\$\{dicePad\}\s*\$\{hodlSeedCopyRowMarkup\(hodlDiceFairnessToggleMarkup\([\s\S]*?\)\)\}\s*<aside id="dice-fairness"[\s\S]*?<\/aside>\s*<div id="dice-words"/);
   assert.match(appSource, /<div class="dealt-cards"[^>]*><\/div>\s*\$\{hodlSeedCopyRowMarkup\(\)\}\s*<div id="dice-words"/);
   assert.match(appSource, /\$\{entropyPad\}\s*\$\{hodlSeedCopyRowMarkup\(\)\}\s*<div id="entropy-words"/);
   assert.match(appSource, /<\/div>\$\{hodlSeedCopyRowMarkup\(\)\}<div id="seed-number-words"/);
@@ -778,7 +778,9 @@ test("dice rolls hide Pearson chi-squared fairness behind a text expand button",
   assert.match(app, /aria-controls="dice-fairness"/);
   assert.match(app, /class="dice-fairness-toggle"/);
   assert.match(app, /data-dice-fairness-glyph/);
-  assert.match(app, / Die fairness<\/button>/);
+  assert.match(app, / Die Distribution \/ Fairness Analysis<\/button>/);
+  assert.match(appSource, /<div class="seed-word-copy-row">\$\{leading\}<span class="seed-phrase-copied"/);
+  assert.match(css, /\.seed-word-copy-row \.dice-fairness-toggle \{ margin-right: auto; \}/);
   assert.match(app, /id="dice-fairness" class="dice-fairness" hidden role="status" aria-live="polite"/);
   assert.match(app, /function hodlSetDiceFairnessOpen\(open\)/);
   assert.match(app, /function hodlChiSquaredCdf\(/);

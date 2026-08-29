@@ -145,11 +145,47 @@ test("D++ samples keep D8 and D16 rolls separate", () => {
   assert.deepEqual(d16.rolls, ["0", "F", "A", "B"]);
 });
 
-test("fairness UI stays collapsed until the Die fairness text button expands it", () => {
+const hodlDiceFairnessSamples18 = new Function(
+  "hodlDPlusRolls",
+  "hodlSeedConfig",
+  "hodlAnalyzeDiceInput",
+  "Pt",
+  "hodlDPlusNumberedD16",
+  "hodlDPlusFinalSteps",
+  "hodlDPlusD16Value",
+  `${loadSlice("hodlDiceFairnessSamples")}; return hodlDiceFairnessSamples;`,
+)(
+  () => {
+    const entries = [];
+    entries[hodlSeedConfig(18).partialWords * 3] = { face: "F" };
+    entries[hodlSeedConfig(18).partialWords * 3 + 1] = { face: "6" };
+    return { groups: [], entries };
+  },
+  hodlSeedConfig,
+  () => ({ acceptedRolls: [] }),
+  18,
+  false,
+  () => ["d16", "coin"],
+  (face) => {
+    const normalized = String(face ?? "").toUpperCase();
+    return /^[0-9A-F]$/.test(normalized) ? Number.parseInt(normalized, 16) : null;
+  },
+);
+
+test("D++ 18-word final coin flip joins the fairness samples", () => {
+  const [d8, d16, coin] = hodlDiceFairnessSamples18("", "dplus", 18, false);
+  assert.deepEqual(d8.rolls, []);
+  assert.deepEqual(d16.rolls, ["F"]);
+  assert.equal(coin.title, "Coin");
+  assert.deepEqual(coin.rolls, ["Heads"]);
+  assert.deepEqual(coin.labels, ["Heads", "Tails"]);
+});
+
+test("fairness UI stays collapsed until the Die Distribution / Fairness Analysis text button expands it", () => {
   assert.match(app, /id="dice-fairness-toggle"/);
   assert.match(app, /class="dice-fairness-toggle"/);
   assert.match(app, /data-dice-fairness-glyph/);
-  assert.match(app, / Die fairness<\/button>/);
+  assert.match(app, / Die Distribution \/ Fairness Analysis<\/button>/);
   assert.match(app, /function hodlSetDiceFairnessOpen\(open\)/);
   assert.match(app, /panel\.hidden = !open/);
   assert.match(app, /showDiceFairness: false/);

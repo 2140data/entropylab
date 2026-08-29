@@ -304,11 +304,11 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
      1-8 are single characters and keep their full size. */
   .dice-input-pad.dplus button:nth-child(n + 9) { font-size: 15px; }
 }
-.dice-fairness-tools { display: flex; margin-top: var(--space-component); }
 .dice-fairness-toggle {
   display: inline-flex; align-items: center; gap: 8px; width: fit-content; min-height: 44px; padding: 0;
   border: 0; background: transparent; color: var(--muted); font-weight: 700; cursor: pointer;
 }
+.seed-word-copy-row .dice-fairness-toggle { margin-right: auto; }
 .dice-fairness-toggle:hover { color: var(--fg); }
 .dice-fairness-toggle[aria-expanded="true"] { color: var(--fg); }
 .dice-fairness-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 3px; }

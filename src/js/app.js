@@ -2149,7 +2149,7 @@ function hodlDiceFairnessAssess(rolls, labels, title) {
 }
 function hodlDiceFairnessSamples(value, method, targetWords = Pt, numberedD16 = hodlDPlusNumberedD16) {
   if (method === "dplus") {
-    let parsed = hodlDPlusRolls(value, targetWords, numberedD16), d8 = [], d16 = [];
+    let parsed = hodlDPlusRolls(value, targetWords, numberedD16), d8 = [], d16 = [], coins = [];
     for (let group of parsed.groups) group.faces.forEach((face, position) => {
       if (group.validity[position]) (position === 0 ? d8 : d16).push(face);
     });
@@ -2158,10 +2158,12 @@ function hodlDiceFairnessSamples(value, method, targetWords = Pt, numberedD16 = 
       if (!face) return;
       if (step === "d8" && /^[1-8]$/.test(face)) d8.push(face);
       else if (step === "d16" && hodlDPlusD16Value(face) !== null) d16.push(face);
+      else if (step === "coin" && /^[1-8]$/.test(face)) coins.push(Number(face) >= 5 ? "Heads" : "Tails");
     });
     return [
       { id: "d8", title: "D8", rolls: d8, labels: ["1", "2", "3", "4", "5", "6", "7", "8"] },
-      { id: "d16", title: numberedD16 ? "D16 (1–16)" : "D16 (0–F)", rolls: d16, labels: numberedD16 ? ["1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "0"] : ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"] }
+      { id: "d16", title: numberedD16 ? "D16 (1–16)" : "D16 (0–F)", rolls: d16, labels: numberedD16 ? ["1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "0"] : ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"] },
+      { id: "coin", title: "Coin", rolls: coins, labels: ["Heads", "Tails"] }
     ];
   }
   if (method === "bitbox") {
@@ -2220,14 +2222,14 @@ function hodlDiceFairnessIsOpen() {
 }
 function hodlDiceFairnessToggleMarkup(open) {
   let expanded = Boolean(open);
-  return `<button type="button" class="dice-fairness-toggle" id="dice-fairness-toggle" aria-controls="dice-fairness" aria-expanded="${expanded}" aria-label="${expanded ? "Hide die fairness" : "Show die fairness"}"><span data-dice-fairness-glyph aria-hidden="true">${expanded ? "\u25BE" : "\u25B8"}</span> Die fairness</button>`;
+  return `<button type="button" class="dice-fairness-toggle" id="dice-fairness-toggle" aria-controls="dice-fairness" aria-expanded="${expanded}" aria-label="${expanded ? "Hide die distribution / fairness analysis" : "Show die distribution / fairness analysis"}"><span data-dice-fairness-glyph aria-hidden="true">${expanded ? "\u25BE" : "\u25B8"}</span> Die Distribution / Fairness Analysis</button>`;
 }
 function hodlSetDiceFairnessOpen(open) {
   let expanded = Boolean(open), state = hodlKeys[hodlActiveKey], toggle = document.getElementById("dice-fairness-toggle"), glyph = toggle?.querySelector("[data-dice-fairness-glyph]");
   if (state) state.showDiceFairness = expanded;
   if (toggle) {
     toggle.setAttribute("aria-expanded", String(expanded));
-    toggle.setAttribute("aria-label", expanded ? "Hide die fairness" : "Show die fairness");
+    toggle.setAttribute("aria-label", expanded ? "Hide die distribution / fairness analysis" : "Show die distribution / fairness analysis");
   }
   if (glyph) glyph.textContent = expanded ? "\u25BE" : "\u25B8";
   let input = document.getElementById("dice");
@@ -2241,7 +2243,7 @@ function hodlRenderDiceFairness(value, method, targetWords = Pt) {
   panel.hidden = !open;
   panel.dataset.tone = open ? hodlDiceFairnessTone(reports) : "muted";
   panel.innerHTML = open ? (markup ? `${markup}<p class="dice-fairness-caveat">Pearson’s χ² goodness-of-fit. A lucky streak can look biased, and a biased die can look fair until more rolls arrive. This check does not block derivation.</p>` : `<p class="dice-fairness-note">Enter rolls to run Pearson’s χ² test.</p>`) : "";
-  panel.setAttribute("aria-label", "Die fairness");
+  panel.setAttribute("aria-label", "Die Distribution / Fairness Analysis");
 }
 function hodlDiceControlValue(button) {
   return button.dataset.d || "";
@@ -3898,8 +3900,8 @@ function hodlCopiedIconMarkup() {
 function hodlSeedMetaRowMarkup(metaId, live = false) {
   return `<div class="seed-word-meta"><p class="muted" id="${metaId}"${live ? ' aria-live="polite"' : ""}></p></div>`;
 }
-function hodlSeedCopyRowMarkup() {
-  return `<div class="seed-word-copy-row"><span class="seed-phrase-copied" aria-live="polite"></span><button type="button" class="seed-phrase-copy" data-copy-seed-phrase disabled aria-label="Copy seed phrase" title="Copy seed phrase">${hodlClipboardIconMarkup()}</button></div>`;
+function hodlSeedCopyRowMarkup(leading = "") {
+  return `<div class="seed-word-copy-row">${leading}<span class="seed-phrase-copied" aria-live="polite"></span><button type="button" class="seed-phrase-copy" data-copy-seed-phrase disabled aria-label="Copy seed phrase" title="Copy seed phrase">${hodlClipboardIconMarkup()}</button></div>`;
 }
 function hodlShowSeedPhraseCopied(button) {
   if (!button) return;
@@ -4161,9 +4163,8 @@ function hodlRenderKeyForm() {
       <div class="dice-input-shell"><pre class="dice-input-highlight" id="dice-highlight" aria-hidden="true"></pre><textarea id="dice" placeholder="${dicePlaceholder}" aria-describedby="dice-help dice-meta"></textarea></div>
       ${hodlSeedMetaRowMarkup("dice-meta", true)}
       ${dicePad}
-      <div class="dice-fairness-tools">${hodlDiceFairnessToggleMarkup(hodlKeys[hodlActiveKey]?.showDiceFairness)}</div>
+      ${hodlSeedCopyRowMarkup(hodlDiceFairnessToggleMarkup(hodlKeys[hodlActiveKey]?.showDiceFairness))}
       <aside id="dice-fairness" class="dice-fairness" hidden role="status" aria-live="polite"></aside>
-      ${hodlSeedCopyRowMarkup()}
       <div id="dice-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div><div id="last-words" class="row" style="margin-top:8px"></div>`;
     let input = document.getElementById("dice");
     input.dataset.previousValue = input.value;
