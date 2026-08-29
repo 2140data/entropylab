@@ -173,6 +173,7 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
         <p class="field-note msig-threshold-help" id="msig-threshold-help">Enter values, drag either handle, or use the arrow keys. Editing one value past the other moves both.</p>
       </fieldset>
       <div id="msig-keys" class="msig-keys"><label class="field">Co-signer 1 multisig extended public key<textarea id="msig-x-0" placeholder="[fingerprint/48h/0h/0h/2h]Zpub…" autocomplete="off" spellcheck="false"></textarea></label><label class="field">Co-signer 2 multisig extended public key<textarea id="msig-x-1" placeholder="[fingerprint/48h/0h/0h/2h]Zpub…" autocomplete="off" spellcheck="false"></textarea></label><label class="field">Co-signer 3 multisig extended public key<textarea id="msig-x-2" placeholder="[fingerprint/48h/0h/0h/2h]Zpub…" autocomplete="off" spellcheck="false"></textarea></label></div>
+      <p class="hint" id="msig-key-order-status" hidden></p>
       <p class="hint ok" id="msig-hint">Spending will need 2 of these 3 keys. Receiving needs none of the private keys.</p>
       <div class="key-settings msig-output-settings">
         <label class="choice msig-legacy-account-toggle" id="msig-legacy-account-toggle" hidden>
@@ -181,7 +182,7 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
         </label>
         <div class="key-settings-row">
           <label class="field">Script type
-            <select id="msig-script-type" aria-describedby="msig-script-warning"><option value="p2sh">Legacy · BIP45</option><option value="p2sh-p2wsh">Nested SegWit · BIP48</option><option value="p2wsh" selected="selected">Native SegWit · BIP48</option><option value="mixed" disabled data-custom-select-placeholder="true">Mixed · incompatible keys</option></select>
+            <select id="msig-script-type" aria-describedby="msig-script-warning"><option value="p2sh">Legacy · BIP45</option><option value="p2sh-p2wsh">Nested SegWit · BIP48</option><option value="p2wsh" selected="selected">Native SegWit · BIP48</option><option value="p2tr">Taproot · BIP86</option><option value="mixed" disabled data-custom-select-placeholder="true">Mixed · incompatible keys</option></select>
             <span class="field-note msig-script-warning" id="msig-script-warning" role="status" hidden></span>
           </label>
           <label class="field">Network
@@ -198,6 +199,16 @@ the first five dice of a word are skipped (reroll). After 23 words, pick
             <select id="msig-count"><option value="5" selected="selected">5 + 5</option><option value="10">10 + 10</option><option value="20">20 + 20</option></select>
           </label>
         </div>
+        <details class="msig-advanced" id="msig-advanced">
+          <summary>Advanced</summary>
+          <label class="field">Key order
+            <select id="msig-key-order">
+              <option value="sorted" selected="selected">Sorted · sortedmulti</option>
+              <option value="listed">As listed · multi</option>
+            </select>
+            <span class="field-note" id="msig-key-order-help">Sorted is the default. Addresses stay the same no matter which co-signer you paste first. As listed uses multi: the order of the fields is part of the wallet. Taproot uses sortedmulti_a or multi_a.</span>
+          </label>
+        </details>
       </div>
       <div class="row current-item-actions">
         <button class="btn primary" id="msig-go" type="button" aria-describedby="msig-script-warning" disabled aria-disabled="true">Derive Multisig</button>

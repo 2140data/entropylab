@@ -220,7 +220,7 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
 });
 
 test("multisig derivation settings follow the key inputs", () => {
-  const fieldOrder = /id="msig-keys"[\s\S]*id="msig-hint"[\s\S]*id="msig-script-type"[\s\S]*id="msig-network"[\s\S]*id="msig-account"[\s\S]*id="msig-count"[\s\S]*id="msig-go"/;
+  const fieldOrder = /id="msig-keys"[\s\S]*id="msig-key-order-status"[\s\S]*id="msig-hint"[\s\S]*id="msig-script-type"[\s\S]*id="msig-network"[\s\S]*id="msig-account"[\s\S]*id="msig-count"[\s\S]*id="msig-key-order"[\s\S]*id="msig-go"/;
   assert.match(template, fieldOrder);
   assert.match(app, fieldOrder);
 });
@@ -230,6 +230,7 @@ test("key derivation and multisig use the accurate Script type label", () => {
     assert.match(markup, /id="script-type-field">Script type\s*<select/);
     assert.match(markup, /<label class="field">Script type\s*<select id="msig-script-type"[^>]*>/);
     assert.match(markup, /<option value="p2wsh" selected(?:="selected")?>Native SegWit · BIP48<\/option>/);
+    assert.match(markup, /<option value="p2tr">Taproot · BIP86<\/option>/);
     assert.doesNotMatch(markup, /name="msig-script"|Matches BIP48 script type|Bare P2SH/);
     assert.doesNotMatch(markup, />Address type</);
   }
@@ -244,9 +245,13 @@ test("multisig script type and placeholders follow detected co-signer exports", 
   assert.match(template, /placeholder="\[fingerprint\/48h\/0h\/0h\/2h\]Zpub…"/);
   assert.match(app, /function hodlMultisigKeyPlaceholder\(kind,network,legacyStandard="bip45"\)/);
   assert.match(app, /kind==="p2sh"\)return`\[fingerprint\/45h\]\$\{testnet\?"tpub":"xpub"\}…`/);
-  assert.match(app, /kind==="p2sh"&&legacyStandard==="bip87"\)return`\[fingerprint\/87h\/\$\{coin\}\/0h\]\$\{testnet\?"tpub":"xpub"\}…`/);
   assert.match(app, /testnet\?"Upub":"Ypub"/);
   assert.match(app, /testnet\?"Vpub":"Zpub"/);
+  assert.match(app, /kind==="p2tr"\)return`\[fingerprint\/86h\/\$\{coin\}\/0h\]\$\{testnet\?"tpub":"xpub"\}…`/);
+  assert.match(app, /if\(steps\[0\]!=="86h"\)return"BIP86 origin must start at 86h."/);
+  assert.match(app, /Taproot BIP86 requires a depth-3 account key at m\/86h\/coinh\/accounth/);
+  assert.doesNotMatch(app, /or BIP48 script 3h/);
+  assert.doesNotMatch(app, /if\(steps\[3\]==="3h"\)return"p2tr"/);
   assert.match(app, /summary\.legacyMixed\?"Legacy co-signer exports mix BIP45 and BIP87/);
   assert.match(app, /summary\.legacyScriptConflict\?"BIP87 account keys are script-agnostic/);
   assert.match(app, /BIP87 keys do not encode a script type\. Select Legacy P2SH/);
@@ -260,7 +265,7 @@ test("key derivation shows the relevant paste-ready multisig co-signer exports",
   assert.match(app, /accountId:"bip44",kind:"p2sh",standard:"bip87",label:`Legacy · BIP87 · Account \$\{accountIndex\}`,family:"x",accountPath:`m\/87'\/\$\{coinType\}'\/\$\{accountIndex\}'`,originPath:`87h\/\$\{coinType\}h\/\$\{accountIndex\}h`/);
   assert.match(app, /accountId:"bip49",kind:"p2sh-p2wsh",label:"Nested SegWit · BIP48",family:"y",scriptIndex:1/);
   assert.match(app, /accountId:"bip84",kind:"p2wsh",label:"Native SegWit · BIP48",family:"z",scriptIndex:2/);
-  assert.doesNotMatch(app, /accountId:"bip86"/);
+  assert.match(app, /accountId:"bip86",kind:"p2tr",label:"Taproot · BIP86",family:"x"/);
   assert.match(app, /accountPath=definition\.accountPath\|\|`m\/48'\/\$\{coinType\}'\/\$\{accountIndex\}'\/\$\{definition\.scriptIndex\}'`/);
   assert.match(app, /value:`\[\$\{masterFingerprint\}\/\$\{originPath\}\]\$\{publicKey\}`/);
   assert.match(app, /multisigCosignerExports:root\.privateKey\?hodlBuildMultisigCosignerExports\(root,network,accountIndex,masterFingerprint\):\[\]/);
@@ -273,6 +278,12 @@ test("key derivation shows the relevant paste-ready multisig co-signer exports",
   assert.match(app, /receiveSuffix=bip45\?"\/0\/0\/\*":"\/0\/\*"/);
   assert.match(app, /Legacy BIP45 addresses use co-signer branch 0/);
   assert.match(app, /Legacy P2SH uses the selected BIP87 account paths/);
+  assert.match(app, /function hodlMsigInnerDescriptor\(kind,m,inner,sorted\)/);
+  assert.match(app, /function hodlMsigPolicyOp\(kind,sorted\)/);
+  assert.match(app, /kind==="p2tr"\?sorted\?"sortedmulti_a":"multi_a":sorted\?"sortedmulti":"multi"/);
+  assert.match(app, /hodlMsigAddr\(receivePublicKeys,m,network,kind,sorted\)/);
+  assert.match(app, /function hodlTaprootNumsKey\(\)/);
+  assert.match(app, /function hodlXOnlyPubkey\(pubkey\)/);
 });
 
 test("derived wallets offer an address match check", () => {
@@ -291,6 +302,27 @@ test("derived wallets offer an address match check", () => {
   assert.match(css, /\.address-match-field/);
 });
 
+test("multisig key order is sorted by default and listed order is advanced", () => {
+  for (const markup of [template, app]) {
+    assert.match(markup, /id="msig-advanced"/);
+    assert.match(markup, /id="msig-key-order"/);
+    assert.match(markup, /<option value="sorted" selected(?:="selected")?>Sorted · sortedmulti<\/option>/);
+    assert.match(markup, /<option value="listed">As listed · multi<\/option>/);
+    assert.match(markup, /id="msig-key-order-status" hidden/);
+  }
+  assert.match(css, /\.msig-advanced summary/);
+  assert.match(css, /\.msig-key-move-btn/);
+  assert.match(app, /function hodlMsigKeysSorted\(\)/);
+  assert.match(app, /function hodlBindMsigKeyReorder\(box\)/);
+  assert.match(app, /function hodlMoveMsigKeyRow\(row,offset\)/);
+  assert.match(app, /textContent="Move up"/);
+  assert.match(app, /textContent="Move down"/);
+  assert.match(app, /function hodlMsigScriptOrder\(keyTokens\)/);
+  assert.match(app, /id="multisig-order-heading">Script key order/);
+  assert.match(app, /keyOrder:"sorted"/);
+  assert.match(app, /if\(!sorted\)notes\.push\("This wallet uses "/);
+});
+
 test("Legacy multisig defaults to BIP45 and offers BIP87 accounts only for Legacy", () => {
   for (const markup of [template, app]) {
     assert.match(markup, /id="msig-legacy-account-toggle" hidden/);
@@ -303,7 +335,7 @@ test("Legacy multisig defaults to BIP45 and offers BIP87 accounts only for Legac
   assert.match(app, /if\(toggle\)toggle\.hidden=!legacy/);
   assert.match(app, /checkbox\?\.checked\?"Legacy · BIP87":"Legacy · BIP45"/);
   assert.match(app, /legacyBip87:!1/);
-  assert.match(app, /scriptStandard:kind==="p2sh"\?legacyStandard:"bip48"/);
+  assert.match(app, /scriptStandard:kind==="p2tr"\?"bip86":kind==="p2sh"\?legacyStandard:"bip48"/);
   assert.match(app, /legacyScriptConflict=standards\.includes\("bip87"\)&&summary\.kinds\.some\(kind=>kind!=="p2sh"\)/);
 });
 

@@ -139,19 +139,26 @@ test("origin path must match key depth and script", () => {
   assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "45h/0" }, "p2sh", "mainnet"), /purpose origin/);
   const bip87 = { fingerprint: "73c5da0a", path: "87h/0h/7h" };
   assert.equal(hodlOriginMatchesParsedKey(bip87, { depth: 3, childNumber: 0x80000007 }), "");
-  assert.equal(hodlOriginScriptError(bip87, "p2sh", "mainnet", "bip87"), "");
-  assert.match(hodlOriginScriptError(bip87, "p2sh", "testnet", "bip87"), /1h/);
   assert.match(
     hodlOriginScriptError({ fingerprint: "73c5da0a", path: "45h" }, "p2sh", "mainnet", "bip87"),
     /87h/,
   );
+  assert.equal(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "86h/0h/0h" }, "p2tr", "mainnet"), "");
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "48h/0h/0h/3h" }, "p2tr", "mainnet"), /86h/);
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "84h/0h/0h" }, "p2tr", "mainnet"), /86h/);
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "48h/0h/0h/2h" }, "p2tr", "mainnet"), /86h/);
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "44h/0h/0h" }, "p2tr", "mainnet"), /86h/);
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "45h" }, "p2tr", "mainnet"), /86h/);
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "87h/0h/0h" }, "p2tr", "mainnet"), /86h/);
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "86h/0h/0h/0h" }, "p2tr", "mainnet"), /86h\/coin\/account/);
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "86h/1h/0h" }, "p2tr", "mainnet"), /0h/);
   assert.equal(hodlOriginPathIndexes("48h/1h/0h/2h").at(-1), 0x80000002);
 });
-
 test("multisig account is derived from BIP48 and BIP87 origins", () => {
   assert.equal(hodlMultisigAccountNumber({ path: "48h/0h/7h/2h" }, "p2wsh"), 7);
   assert.equal(hodlMultisigAccountNumber({ path: "48h/0h/3h/1h" }, "p2sh-p2wsh"), 3);
   assert.equal(hodlMultisigAccountNumber({ path: "87h/0h/9h" }, "p2sh"), 9);
+  assert.equal(hodlMultisigAccountNumber({ path: "86h/0h/4h" }, "p2tr"), 4);
   assert.equal(hodlMultisigAccountNumber({ path: "45h" }, "p2sh"), null);
   assert.throws(
     () => hodlMultisigAccountNumber({ path: "48h/0h/7/2h" }, "p2wsh"),
@@ -175,8 +182,11 @@ test("multisig script type is inferred from SLIP-132 prefixes and key origins", 
   assert.equal(hodlMultisigOriginScriptKind({ path: "87h/0h/0h" }), null);
   assert.equal(hodlMultisigOriginScriptKind({ path: "48h/0h/0h/1h" }), "p2sh-p2wsh");
   assert.equal(hodlMultisigOriginScriptKind({ path: "48h/0h/0h/2h" }), "p2wsh");
+  assert.equal(hodlMultisigOriginScriptKind({ path: "86h/0h/0h" }), "p2tr");
+  assert.equal(hodlMultisigOriginScriptKind({ path: "48h/0h/0h/3h" }), null);
   assert.equal(hodlMultisigOriginScriptKind({ path: "84h/0h/0h" }), null);
   assert.equal(hodlMultisigDerivationStandard({ path: "45h" }), "bip45");
+  assert.equal(hodlMultisigDerivationStandard({ path: "86h/0h/0h" }), "bip86");
   assert.equal(hodlMultisigDerivationStandard({ path: "87h/0h/0h" }), "bip87");
   assert.equal(hodlMultisigDerivationStandard({ path: "48h/0h/0h/2h" }), "bip48");
 
@@ -242,4 +252,41 @@ test("originated 2-of-3 payload keeps fingerprints and fits a static QR", () => 
   assert.equal(wallet.includes("/0/*"), false);
   assert.ok(wallet.length < 1000);
   assert.equal(wallet.slice(-8), independentChecksum(wallet.slice(0, wallet.lastIndexOf("#"))));
+});
+
+test("taproot watch-only descriptor uses NUMS internal key and sortedmulti_a", () => {
+  const body =
+    "tr(50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0,sortedmulti_a(2,[73c5da0a/86h/0h/0h]xpubABC/0/*,[b8688df1/86h/0h/0h]xpubDEF/0/*))";
+  const wallet = hodlWatchOnlyMultipathDescriptor(Le(body));
+  assert.match(wallet, /^tr\(50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0,sortedmulti_a\(/);
+  assert.match(wallet, /\[73c5da0a\/86h\/0h\/0h\]xpubABC\/<0;1>\/\*/);
+  assert.match(wallet, /\[b8688df1\/86h\/0h\/0h\]xpubDEF\/<0;1>\/\*/);
+  assert.equal(wallet.includes("/0/*"), false);
+  assert.equal(wallet.slice(-8), independentChecksum(wallet.slice(0, wallet.lastIndexOf("#"))));
+});
+
+test("BIP48 script-path taproot origins keep the 3h leaf before receive and change", () => {
+  const body =
+    "tr(50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0,sortedmulti_a(1,[73c5da0a/48h/0h/0h/3h]xpubABC/0/*))";
+  const wallet = hodlWatchOnlyMultipathDescriptor(Le(body));
+  assert.match(wallet, /\[73c5da0a\/48h\/0h\/0h\/3h\]xpubABC\/<0;1>\/\*/);
+});
+
+test("listed-order watch-only descriptor keeps multi() key order", () => {
+  const body =
+    "wsh(multi(2,[73c5da0a/48h/1h/0h/2h]tpubABC/0/*,[b8688df1/48h/1h/0h/2h]tpubDEF/0/*))";
+  const wallet = hodlWatchOnlyMultipathDescriptor(Le(body));
+  assert.match(wallet, /wsh\(multi\(2,/);
+  assert.match(wallet, /\[73c5da0a\/48h\/1h\/0h\/2h\]tpubABC\/<0;1>\/\*/);
+  assert.match(wallet, /\[b8688df1\/48h\/1h\/0h\/2h\]tpubDEF\/<0;1>\/\*/);
+  assert.equal(wallet.includes("sortedmulti"), false);
+});
+
+test("listed-order taproot descriptor keeps multi_a() key order", () => {
+  const body =
+    "tr(50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0,multi_a(2,[73c5da0a/86h/0h/0h]xpubABC/0/*,[b8688df1/86h/0h/0h]xpubDEF/0/*))";
+  const wallet = hodlWatchOnlyMultipathDescriptor(Le(body));
+  assert.match(wallet, /multi_a\(2,/);
+  assert.equal(wallet.includes("sortedmulti_a"), false);
+  assert.match(wallet, /\[73c5da0a\/86h\/0h\/0h\]xpubABC\/<0;1>\/\*/);
 });
