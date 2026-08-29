@@ -1779,7 +1779,9 @@ function hodlSeedQrExport(mnemonic, options = {}) {
 }
 var hodlSeedLengths = Object.freeze({
   12: Object.freeze({ words: 12, bits: 128, bytes: 16, hexChars: 32, hashRolls: 50, partialWords: 11, candidates: 128 }),
+  15: Object.freeze({ words: 15, bits: 160, bytes: 20, hexChars: 40, hashRolls: 62, partialWords: 14, candidates: 64 }),
   18: Object.freeze({ words: 18, bits: 192, bytes: 24, hexChars: 48, hashRolls: 75, partialWords: 17, candidates: 32 }),
+  21: Object.freeze({ words: 21, bits: 224, bytes: 28, hexChars: 56, hashRolls: 87, partialWords: 20, candidates: 16 }),
   24: Object.freeze({ words: 24, bits: 256, bytes: 32, hexChars: 64, hashRolls: 99, partialWords: 23, candidates: 8 })
 });
 var hodlEntropyFormats = Object.freeze({
