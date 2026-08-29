@@ -675,6 +675,7 @@ test("PSBT amounts and fees are labeled as unverified claims", () => {
 
 test("seed-length selector offers all five BIP39 sizes", () => {
   for (const words of [12, 15, 18, 21, 24]) {
-    assert.match(template, new RegExp(`data-seed-words="${words}"`), `${words} missing`);
+    assert.match(template, new RegExp(`data-seed-words="${words}"`), `${words} missing from src/index.html`);
+    assert.match(app, new RegExp(`data-seed-words="${words}"`), `${words} missing from runtime markup in src/js/app.js`);
   }
 });
