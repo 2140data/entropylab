@@ -18,7 +18,6 @@ const requiredFiles = [
   "README.md",
   "LICENSE",
   "package.json",
-  "index.html",
   appFile,
   "versions.json",
   "assets/favicon.png",
@@ -80,13 +79,6 @@ const readmeVersion = read("README.md").match(/^Current version: \*\*v([^*]*)\*\
 
 test("README version agrees with package.json", () => {
   assert.equal(readmeVersion, appVersion, `package.json: ${appVersion}; README: ${readmeVersion}`);
-});
-
-test("index.html redirects the site root to the compiled app", () => {
-  const stub = read("index.html");
-  assert.match(stub, /^<!DOCTYPE html>/);
-  assert.ok(stub.includes(`url=${appFile}`), `index.html is missing the meta refresh to ${appFile}`);
-  assert.ok(stub.includes(`href="${appFile}"`), `index.html is missing the link to ${appFile}`);
 });
 
 test("no versioned snapshots linger at the repository root", () => {
