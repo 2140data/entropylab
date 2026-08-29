@@ -62,7 +62,7 @@ and the other first-party modules stays deterministic.
 - The smallest change that fixes the problem is the right change. Prefer it.
 - **No new dependencies.** The build and the test suite are dependency-free
   Node.js. There is no `node_modules`, and that is a feature: it keeps the
-  compiled `index.html` auditable and the supply chain empty. Vendoring a third
+  compiled `entropylab.html` auditable and the supply chain empty. Vendoring a third
   party library into `src/js/vendor.js` needs a real, discussed reason.
 - No frameworks, no transpilers, no bundler abstractions beyond
   `scripts/build.mjs`, no config files for things that can be code.
@@ -110,7 +110,7 @@ npm run ci            # test subset + build + verify, in order
 
 ### Edit sources, never the build output
 
-`entropylab.html`, `index.html` and `versions.json` are generated and
+`entropylab.html` and `versions.json` are generated and
 committed so the app can be downloaded directly. Change `src/` instead, then run
 `npm run build` and commit the regenerated files in the same commit. Hand-edited
 output will fail CI's reproducibility check.
@@ -154,7 +154,7 @@ output will fail CI's reproducibility check.
 - Changes to the license or authorship notices. The software is public domain;
   keep it that way — no re-licensing, no added restrictions, no claims of
   copyright over the code.
-- Changes that obscure what the compiled `index.html` does.
+- Changes that obscure what the compiled `entropylab.html` does.
 - Pools of unrelated refactors, style-only commits, or dependency additions
   "for developer experience".
 

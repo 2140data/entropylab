@@ -1,5 +1,4 @@
 // Verifies the committed site artifact: the compiled entropylab.html, the
-// index.html redirect that keeps GitHub Pages auto-loading it, the
 // versions.json manifest, and the published assets.
 // Zero dependencies. Run with `npm run verify`.
 import {
@@ -26,18 +25,11 @@ if (!/^\d+(?:\.\d+)*$/.test(version)) {
 }
 const appFile = "entropylab.html";
 
-for (const name of ["index.html", appFile, "versions.json", "assets/favicon.png", "assets/entropylab_dark.png"]) {
+for (const name of [appFile, "versions.json", "assets/favicon.png", "assets/entropylab_dark.png"]) {
   const path = join(repoDir, name);
   if (!existsSync(path) || statSync(path).size === 0) {
     fail(`Site artifact is missing or empty: ${name}`);
   }
-}
-
-// The index.html stub must redirect the site root to the application file so
-// GitHub Pages keeps auto-loading EntropyLab.
-const redirect = readFileSync(join(repoDir, "index.html"), "utf8");
-if (!redirect.includes(`url=${appFile}`) || !redirect.includes(`href="${appFile}"`)) {
-  fail(`index.html does not redirect to ${appFile}. Run 'npm run build' and commit the result.`);
 }
 
 // The manifest must be deterministic and complete for the current release.
@@ -68,4 +60,4 @@ const walk = (dir, prefix) => {
 };
 walk(join(repoDir, "assets"), "assets");
 
-console.log(`Verified site artifact for v${version} (index.html redirect, ${appFile}, versions.json, assets/).`);
+console.log(`Verified site artifact for v${version} (${appFile}, versions.json, assets/).`);

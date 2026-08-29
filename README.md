@@ -78,7 +78,6 @@ Build output (committed to the repository so the file can be downloaded
 directly):
 
 - `entropylab.html` — the self-contained application (open this file)
-- `index.html` — tiny redirect so the hosted site auto-loads `entropylab.html`
 - `versions.json` — version manifest the hosted header reads to flag a newer release
 
 The version is declared once in `package.json` and substituted into the
@@ -120,7 +119,6 @@ files, run `npm run clean`.
 │       ├── enhanced-inputs.js
 │       └── repeat-inputs.js
 ├── entropylab.html         Compiled application (generated, committed)
-├── index.html              Redirect stub for GitHub Pages (generated, committed)
 ├── versions.json           Version manifest for the hosted header version label
 └── versions/archived/      Historical releases excluded from the picker
 ```
@@ -141,8 +139,8 @@ npm run ci                  # run the CI test subset, build, and verify in order
 ```
 
 GitHub Actions runs the same steps for pull requests and pushes to `main`,
-then stages the verified site (`index.html`, `entropylab.html`,
-`versions.json`, `assets/`) and deploys it to GitHub Pages. CI runs the
+then stages the verified site (`entropylab.html`, `versions.json`,
+`assets/`) and deploys it to GitHub Pages. CI runs the
 test suites that need no browser; the headless-Firefox suite runs locally
 where a Firefox binary is available. Local checks and CI/CD use the same
 commands; the workflow contains no separate build implementation.

@@ -1,9 +1,8 @@
 // EntropyLab build script (zero dependencies).
 //
 // Inlines the sources from src/ into a single self-contained entropylab.html
-// at the repository root so the file can be downloaded directly. GitHub Pages
-// keeps auto-loading the site through a tiny generated index.html that
-// redirects to entropylab.html. The output is byte-for-byte reproducible from
+// at the repository root so the file can be downloaded directly; GitHub Pages
+// serves it at /entropylab.html. The output is byte-for-byte reproducible from
 // the sources and the version declared in package.json.
 import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -21,30 +20,14 @@ if (!/^\d+(?:\.\d+)*$/.test(version)) {
 }
 
 const appFile = "entropylab.html";
-// GitHub Pages serves index.html at the site root; this stub forwards visitors
-// to the single canonical application file.
-const redirect = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="refresh" content="0; url=${appFile}">
-<link rel="canonical" href="${appFile}">
-<title>EntropyLab</title>
-</head>
-<body>
-<p><a href="${appFile}">Open EntropyLab</a></p>
-</body>
-</html>
-`;
 const generated = () =>
-  ["index.html", appFile, "versions.json", ...readdirSync(root).filter((name) =>
+  [appFile, "versions.json", ...readdirSync(root).filter((name) =>
     /^entropylab-\d+(?:\.\d+)*\.html$/.test(name)
   )];
 
 if (process.argv.includes("--clean")) {
   for (const name of generated()) rmSync(join(root, name), { force: true });
-  console.log("Removed generated files (index.html, entropylab.html, versions.json, entropylab-*.html)");
+  console.log("Removed generated files (entropylab.html, versions.json, entropylab-*.html)");
   process.exit(0);
 }
 
@@ -87,7 +70,6 @@ for (const leftover of html.match(/\/\*@@|{{VERSION}}/g) || []) {
 for (const name of generated()) rmSync(join(root, name), { force: true });
 
 writeFileSync(join(root, appFile), html);
-writeFileSync(join(root, "index.html"), redirect);
 writeFileSync(
   join(root, "versions.json"),
   JSON.stringify({ versions: [{ version: `v${version}`, file: appFile }] }) + "\n",
@@ -95,5 +77,4 @@ writeFileSync(
 
 console.log(`Built EntropyLab v${version}`);
 console.log(`  ${appFile} (${Buffer.byteLength(html, "utf8")} bytes)`);
-console.log(`  index.html (redirect to ${appFile})`);
 console.log(`  versions.json`);
