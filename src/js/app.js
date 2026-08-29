@@ -3629,11 +3629,14 @@ function hodlCopiedIconMarkup() {
   return `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="seed-copy-icon-board" d="M20 6 9 17l-5-5"/></svg>`;
 }
 function hodlSeedMetaRowMarkup(metaId, live = false) {
-  return `<div class="seed-word-meta"><p class="muted" id="${metaId}"${live ? ' aria-live="polite"' : ""}></p><span class="seed-phrase-copied" aria-live="polite"></span><button type="button" class="seed-phrase-copy" data-copy-seed-phrase disabled aria-label="Copy seed phrase" title="Copy seed phrase">${hodlClipboardIconMarkup()}</button></div>`;
+  return `<div class="seed-word-meta"><p class="muted" id="${metaId}"${live ? ' aria-live="polite"' : ""}></p></div>`;
+}
+function hodlSeedCopyRowMarkup() {
+  return `<div class="seed-word-copy-row"><span class="seed-phrase-copied" aria-live="polite"></span><button type="button" class="seed-phrase-copy" data-copy-seed-phrase disabled aria-label="Copy seed phrase" title="Copy seed phrase">${hodlClipboardIconMarkup()}</button></div>`;
 }
 function hodlShowSeedPhraseCopied(button) {
   if (!button) return;
-  let note = button.closest(".seed-word-meta")?.querySelector(".seed-phrase-copied");
+  let note = button.closest(".seed-word-copy-row")?.querySelector(".seed-phrase-copied");
   if (note) note.textContent = "Copied";
   button.classList.add("is-copied");
   button.innerHTML = hodlCopiedIconMarkup();
@@ -3891,6 +3894,7 @@ function hodlRenderKeyForm() {
       <div class="dice-input-shell"><pre class="dice-input-highlight" id="dice-highlight" aria-hidden="true"></pre><textarea id="dice" placeholder="${dicePlaceholder}" aria-describedby="dice-help dice-meta"></textarea></div>
       ${hodlSeedMetaRowMarkup("dice-meta", true)}
       ${dicePad}
+      ${hodlSeedCopyRowMarkup()}
       <div id="dice-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div><div id="last-words" class="row" style="margin-top:8px"></div>`;
     let input = document.getElementById("dice");
     input.dataset.previousValue = input.value;
@@ -3981,6 +3985,7 @@ function hodlRenderKeyForm() {
       <div class="card-controls-row"><button class="card-undo-button seed-keyboard-delete" id="card-undo" type="button" aria-label="Undo last card" title="Undo last card" disabled><svg viewBox="0 0 24 18" aria-hidden="true" focusable="false"><path d="M9 2h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9L2 9l7-7Z"/><path d="m12 6 6 6m0-6-6 6"/></svg></button><label class="seed-autocomplete-toggle card-visibility-toggle"><input type="checkbox" id="show-cards" aria-controls="dealt-cards" ${showCards ? "checked" : ""} /><span>Show cards</span></label></div>
       <aside class="cards-reshuffle" id="cards-reshuffle" hidden></aside>
       <div class="dealt-cards" id="dealt-cards" aria-live="polite"${showCards ? "" : " hidden"}></div>
+      ${hodlSeedCopyRowMarkup()}
       <div id="dice-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div>
     `;
     let input = document.getElementById(inputId);
@@ -4057,6 +4062,7 @@ function hodlRenderKeyForm() {
       ${hodlSeedMetaRowMarkup("entropy-meta", true)}
       ${base64Keyboard}
       ${entropyPad}
+      ${hodlSeedCopyRowMarkup()}
       <div id="entropy-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div>`;
     at.querySelectorAll('input[name="entropy-format"]').forEach((radio) => {
       radio.onchange = () => {
@@ -4119,7 +4125,7 @@ function hodlRenderKeyForm() {
     });
     if (numbers) {
       let range = hodlSeedZeroIndexed ? "0 through 2047" : "1 through 2048";
-      at.innerHTML = `${choices}<p class="label" id="seed-number-label">Your ${config.words} BIP39 word numbers</p><p class="muted" id="seed-number-help">Enter one ${range} number for each word, separated by spaces. The corresponding BIP39 words appear below.</p><label class="seed-autocomplete-toggle seed-zero-index-toggle"><input type="checkbox" id="seed-zero-index" ${hodlSeedZeroIndexed ? "checked" : ""} /><span><strong>Use zero-indexed word numbers</strong> <span class="seed-autocomplete-note">(0–2047 instead of the default 1–2048)</span></span></label><div class="dice-input-shell seed-number-input-shell"><pre class="dice-input-highlight" id="seed-number-highlight" aria-hidden="true"></pre><textarea id="seed-numbers" inputmode="numeric" placeholder="${hodlSeedZeroIndexed ? "0 1 2" : "1 2 3"} …" aria-labelledby="seed-number-label" aria-describedby="seed-number-help seed-number-meta" autocomplete="off" spellcheck="false"></textarea></div>${hodlSeedMetaRowMarkup("seed-number-meta", true)}<div class="dice-input-pad seed-number-pad" role="group" aria-label="BIP39 word number keypad">${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => `<button type="button" data-seed-number-digit="${digit}" aria-label="Enter ${digit}">${digit}</button>`).join("")}<button type="button" class="seed-keyboard-delete seed-number-delete" data-seed-number-delete aria-label="Delete previous digit"><svg viewBox="0 0 24 18" aria-hidden="true" focusable="false"><path d="M9 2h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9L2 9l7-7Z"/><path d="m12 6 6 6m0-6-6 6"/></svg></button><button type="button" class="seed-number-next" data-seed-number-space>Next word</button></div><div id="seed-number-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div>`;
+      at.innerHTML = `${choices}<p class="label" id="seed-number-label">Your ${config.words} BIP39 word numbers</p><p class="muted" id="seed-number-help">Enter one ${range} number for each word, separated by spaces. The corresponding BIP39 words appear below.</p><label class="seed-autocomplete-toggle seed-zero-index-toggle"><input type="checkbox" id="seed-zero-index" ${hodlSeedZeroIndexed ? "checked" : ""} /><span><strong>Use zero-indexed word numbers</strong> <span class="seed-autocomplete-note">(0–2047 instead of the default 1–2048)</span></span></label><div class="dice-input-shell seed-number-input-shell"><pre class="dice-input-highlight" id="seed-number-highlight" aria-hidden="true"></pre><textarea id="seed-numbers" inputmode="numeric" placeholder="${hodlSeedZeroIndexed ? "0 1 2" : "1 2 3"} …" aria-labelledby="seed-number-label" aria-describedby="seed-number-help seed-number-meta" autocomplete="off" spellcheck="false"></textarea></div>${hodlSeedMetaRowMarkup("seed-number-meta", true)}<div class="dice-input-pad seed-number-pad" role="group" aria-label="BIP39 word number keypad">${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => `<button type="button" data-seed-number-digit="${digit}" aria-label="Enter ${digit}">${digit}</button>`).join("")}<button type="button" class="seed-keyboard-delete seed-number-delete" data-seed-number-delete aria-label="Delete previous digit"><svg viewBox="0 0 24 18" aria-hidden="true" focusable="false"><path d="M9 2h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9L2 9l7-7Z"/><path d="m12 6 6 6m0-6-6 6"/></svg></button><button type="button" class="seed-number-next" data-seed-number-space>Next word</button></div>${hodlSeedCopyRowMarkup()}<div id="seed-number-words" class="dice-word-grid" aria-label="${config.words} seed-word slots"></div>`;
       let input = document.getElementById("seed-numbers"), update = () => {
         let parsed = hodlRenderSeedNumberInputState(input, config.words, hodlSeedZeroIndexed), meta = W("#seed-number-meta"), entered = parsed.entries.length, progress = `${entered} of ${config.words} BIP39 word numbers entered`, remaining = Math.max(0, config.words - entered);
         hodlRenderDiceWordGrid(document.getElementById("seed-number-words"), parsed.wordSlots, config.words, false);
