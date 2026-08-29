@@ -136,6 +136,7 @@ var vr=[16,20,24,28,32],Rc={0:"00",1:"01",2:"10",3:"11",4:"0",5:"1"};function kr
         <p class="field-note msig-threshold-help" id="msig-threshold-help">Enter values, drag either handle, or use the arrow keys. Editing one value past the other moves both.</p>
       </fieldset>
       <div id="msig-keys" class="msig-keys"></div>
+      <p class="hint" id="msig-key-order-status" hidden></p>
       <p class="hint" id="msig-hint"></p>
       <div class="key-settings msig-output-settings">
         <label class="choice msig-legacy-account-toggle" id="msig-legacy-account-toggle" hidden>
@@ -161,6 +162,16 @@ var vr=[16,20,24,28,32],Rc={0:"00",1:"01",2:"10",3:"11",4:"0",5:"1"};function kr
             <select id="msig-count"><option value="5">5 + 5</option><option value="10">10 + 10</option><option value="20">20 + 20</option></select>
           </label>
         </div>
+        <details class="msig-advanced" id="msig-advanced">
+          <summary>Advanced</summary>
+          <label class="field">Key order
+            <select id="msig-key-order">
+              <option value="sorted" selected>Sorted · sortedmulti</option>
+              <option value="listed">As listed · multi</option>
+            </select>
+            <span class="field-note" id="msig-key-order-help">Sorted is the default. Addresses stay the same no matter which co-signer you paste first. As listed uses multi: the order of the fields is part of the wallet. Taproot uses sortedmulti_a or multi_a.</span>
+          </label>
+        </details>
       </div>
       <div class="row current-item-actions">
         <button class="btn primary" id="msig-go" type="button" aria-describedby="msig-script-warning" disabled aria-disabled="true">Derive Multisig</button>
@@ -466,9 +477,9 @@ function hodlMatchMsigAddressBeyond(address,start){
   let bip45=re.script==="p2sh"&&re.scriptStandard==="bip45",receivePath=bip45?"m/0/0/":"m/0/",changePath=bip45?"m/0/1/":"m/1/";
   for(let index=start;index<hodlAddressSearchLimit;index++){
     let receiveKeys=nodes.map(node=>{let key=node.derive(receivePath+index).publicKey;if(!key)throw new Error("Could not derive a public key");return key});
-    if(hodlAddressesEqual(address,hodlMsigAddr(receiveKeys,re.m,re.network,re.script).address))return{state:"match",chain:"receive",index,path:receivePath.slice(1)+index,beyond:!0};
+    if(hodlAddressesEqual(address,hodlMsigAddr(receiveKeys,re.m,re.network,re.script,re.sorted!==!1).address))return{state:"match",chain:"receive",index,path:receivePath.slice(1)+index,beyond:!0};
     let changeKeys=nodes.map(node=>{let key=node.derive(changePath+index).publicKey;if(!key)throw new Error("Could not derive a public key");return key});
-    if(hodlAddressesEqual(address,hodlMsigAddr(changeKeys,re.m,re.network,re.script).address))return{state:"match",chain:"change",index,path:changePath.slice(1)+index,beyond:!0}
+    if(hodlAddressesEqual(address,hodlMsigAddr(changeKeys,re.m,re.network,re.script,re.sorted!==!1).address))return{state:"match",chain:"change",index,path:changePath.slice(1)+index,beyond:!0}
   }
   return{state:"miss",searchedTo:hodlAddressSearchLimit-1}
 }
@@ -2324,14 +2335,83 @@ function hodlBindMsigThresholdSlider(){
   let finish=event=>{if(!drag||event.pointerId!==drag.pointerId)return;if(!drag.handle){slider.dataset.activeHandle="n";nInput.focus({preventScroll:!0})}drag=null};
   slider.addEventListener("pointerup",finish);slider.addEventListener("pointercancel",finish);slider.addEventListener("lostpointercapture",()=>{drag=null})
 }
+function hodlMsigKeysSorted(){return document.getElementById("msig-key-order")?.value!=="listed"}
+function hodlMsigPolicyOp(kind,sorted){return kind==="p2tr"?sorted?"sortedmulti_a":"multi_a":sorted?"sortedmulti":"multi"}
+function hodlMsigInnerDescriptor(kind,m,inner,sorted){
+  let core=`${hodlMsigPolicyOp(kind,sorted)}(${m},${inner})`;
+  if(kind==="p2tr")return `tr(50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0,${core})`;
+  if(kind==="p2wsh")return `wsh(${core})`;
+  if(kind==="p2sh-p2wsh")return `sh(wsh(${core}))`;
+  return `sh(${core})`
+}
+function hodlUpdateMsigKeyOrderStatus(){
+  let status=document.getElementById("msig-key-order-status");if(!status)return;
+  let sorted=hodlMsigKeysSorted();status.hidden=sorted;if(sorted){status.textContent="";status.className="hint";return}
+  let op=hodlMsigPolicyOp(hodlScriptKind(),!1);
+  let parts=[...document.querySelectorAll("#msig-keys textarea")].map((ta,index)=>{
+    let raw=ta.value.trim();
+    if(!raw)return "position "+(index+1);
+    try{let parsed=hodlParseMultisigCosigner(raw);if(parsed.origin?.fingerprint)return "position "+(index+1)+" "+parsed.origin.fingerprint}catch{}
+    return "position "+(index+1)
+  });
+  status.textContent=op+" uses this order: "+parts.join(", ")+". Use Move up or Move down to change a position.";
+  status.className="hint ok"
+}
+function hodlSyncMsigKeyMoveButtons(){
+  let rows=[...document.querySelectorAll("#msig-keys .msig-key-row")];
+  rows.forEach((row,index)=>{
+    let up=row.querySelector('[data-msig-move="-1"]'),down=row.querySelector('[data-msig-move="1"]');
+    if(up){up.disabled=index===0;up.setAttribute("aria-label","Move co-signer "+(index+1)+" up to position "+index)}
+    if(down){down.disabled=index===rows.length-1;down.setAttribute("aria-label","Move co-signer "+(index+1)+" down to position "+(index+2))}
+  })
+}
+function hodlReindexMsigKeys(){
+  [...document.querySelectorAll("#msig-keys .msig-key-row")].forEach((row,index)=>{
+    let ta=row.querySelector("textarea"),pos=row.querySelector(".msig-key-position"),lab=row.querySelector("label.field");
+    if(ta)ta.id="msig-x-"+index;
+    if(pos)pos.textContent="Position "+(index+1);
+    if(lab){let title=lab.childNodes[0];if(title&&title.nodeType===3)title.textContent="Co-signer "+(index+1)+" multisig extended public key"}
+  });
+  hodlSyncMsigKeyMoveButtons();hodlUpdateMsigKeyPlaceholders();hodlUpdateMsigKeyOrderStatus()
+}
+function hodlMoveMsigKeyRow(row,offset){
+  let box=document.getElementById("msig-keys"),rows=[...box.querySelectorAll(".msig-key-row")],index=rows.indexOf(row),next=index+offset;
+  if(index<0||next<0||next>=rows.length)return;
+  if(offset<0)box.insertBefore(row,rows[next]);else box.insertBefore(row,rows[next].nextSibling);
+  hodlReindexMsigKeys();hodlInvalidateMsig();hodlSyncMsigClearButton(!0)
+}
+function hodlBindMsigKeyReorder(box){
+  if(box.dataset.reorderBound)return;box.dataset.reorderBound="1";
+  box.addEventListener("click",event=>{
+    if(hodlMsigKeysSorted())return;
+    let button=event.target.closest("[data-msig-move]");if(!button||button.disabled)return;
+    hodlMoveMsigKeyRow(button.closest(".msig-key-row"),Number(button.dataset.msigMove))
+  })
+}
+function hodlMsigScriptOrder(keyTokens){
+  return keyTokens.map((token,index)=>{
+    let match=String(token).match(/^\[([0-9a-f]{8})\/([^\]]+)\]/i);
+    return{position:index+1,fingerprint:match?match[1]:"",path:match?match[2]:""}
+  })
+}
 function hodlFillKeys(values){
-  let n=Number(document.getElementById("msig-n").value||3),saved=Array.isArray(values)?values:hodlReadMsigXpubs(),box=document.getElementById("msig-keys");box.innerHTML="";
+  let n=Number(document.getElementById("msig-n").value||3),saved=Array.isArray(values)?values:hodlReadMsigXpubs(),box=document.getElementById("msig-keys"),listed=!hodlMsigKeysSorted();
+  box.classList.toggle("msig-keys-listed",listed);box.innerHTML="";
   for(let i=0;i<n;i++){
+    let row=document.createElement("div");row.className="msig-key-row";
+    if(listed){
+      let head=document.createElement("div");head.className="msig-key-row-head";
+      let pos=document.createElement("span");pos.className="msig-key-position";pos.textContent="Position "+(i+1);
+      let moves=document.createElement("div");moves.className="msig-key-move";
+      let up=document.createElement("button");up.type="button";up.className="btn secondary msig-key-move-btn";up.dataset.msigMove="-1";up.textContent="Move up";
+      let down=document.createElement("button");down.type="button";down.className="btn secondary msig-key-move-btn";down.dataset.msigMove="1";down.textContent="Move down";
+      moves.append(up,down);head.append(pos,moves);row.appendChild(head)
+    }
     let lab=document.createElement("label");lab.className="field";lab.textContent="Co-signer "+(i+1)+" multisig extended public key";
-    let ta=document.createElement("textarea");ta.id="msig-x-"+i;ta.autocomplete="off";ta.spellcheck=false;ta.value=saved[i]||"";lab.appendChild(ta);box.appendChild(lab);
-    ta.oninput=()=>{ta.value=hodlFilterXpub(ta.value);hodlUpdateMsigScriptDetection();document.querySelectorAll("#msig-keys textarea").forEach(hodlCheckXpub);hodlInvalidateMsig()}
+    let ta=document.createElement("textarea");ta.id="msig-x-"+i;ta.autocomplete="off";ta.spellcheck=false;ta.value=saved[i]||"";lab.appendChild(ta);row.appendChild(lab);box.appendChild(row);
+    ta.oninput=()=>{ta.value=hodlFilterXpub(ta.value);hodlUpdateMsigScriptDetection();document.querySelectorAll("#msig-keys textarea").forEach(hodlCheckXpub);hodlUpdateMsigKeyOrderStatus();hodlInvalidateMsig()}
   }
-  hodlUpdateMsigScriptDetection();box.querySelectorAll("textarea").forEach(ta=>{if(ta.value)hodlCheckXpub(ta)});hodlUpdateMsigHint();hodlUpdateMsigAccount()
+  hodlBindMsigKeyReorder(box);hodlSyncMsigKeyMoveButtons();hodlUpdateMsigScriptDetection();box.querySelectorAll("textarea").forEach(ta=>{if(ta.value)hodlCheckXpub(ta)});hodlUpdateMsigHint();hodlUpdateMsigAccount();hodlUpdateMsigKeyOrderStatus()
 }
 function hodlMultisigPrefixCompatible(parsed,kind){
   if(kind==="p2tr")return parsed.family==="x";
@@ -2371,20 +2451,21 @@ function hodlDuplicateMultisigKey(ta,parsed){
   return!1
 }
 function hodlCheckXpub(ta){let value=ta.value.trim();if(!value){hodlHint(ta,!0,"");return}try{let parsed=hodlParseMultisigCosigner(value),network=hodlSelectedNetwork(document.getElementById("msig-network")),kind=hodlScriptKind(),legacyStandard=hodlSelectedLegacyMultisigStandard();if(kind==="mixed")throw new Error("These keys do not define one compatible multisig policy. Use one script type and one Legacy derivation standard.");if(parsed.isPrivate)throw new Error("Paste an extended public key, never an extended private key.");if(parsed.network!==network)throw new Error(`${parsed.prefix} is for ${parsed.network}; the multisig is set to ${network}.`);if(!hodlMultisigPrefixCompatible(parsed,kind))throw new Error(parsed.scope==="singlesig"?"Use a generic xpub/tpub here, or a proper uppercase multisig SLIP-132 export.":`${parsed.prefix} does not match the selected multisig script type.`);let accountError=hodlMultisigAccountKeyError(parsed,kind,legacyStandard);if(accountError)throw new Error(accountError);if(!parsed.origin)throw new Error(`Paste ${hodlMultisigKeyPlaceholder(kind,network,legacyStandard)} so a signer can recognize this key.`);let originError=hodlOriginMatchesParsedKey(parsed.origin,parsed);if(originError)throw new Error(originError);let scriptOriginError=hodlOriginScriptError(parsed.origin,kind,network,legacyStandard);if(scriptOriginError)throw new Error(scriptOriginError);if(hodlDuplicateMultisigKey(ta,parsed))throw new Error("This duplicates another co-signer. Every co-signer must use a distinct extended public key.");hodlHint(ta,!0,`${parsed.prefix} origin, checksum, and derivation path look valid`)}catch(error){hodlHint(ta,!1,error.message||"Not a valid multisig extended public key")}}
-function hodlResetMsigForm(){hodlSetMsigThresholds(2,3);hodlSyncSelect(document.getElementById("msig-script-type"),"p2wsh");let legacy=document.getElementById("msig-legacy-bip87");if(legacy)legacy.checked=!1;hodlUpdateMsigLegacyControls();hodlSyncSelect(document.getElementById("msig-network"),"mainnet");hodlSyncSelect(document.getElementById("msig-count"),"5");hodlFillKeys([]);document.getElementById("msig-error").textContent=""}
-function hodlInitMsig(){hodlBindMsigThresholdSlider();let recheck=()=>{hodlUpdateMsigScriptDetection();hodlInvalidateMsig();document.querySelectorAll("#msig-keys textarea").forEach(hodlCheckXpub)},script=document.getElementById("msig-script-type"),legacy=document.getElementById("msig-legacy-bip87");script.addEventListener("change",()=>{if(script.value!=="mixed")script.dataset.lastConcrete=script.value;recheck()});if(legacy)legacy.addEventListener("change",()=>{hodlUpdateMsigLegacyControls();hodlUpdateMsigKeyPlaceholders();hodlInvalidateMsig();document.querySelectorAll("#msig-keys textarea").forEach(hodlCheckXpub);hodlSyncMsigClearButton(!0)});document.getElementById("msig-network").addEventListener("change",recheck);document.getElementById("msig-count").addEventListener("change",hodlInvalidateMsig);hodlResetMsigForm();W("#msig-go").onclick=hodlBuildMsig;W("#msig-wipe").onclick=hodlWipeActiveMsig}
+function hodlResetMsigForm(){hodlSetMsigThresholds(2,3);hodlSyncSelect(document.getElementById("msig-script-type"),"p2wsh");let legacy=document.getElementById("msig-legacy-bip87");if(legacy)legacy.checked=!1;hodlUpdateMsigLegacyControls();hodlSyncSelect(document.getElementById("msig-key-order"),"sorted");let advanced=document.getElementById("msig-advanced");if(advanced)advanced.open=!1;hodlSyncSelect(document.getElementById("msig-network"),"mainnet");hodlSyncSelect(document.getElementById("msig-count"),"5");hodlFillKeys([]);document.getElementById("msig-error").textContent=""}
+function hodlInitMsig(){hodlBindMsigThresholdSlider();let recheck=()=>{hodlUpdateMsigScriptDetection();hodlInvalidateMsig();document.querySelectorAll("#msig-keys textarea").forEach(hodlCheckXpub);hodlUpdateMsigKeyOrderStatus()},script=document.getElementById("msig-script-type"),legacy=document.getElementById("msig-legacy-bip87"),keyOrder=document.getElementById("msig-key-order");script.addEventListener("change",()=>{if(script.value!=="mixed")script.dataset.lastConcrete=script.value;recheck()});if(legacy)legacy.addEventListener("change",()=>{hodlUpdateMsigLegacyControls();hodlUpdateMsigKeyPlaceholders();hodlInvalidateMsig();document.querySelectorAll("#msig-keys textarea").forEach(hodlCheckXpub);hodlSyncMsigClearButton(!0)});if(keyOrder)keyOrder.addEventListener("change",()=>{let advanced=document.getElementById("msig-advanced");if(keyOrder.value==="listed"&&advanced)advanced.open=!0;hodlFillKeys();hodlInvalidateMsig();hodlSyncMsigClearButton(!0)});document.getElementById("msig-network").addEventListener("change",recheck);document.getElementById("msig-count").addEventListener("change",hodlInvalidateMsig);hodlResetMsigForm();W("#msig-go").onclick=hodlBuildMsig;W("#msig-wipe").onclick=hodlWipeActiveMsig}
 function hodlCmpBytes(a,b){let n=Math.min(a.length,b.length);for(let i=0;i<n;i++)if(a[i]!==b[i])return a[i]-b[i];return a.length-b.length}
 function hodlScriptKind(){return document.getElementById("msig-script-type")?.value||"p2wsh"}
 function hodlTaprootNumsKey(){return M.decode("50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0")}
 function hodlXOnlyPubkey(pubkey){if(!pubkey||pubkey.length<32)throw new Error("Could not derive a public key");return pubkey.length===33?pubkey.slice(1):pubkey.slice(0,32)}
-function hodlMsigAddr(pubkeys,m,network,kind){
+function hodlMsigAddr(pubkeys,m,network,kind,sorted=!0){
   let net=_s(network);
   if(kind==="p2tr"){
-    let xonly=[...pubkeys].map(hodlXOnlyPubkey).sort(hodlCmpBytes),script=Oe.encode({type:"tr_ms",m,pubkeys:xonly}),out=en(hodlTaprootNumsKey(),{script},net);
+    let xonly=[...pubkeys].map(hodlXOnlyPubkey);if(sorted)xonly.sort(hodlCmpBytes);
+    let script=Oe.encode({type:"tr_ms",m,pubkeys:xonly}),out=en(hodlTaprootNumsKey(),{script},net);
     if(!out?.address)throw new Error("Failed to build Taproot multisig address");
     return{address:out.address,scriptHex:M.encode(script),kind}
   }
-  let sorted=[...pubkeys].sort(hodlCmpBytes);let ms=Oe.encode({type:"ms",m,pubkeys:sorted});
+  let keys=[...pubkeys];if(sorted)keys.sort(hodlCmpBytes);let ms=Oe.encode({type:"ms",m,pubkeys:keys});
   if(kind==="p2wsh"){let hash=tr(ms);return{address:or(net).encode({type:"wsh",hash}),scriptHex:M.encode(ms),kind}}
   if(kind==="p2sh-p2wsh"){let hash=tr(ms);let wshScript=Oe.encode({type:"wsh",hash});let wrapped=Jr({script:wshScript,witnessScript:ms},net);return{address:wrapped.address,scriptHex:M.encode(ms),kind}}
   let wrapped=Jr({script:ms},net);return{address:wrapped.address,scriptHex:M.encode(ms),kind}
@@ -2416,30 +2497,30 @@ function hodlBuildMsig(){
   try{
     let{network,count,n,m,kind,legacyStandard,nodes,xpubs,keyTokens,accountSummary,accountWarning}=hodlValidatedMsigInputs(),bip45=kind==="p2sh"&&legacyStandard==="bip45";
     let receiveSuffix=bip45?"/0/0/*":"/0/*",changeSuffix=bip45?"/0/1/*":"/1/*";
-    let inner=keyTokens.map(key=>key+receiveSuffix).join(","),innerChange=keyTokens.map(key=>key+changeSuffix).join(",");
-    let nums="50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0";
-    let descriptor=kind==="p2tr"?`tr(${nums},sortedmulti_a(${m},${inner}))`:kind==="p2wsh"?`wsh(sortedmulti(${m},${inner}))`:kind==="p2sh-p2wsh"?`sh(wsh(sortedmulti(${m},${inner})))`:`sh(sortedmulti(${m},${inner}))`;
-    let changeDescriptor=kind==="p2tr"?`tr(${nums},sortedmulti_a(${m},${innerChange}))`:kind==="p2wsh"?`wsh(sortedmulti(${m},${innerChange}))`:kind==="p2sh-p2wsh"?`sh(wsh(sortedmulti(${m},${innerChange})))`:`sh(sortedmulti(${m},${innerChange}))`;
+    let sorted=hodlMsigKeysSorted(),inner=keyTokens.map(key=>key+receiveSuffix).join(","),innerChange=keyTokens.map(key=>key+changeSuffix).join(",");
+    let descriptor=hodlMsigInnerDescriptor(kind,m,inner,sorted),changeDescriptor=hodlMsigInnerDescriptor(kind,m,innerChange,sorted);
     let receive=[],change=[],receivePath=bip45?"m/0/0/":"m/0/",changePath=bip45?"m/0/1/":"m/1/";for(let index=0;index<count;index++){
       let receivePublicKeys=nodes.map(node=>{let key=node.derive(receivePath+index).publicKey;if(!key)throw new Error("Could not derive a public key");return key});
       let changePublicKeys=nodes.map(node=>{let key=node.derive(changePath+index).publicKey;if(!key)throw new Error("Could not derive a public key");return key});
-      receive.push(Object.assign({index,path:receivePath.slice(1)+index},hodlMsigAddr(receivePublicKeys,m,network,kind)));
-      change.push(Object.assign({index,path:changePath.slice(1)+index},hodlMsigAddr(changePublicKeys,m,network,kind)))
+      receive.push(Object.assign({index,path:receivePath.slice(1)+index},hodlMsigAddr(receivePublicKeys,m,network,kind,sorted)));
+      change.push(Object.assign({index,path:changePath.slice(1)+index},hodlMsigAddr(changePublicKeys,m,network,kind,sorted)))
     }
     let notes=["This is watch-only. Private keys never entered this calculator.","Each key origin lets a signer match its seed to one co-signer.","A signer is only needed when you spend."];
     if(bip45)notes.push("Legacy BIP45 addresses use co-signer branch 0 for this receive and change set.");
     if(kind==="p2sh"&&legacyStandard==="bip87")notes.push("Legacy P2SH uses the selected BIP87 account paths. Keep the descriptor with every seed backup.");
-    if(kind==="p2tr")notes.push("Taproot script-path multisig. The internal key is the BIP341 NUMS point, so spending is only possible through the multi_a script path.");
-    re={kind:"msig",network,m,n,script:kind,scriptStandard:kind==="p2tr"?"bip86":kind==="p2sh"?legacyStandard:"bip48",account:accountSummary.account,accountMixed:accountSummary.mixed,nodes,xpubs,receiveDescriptor:Le(descriptor),changeDescriptor:Le(changeDescriptor),walletDescriptor:hodlWatchOnlyMultipathDescriptor(Le(descriptor)),receive,change,notes,warnings:accountWarning?[accountWarning]:[]};
+    if(kind==="p2tr")notes.push("Taproot script-path multisig. The internal key is the BIP341 NUMS point, so spending is only possible through the "+(sorted?"sortedmulti_a":"multi_a")+" script path.");
+    if(!sorted)notes.push("This wallet uses "+hodlMsigPolicyOp(kind,!1)+", so the listed co-signer order is part of the script. Reordering keys changes addresses.");
+    re={kind:"msig",network,m,n,script:kind,sorted,scriptOrder:hodlMsigScriptOrder(keyTokens),scriptStandard:kind==="p2tr"?"bip86":kind==="p2sh"?legacyStandard:"bip48",account:accountSummary.account,accountMixed:accountSummary.mixed,nodes,xpubs,receiveDescriptor:Le(descriptor),changeDescriptor:Le(changeDescriptor),walletDescriptor:hodlWatchOnlyMultipathDescriptor(Le(descriptor)),receive,change,notes,warnings:accountWarning?[accountWarning]:[]};
     hodlCaptureMsig();hodlShowMsig();hodlFocusWalletResult()
   }catch(exception){re=null;dr.innerHTML="";error.textContent=exception.message||String(exception);hodlCaptureMsig()}
 }
 function hodlShowMsig(){if(!re||re.kind!=="msig")return;Ge=!1;let accountLabel=re.accountMixed?" · Account Mixed":re.account==null?"":` · Account ${re.account}`,standardLabel=re.scriptStandard?` · ${re.scriptStandard.toUpperCase()}`:"";dr.innerHTML=`
     <section class="card account-result-card">
-      <div class="kicker">${re.m}-of-${re.n} multisig${standardLabel} · ${re.network}${accountLabel}</div>
+      <div class="kicker">${re.m}-of-${re.n} multisig${standardLabel}${re.sorted===!1?" · listed order":""} · ${re.network}${accountLabel}</div>
       <h2 tabindex="-1">Your multisig receive wallet</h2>
       <p class="muted">Anyone can pay these addresses. Spending later needs ${re.m} signature${re.m===1?"":"s"} from the configured ${re.n} signing key${re.n===1?"":"s"}. This screen has no private keys.</p>
       ${hodlWalletMessages(re,"multisig")}
+      ${re.sorted===!1&&re.scriptOrder?.length?`<section class="account-result-section" aria-labelledby="multisig-order-heading"><div class="wallet-data-section-head"><h3 id="multisig-order-heading">Script key order</h3><p class="muted">${hodlMsigPolicyOp(re.script,!1)} uses the co-signers in this order. Changing the order creates a different wallet.</p></div><ol class="msig-script-order">${re.scriptOrder.map(item=>`<li><span class="msig-script-order-position">Position ${item.position}</span><code>${$t(item.fingerprint?item.fingerprint+"/"+item.path:item.fingerprint||"")}</code></li>`).join("")}</ol></section>`:""}
       <section class="account-result-section account-watch-section" aria-labelledby="multisig-watch-heading">
         <div class="wallet-data-section-head">
           <h3 id="multisig-watch-heading">Watch-only wallet data</h3>
@@ -2787,11 +2868,11 @@ function hodlDeleteActiveKey(){
   (hodlActiveKey>=0?W("#key-tabs").children[hodlActiveKey]:W("#add-key"))?.focus();
 }
 var hodlNextMsigId=1,hodlNextMsigNumber=1,hodlMsigs=[],hodlActiveMsig=-1;
-function hodlNewMsigState(name,msigId,msigNumber){let id=msigId??hodlNextMsigId++,number=msigNumber??hodlNextMsigNumber++;return{id,number,name:name||hodlDefaultMsigName(number),result:null,error:"",fields:{m:"2",n:"3",script:"p2wsh",legacyBip87:!1,xpubs:["","",""],network:"mainnet",count:"5"}}}
+function hodlNewMsigState(name,msigId,msigNumber){let id=msigId??hodlNextMsigId++,number=msigNumber??hodlNextMsigNumber++;return{id,number,name:name||hodlDefaultMsigName(number),result:null,error:"",fields:{m:"2",n:"3",script:"p2wsh",legacyBip87:!1,keyOrder:"sorted",xpubs:["","",""],network:"mainnet",count:"5"}}}
 function hodlMsigStateNeedsClear(state){
   if(!state)return!1;let fields=state.fields||{},xpubs=Array.isArray(fields.xpubs)?fields.xpubs:[];
   return Boolean(state.result)||String(state.error??"").length>0||xpubs.some(value=>String(value??"").length>0)||
-    String(fields.m??"2")!=="2"||String(fields.n??"3")!=="3"||String(fields.script??"p2wsh")!=="p2wsh"||Boolean(fields.legacyBip87)||String(fields.network??"mainnet")!=="mainnet"||String(fields.count??"5")!=="5"
+    String(fields.m??"2")!=="2"||String(fields.n??"3")!=="3"||String(fields.script??"p2wsh")!=="p2wsh"||Boolean(fields.legacyBip87)||String(fields.keyOrder??"sorted")!=="sorted"||String(fields.network??"mainnet")!=="mainnet"||String(fields.count??"5")!=="5"
 }
 function hodlSyncMsigClearButton(capture=!1){
   if(capture)hodlCaptureMsig();let button=document.getElementById("msig-wipe");if(!button)return;
@@ -2800,14 +2881,14 @@ function hodlSyncMsigClearButton(capture=!1){
 function hodlCaptureMsig(){
   if(hodlActiveMsig<0||!hodlMsigs[hodlActiveMsig])return;
   let state=hodlMsigs[hodlActiveMsig];
-  state.fields.n=document.getElementById("msig-n").value||"3";state.fields.m=document.getElementById("msig-m").value||"2";state.fields.script=hodlScriptKind();state.fields.legacyBip87=hodlSelectedLegacyMultisigStandard()==="bip87";hodlMergeMsigXpubs(state);state.fields.network=hodlSelectedNetwork(document.getElementById("msig-network"));state.fields.count=document.getElementById("msig-count").value||"5";
+  state.fields.n=document.getElementById("msig-n").value||"3";state.fields.m=document.getElementById("msig-m").value||"2";state.fields.script=hodlScriptKind();state.fields.legacyBip87=hodlSelectedLegacyMultisigStandard()==="bip87";state.fields.keyOrder=hodlMsigKeysSorted()?"sorted":"listed";hodlMergeMsigXpubs(state);state.fields.network=hodlSelectedNetwork(document.getElementById("msig-network"));state.fields.count=document.getElementById("msig-count").value||"5";
   state.result=re&&re.kind==="msig"?re:null;state.error=document.getElementById("msig-error").textContent||"";
 }
 function hodlRestoreMsig(){
   let state=hodlMsigs[hodlActiveMsig],panel=document.getElementById("msig-card");
   if(!state){re=null;Ge=!1;hodlResetMsigForm();dr.innerHTML="";panel.hidden=!0;hodlSyncMsigClearButton();return}
   hodlSetMsigThresholds(state.fields.m||"2",state.fields.n||"3");
-  let legacy=document.getElementById("msig-legacy-bip87");if(legacy)legacy.checked=Boolean(state.fields.legacyBip87);hodlSyncSelect(document.getElementById("msig-script-type"),state.fields.script||"p2wsh");hodlUpdateMsigLegacyControls();state.fields.network=state.fields.network==="testnet"?"testnet":"mainnet";hodlSyncSelect(document.getElementById("msig-network"),state.fields.network);hodlSyncSelect(document.getElementById("msig-count"),state.fields.count||"5");hodlFillKeys(state.fields.xpubs||[]);
+  let legacy=document.getElementById("msig-legacy-bip87");if(legacy)legacy.checked=Boolean(state.fields.legacyBip87);hodlSyncSelect(document.getElementById("msig-script-type"),state.fields.script||"p2wsh");hodlUpdateMsigLegacyControls();state.fields.keyOrder=state.fields.keyOrder==="listed"?"listed":"sorted";hodlSyncSelect(document.getElementById("msig-key-order"),state.fields.keyOrder);let advanced=document.getElementById("msig-advanced");if(advanced)advanced.open=state.fields.keyOrder==="listed";state.fields.network=state.fields.network==="testnet"?"testnet":"mainnet";hodlSyncSelect(document.getElementById("msig-network"),state.fields.network);hodlSyncSelect(document.getElementById("msig-count"),state.fields.count||"5");hodlFillKeys(state.fields.xpubs||[]);
   document.getElementById("msig-error").textContent=state.error||"";re=state.result;Ge=!1;panel.hidden=!1;
   if(re&&re.kind==="msig")hodlShowMsig();else dr.innerHTML="";hodlSyncMsigClearButton();
 }

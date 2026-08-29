@@ -265,3 +265,22 @@ test("BIP48 script-path taproot origins keep the 3h leaf before receive and chan
   const wallet = hodlWatchOnlyMultipathDescriptor(Le(body));
   assert.match(wallet, /\[73c5da0a\/48h\/0h\/0h\/3h\]xpubABC\/<0;1>\/\*/);
 });
+
+test("listed-order watch-only descriptor keeps multi() key order", () => {
+  const body =
+    "wsh(multi(2,[73c5da0a/48h/1h/0h/2h]tpubABC/0/*,[b8688df1/48h/1h/0h/2h]tpubDEF/0/*))";
+  const wallet = hodlWatchOnlyMultipathDescriptor(Le(body));
+  assert.match(wallet, /wsh\(multi\(2,/);
+  assert.match(wallet, /\[73c5da0a\/48h\/1h\/0h\/2h\]tpubABC\/<0;1>\/\*/);
+  assert.match(wallet, /\[b8688df1\/48h\/1h\/0h\/2h\]tpubDEF\/<0;1>\/\*/);
+  assert.equal(wallet.includes("sortedmulti"), false);
+});
+
+test("listed-order taproot descriptor keeps multi_a() key order", () => {
+  const body =
+    "tr(50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0,multi_a(2,[73c5da0a/86h/0h/0h]xpubABC/0/*,[b8688df1/86h/0h/0h]xpubDEF/0/*))";
+  const wallet = hodlWatchOnlyMultipathDescriptor(Le(body));
+  assert.match(wallet, /multi_a\(2,/);
+  assert.equal(wallet.includes("sortedmulti_a"), false);
+  assert.match(wallet, /\[73c5da0a\/86h\/0h\/0h\]xpubABC\/<0;1>\/\*/);
+});

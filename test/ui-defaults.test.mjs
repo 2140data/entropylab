@@ -220,7 +220,7 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
 });
 
 test("multisig derivation settings follow the key inputs", () => {
-  const fieldOrder = /id="msig-keys"[\s\S]*id="msig-hint"[\s\S]*id="msig-script-type"[\s\S]*id="msig-network"[\s\S]*id="msig-account"[\s\S]*id="msig-count"[\s\S]*id="msig-go"/;
+  const fieldOrder = /id="msig-keys"[\s\S]*id="msig-key-order-status"[\s\S]*id="msig-hint"[\s\S]*id="msig-script-type"[\s\S]*id="msig-network"[\s\S]*id="msig-account"[\s\S]*id="msig-count"[\s\S]*id="msig-key-order"[\s\S]*id="msig-go"/;
   assert.match(template, fieldOrder);
   assert.match(app, fieldOrder);
 });
@@ -274,7 +274,10 @@ test("key derivation shows the relevant paste-ready multisig co-signer exports",
   assert.match(app, /receiveSuffix=bip45\?"\/0\/0\/\*":"\/0\/\*"/);
   assert.match(app, /Legacy BIP45 addresses use co-signer branch 0/);
   assert.match(app, /Legacy P2SH uses the selected BIP87 account paths/);
-  assert.match(app, /kind==="p2tr"\?`tr\(\$\{nums\},sortedmulti_a\(\$\{m\},\$\{inner\}\)\)`/);
+  assert.match(app, /function hodlMsigInnerDescriptor\(kind,m,inner,sorted\)/);
+  assert.match(app, /function hodlMsigPolicyOp\(kind,sorted\)/);
+  assert.match(app, /kind==="p2tr"\?sorted\?"sortedmulti_a":"multi_a":sorted\?"sortedmulti":"multi"/);
+  assert.match(app, /hodlMsigAddr\(receivePublicKeys,m,network,kind,sorted\)/);
   assert.match(app, /function hodlTaprootNumsKey\(\)/);
   assert.match(app, /function hodlXOnlyPubkey\(pubkey\)/);
 });
@@ -293,6 +296,27 @@ test("derived wallets offer an address match check", () => {
   assert.match(app, /hodlAddressTable\(account\.change,"Change addresses",hasPrivate\)\}\s*\$\{hodlAddressMatchMarkup\(\)/);
   assert.match(app, /hodlAddressTable\(re\.change,"Multisig change addresses"\)\}\s*\$\{hodlAddressMatchMarkup\(\)/);
   assert.match(css, /\.address-match-field/);
+});
+
+test("multisig key order is sorted by default and listed order is advanced", () => {
+  for (const markup of [template, app]) {
+    assert.match(markup, /id="msig-advanced"/);
+    assert.match(markup, /id="msig-key-order"/);
+    assert.match(markup, /<option value="sorted" selected(?:="selected")?>Sorted · sortedmulti<\/option>/);
+    assert.match(markup, /<option value="listed">As listed · multi<\/option>/);
+    assert.match(markup, /id="msig-key-order-status" hidden/);
+  }
+  assert.match(css, /\.msig-advanced summary/);
+  assert.match(css, /\.msig-key-move-btn/);
+  assert.match(app, /function hodlMsigKeysSorted\(\)/);
+  assert.match(app, /function hodlBindMsigKeyReorder\(box\)/);
+  assert.match(app, /function hodlMoveMsigKeyRow\(row,offset\)/);
+  assert.match(app, /textContent="Move up"/);
+  assert.match(app, /textContent="Move down"/);
+  assert.match(app, /function hodlMsigScriptOrder\(keyTokens\)/);
+  assert.match(app, /id="multisig-order-heading">Script key order/);
+  assert.match(app, /keyOrder:"sorted"/);
+  assert.match(app, /if\(!sorted\)notes\.push\("This wallet uses "/);
 });
 
 test("Legacy multisig defaults to BIP45 and offers BIP87 accounts only for Legacy", () => {
