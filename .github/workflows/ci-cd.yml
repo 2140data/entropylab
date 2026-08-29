@@ -47,6 +47,25 @@ jobs:
           path: _site
           retention-days: 7
 
+  # The committed secp256k1 WASM artifact (src/js/secp256k1-wasm-b64.js) must
+  # be reproducible from the pinned Rust crate (secp256k1-wasm/, Cargo.lock,
+  # rust-toolchain.toml). This job rebuilds it from scratch and diffs.
+  # Note: C compilation uses the runner's clang; if a GitHub image update
+  # changes the bytes, regenerate with `npm run build:wasm` and commit.
+  build-wasm:
+    name: Build · secp256k1 WASM reproducibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Rebuild the WASM artifact from the Rust sources
+        run: npm run build:wasm
+      - name: Assert the committed artifact is byte-identical
+        run: git diff --exit-code src/js/secp256k1-wasm-b64.js
+
   # Required aggregate gates. The deployment cannot start until both pass, so
   # it can never race ahead of a failing unit or browser test.
   test-ci:
@@ -191,7 +210,7 @@ jobs:
   artifact:
     name: Artifact · commit rebuilt site after merge
     if: github.ref == 'refs/heads/rock' && github.event_name == 'push'
-    needs: [verify]
+    needs: [verify, build-wasm]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -243,7 +262,7 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     if: github.ref == 'refs/heads/rock' && github.event_name != 'pull_request'
-    needs: [build, verify, test-ci, test-browser]
+    needs: [build, verify, test-ci, test-browser, build-wasm]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

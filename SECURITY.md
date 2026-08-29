@@ -19,6 +19,12 @@ material. Its security posture rests on the following model:
 
 - The tool is self-contained and designed for offline, air-gapped use. It does
   not intentionally transmit sensitive data to any server.
+- secp256k1 curve operations run on bitcoin-core/libsecp256k1 (the library
+  securing Bitcoin Core), compiled to WebAssembly from the pinned, lockfiled
+  Rust crate in `secp256k1-wasm/` and executed entirely in-process — no
+  network access, and the module never generates randomness (signing is
+  RFC 6979 with caller-fixed extra entropy). CI rebuilds the WASM byte-for-byte
+  from the committed sources before any deployment.
 - The on-screen result of any derivation can only be as trustworthy as the
   code that produced it. Review the source, build from `src/`, and test the
   tool with published vectors before relying on it.

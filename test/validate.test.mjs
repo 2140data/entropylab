@@ -133,6 +133,9 @@ test("GitHub Pages aliases the canonical app at the site root only during deploy
 
 test("the app never fetches, so the CSP forbids connections", () => {
   assert.match(read("src/index.html"), /connect-src 'none'/);
+  // The secp256k1 WebAssembly module compiles inline; the CSP must allow it
+  // (without 'wasm-unsafe-eval', Chrome/Safari refuse compilation).
+  assert.match(read("src/index.html"), /script-src 'unsafe-inline' 'wasm-unsafe-eval'/);
   assert.doesNotMatch(read("src/js/online.js") + read("src/js/network-check.js") + read("src/js/browser-check.js"), /\bfetch\s*\(/);
 });
 
@@ -141,7 +144,10 @@ test("third-party actions are immutable and deployment is test-gated", () => {
   assert.doesNotMatch(workflow, /^\s*uses:\s*[^\s]+@(?![0-9a-f]{40}(?:\s|$))/m);
   assert.match(workflow, /^\s{2}test-ci:\n(?:.|\n)*?^\s{4}needs: \[build\]$/m);
   assert.match(workflow, /^\s{2}test-browser:\n(?:.|\n)*?^\s{4}needs: \[build\]$/m);
-  assert.match(workflow, /^\s{2}deploy:\n(?:.|\n)*?^\s{4}needs: \[build, verify, test-ci, test-browser\]$/m);
+  // The WASM reproducibility gate must exist and block both the artifact
+  // commit and the Pages deploy.
+  assert.match(workflow, /^\s{2}build-wasm:\n(?:.|\n)*?git diff --exit-code src\/js\/secp256k1-wasm-b64\.js/m);
+  assert.match(workflow, /^\s{2}deploy:\n(?:.|\n)*?^\s{4}needs: \[build, verify, test-ci, test-browser, build-wasm\]$/m);
 });
 
 test("the intentional low-entropy recovery behavior is documented", () => {

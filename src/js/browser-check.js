@@ -4,7 +4,8 @@
 // covers a platform feature the application depends on: a secure context,
 // the CSPRNG (locked cryptographic dependencies), BigInt arithmetic (key derivation and the SQLite
 // writer), UTF-8 TextEncoder/TextDecoder (hashing entropy input and writing
-// wallet.dat), and NFKD string normalization (BIP39 passphrases). The
+// wallet.dat), NFKD string normalization (BIP39 passphrases), and WebAssembly
+// (the secp256k1 curve engine). The
 // checks are synchronous, read-only, and generate no network traffic. When
 // every check passes the page is left untouched; when any check fails the
 // entire page is killed and replaced with a centered failure report listing
@@ -56,6 +57,18 @@
         const bytes = new TextEncoder().encode("\u00e9");
         if (bytes.length !== 2 || bytes[0] !== 0xc3 || bytes[1] !== 0xa9) return false;
         return new TextDecoder().decode(bytes) === "\u00e9";
+      },
+    },
+    {
+      name: "WebAssembly (secp256k1 engine)",
+      run: () => {
+        if (typeof WebAssembly !== "object" || typeof WebAssembly.Module !== "function") return false;
+        // Compile the smallest valid module (8 bytes, far under the
+        // synchronous-compilation size limit): proves both the engine and the
+        // content security policy allow WebAssembly before the app boots its
+        // secp256k1 module.
+        new WebAssembly.Module(new Uint8Array([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00]));
+        return true;
       },
     },
     {

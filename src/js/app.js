@@ -1,6 +1,9 @@
 import { sha256 as Z } from "@noble/hashes/sha2.js";
 import { ripemd160 } from "@noble/hashes/legacy.js";
-import { secp256k1 as xe } from "@noble/curves/secp256k1.js";
+// secp256k1 operations run in the libsecp256k1 WebAssembly module; the facade
+// is a drop-in for the noble/curves surface this file uses (see
+// src/js/secp256k1.js). App boot waits for the module to be ready.
+import { secp256k1 as xe, secp256k1Ready } from "./secp256k1.js";
 import { createBase58check as fi, hex as M } from "@scure/base";
 import { HDKey as Gt } from "@scure/bip32";
 import { entropyToMnemonic as bi, mnemonicToEntropy as Er, mnemonicToSeedSync as wi, validateMnemonic as Pn } from "@scure/bip39";
@@ -7759,13 +7762,18 @@ function hodlInitSecretFieldAutoClear() {
     if (event.persisted) clearSecretFields();
   });
 }
-hodlInitWorkspace();
-hodlSeedInitialManagers();
-hodlInitKeyManager();
-hodlInitMsigManager();
-hodlInitClearActionState();
-hodlInitSecretFieldAutoClear();
-hodlInitTheme();
-hodlInitMasterFingerprintPreview();
-hodlInitDerivationControls();
-hodlInitSegmentedControls();
+function hodlBoot() {
+  hodlInitWorkspace();
+  hodlSeedInitialManagers();
+  hodlInitKeyManager();
+  hodlInitMsigManager();
+  hodlInitClearActionState();
+  hodlInitSecretFieldAutoClear();
+  hodlInitTheme();
+  hodlInitMasterFingerprintPreview();
+  hodlInitDerivationControls();
+  hodlInitSegmentedControls();
+}
+// Curve operations need the WebAssembly module instantiated first (async in
+// browsers; already resolved synchronously under Node for the test suite).
+secp256k1Ready.then(hodlBoot);
