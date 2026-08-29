@@ -400,8 +400,8 @@ ec.innerHTML = `
     </section>
     <div class="row no-print segmented-control" id="workspace" role="group" aria-label="Workspace"></div>
     <section class="key-manager no-print" id="key-manager">
-      <div class="key-manager-head"><h2>Keys</h2><div class="add-item-control"><button class="btn secondary add-key" id="add-key" type="button" aria-label="Add key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Add another key</span></div></div>
-      <div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div>
+      <div class="key-manager-head"><h2>Keys</h2></div>
+      <div class="key-tab-strip"><div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div><div class="add-item-control"><button class="add-key" id="add-key" type="button" aria-label="Add key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Add another key</span></div></div>
     </section>
     <section class="card no-print" id="calc-card" role="tabpanel" hidden>
       <div class="key-panel-head">
@@ -476,8 +476,8 @@ ec.innerHTML = `
       <p class="err" id="error"></p>
     </section>
     <section class="key-manager no-print" id="msig-manager" hidden>
-      <div class="key-manager-head"><h2>Multisigs</h2><div class="add-item-control"><button class="btn secondary add-key" id="add-msig" type="button" aria-label="Add multisig" aria-describedby="add-msig-tooltip">+</button><span class="add-item-tooltip" id="add-msig-tooltip" role="tooltip">Add another multisig</span></div></div>
-      <div class="key-tabs" id="msig-tabs" role="tablist" aria-label="Multisigs"></div>
+      <div class="key-manager-head"><h2>Multisigs</h2></div>
+      <div class="key-tab-strip"><div class="key-tabs" id="msig-tabs" role="tablist" aria-label="Multisigs"></div><div class="add-item-control"><button class="add-key" id="add-msig" type="button" aria-label="Add multisig" aria-describedby="add-msig-tooltip">+</button><span class="add-item-tooltip" id="add-msig-tooltip" role="tooltip">Add another multisig</span></div></div>
     </section>
     <section class="card no-print" id="msig-card" role="tabpanel" hidden>
       <div class="key-panel-head">
