@@ -92,6 +92,25 @@ test("dependencies and build tooling are exactly locked", () => {
   assert.equal(existsSync(join(root, "src/js/vendor.js")), false, "opaque vendor bundle must not return");
 });
 
+test("security-sensitive crypto libraries resolve to a single locked version", () => {
+  // Duplicated @scure/@noble copies multiply the audit surface of key and
+  // address encoding code and can drift apart unnoticed on lockfile
+  // regeneration (issue #100). package.json pins one reviewed version with an
+  // npm override; this test rejects any second copy anywhere in the tree.
+  const lock = JSON.parse(read("package-lock.json"));
+  const versions = new Map();
+  for (const [path, entry] of Object.entries(lock.packages)) {
+    const name = path.match(/(?:^|\/)node_modules\/(@(?:scure|noble)\/[^/]+)$/)?.[1];
+    if (!name) continue;
+    if (!versions.has(name)) versions.set(name, new Set());
+    versions.get(name).add(entry.version);
+  }
+  assert.ok(versions.size > 0, "no @scure/@noble packages found in the lockfile");
+  for (const [name, found] of versions) {
+    assert.equal(found.size, 1, `${name} resolves to multiple locked versions: ${[...found].join(", ")}`);
+  }
+});
+
 test("Node scripts and test files parse", () => {
   const nodeFiles = [
     "scripts/build.mjs",
