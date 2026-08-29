@@ -705,13 +705,16 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   border-radius: 10px; background: var(--surface-2);
   transition: background-color .16s ease, border-color .16s ease;
 }
-/* The LifeHash sits beside the fingerprint: a deterministic visual twin of the
-   hex, so two fingerprints can be compared at a glance. Crisp pixels, no
-   interpolation, per the LifeHash presentation guidance. */
-.master-fingerprint-lifehash {
-  float: right; width: 48px; height: 48px; margin: 0 0 4px 8px; border-radius: 4px;
-  image-rendering: pixelated; background: #fff;
+/* The fixed-size frame stays present while the fingerprint is unavailable, so
+   resolving a LifeHash never changes the card height or shifts nearby fields. */
+.master-fingerprint-lifehash-frame {
+  float: right; display: block; width: 40px; height: 40px; margin-left: 8px;
+  border: 1px solid var(--border); border-radius: 4px; overflow: hidden; background: transparent;
 }
+.master-fingerprint-lifehash {
+  display: block; width: 100%; height: 100%; image-rendering: pixelated; background: #fff;
+}
+.master-fingerprint-lifehash[hidden] { display: none; }
 .master-fingerprint-label {
   display: block; color: var(--muted); font-size: 12px; line-height: 1.35;
   transition: color .16s ease, opacity .16s ease;
