@@ -35,13 +35,37 @@ const resolveFirefox = () => {
     } catch {}
     return null;
   };
-  const found = tryRun("firefox");
-  if (found) return found;
-  const macPaths = [
-    "/Applications/Firefox Developer Edition.app/Contents/MacOS/firefox",
-    "/Applications/Firefox.app/Contents/MacOS/firefox",
-  ];
-  for (const p of macPaths) {
+  for (const bin of ["firefox", "firefox-developer-edition"]) {
+    const found = tryRun(bin);
+    if (found) return found;
+  }
+  const platform = process.platform;
+  const paths = [];
+  if (platform === "darwin") {
+    paths.push(
+      "/Applications/Firefox Developer Edition.app/Contents/MacOS/firefox",
+      "/Applications/Firefox.app/Contents/MacOS/firefox",
+    );
+  } else if (platform === "win32") {
+    paths.push(
+      "C:\\Program Files\\Firefox Developer Edition\\firefox.exe",
+      "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
+      "C:\\Program Files (x86)\\Firefox Developer Edition\\firefox.exe",
+      "C:\\Program Files (x86)\\Mozilla Firefox\\firefox.exe",
+    );
+  } else {
+    paths.push(
+      "/usr/bin/firefox",
+      "/usr/bin/firefox-developer-edition",
+      "/usr/local/bin/firefox",
+      "/usr/local/bin/firefox-developer-edition",
+      "/snap/bin/firefox",
+      "/snap/bin/firefox-developer-edition",
+      "/opt/firefox/firefox",
+      "/opt/firefox-developer-edition/firefox",
+    );
+  }
+  for (const p of paths) {
     if (existsSync(p)) return p;
   }
   return "firefox";
