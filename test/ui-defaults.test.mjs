@@ -505,13 +505,11 @@ test("the site header is fixed, carries the logo, and holds the version, downloa
   const tracking = (rule) => Number(css.match(new RegExp(`${rule} \\{[^}]*letter-spacing: ([\\d.]+)em`, "s"))?.[1]);
   assert.ok(tracking("\\.site-version") < tracking("\\.kicker") / 2, "the header version kept the kicker's display tracking");
   // The uppercase stops at the version string, so its "v" prefix stays lower
-  // case -- in the label the build stamps and in the one online.js renders.
+  // case in the label the build stamps.
   assert.match(css, /\.site-version-number \{[^}]*text-transform: none;/);
-  assert.match(online, /newer\.className = "site-version-number";\s*newer\.textContent = latest\.version;/);
-  // The label is assembled from text nodes, and only an allowlisted
-  // same-directory filename may ever become its href.
-  assert.match(online, /tag = document\.createElement\("a"\);[\s\S]*?tag\.href = latest\.file;/);
-  assert.doesNotMatch(online, /version-select|innerHTML/);
+  // online.js never fetches or rewrites the version label: the build-stamped
+  // markup is the only source, and the app makes no runtime requests.
+  assert.doesNotMatch(online, /fetch\s*\(|site-version|innerHTML/);
   // Content clears the fixed header on screen, and reclaims the space in print.
   assert.match(css, /\.wrap \{ max-width: 1000px; margin: 0 auto; padding: calc\(var\(--site-header-height\) \+ 20px\) 16px 64px; \}/);
   assert.match(css, /@media print \{[\s\S]*?\.wrap \{ padding-top: 20px; \}/);
@@ -591,10 +589,8 @@ test("narrow screens keep the fixed header on one row by hiding control labels",
     assert.match(markup, /<span class="control-label">GitHub<\/span><\/a>/);
     // Each accessible name still contains its visible label (WCAG 2.5.3).
     assert.match(markup, /class="btn secondary download-html header-button"[^>]*aria-label="Download EntropyLab"/);
-    // The "(Latest)" half of the version is the one thing narrow bars drop; an
-    // update link stays, so it is never hidden.
-    assert.match(css, /@media \(max-width: 719px\) \{[\s\S]*?\.site-version-tag:not\(\.site-version-update\) \{ display: none; \}/);
-    assert.doesNotMatch(css, /@media \(max-width: 719px\) \{[\s\S]*?\.site-version-update \{/);
+    // The "(Latest)" half of the version is the one thing narrow bars drop.
+    assert.match(css, /@media \(max-width: 719px\) \{[\s\S]*?\.site-version-tag \{ display: none; \}/);
     assert.match(markup, /class="btn secondary github-repo-link header-button"[^>]*aria-label="View the EntropyLab GitHub repository in a new tab"/);
   }
 });

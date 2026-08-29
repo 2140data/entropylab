@@ -80,11 +80,10 @@ Build output (generated; CI rebuilds it for every run and commits it back to
 `rock` after each merge so the file stays downloadable from the repository):
 
 - `entropylab.html` — the self-contained application (open this file)
-- `versions.json` — version manifest the hosted header reads to flag a newer release
 
 The version is declared once in `package.json` and substituted into the
-output at build time. The generated files are gitignored locally; CI builds
-them before every test run and commits them back to `rock` after each merge.
+output at build time. The generated file is gitignored locally; CI builds
+it before every test run and commits it back to `rock` after each merge.
 To remove generated files, run `npm run clean`.
 
 ## Project structure
@@ -119,7 +118,6 @@ To remove generated files, run `npm run clean`.
 │       ├── enhanced-inputs.js
 │       └── repeat-inputs.js
 ├── entropylab.html         Compiled application (generated, CI-committed)
-├── versions.json           Version manifest for the hosted header version label (generated, CI-committed)
 └── versions/archived/      Historical releases excluded from the picker
 ```
 
@@ -134,14 +132,14 @@ npm run test:ci             # the CI subset: network-check, ui-defaults, source 
 npm run test:validate       # validate source and security invariants
 npm run test:browser        # test crypto, sanitization, networking, exports in headless Firefox
 npm run build               # compile src/ into the generated root files
-npm run verify              # verify the site artifact (snapshot, manifest, assets)
+npm run verify              # verify the site artifact (entropylab.html, assets)
 npm run ci                  # run the CI test subset, build, and verify in order
 ```
 
 GitHub Actions builds the site first, then runs the same test steps for pull
 requests and pushes to `rock`, stages the verified site (`entropylab.html`,
-`versions.json`, `assets/`) and deploys it to GitHub Pages. After a merge to
-`rock`, a final job commits the rebuilt `entropylab.html` and `versions.json`
+`assets/`) and deploys it to GitHub Pages. After a merge to
+`rock`, a final job commits the rebuilt `entropylab.html`
 back to the repository so the file stays downloadable; pull requests never
 carry the generated output, so they stop conflicting on it. The staging step
 copies the verified `entropylab.html` to a deployment-only `index.html`,
@@ -153,8 +151,8 @@ commands; the workflow contains no separate build implementation.
 
 The browser suite runs the assembled application in headless Firefox against a
 local Node.js HTTP server. It feeds hostile markup and event-handler strings
-through user-facing fields and the version manifest, verifies all observed
-application requests remain same-origin, exercises the hosted warning and
+through user-facing fields, verifies the application makes no network
+requests at runtime, exercises the hosted warning and
 assets, derives a known wallet through the UI, and inspects both watch-only
 and private recovery-sheet exports. It also runs the BIP39 and BIP32 published
 vectors directly against the application code. It is the only part of the

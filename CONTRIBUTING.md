@@ -52,8 +52,8 @@ browser test that asserts this must stay green.
 - The final build artifact is **`entropylab.html`** — a single self-contained
   HTML file with no runtime requirements (server, network, storage, or
   extensions). Any change must keep this true.
-- Edit sources in `src/`, never the build output. `entropylab.html` (and
-  `versions.json`) are generated, git-ignored, and not committed.
+- Edit sources in `src/`, never the build output. `entropylab.html` is
+  generated, git-ignored, and not committed.
 - CI rebuilds from `src/`, proves the output is byte-for-byte reproducible, and
   publishes it to the `pages` branch and GitHub Pages.
 
@@ -61,7 +61,7 @@ browser test that asserts this must stay green.
 git clone https://github.com/w-s-bitcoin/entropylab.git && cd entropylab
 node --version   # >= 20.19
 npm ci
-npm run build    # src/ → entropylab.html + versions.json
+npm run build    # src/ → entropylab.html
 npm test
 ```
 

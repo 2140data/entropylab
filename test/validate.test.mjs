@@ -14,8 +14,8 @@ const pkg = JSON.parse(read("package.json"));
 const appVersion = pkg.version;
 const appFile = "entropylab.html";
 
-// entropylab.html and versions.json are CI-generated artifacts, not committed
-// sources. Tests that read them require a fresh local build.
+// entropylab.html is a CI-generated artifact, not a committed source. Tests
+// that read it require a fresh local build.
 const ensureBuild = () => {
   if (!existsSync(join(root, appFile))) {
     execFileSync(process.execPath, [join(root, "scripts/build.mjs")], { stdio: "inherit" });
@@ -127,12 +127,9 @@ test("GitHub Pages aliases the canonical app at the site root only during deploy
   assert.doesNotMatch(workflow, /refs\/heads\/main/, "workflow must not target the retired branch name");
 });
 
-test("versions.json lists the current release", () => {
-  ensureBuild();
-  assert.deepEqual(
-    JSON.parse(read("versions.json")),
-    { versions: [{ version: `v${appVersion}`, file: appFile }] },
-  );
+test("the app never fetches, so the CSP forbids connections", () => {
+  assert.match(read("src/index.html"), /connect-src 'none'/);
+  assert.doesNotMatch(read("src/js/online.js") + read("src/js/network-check.js") + read("src/js/browser-check.js"), /\bfetch\s*\(/);
 });
 
 test("third-party actions are immutable and deployment is test-gated", () => {
