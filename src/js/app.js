@@ -2422,15 +2422,16 @@ function hodlUpdateDiceButtons(input, analysis) {
     }
     if (ge === "bitbox") {
       // The sixth roll is the coin, so on that turn the six keys become two:
-      // Tails over 1-3 and Heads over 4-6. Tapping enters the first face of its
-      // range; the range is what decides the bit, so any face in it builds the
-      // same word, and the actual roll can still be typed rather than tapped.
+      // Heads over 1-3 and Tails over 4-6, matching the BitBox lookup table
+      // column labels. Tapping enters the first face of its range; the range is
+      // what decides the bit, so any face in it builds the same word, and the
+      // actual roll can still be typed rather than tapped.
       let flipping = analysis.coinTurn && face >= 1 && face <= 6,
         leads = face === 1 || face === 4;
       button.hidden = flipping && !leads;
       button.classList.toggle("dice-key-wide", flipping && leads);
       if (flipping && leads) {
-        let side = face === 1 ? "Tails" : "Heads",
+        let side = face === 1 ? "Heads" : "Tails",
           range = face === 1 ? "1 – 3" : "4 – 6",
           caption = document.createElement("span");
         caption.className = "dice-key-caption";
@@ -3227,7 +3228,8 @@ function hodlBitBoxRolls(value, targetWords = Pt) {
       diceInWord.push(face);
       continue;
     }
-    // The sixth roll is the coin: 1-3 is Tails, 4-6 is Heads.
+    // The sixth roll is the coin: 1-3 is Heads, 4-6 is Tails (BitBox lookup
+    // table columns: "1 2 3 heads" is the +0 column, "4 5 6 tails" is +1).
     let coin = input === "1" || input === "2" || input === "3" ? 0 : 1;
     words.push(mi(diceInWord, coin));
     diceInWord = [];
@@ -3573,7 +3575,7 @@ function hodlRenderKeyForm() {
         return `<button type="button" data-d="${face}" aria-label="${aria}">${label}</button>`
       }).join("");
     let diceLabel = ge === "dplus" ? `D++ rolls (D8, D16, D16; then ${hodlDPlusFinalDescription(config.words)})` : ge === "bitbox" ? "Dice rolls (1\u20134, then a 6th die interpreted as a coin flip)" : "Dice rolls (faces 1\u20136 only)";
-    let diceHelp = ge === "dplus" ? `For each of the first ${config.partialWords} words, enter the D8 result, then both D16 results. ${hodlDPlusFinalHelp(config.words)}` : ge === "bitbox" ? `${config.partialWords} lookup-table words fill one slot at a time, then choose a confirmed final checksum word. Use 1\u20134 for the first five rolls (if you get 5 or 6, roll again). The sixth roll is treated as the coin: 1–3 is Tails, 4–6 is Heads. Or flip a real coin!` : ge === "coleman" ? `Every rolled 6 becomes 0 before the complete digit string is hashed with SHA-256. This Dice [1-6] method matches the method used by Keystone. Any nonempty count produces a phrase, but use at least ${config.hashRolls} fair rolls before relying on it.` : `The original dice digit string is hashed with SHA-256. This Base 10 [0-9] method matches COLDCARD and SeedSigner. Any nonempty count produces a phrase, but use at least ${config.hashRolls} fair rolls before relying on it.`;
+    let diceHelp = ge === "dplus" ? `For each of the first ${config.partialWords} words, enter the D8 result, then both D16 results. ${hodlDPlusFinalHelp(config.words)}` : ge === "bitbox" ? `${config.partialWords} lookup-table words fill one slot at a time, then choose a confirmed final checksum word. Use 1\u20134 for the first five rolls (if you get 5 or 6, roll again). The sixth roll is treated as the coin: 1–3 is Heads, 4–6 is Tails. Or flip a real coin!` : ge === "coleman" ? `Every rolled 6 becomes 0 before the complete digit string is hashed with SHA-256. This Dice [1-6] method matches the method used by Keystone. Any nonempty count produces a phrase, but use at least ${config.hashRolls} fair rolls before relying on it.` : `The original dice digit string is hashed with SHA-256. This Base 10 [0-9] method matches COLDCARD and SeedSigner. Any nonempty count produces a phrase, but use at least ${config.hashRolls} fair rolls before relying on it.`;
     let dicePlaceholder = ge === "dplus" ? "100 2AF…" : ge === "bitbox" ? "111111 222224\u2026" : "415263415263\u2026";
     let dicePad = ge === "dplus" ? `<div class="dice-input-pad dplus">${dplusPad}</div>` : `<div class="dice-input-pad faces-1-6">${[1,2,3,4,5,6].map(face=>`<button type="button" data-d="${face}">${face}</button>`).join("")}</div>`;
     let dplusConvention = ge === "dplus" ? `<p class="label" id="dplus-die-label">Which type of D16 dice are you rolling?</p><div class="card-suit-pad dplus-die-pad" id="dplus-die" role="group" aria-labelledby="dplus-die-label"><button type="button" class="${hodlDPlusNumberedD16?"":"active"}" data-dplus-die="hex" aria-pressed="${hodlDPlusNumberedD16?"false":"true"}"><strong>Hex</strong> \xB7 0\u2013F</button><button type="button" class="${hodlDPlusNumberedD16?"active":""}" data-dplus-die="numbered" aria-pressed="${hodlDPlusNumberedD16?"true":"false"}"><strong>Decimal</strong> \xB7 1\u201316</button></div>` : "";
@@ -3587,7 +3589,7 @@ function hodlRenderKeyForm() {
         <span><strong>Hashed rolls / Dice [1-6]</strong><span class="desc">Convert each 6 to 0 and SHA-256 the complete mapped digit string, matching the method used by Keystone. Use the first ${config.bits} bits; ${config.hashRolls} rolls are recommended, and every entered roll is included.</span></span>
       </label>
       <label class="choice"><input type="radio" name="dm" value="bitbox" ${ge === "bitbox" ? "checked" : ""} />
-        <span><strong>BitBox diceware / Direct word selection</strong><span class="desc">Use five dice showing 1\u20134, then a coin (or 6th die: 1\u20133 tails, 4\u20136 heads). Build ${config.partialWords} lookup-table words, then choose 1 of ${config.candidates} valid final checksum words.</span></span>
+        <span><strong>BitBox diceware / Direct word selection</strong><span class="desc">Use five dice showing 1\u20134, then a coin (or 6th die: 1\u20133 heads, 4\u20136 tails). Build ${config.partialWords} lookup-table words, then choose 1 of ${config.candidates} valid final checksum words.</span></span>
       </label>
       <label class="choice"><input type="radio" name="dm" value="dplus" ${ge==="dplus"?"checked":""} />
         <span><strong>D++ / Direct word selection</strong><span class="desc">Roll one 8-sided die and two 16-sided dice for each of the first ${config.partialWords} words, then ${hodlDPlusFinalDescription(config.words)} to select the valid checksum final word.</span></span>
