@@ -76,6 +76,15 @@ h2 { font-size: 1.5rem; margin: 8px 0; }
 a { color: var(--accent); }
 button, select, textarea, input { font: inherit; }
 button { cursor: pointer; }
+/* Every enabled button uses the same momentary press feedback. The disabled
+   state is intentionally excluded so controls that become unavailable after
+   their click transition directly from orange to their disabled treatment. */
+button:not(:disabled):active {
+  background: var(--selection-accent) !important;
+  color: var(--selection-fg) !important;
+  border-color: var(--selection-accent) !important;
+}
+button:not(:disabled):active * { color: inherit !important; }
 .wrap { max-width: 1000px; margin: 0 auto; padding: calc(var(--site-header-height) + 20px) 16px 64px; }
 .kicker { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px; margin: 16px 0; }
