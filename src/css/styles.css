@@ -804,10 +804,11 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .key-settings.single-key-mode .network-field { width: 100%; max-width: 50%; }
 .key-settings .field { min-width: 0; margin: 0; }
 #passphrase-field[hidden], #master-fingerprint-preview[hidden], #script-type-field[hidden],
-#account-address-settings[hidden], #derivation-path-preview[hidden] { display: none !important; }
+#account-address-settings[hidden], #address-range-settings[hidden], #derivation-path-preview[hidden] { display: none !important; }
 .field-note {
   display: block; margin-top: var(--space-control); color: var(--muted); font-size: 12px; font-weight: 400; line-height: 1.4;
 }
+.address-estimate { color: var(--accent); }
 .msig-legacy-account-toggle { margin: 0; }
 .msig-legacy-account-toggle[hidden] { display: none !important; }
 .msig-legacy-account-toggle input { margin-top: 2px; }
@@ -877,6 +878,26 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 }
 .current-item-actions { align-items: center; width: 100%; margin-top: var(--space-component); }
 .current-item-actions .clear-current-action { margin-inline-start: auto; }
+.btn.primary[data-derivation-state="running"],
+.btn.primary[data-derivation-state="stopping"] {
+  background: var(--danger); border-color: var(--danger); color: #fff;
+}
+.derive-progress {
+  display: inline-flex; flex: 0 1 260px; min-width: 170px; align-items: center; gap: 9px;
+  padding: 8px 11px; border: 0;
+  border-radius: 9px; background: color-mix(in oklab, var(--accent) 8%, var(--surface)); color: var(--accent);
+}
+.derive-progress[hidden] { display: none !important; }
+.derive-progress-track { position: relative; flex: 1 1 auto; height: 7px; overflow: hidden; border-radius: 999px; background: var(--surface-2); }
+.derive-progress-bar {
+  position: absolute; inset: 0 auto 0 0; width: 0; border-radius: inherit;
+  background: linear-gradient(90deg, #c66500, var(--accent), #ffb347); transition: width .12s linear;
+}
+.derive-progress.is-complete { color: var(--ok); }
+.derive-progress.is-complete .derive-progress-bar { width: 100%; background: var(--ok); }
+.derive-progress-label { display: inline-flex; flex: 0 0 auto; min-width: 42px; align-items: center; justify-content: flex-end; gap: 4px; font-size: 12px; font-weight: 700; }
+.derive-progress-label svg { display: block; width: 14px; height: 14px; }
+@media (prefers-reduced-motion: reduce) { .derive-progress-bar { transition: none; } }
 .msig-keys textarea { min-height: 72px; }
 .msig-intro { margin: var(--space-control) 0 0; }
 .msig-threshold-control {
@@ -1122,12 +1143,26 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .account-watch-section, .account-address-section { padding-top: 22px; border-top: 1px solid var(--border); }
 .account-address-lead { display: grid; gap: 10px; justify-items: start; margin-bottom: 22px; }
 .account-address-lead p { margin: 0; }
-.wallet-table { width: 100%; overflow: auto; }
+.wallet-table {
+  width: 100%; max-height: 252px; overflow: auto; border: 1px solid var(--border); border-radius: 9px;
+  overflow-anchor: none; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) var(--surface);
+}
+.wallet-table::-webkit-scrollbar { width: 10px; height: 10px; }
+.wallet-table::-webkit-scrollbar-track { background: var(--surface); border-radius: 10px; }
+.wallet-table::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border: 2px solid var(--surface); border-radius: 10px; }
+.wallet-table thead { position: sticky; z-index: 1; top: 0; background: var(--surface); }
 .wallet-table:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
 .wallet-table table { min-width: max-content; }
 .wallet-table-public table { min-width: 700px; }
 .wallet-table-private table { min-width: 660px; }
-.wallet-table + .wallet-data-subtitle { margin-top: 22px; }
+.wallet-table tbody tr:not(.address-virtual-spacer) { height: 34px; }
+.wallet-table tbody tr:not(.address-virtual-spacer) > * { white-space: nowrap; }
+.wallet-table .address-virtual-spacer, .wallet-table .address-virtual-spacer td { padding: 0; border: 0; line-height: 0; }
+.wallet-address-table + .wallet-data-subtitle { margin-top: 22px; }
+@media (max-width: 520px) {
+  .derive-progress { order: 3; flex-basis: 100%; }
+}
 .wallet-advanced {
   margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border);
 }

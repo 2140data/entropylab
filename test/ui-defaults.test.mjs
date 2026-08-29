@@ -69,6 +69,57 @@ test("single-key network selector is half width on wide screens and full width o
   );
 });
 
+test("key and multisig derivation use an indexed address window with an estimate and progress", () => {
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /id="address-start"[^>]*value="0"/);
+    assert.match(markup, /id="address-range"[^>]*value="5"/);
+    assert.match(markup, /id="msig-address-start"[^>]*value="0"/);
+    assert.match(markup, /id="msig-address-range"[^>]*value="5"/);
+    assert.match(markup, /id="derive-progress"[^>]*role="progressbar"/);
+    assert.match(markup, /id="msig-derive-progress"[^>]*role="progressbar"/);
+    assert.doesNotMatch(markup, /id="(?:msig-)?count"/);
+  }
+  assert.match(appSource, /function hodlReadAddressWindow\(prefix = "", mark = true\)/);
+  assert.match(appSource, /for \(let index = startIndex; index < startIndex \+ o; index\+\+\)/);
+  assert.match(appSource, /function hodlInitAddressBenchmark\(\)/);
+  assert.match(appSource, /requestIdleCallback\(run, \{ timeout: 750 \}\)/);
+  assert.match(appSource, /var hodlAddressVirtualThreshold = 24, hodlAddressVirtualRowHeight = 34, hodlAddressVirtualOverscan = 6/);
+  assert.match(appSource, /function hodlBindAddressVirtualization\(configs = \[\]\)/);
+  assert.match(appSource, /requestAnimationFrame\(render\)/);
+  assert.match(appSource, /aria-rowcount="\$\{rows\.length \+ 1\}"/);
+  assert.doesNotMatch(appSource, /hodlBindAddressPagination|address-page-button|>Previous<|>Next</);
+  assert.match(css, /\.wallet-table \{[\s\S]*?max-height: 252px;[\s\S]*?overflow: auto;/);
+  assert.match(css, /\.wallet-table \{[\s\S]*?overscroll-behavior: contain;/);
+  assert.match(css, /\.wallet-table tbody tr:not\(\.address-virtual-spacer\) \{ height: 34px; \}/);
+  assert.match(css, /\.derive-progress-bar \{[\s\S]*?background: linear-gradient/);
+  assert.match(appSource, /function hodlCreateDerivationTracker\(progress, control\)/);
+  assert.match(appSource, /label\.innerHTML = `\$\{hodlCopiedIconMarkup\(\)\}<span>Done<\/span>`/);
+  assert.match(appSource, /async function hodlAddressRowsWithProgress/);
+  assert.match(css, /\.derive-progress\.is-complete \{[^}]*var\(--ok\)/);
+  assert.match(css, /\.derive-progress \{[\s\S]*?border: 0;/);
+  assert.match(css, /\.btn\.primary\[data-derivation-state="running"\][\s\S]*?background: var\(--danger\)/);
+  assert.doesNotMatch(css, /derive-progress-slide|animation: derive-progress/);
+  assert.match(appSource, /button\.textContent = "Stop"/);
+  assert.match(appSource, /button\.style\.width = `\$\{width\}px`/);
+  assert.match(appSource, /button\.style\.removeProperty\("width"\)/);
+  assert.match(appSource, /class HodlDerivationCancelledError extends Error/);
+  assert.match(appSource, /function hodlStopDerivation\(kind\)/);
+  assert.match(appSource, /hodlHandleDerivationButton\("key", hodlCalculateKey\)/);
+  assert.match(appSource, /hodlHandleDerivationButton\("msig", hodlBuildMsig\)/);
+});
+
+test("a running derivation yields off the main thread, survives hidden tabs, and cancels on edits", () => {
+  assert.match(appSource, /function hodlDerivationPause\(\)/);
+  assert.match(appSource, /requestAnimationFrame\(finish\)/);
+  assert.match(appSource, /setTimeout\(finish, 100\)/);
+  assert.match(appSource, /return hodlDerivationPause\(\)\.then\(\(\) => \{/);
+  assert.match(appSource, /function hodlInvalidateLiveKeyResult\(\) \{[\s\S]*?hodlStopDerivation\("key"\)[\s\S]*?\}/);
+  assert.match(appSource, /function hodlInvalidateMsig\(\) \{[\s\S]*?hodlStopDerivation\("msig"\)[\s\S]*?\}/);
+  assert.match(appSource, /function hodlSyncDeriveButton\(\) \{[\s\S]*?hodlActiveDerivation\.kind === "key"[\s\S]*?button\.disabled = true;/);
+  assert.match(appSource, /function hodlSyncMsigDeriveButton\(\) \{[\s\S]*?hodlActiveDerivation\.kind === "msig"[\s\S]*?button\.disabled = true;/);
+  assert.equal(appSource.match(/A derivation is already running\./g)?.length, 2);
+});
+
 test("entropy progress messages sit directly below their inputs and above keypads", () => {
   assert.match(app, /<textarea id="dice"[^>]*><\/textarea><\/div>\s*\$\{hodlSeedMetaRowMarkup\("dice-meta",!0\)\}\s*\$\{dicePad\}/);
   assert.match(appSource, /<textarea id="\$\{inputId\}"[^>]*><\/textarea><\/div>\s*\$\{hodlSeedMetaRowMarkup\("cards-meta"\)\}/);
@@ -322,7 +373,7 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
 });
 
 test("multisig derivation settings follow the key inputs", () => {
-  const fieldOrder = /id="msig-keys"[\s\S]*id="msig-key-order-status"[\s\S]*id="msig-hint"[\s\S]*id="msig-script-type"[\s\S]*id="msig-network"[\s\S]*id="msig-account"[\s\S]*id="msig-count"[\s\S]*id="msig-key-order"[\s\S]*id="msig-go"/;
+  const fieldOrder = /id="msig-keys"[\s\S]*id="msig-key-order-status"[\s\S]*id="msig-hint"[\s\S]*id="msig-script-type"[\s\S]*id="msig-network"[\s\S]*id="msig-account"[\s\S]*id="msig-address-start"[\s\S]*id="msig-address-range"[\s\S]*id="msig-key-order"[\s\S]*id="msig-go"/;
   assert.match(template, fieldOrder);
   assert.match(app, fieldOrder);
 });
@@ -402,8 +453,8 @@ test("derived wallets offer an address match check", () => {
   assert.match(appSource, /var hodlAddressSearchLimit\s*=\s*1000/);
   assert.match(app, /function hodlMatchHdAddressBeyond\(address,account,start\)/);
   assert.match(app, /function hodlMatchMsigAddressBeyond\(address,start\)/);
-  assert.match(app, /hodlAddressTable\(account\.change,"Change addresses",hasPrivate\)\}\s*\$\{hodlAddressMatchMarkup\(\)/);
-  assert.match(app, /hodlAddressTable\(re\.change,"Multisig change addresses"\)\}\s*\$\{hodlAddressMatchMarkup\(\)/);
+  assert.match(app, /hodlAddressTable\(account\.change,"Change addresses",hasPrivate,"hd-change"\)\}\s*\$\{hodlAddressMatchMarkup\(\)/);
+  assert.match(app, /hodlAddressTable\(re\.change,"Multisig change addresses",!1,"msig-change"\)\}\s*\$\{hodlAddressMatchMarkup\(\)/);
   assert.match(css, /\.address-match-field/);
 });
 
@@ -530,7 +581,7 @@ test("multisig consistently uses derive for its heading and action", () => {
   assert.match(app, /function hodlValidatedMsigInputs\(\)/);
   assert.match(appSource, /hodlValidatedMsigInputs\(\);\s*ready = true/);
   assert.match(app, /button\.disabled=!ready/);
-  assert.match(app, /let\{network,count,n,m,kind,legacyStandard,nodes,xpubs,keyTokens,accountSummary,accountWarning\}=hodlValidatedMsigInputs\(\)/);
+  assert.match(app, /let\{network,count,addressStart,n,m,kind,legacyStandard,nodes,xpubs,keyTokens,accountSummary,accountWarning\}=hodlValidatedMsigInputs\(\)/);
 });
 
 test("key and multisig add controls stay pinned to the right of their tab strips", () => {
