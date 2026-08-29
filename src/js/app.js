@@ -3492,21 +3492,23 @@ function hodlUpdateDiceButtons(input, analysis) {
       // faces it stands for. Tapping enters the first face of its range; the
       // range is what decides the bit, so any face in it derives the same word,
       // and the actual roll can still be typed.
-      let flipping = analysis.dplus?.waiting === "checksum-coin" && face >= 1 && face <= 8,
-        leads = face === 1 || face === 5;
-      button.hidden = flipping && !leads;
-      button.classList.toggle("dice-key-wide", flipping && leads);
-      if (flipping && leads) {
+      // Only a D8 face can be rolled here, so the D16-only keys (0 and 9-F) are
+      // hidden rather than left greyed around the two that are live.
+      let coinTurn = analysis.dplus?.waiting === "checksum-coin",
+        leads = coinTurn && (face === 1 || face === 5);
+      button.hidden = coinTurn && !leads;
+      button.classList.toggle("dice-key-wide", leads);
+      if (leads) {
         let side = face === 1 ? "Tails" : "Heads",
           range = face === 1 ? "1 – 4" : "5 – 8",
           caption = document.createElement("span");
         caption.className = "dice-key-caption";
         caption.textContent = range;
         button.replaceChildren(document.createTextNode(side), caption);
-      } else if (face >= 1 && face <= 8 && button.querySelector(".dice-key-caption")) {
+      } else if (!coinTurn && button.querySelector(".dice-key-caption")) {
         button.replaceChildren(document.createTextNode(String(button.dataset.d || "")));
       }
-      button.classList.toggle("has-caption", flipping && leads);
+      button.classList.toggle("has-caption", leads);
     }
     if (ge === "bitbox") {
       // The sixth roll is the coin, so on that turn the six keys become two:
