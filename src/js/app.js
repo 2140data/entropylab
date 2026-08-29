@@ -144,7 +144,7 @@ var vr=[16,20,24,28,32],Rc={0:"00",1:"01",2:"10",3:"11",4:"0",5:"1"};function kr
         </label>
         <div class="key-settings-row">
           <label class="field">Script type
-            <select id="msig-script-type" aria-describedby="msig-script-warning"><option value="p2sh">Legacy · BIP45</option><option value="p2sh-p2wsh">Nested SegWit · BIP48</option><option value="p2wsh" selected>Native SegWit · BIP48</option><option value="mixed" disabled data-custom-select-placeholder="true">Mixed · incompatible keys</option></select>
+            <select id="msig-script-type" aria-describedby="msig-script-warning"><option value="p2sh">Legacy · BIP45</option><option value="p2sh-p2wsh">Nested SegWit · BIP48</option><option value="p2wsh" selected>Native SegWit · BIP48</option><option value="p2tr">Taproot · BIP86</option><option value="mixed" disabled data-custom-select-placeholder="true">Mixed · incompatible keys</option></select>
             <span class="field-note msig-script-warning" id="msig-script-warning" role="status" hidden></span>
           </label>
           <label class="field">Network
@@ -318,7 +318,8 @@ function hodlBuildMultisigCosignerExports(root,network,accountIndex,masterFinger
     {accountId:"bip44",kind:"p2sh",standard:"bip45",label:"Legacy · BIP45 · No account",family:"x",accountPath:"m/45'",originPath:"45h"},
     {accountId:"bip44",kind:"p2sh",standard:"bip87",label:`Legacy · BIP87 · Account ${accountIndex}`,family:"x",accountPath:`m/87'/${coinType}'/${accountIndex}'`,originPath:`87h/${coinType}h/${accountIndex}h`},
     {accountId:"bip49",kind:"p2sh-p2wsh",label:"Nested SegWit · BIP48",family:"y",scriptIndex:1},
-    {accountId:"bip84",kind:"p2wsh",label:"Native SegWit · BIP48",family:"z",scriptIndex:2}
+    {accountId:"bip84",kind:"p2wsh",label:"Native SegWit · BIP48",family:"z",scriptIndex:2},
+    {accountId:"bip86",kind:"p2tr",label:"Taproot · BIP86",family:"x",accountPath:`m/86'/${coinType}'/${accountIndex}'`,originPath:`86h/${coinType}h/${accountIndex}h`}
   ].map(definition=>{
     let accountPath=definition.accountPath||`m/48'/${coinType}'/${accountIndex}'/${definition.scriptIndex}'`,originPath=definition.originPath||`48h/${coinType}h/${accountIndex}h/${definition.scriptIndex}h`;
     let node=root.derive(accountPath),publicKey=definition.family==="x"?hodlSerializeExtendedKey(node.publicExtendedKey,network,"x",!1):hodlSerializeMultisigExtendedKey(node.publicExtendedKey,network,definition.family);
@@ -2106,12 +2107,30 @@ function hodlOriginMatchesParsedKey(origin,parsed){
 function hodlMultisigDerivationStandard(origin){
   let steps=hodlNormalizeOriginPath(origin?.path).split("/").filter(Boolean);
   if(steps[0]==="45h")return"bip45";
+  if(steps[0]==="86h")return"bip86";
   if(steps[0]==="87h")return"bip87";
   if(steps[0]==="48h")return"bip48";
   return null
 }
 function hodlOriginScriptError(origin,kind,network,legacyStandard="bip45"){
   let steps=hodlNormalizeOriginPath(origin.path).split("/");
+  if(kind==="p2tr"){
+    let coin=network==="testnet"?"1h":"0h";
+    if(steps[0]==="86h"){
+      if(steps[1]!==coin)return`This ${network} Taproot origin should use ${coin} as the coin type.`;
+      if(steps.length!==3)return"BIP86 origin must be 86h/coin/account.";
+      if(!/^\d+h$/.test(steps[2]))return"BIP86 account index must be hardened.";
+      return""
+    }
+    if(steps[0]==="48h"){
+      if(steps[1]!==coin)return`This ${network} origin should use ${coin} as the coin type.`;
+      if(steps.length!==4)return"BIP48 Taproot origin must be 48h/coin/account/3h.";
+      if(!/^\d+h$/.test(steps[2]))return"BIP48 account index must be hardened.";
+      if(steps[3]!=="3h")return"BIP48 Taproot origin must end in 3h.";
+      return""
+    }
+    return"Taproot origin must be 86h/coin/account or 48h/coin/account/3h."
+  }
   if(kind==="p2wsh"||kind==="p2sh-p2wsh"){
     if(steps[0]!=="48h")return"This script type's origin must start at 48h.";
     let coin=network==="testnet"?"1h":"0h";
@@ -2136,7 +2155,7 @@ function hodlOriginScriptError(origin,kind,network,legacyStandard="bip45"){
 function hodlMultisigAccountNumber(origin,kind){
   let steps=hodlNormalizeOriginPath(origin?.path).split("/");
   if(kind==="p2sh"&&steps[0]==="45h")return null;
-  let standard=kind==="p2sh"?"BIP87":"BIP48",match=steps[2]?.match(/^(\d+)h$/);
+  let standard=kind==="p2tr"?(steps[0]==="48h"?"BIP48":"BIP86"):kind==="p2sh"?"BIP87":"BIP48",match=steps[2]?.match(/^(\d+)h$/);
   if(!match)throw new Error(`${standard} account index must be hardened.`);
   let account=Number(match[1]);
   if(!Number.isSafeInteger(account)||account<0||account>0x7fffffff)throw new Error(`${standard} account index is out of range.`);
@@ -2152,9 +2171,11 @@ function hodlMultisigAccountWarning(summary){
 function hodlMultisigOriginScriptKind(origin){
   let steps=hodlNormalizeOriginPath(origin?.path).split("/").filter(Boolean);
   if(steps.length===1&&steps[0]==="45h")return"p2sh";
+  if(steps[0]==="86h"&&steps.length===3)return"p2tr";
   if(steps[0]!=="48h"||steps.length!==4)return null;
   if(steps[3]==="1h")return"p2sh-p2wsh";
   if(steps[3]==="2h")return"p2wsh";
+  if(steps[3]==="3h")return"p2tr";
   return null
 }
 function hodlMultisigScriptEvidence(parsed){
@@ -2162,7 +2183,7 @@ function hodlMultisigScriptEvidence(parsed){
   return{prefixKind,originKind:hodlMultisigOriginScriptKind(parsed?.origin),standard:hodlMultisigDerivationStandard(parsed?.origin)}
 }
 function hodlSummarizeMultisigScriptKinds(kinds){
-  let supported=["p2sh","p2sh-p2wsh","p2wsh"],unique=[...new Set((kinds||[]).filter(kind=>supported.includes(kind)))];
+  let supported=["p2sh","p2sh-p2wsh","p2wsh","p2tr"],unique=[...new Set((kinds||[]).filter(kind=>supported.includes(kind)))];
   return{kind:unique.length>1?"mixed":unique[0]||null,kinds:unique,mixed:unique.length>1}
 }
 function hodlParseMultisigCosigner(raw){
@@ -2179,7 +2200,7 @@ function hodlDetectMsigScriptSummary(values=hodlReadMsigXpubs()){
   let summary=hodlSummarizeMultisigScriptKinds(kinds),standards=[...new Set(legacyStandards)],legacyScriptConflict=standards.includes("bip87")&&summary.kinds.some(kind=>kind!=="p2sh");
   return{...summary,legacyStandard:standards.length===1?standards[0]:null,legacyStandards:standards,legacyMixed:standards.length>1,legacyScriptConflict}
 }
-function hodlMultisigScriptLabel(kind){return kind==="p2sh"?"Legacy":kind==="p2sh-p2wsh"?"Nested SegWit":kind==="p2wsh"?"Native SegWit":"Unknown"}
+function hodlMultisigScriptLabel(kind){return kind==="p2sh"?"Legacy":kind==="p2sh-p2wsh"?"Nested SegWit":kind==="p2wsh"?"Native SegWit":kind==="p2tr"?"Taproot":"Unknown"}
 function hodlSelectedLegacyMultisigStandard(){return document.getElementById("msig-legacy-bip87")?.checked?"bip87":"bip45"}
 function hodlUpdateMsigLegacyControls(){
   let checkbox=document.getElementById("msig-legacy-bip87"),toggle=document.getElementById("msig-legacy-account-toggle"),option=document.querySelector('#msig-script-type option[value="p2sh"]'),legacy=hodlScriptKind()==="p2sh";
@@ -2192,6 +2213,7 @@ function hodlMultisigKeyPlaceholder(kind,network,legacyStandard="bip45"){
   if(kind==="p2sh")return`[fingerprint/45h]${testnet?"tpub":"xpub"}…`;
   if(kind==="p2sh-p2wsh")return`[fingerprint/48h/${coin}/0h/1h]${testnet?"Upub":"Ypub"}…`;
   if(kind==="p2wsh")return`[fingerprint/48h/${coin}/0h/2h]${testnet?"Vpub":"Zpub"}…`;
+  if(kind==="p2tr")return`[fingerprint/86h/${coin}/0h]${testnet?"tpub":"xpub"}…`;
   return"Use matching multisig extended public keys"
 }
 function hodlUpdateMsigKeyPlaceholders(){
@@ -2312,12 +2334,18 @@ function hodlFillKeys(values){
   hodlUpdateMsigScriptDetection();box.querySelectorAll("textarea").forEach(ta=>{if(ta.value)hodlCheckXpub(ta)});hodlUpdateMsigHint();hodlUpdateMsigAccount()
 }
 function hodlMultisigPrefixCompatible(parsed,kind){
+  if(kind==="p2tr")return parsed.family==="x";
   if(parsed.scope==="singlesig")return parsed.family==="x";
   if(kind==="p2sh-p2wsh")return parsed.family==="y";
   if(kind==="p2wsh")return parsed.family==="z";
   return!1
 }
 function hodlMultisigAccountKeyError(parsed,kind,legacyStandard="bip45"){
+  if(kind==="p2tr"){
+    if(parsed.depth===3){if(parsed.childNumber<0x80000000)return"A BIP86 account index must be hardened.";return""}
+    if(parsed.depth===4){if(parsed.childNumber!==0x80000003)return"BIP48 Taproot requires a script-account key ending in /3h.";return""}
+    return"Taproot requires a BIP86 account key at m/86h/coinh/accounth, or BIP48 script 3h."
+  }
   if(kind==="p2wsh"||kind==="p2sh-p2wsh"){
     let scriptIndex=kind==="p2wsh"?2:1,label=kind==="p2wsh"?"Native SegWit":"Nested SegWit",expected=0x80000000+scriptIndex;
     if(parsed.depth!==4)return`${label} requires a depth-4 BIP48 script-account key ending in /${scriptIndex}h; this key is depth ${parsed.depth}.`;
@@ -2347,7 +2375,20 @@ function hodlResetMsigForm(){hodlSetMsigThresholds(2,3);hodlSyncSelect(document.
 function hodlInitMsig(){hodlBindMsigThresholdSlider();let recheck=()=>{hodlUpdateMsigScriptDetection();hodlInvalidateMsig();document.querySelectorAll("#msig-keys textarea").forEach(hodlCheckXpub)},script=document.getElementById("msig-script-type"),legacy=document.getElementById("msig-legacy-bip87");script.addEventListener("change",()=>{if(script.value!=="mixed")script.dataset.lastConcrete=script.value;recheck()});if(legacy)legacy.addEventListener("change",()=>{hodlUpdateMsigLegacyControls();hodlUpdateMsigKeyPlaceholders();hodlInvalidateMsig();document.querySelectorAll("#msig-keys textarea").forEach(hodlCheckXpub);hodlSyncMsigClearButton(!0)});document.getElementById("msig-network").addEventListener("change",recheck);document.getElementById("msig-count").addEventListener("change",hodlInvalidateMsig);hodlResetMsigForm();W("#msig-go").onclick=hodlBuildMsig;W("#msig-wipe").onclick=hodlWipeActiveMsig}
 function hodlCmpBytes(a,b){let n=Math.min(a.length,b.length);for(let i=0;i<n;i++)if(a[i]!==b[i])return a[i]-b[i];return a.length-b.length}
 function hodlScriptKind(){return document.getElementById("msig-script-type")?.value||"p2wsh"}
-function hodlMsigAddr(pubkeys,m,network,kind){let sorted=[...pubkeys].sort(hodlCmpBytes);let ms=Oe.encode({type:"ms",m,pubkeys:sorted});let net=_s(network);if(kind==="p2wsh"){let hash=tr(ms);return{address:or(net).encode({type:"wsh",hash}),scriptHex:M.encode(ms),kind}}if(kind==="p2sh-p2wsh"){let hash=tr(ms);let wshScript=Oe.encode({type:"wsh",hash});let wrapped=Jr({script:wshScript,witnessScript:ms},net);return{address:wrapped.address,scriptHex:M.encode(ms),kind}}let wrapped=Jr({script:ms},net);return{address:wrapped.address,scriptHex:M.encode(ms),kind}}
+function hodlTaprootNumsKey(){return M.decode("50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0")}
+function hodlXOnlyPubkey(pubkey){if(!pubkey||pubkey.length<32)throw new Error("Could not derive a public key");return pubkey.length===33?pubkey.slice(1):pubkey.slice(0,32)}
+function hodlMsigAddr(pubkeys,m,network,kind){
+  let net=_s(network);
+  if(kind==="p2tr"){
+    let xonly=[...pubkeys].map(hodlXOnlyPubkey).sort(hodlCmpBytes),script=Oe.encode({type:"tr_ms",m,pubkeys:xonly}),out=en(hodlTaprootNumsKey(),{script},net);
+    if(!out?.address)throw new Error("Failed to build Taproot multisig address");
+    return{address:out.address,scriptHex:M.encode(script),kind}
+  }
+  let sorted=[...pubkeys].sort(hodlCmpBytes);let ms=Oe.encode({type:"ms",m,pubkeys:sorted});
+  if(kind==="p2wsh"){let hash=tr(ms);return{address:or(net).encode({type:"wsh",hash}),scriptHex:M.encode(ms),kind}}
+  if(kind==="p2sh-p2wsh"){let hash=tr(ms);let wshScript=Oe.encode({type:"wsh",hash});let wrapped=Jr({script:wshScript,witnessScript:ms},net);return{address:wrapped.address,scriptHex:M.encode(ms),kind}}
+  let wrapped=Jr({script:ms},net);return{address:wrapped.address,scriptHex:M.encode(ms),kind}
+}
 function hodlValidatedMsigInputs(){
   let network=hodlSelectedNetwork(document.getElementById("msig-network")),count=Number(document.getElementById("msig-count")?.value),n=Number(document.getElementById("msig-n")?.value),m=Number(document.getElementById("msig-m")?.value);
   if(!(m>=1&&n>=1&&m<=n&&n<=15))throw new Error("Pick how many signatures out of how many keys.");
@@ -2376,8 +2417,9 @@ function hodlBuildMsig(){
     let{network,count,n,m,kind,legacyStandard,nodes,xpubs,keyTokens,accountSummary,accountWarning}=hodlValidatedMsigInputs(),bip45=kind==="p2sh"&&legacyStandard==="bip45";
     let receiveSuffix=bip45?"/0/0/*":"/0/*",changeSuffix=bip45?"/0/1/*":"/1/*";
     let inner=keyTokens.map(key=>key+receiveSuffix).join(","),innerChange=keyTokens.map(key=>key+changeSuffix).join(",");
-    let descriptor=kind==="p2wsh"?`wsh(sortedmulti(${m},${inner}))`:kind==="p2sh-p2wsh"?`sh(wsh(sortedmulti(${m},${inner})))`:`sh(sortedmulti(${m},${inner}))`;
-    let changeDescriptor=kind==="p2wsh"?`wsh(sortedmulti(${m},${innerChange}))`:kind==="p2sh-p2wsh"?`sh(wsh(sortedmulti(${m},${innerChange})))`:`sh(sortedmulti(${m},${innerChange}))`;
+    let nums="50929b74c1a04954b78b4b6035e97a5e078a5a0f28ec96d547bfee9ace803ac0";
+    let descriptor=kind==="p2tr"?`tr(${nums},sortedmulti_a(${m},${inner}))`:kind==="p2wsh"?`wsh(sortedmulti(${m},${inner}))`:kind==="p2sh-p2wsh"?`sh(wsh(sortedmulti(${m},${inner})))`:`sh(sortedmulti(${m},${inner}))`;
+    let changeDescriptor=kind==="p2tr"?`tr(${nums},sortedmulti_a(${m},${innerChange}))`:kind==="p2wsh"?`wsh(sortedmulti(${m},${innerChange}))`:kind==="p2sh-p2wsh"?`sh(wsh(sortedmulti(${m},${innerChange})))`:`sh(sortedmulti(${m},${innerChange}))`;
     let receive=[],change=[],receivePath=bip45?"m/0/0/":"m/0/",changePath=bip45?"m/0/1/":"m/1/";for(let index=0;index<count;index++){
       let receivePublicKeys=nodes.map(node=>{let key=node.derive(receivePath+index).publicKey;if(!key)throw new Error("Could not derive a public key");return key});
       let changePublicKeys=nodes.map(node=>{let key=node.derive(changePath+index).publicKey;if(!key)throw new Error("Could not derive a public key");return key});
@@ -2387,7 +2429,8 @@ function hodlBuildMsig(){
     let notes=["This is watch-only. Private keys never entered this calculator.","Each key origin lets a signer match its seed to one co-signer.","A signer is only needed when you spend."];
     if(bip45)notes.push("Legacy BIP45 addresses use co-signer branch 0 for this receive and change set.");
     if(kind==="p2sh"&&legacyStandard==="bip87")notes.push("Legacy P2SH uses the selected BIP87 account paths. Keep the descriptor with every seed backup.");
-    re={kind:"msig",network,m,n,script:kind,scriptStandard:kind==="p2sh"?legacyStandard:"bip48",account:accountSummary.account,accountMixed:accountSummary.mixed,nodes,xpubs,receiveDescriptor:Le(descriptor),changeDescriptor:Le(changeDescriptor),walletDescriptor:hodlWatchOnlyMultipathDescriptor(Le(descriptor)),receive,change,notes,warnings:accountWarning?[accountWarning]:[]};
+    if(kind==="p2tr")notes.push("Taproot script-path multisig. The internal key is the BIP341 NUMS point, so spending is only possible through the multi_a script path.");
+    re={kind:"msig",network,m,n,script:kind,scriptStandard:kind==="p2tr"?"bip86":kind==="p2sh"?legacyStandard:"bip48",account:accountSummary.account,accountMixed:accountSummary.mixed,nodes,xpubs,receiveDescriptor:Le(descriptor),changeDescriptor:Le(changeDescriptor),walletDescriptor:hodlWatchOnlyMultipathDescriptor(Le(descriptor)),receive,change,notes,warnings:accountWarning?[accountWarning]:[]};
     hodlCaptureMsig();hodlShowMsig();hodlFocusWalletResult()
   }catch(exception){re=null;dr.innerHTML="";error.textContent=exception.message||String(exception);hodlCaptureMsig()}
 }
