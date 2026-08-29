@@ -2382,34 +2382,47 @@ function hodlUpdateDiceButtons(input, analysis) {
       }
     }
     if (ge === "dplus") {
-      // The 18-word seed ends on a D8 read as a coin, so name the side each
-      // face stands for. The caption is appended rather than replacing the
-      // label, which on the decimal keypad is a pair of stacked spans.
+      // The 18-word seed ends on a D8 read as a coin. On that turn the eight D8
+      // keys collapse into one Tails key and one Heads key, each naming the
+      // faces it stands for. Tapping enters the first face of its range; the
+      // range is what decides the bit, so any face in it derives the same word,
+      // and the actual roll can still be typed.
       let flipping = analysis.dplus?.waiting === "checksum-coin" && face >= 1 && face <= 8,
-        caption = button.querySelector(".dice-key-caption");
-      if (flipping) {
-        let side = face <= 4 ? "Tails" : "Heads";
-        if (caption) caption.textContent = side;
-        else {
+        leads = face === 1 || face === 5;
+      button.hidden = flipping && !leads;
+      button.classList.toggle("dice-key-wide", flipping && leads);
+      if (flipping && leads) {
+        let side = face === 1 ? "Tails" : "Heads",
+          range = face === 1 ? "1 – 4" : "5 – 8",
           caption = document.createElement("span");
-          caption.className = "dice-key-caption";
-          caption.textContent = side;
-          button.append(caption);
-        }
-      } else if (caption) caption.remove();
-      button.classList.toggle("has-caption", flipping);
+        caption.className = "dice-key-caption";
+        caption.textContent = range;
+        button.replaceChildren(document.createTextNode(side), caption);
+      } else if (face >= 1 && face <= 8 && button.querySelector(".dice-key-caption")) {
+        button.replaceChildren(document.createTextNode(String(button.dataset.d || "")));
+      }
+      button.classList.toggle("has-caption", flipping && leads);
     }
     if (ge === "bitbox") {
-      // The sixth roll is the coin, so name the side each face stands for.
-      let side = analysis.coinTurn && face >= 1 && face <= 6 ? (face <= 3 ? "Tails" : "Heads") : "";
-      button.replaceChildren(document.createTextNode(String(button.dataset.d || "")));
-      if (side) {
-        let caption = document.createElement("span");
+      // The sixth roll is the coin, so on that turn the six keys become two:
+      // Tails over 1-3 and Heads over 4-6. Tapping enters the first face of its
+      // range; the range is what decides the bit, so any face in it builds the
+      // same word, and the actual roll can still be typed rather than tapped.
+      let flipping = analysis.coinTurn && face >= 1 && face <= 6,
+        leads = face === 1 || face === 4;
+      button.hidden = flipping && !leads;
+      button.classList.toggle("dice-key-wide", flipping && leads);
+      if (flipping && leads) {
+        let side = face === 1 ? "Tails" : "Heads",
+          range = face === 1 ? "1 – 3" : "4 – 6",
+          caption = document.createElement("span");
         caption.className = "dice-key-caption";
-        caption.textContent = side;
-        button.append(caption);
+        caption.textContent = range;
+        button.replaceChildren(document.createTextNode(side), caption);
+      } else {
+        button.replaceChildren(document.createTextNode(String(button.dataset.d || "")));
       }
-      button.classList.toggle("has-caption", Boolean(side));
+      button.classList.toggle("has-caption", flipping && leads);
     }
     button.disabled = disabled;
     button.title = reason;
@@ -3541,7 +3554,7 @@ function hodlRenderKeyForm() {
         return `<button type="button" data-d="${face}" aria-label="${aria}">${label}</button>`
       }).join("");
     let diceLabel = ge === "dplus" ? (config.words === 24 ? "D++ rolls (D8, D16, D16; then a final D8)" : "D++ rolls (D8, D16, D16)") : ge === "bitbox" ? "Dice rolls (1\u20134, then a 6th die interpreted as a coin flip)" : "Dice rolls (faces 1\u20136 only)";
-    let diceHelp = ge === "dplus" ? `For each of the first ${config.partialWords} words, enter the D8 result, then both D16 results. ${config.words===24?"One final D8 roll selects the checksum word.":config.words===12?"One final D8 roll and one D16 roll select the checksum word.":"One final D16 roll and one final D8 roll select the checksum word. The final D8 is interpreted as a coin flip: 1\u20134 is Tails, 5\u20138 is Heads."}` : ge === "bitbox" ? `${config.partialWords} lookup-table words fill one slot at a time, then choose a confirmed final checksum word. Use 1\u20134 for the first five rolls (if you get 5 or 6, roll again). The sixth roll is treated as the coin: 1–3 is Tails, 4–6 is Heads.` : ge === "coleman" ? `Every rolled 6 becomes 0 before the complete digit string is hashed with SHA-256. This Dice [1-6] method matches the method used by Keystone. Any nonempty count produces a phrase, but use at least ${config.hashRolls} fair rolls before relying on it.` : `The original dice digit string is hashed with SHA-256. This Base 10 [0-9] method matches COLDCARD and SeedSigner. Any nonempty count produces a phrase, but use at least ${config.hashRolls} fair rolls before relying on it.`;
+    let diceHelp = ge === "dplus" ? `For each of the first ${config.partialWords} words, enter the D8 result, then both D16 results. ${config.words===24?"One final D8 roll selects the checksum word.":config.words===12?"One final D8 roll and one D16 roll select the checksum word.":"One final D16 roll and one final D8 roll select the checksum word. The final D8 is interpreted as a coin flip: 1\u20134 is Tails, 5\u20138 is Heads. Or flip a real coin!"}` : ge === "bitbox" ? `${config.partialWords} lookup-table words fill one slot at a time, then choose a confirmed final checksum word. Use 1\u20134 for the first five rolls (if you get 5 or 6, roll again). The sixth roll is treated as the coin: 1–3 is Tails, 4–6 is Heads. Or flip a real coin!` : ge === "coleman" ? `Every rolled 6 becomes 0 before the complete digit string is hashed with SHA-256. This Dice [1-6] method matches the method used by Keystone. Any nonempty count produces a phrase, but use at least ${config.hashRolls} fair rolls before relying on it.` : `The original dice digit string is hashed with SHA-256. This Base 10 [0-9] method matches COLDCARD and SeedSigner. Any nonempty count produces a phrase, but use at least ${config.hashRolls} fair rolls before relying on it.`;
     let dicePlaceholder = ge === "dplus" ? "100 2AF…" : ge === "bitbox" ? "111111 222224\u2026" : "415263415263\u2026";
     let dicePad = ge === "dplus" ? `<div class="dice-input-pad dplus">${dplusPad}</div>` : `<div class="dice-input-pad faces-1-6">${[1,2,3,4,5,6].map(face=>`<button type="button" data-d="${face}">${face}</button>`).join("")}</div>`;
     let dplusConvention = ge === "dplus" ? `<p class="label" id="dplus-die-label">Which type of D16 dice are you rolling?</p><div class="card-suit-pad dplus-die-pad" id="dplus-die" role="group" aria-labelledby="dplus-die-label"><button type="button" class="${hodlDPlusNumberedD16?"":"active"}" data-dplus-die="hex" aria-pressed="${hodlDPlusNumberedD16?"false":"true"}"><strong>Hex</strong> \xB7 0\u2013F</button><button type="button" class="${hodlDPlusNumberedD16?"active":""}" data-dplus-die="numbered" aria-pressed="${hodlDPlusNumberedD16?"true":"false"}"><strong>Decimal</strong> \xB7 1\u201316</button></div>` : "";
