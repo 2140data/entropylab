@@ -40,7 +40,7 @@ Official website: [entropylab.online](https://entropylab.online)
 
 ## Usage
 
-Download the self-contained [`index.html`](../../raw/main/index.html) from the
+Download the self-contained [`entropylab.html`](../../raw/main/entropylab.html) from the
 root of this repository (or from the
 [releases page](https://github.com/w-s-bitcoin/entropylab/releases) /
 [official website](https://entropylab.online)), transfer it to a trusted
@@ -77,8 +77,8 @@ npm run build
 Build output (committed to the repository so the file can be downloaded
 directly):
 
-- `index.html` — the self-contained application (open this file)
-- `entropylab-<version>.html` — versioned copy used by the download links
+- `entropylab.html` — the self-contained application (open this file)
+- `index.html` — tiny redirect so the hosted site auto-loads `entropylab.html`
 - `versions.json` — version manifest the hosted header reads to flag a newer release
 
 The version is declared once in `package.json` and substituted into the
@@ -119,8 +119,8 @@ files, run `npm run clean`.
 │       ├── browser-check.js Startup browser sanity checks and kill-screen
 │       ├── enhanced-inputs.js
 │       └── repeat-inputs.js
-├── index.html              Compiled application (generated, committed)
-├── entropylab-*.html       Versioned copy of the compiled application
+├── entropylab.html         Compiled application (generated, committed)
+├── index.html              Redirect stub for GitHub Pages (generated, committed)
 ├── versions.json           Version manifest for the hosted header version label
 └── versions/archived/      Historical releases excluded from the picker
 ```
@@ -141,7 +141,7 @@ npm run ci                  # run the CI test subset, build, and verify in order
 ```
 
 GitHub Actions runs the same steps for pull requests and pushes to `main`,
-then stages the verified site (`index.html`, `entropylab-*.html`,
+then stages the verified site (`index.html`, `entropylab.html`,
 `versions.json`, `assets/`) and deploys it to GitHub Pages. CI runs the
 test suites that need no browser; the headless-Firefox suite runs locally
 where a Firefox binary is available. Local checks and CI/CD use the same

@@ -1,5 +1,6 @@
-// Verifies the committed site artifact: the compiled index.html, the
-// versioned snapshot, the versions.json manifest, and the published assets.
+// Verifies the committed site artifact: the compiled entropylab.html, the
+// index.html redirect that keeps GitHub Pages auto-loading it, the
+// versions.json manifest, and the published assets.
 // Zero dependencies. Run with `npm run verify`.
 import {
   existsSync,
@@ -23,29 +24,31 @@ const version = pkg.version;
 if (!/^\d+(?:\.\d+)*$/.test(version)) {
   fail(`Invalid version in package.json: ${version}`);
 }
-const versionedFile = `entropylab-${version}.html`;
+const appFile = "entropylab.html";
 
-for (const name of ["index.html", versionedFile, "versions.json", "assets/favicon.png", "assets/entropylab_dark.png"]) {
+for (const name of ["index.html", appFile, "versions.json", "assets/favicon.png", "assets/entropylab_dark.png"]) {
   const path = join(repoDir, name);
   if (!existsSync(path) || statSync(path).size === 0) {
     fail(`Site artifact is missing or empty: ${name}`);
   }
 }
 
-// The compiled application and its versioned snapshot must be identical.
-if (!readFileSync(join(repoDir, "index.html")).equals(readFileSync(join(repoDir, versionedFile)))) {
-  fail(`index.html does not match ${versionedFile}. Run 'npm run build' and commit the result.`);
+// The index.html stub must redirect the site root to the application file so
+// GitHub Pages keeps auto-loading EntropyLab.
+const redirect = readFileSync(join(repoDir, "index.html"), "utf8");
+if (!redirect.includes(`url=${appFile}`) || !redirect.includes(`href="${appFile}"`)) {
+  fail(`index.html does not redirect to ${appFile}. Run 'npm run build' and commit the result.`);
 }
 
 // The manifest must be deterministic and complete for the current release.
-const expectedJson = `${JSON.stringify({ versions: [{ version: `v${version}`, file: versionedFile }] })}\n`;
+const expectedJson = `${JSON.stringify({ versions: [{ version: `v${version}`, file: appFile }] })}\n`;
 if (readFileSync(join(repoDir, "versions.json"), "utf8") !== expectedJson) {
   fail(`versions.json does not match the current release.\nExpected: ${expectedJson}`);
 }
 
-// No stale generated snapshots at the repository root.
+// No stale versioned snapshots at the repository root.
 const rootSnapshots = readdirSync(repoDir).filter((name) => /^entropylab-\d+(?:\.\d+)*\.html$/.test(name));
-if (JSON.stringify(rootSnapshots) !== JSON.stringify([versionedFile])) {
+if (rootSnapshots.length !== 0) {
   fail(`Unexpected versioned snapshots at the root: ${rootSnapshots.join(", ")}`);
 }
 
@@ -65,4 +68,4 @@ const walk = (dir, prefix) => {
 };
 walk(join(repoDir, "assets"), "assets");
 
-console.log(`Verified site artifact for v${version} (index.html, ${versionedFile}, versions.json, assets/).`);
+console.log(`Verified site artifact for v${version} (index.html redirect, ${appFile}, versions.json, assets/).`);

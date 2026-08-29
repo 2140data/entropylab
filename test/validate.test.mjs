@@ -12,14 +12,14 @@ const read = (path) => readFileSync(join(root, path), "utf8");
 
 const pkg = JSON.parse(read("package.json"));
 const appVersion = pkg.version;
-const versionedFile = `entropylab-${appVersion}.html`;
+const appFile = "entropylab.html";
 
 const requiredFiles = [
   "README.md",
   "LICENSE",
   "package.json",
   "index.html",
-  versionedFile,
+  appFile,
   "versions.json",
   "assets/favicon.png",
   "assets/entropylab_dark.png",
@@ -82,23 +82,26 @@ test("README version agrees with package.json", () => {
   assert.equal(readmeVersion, appVersion, `package.json: ${appVersion}; README: ${readmeVersion}`);
 });
 
-test("the current release snapshot exists and matches the compiled app", () => {
-  const snapshot = join(root, versionedFile);
-  assert.ok(existsSync(snapshot), `${versionedFile} is missing`);
-  assert.ok(
-    readFileSync(join(root, "index.html")).equals(readFileSync(snapshot)),
-    `index.html does not match ${versionedFile}`,
-  );
+test("index.html redirects the site root to the compiled app", () => {
+  const stub = read("index.html");
+  assert.match(stub, /^<!DOCTYPE html>/);
+  assert.ok(stub.includes(`url=${appFile}`), `index.html is missing the meta refresh to ${appFile}`);
+  assert.ok(stub.includes(`href="${appFile}"`), `index.html is missing the link to ${appFile}`);
 });
 
-test("versions.json lists the current snapshot", () => {
+test("no versioned snapshots linger at the repository root", () => {
+  const snapshots = readdirSync(root).filter((name) => /^entropylab-\d+(?:\.\d+)*\.html$/.test(name));
+  assert.deepEqual(snapshots, [], `unexpected versioned snapshots: ${snapshots.join(", ")}`);
+});
+
+test("versions.json lists the current release", () => {
   assert.deepEqual(
     JSON.parse(read("versions.json")),
-    { versions: [{ version: `v${appVersion}`, file: versionedFile }] },
+    { versions: [{ version: `v${appVersion}`, file: appFile }] },
   );
 });
 
-const htmlFiles = ["index.html", versionedFile];
+const htmlFiles = [appFile];
 
 for (const file of htmlFiles) {
   test(`${file} declares HTML5`, () => {

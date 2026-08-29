@@ -28,12 +28,12 @@ const read = (path) => readFileSync(join(root, path), "utf8");
 const firefoxBin = process.env.FIREFOX_BINARY ?? "firefox";
 
 const appVersion = JSON.parse(read("package.json")).version;
-const versionFile = `entropylab-${appVersion}.html`;
-const versionSource = join(root, versionFile);
+const appFile = "entropylab.html";
+const appSource = join(root, appFile);
 
 // Stage the site exactly the way scripts/build.mjs publishes it (the compiled
-// index.html plus its versioned snapshot), and add the instrumented test
-// document and the hostile version manifest.
+// entropylab.html), and add the instrumented test document and the hostile
+// version manifest.
 const stageSite = () => {
   const workDir = mkdtempSync(join(tmpdir(), "entropylab-browser-"));
   const siteDir = join(workDir, "site");
@@ -44,10 +44,10 @@ const stageSite = () => {
   mkdirSync(downloadDir, { recursive: true });
   mkdirSync(onlineProfile, { recursive: true });
   mkdirSync(offlineProfile, { recursive: true });
-  cpSync(versionSource, join(siteDir, versionFile));
+  cpSync(appSource, join(siteDir, appFile));
   cpSync(join(root, "assets"), join(siteDir, "assets"), { recursive: true });
 
-  const appHtml = read("index.html");
+  const appHtml = read(appFile);
   const instrumentation = read("test/browser-instrumentation.html");
   const suite = read("test/browser-suite.html");
 
@@ -73,7 +73,7 @@ const stageSite = () => {
     join(siteDir, "versions.json"),
     `${JSON.stringify({
       versions: [
-        { version: `v${appVersion}`, file: versionFile },
+        { version: `v${appVersion}`, file: appFile },
         { version: "<img src=x onerror=window.__browserTestInjected=true>", file: "javascript:window.__browserTestInjected=true" },
         { version: "v9.9.9", file: "../../outside.html" },
         { version: "v1.0.0", file: "entropylab-1.0.0.html" },
@@ -109,7 +109,7 @@ const createTestServer = ({ siteDir, testHtmlPath }) => {
     "/": { file: testHtmlPath, type: "text/html; charset=utf-8" },
     "/browser-tests.html": { file: testHtmlPath, type: "text/html; charset=utf-8" },
     "/versions.json": { file: join(siteDir, "versions.json"), type: "application/json" },
-    [`/${versionFile}`]: { file: join(siteDir, versionFile), type: "text/html; charset=utf-8" },
+    [`/${appFile}`]: { file: join(siteDir, appFile), type: "text/html; charset=utf-8" },
   };
   const server = createServer((request, response) => {
     const path = new URL(request.url, "http://localhost").pathname;
@@ -169,8 +169,7 @@ test("headless Firefox runs the hosted and offline suites", async () => {
   const versionCheck = spawnSync(firefoxBin, ["--version"], { stdio: "pipe" });
   assert.equal(versionCheck.status, 0, `Firefox is required for the browser tests (tried "${firefoxBin}").`);
   assert.match(appVersion, /^\d+(\.\d+)*$/, `invalid application version in package.json: ${appVersion}`);
-  assert.ok(existsSync(join(root, "index.html")), "compiled index.html is missing (run 'npm run build')");
-  assert.ok(existsSync(versionSource), `current release snapshot is missing: ${versionFile}`);
+  assert.ok(existsSync(appSource), `compiled ${appFile} is missing (run 'npm run build')`);
 
   const { workDir, siteDir, downloadDir, onlineProfile, offlineProfile, testHtmlPath } = stageSite();
   const { server, listen } = createTestServer({ siteDir, testHtmlPath });

@@ -1,9 +1,10 @@
 // EntropyLab build script (zero dependencies).
 //
-// Inlines the sources from src/ into a single self-contained index.html at
-// the repository root so the file can be downloaded directly. The output is
-// byte-for-byte reproducible from the sources and the version declared in
-// package.json.
+// Inlines the sources from src/ into a single self-contained entropylab.html
+// at the repository root so the file can be downloaded directly. GitHub Pages
+// keeps auto-loading the site through a tiny generated index.html that
+// redirects to entropylab.html. The output is byte-for-byte reproducible from
+// the sources and the version declared in package.json.
 import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,15 +20,31 @@ if (!/^\d+(?:\.\d+)*$/.test(version)) {
   throw new Error(`Invalid version in package.json: ${version}`);
 }
 
-const versionedFile = `entropylab-${version}.html`;
+const appFile = "entropylab.html";
+// GitHub Pages serves index.html at the site root; this stub forwards visitors
+// to the single canonical application file.
+const redirect = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="0; url=${appFile}">
+<link rel="canonical" href="${appFile}">
+<title>EntropyLab</title>
+</head>
+<body>
+<p><a href="${appFile}">Open EntropyLab</a></p>
+</body>
+</html>
+`;
 const generated = () =>
-  ["index.html", "versions.json", ...readdirSync(root).filter((name) =>
+  ["index.html", appFile, "versions.json", ...readdirSync(root).filter((name) =>
     /^entropylab-\d+(?:\.\d+)*\.html$/.test(name)
   )];
 
 if (process.argv.includes("--clean")) {
   for (const name of generated()) rmSync(join(root, name), { force: true });
-  console.log("Removed generated files (index.html, versions.json, entropylab-*.html)");
+  console.log("Removed generated files (index.html, entropylab.html, versions.json, entropylab-*.html)");
   process.exit(0);
 }
 
@@ -69,14 +86,14 @@ for (const leftover of html.match(/\/\*@@|{{VERSION}}/g) || []) {
 // Remove stale generated files (e.g. versioned copies from older releases)
 for (const name of generated()) rmSync(join(root, name), { force: true });
 
-writeFileSync(join(root, "index.html"), html);
-writeFileSync(join(root, versionedFile), html);
+writeFileSync(join(root, appFile), html);
+writeFileSync(join(root, "index.html"), redirect);
 writeFileSync(
   join(root, "versions.json"),
-  JSON.stringify({ versions: [{ version: `v${version}`, file: versionedFile }] }) + "\n",
+  JSON.stringify({ versions: [{ version: `v${version}`, file: appFile }] }) + "\n",
 );
 
 console.log(`Built EntropyLab v${version}`);
-console.log(`  index.html (${Buffer.byteLength(html, "utf8")} bytes)`);
-console.log(`  ${versionedFile}`);
+console.log(`  ${appFile} (${Buffer.byteLength(html, "utf8")} bytes)`);
+console.log(`  index.html (redirect to ${appFile})`);
 console.log(`  versions.json`);

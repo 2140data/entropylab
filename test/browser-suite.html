@@ -36,8 +36,7 @@
     window.__downloadTestReport(filename, text);
   };
   const currentVersion = document.querySelector('meta[name="application-version"]')?.content;
-  const currentNumber = currentVersion?.replace(/^v/, "");
-  const currentFile = `entropylab-${currentNumber}.html`;
+  const currentFile = "entropylab.html";
   const versionHeader = `ENTROPYLAB ${currentVersion?.toUpperCase()}`;
 
   await wait(500);
