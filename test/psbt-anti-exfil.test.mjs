@@ -50,7 +50,7 @@ test("PSBT copy mentions Jade anti-exfil transcript checks", () => {
   assert.match(app, /Optional Jade anti-exfil transcripts/);
   assert.match(template, /id="psbt-ax-transcript"/);
   assert.match(app, /id="psbt-ax-transcript"/);
-  assert.match(app, /hodlAntiExfilCommitOk\(parts\.r,opening,transcript\.host\)/);
+  assert.match(app, /hodlAntiExfilCommitOk\(\s*parts\.r\s*,\s*opening\s*,\s*transcript\.host\s*\)/);
   assert.match(app, /s2c\/ecdsa\/point/);
   assert.match(app, /Matches Jade anti-exfil \(sign-to-contract\)/);
   assert.match(app, /BitBox anti-klepto is a different construction/);
@@ -108,10 +108,10 @@ test("tagged s2c/ecdsa/point hash matches secp256k1-zkp over opening||rho", () =
 });
 
 test("anti-exfil commit check is try/caught so a bad opening cannot wipe the PSBT report", () => {
-  assert.match(app, /else try\{if\(hodlAntiExfilCommitOk\(parts\.r,opening,transcript\.host\)\)/);
+  assert.match(app, /else\s+try\s*\{\s*if\s*\(\s*hodlAntiExfilCommitOk\(\s*parts\.r\s*,\s*opening\s*,\s*transcript\.host\s*\)\s*\)/);
   assert.match(
     app,
-    /catch\(exception\)\{message="Could not verify Jade anti-exfil: "\+\(exception\.message\|\|String\(exception\)\);className="psbt-warn"\}/,
+    /catch\s*\(\s*exception\s*\)\s*\{\s*message\s*=\s*"Could not verify Jade anti-exfil: "\s*\+\s*\(\s*exception\.message\s*\|\|\s*String\s*\(\s*exception\s*\)\s*\)\s*;\s*className\s*=\s*"psbt-warn"\s*;?\s*\}/,
   );
 });
 

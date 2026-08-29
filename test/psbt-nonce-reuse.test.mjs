@@ -136,10 +136,10 @@ test("existing same-encoding strict detection still reports reused r", () => {
 
 test("render suppresses a clean verdict when a signature cannot be inspected", () => {
   const render = loadSlice("hodlRenderPsbt");
-  assert.match(render, /uninspected\+=1/);
+  assert.match(render, /uninspected\s*\+=\s*1/);
   assert.match(
     render,
-    /else if\(uninspected\)html\.push\("<p class='psbt-warn'><strong>Incomplete nonce coverage\.<\/strong>/,
+    /else if\s*\(uninspected\)\s*html\.push\("<p class='psbt-warn'><strong>Incomplete nonce coverage\.<\/strong>/,
   );
   assert.match(render, /hodlPubId\(signature\.pubkey\)/);
   assert.match(render, /hodlDerRLoose\(signature\.der\)/);

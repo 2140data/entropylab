@@ -1,4 +1,4 @@
-// EntropyLab build script (zero dependencies).
+// EntropyLab build script.
 //
 // Inlines the sources from src/ into a single self-contained entropylab.html
 // at the repository root so the file can be downloaded directly. The Pages
@@ -8,6 +8,7 @@
 import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildSync } from "esbuild";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const SRC = join(root, "src");
@@ -41,7 +42,17 @@ const css = read("css/styles.css")
 // Inlined from the same file the site publishes, so the downloaded document
 // and the hosted tab icon can never drift apart.
 const favicon = readFileSync(join(root, "assets/favicon.png")).toString("base64");
-const jsMain = read("js/vendor.js") + read("js/app.js");
+const jsMain = buildSync({
+  entryPoints: [join(SRC, "js/app.js")],
+  bundle: true,
+  minify: true,
+  write: false,
+  format: "iife",
+  platform: "browser",
+  target: "es2022",
+  legalComments: "none",
+  charset: "utf8",
+}).outputFiles[0].text;
 const jsSqliteWriter = read("js/sqlite-writer.js");
 const jsWalletExport = read("js/wallet-export.js");
 const jsOnline = read("js/online.js");

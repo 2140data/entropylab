@@ -18,9 +18,9 @@ function loadSlice(name) {
   throw new Error(`Could not extract ${name}`);
 }
 
-function loadVariable(name, nextMarker) {
-  const start = app.indexOf(`var ${name}=`);
-  const end = app.indexOf(nextMarker, start);
+function loadVariable(name, nextName) {
+  const start = app.search(new RegExp(`var\\s+${name}\\s*=`));
+  const end = app.search(new RegExp(`var\\s+${nextName}\\s*=`));
   assert.ok(start >= 0 && end > start, name);
   return app.slice(start, end);
 }
@@ -28,8 +28,8 @@ function loadVariable(name, nextMarker) {
 const api = new Function(
   "M",
   `var Pt=24;
-${loadVariable("hodlSeedLengths", "var hodlEntropyFormats=")}
-${loadVariable("hodlEntropyFormats", "var hodlBip39WordSet=")}
+${loadVariable("hodlSeedLengths", "hodlEntropyFormats")}
+${loadVariable("hodlEntropyFormats", "hodlBip39WordSet")}
 ${loadSlice("hodlSeedConfig")}
 ${loadSlice("hodlNormalizeEntropyFormat")}
 ${loadSlice("hodlEntropyFormatConfig")}

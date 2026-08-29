@@ -1,10 +1,28 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { transformSync } from "esbuild";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const template = read("src/index.html");
-const app = read("src/js/app.js");
+const appSource = read("src/js/app.js");
+// These source invariants predate the readable application source and match
+// its compact syntax. Normalize formatting without renaming identifiers.
+const app = transformSync(appSource, {
+  format: "esm",
+  minifySyntax: true,
+  minifyWhitespace: true,
+  target: "es2022",
+}).code;
+// Keep a compact representation that preserves literal text and control flow
+// for the handful of assertions where syntax minification is intentionally
+// not part of the invariant.
+const appWhitespace = transformSync(appSource, {
+  format: "esm",
+  minifyWhitespace: true,
+  target: "es2022",
+  charset: "utf8",
+}).code;
 const css = read("src/css/styles.css");
 const online = read("src/js/online.js");
 
@@ -112,7 +130,7 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /order=\["lower","upper","number"\]/);
   assert.match(app, /function hodlSeedKeyboardCanEnterCharacter\(input,key,targetWords=Pt\)/);
   assert.match(app, /hodlBip39WordIndex=new Map\(Ae\.map\(\(word,index\)=>\[word,index\]\)\)/);
-  assert.match(app, /hodlLastWordCache=new Map\(\)/);
+  assert.match(app, /hodlLastWordCache=new Map(?:\(\))?/);
   assert.match(app, /function hodlComputeTargetLastWords\(words,targetWords=Pt\)/);
   assert.match(app, /missingEntropyBits=config\.bits-prefixBits\.length/);
   assert.match(app, /for\(let suffix=0;suffix<2\*\*missingEntropyBits;suffix\+\+\)/);
@@ -126,7 +144,7 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /function hodlUpdatePrivateKeyKeyboardKeys\(input\)/);
   assert.match(app, /function hodlPrivateKeyInitialCharacters\(kind,network\)/);
   assert.match(app, /network==="testnet"\?\["9","c"\]:\["5","K","L"\]/);
-  assert.match(app, /if\(kind==="minikey"\)return\["S"\]/);
+  assert.match(appWhitespace, /if\(kind==="minikey"\)return\["S"\]/);
   assert.match(app, /data-private-key-initial-row aria-label="Valid first characters" hidden/);
   assert.match(app, /keyboard\.classList\.toggle\("private-key-initial-options",show\)/);
   assert.match(app, /data-private-key-hex-keypad aria-label="Hexadecimal keypad" hidden/);
@@ -139,9 +157,9 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /id="private-key-meta" aria-live="polite"/);
   assert.match(app, /function hodlPrivateKeyInputAnalysis\(value,kind,network\)/);
   assert.match(app, /function hodlRenderPrivateKeyInputState\(input\)/);
-  assert.match(app, /\$\{count\} of 64 hexadecimal characters entered/);
+  assert.match(app, /\$\{count2\} of 64 hexadecimal characters entered/);
   assert.match(app, /invalid character\$\{invalid\.length===1\?"":"s"\} highlighted/);
-  assert.match(app, /extra highlighted · remove to continue/);
+  assert.match(appWhitespace, /extra highlighted (?:·|\\xB7) remove to continue/);
   assert.match(app, /valid secp256k1 private key/);
   assert.match(app, /function hodlHexPrivateKeyPrefix\(value\)/);
   assert.match(app, /function hodlWifPrivateKeyPrefix\(value,network\)/);
@@ -157,11 +175,11 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /privateKeys:\{wif:"","hex-key":"",minikey:"",brain:""\}/);
   assert.match(app, /values\[previousKind\]=key\.value/);
   assert.match(app, /key\.value=values\[nextKind\]\|\|""/);
-  assert.match(app, /radio\.addEventListener\("input",change\);radio\.addEventListener\("change",change\)/);
+  assert.match(appWhitespace, /radio\.addEventListener\("input",change\);radio\.addEventListener\("change",change\)/);
   assert.match(app, /key\?\.dataset\.privateKeyKind\|\|checkedKeyKind/);
   assert.match(app, /function hodlPrivateKeyPlaceholder\(kind,network="mainnet"\)/);
-  assert.match(app, /if\(kind==="hex-key"\)return hodlHexPrivateKeyPrefix\(candidate\)/);
-  assert.match(app, /return hodlWifPrivateKeyPrefix\(candidate,hodlSelectedNetwork/);
+  assert.match(appWhitespace, /if\(kind==="hex-key"\)return hodlHexPrivateKeyPrefix\(candidate\)/);
+  assert.match(appWhitespace, /return hodlWifPrivateKeyPrefix\(candidate,hodlSelectedNetwork/);
   assert.match(app, /inputType==="insertFromPaste"/);
   assert.match(app, /function hodlAssertPrivateKeyKind\(value,network,kind\)/);
   assert.match(app, /keyKind:"wif"/);
@@ -184,22 +202,22 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(template, /id="master-fingerprint-preview"[\s\S]*id="passphrase-keyboard-host" hidden[\s\S]*id="key-settings"/);
   assert.match(app, /keyboard\.querySelectorAll\("\[data-seed-character-key\]"\)\.forEach\(button=>\{button\.disabled=!1\}\)/);
   assert.match(app, /function hodlBindSeedKeyboardDelete\(getInput,button\)/);
-  assert.match(app, /setTimeout\(\(\)=>\{holdTimer=null;repeated=!0;remove\(\);if\(!button\.disabled\)repeatTimer=setInterval\(remove,69\)\},420\)/);
+  assert.match(appWhitespace, /setTimeout\(\(\)=>\{holdTimer=null;repeated=true;remove\(\);if\(!button\.disabled\)repeatTimer=setInterval\(remove,69\)\},420\)/);
   assert.match(app, /\["pointerup","pointercancel","pointerleave","lostpointercapture"\]/);
-  assert.match(app, /if\(repeated\)\{event\.preventDefault\(\);repeated=!1;return\}/);
+  assert.match(appWhitespace, /if\(repeated\)\{event\.preventDefault\(\);repeated=false;return\}/);
   assert.match(app, /function hodlAutocompleteSeedInput\(input,event,completeExisting=!1\)/);
   assert.match(app, /toggle\.checked&&hodlAutocompleteSeedInput\(input,null,!0\)/);
   assert.match(app, /inputType:"insertReplacementText"/);
-  assert.match(app, /toggle\.checked;input\.focus\(\{preventScroll:!0\}\)/);
+  assert.match(appWhitespace, /toggle\.checked;input\.focus\(\{preventScroll:true\}\)/);
   assert.match(app, /event\.relatedTarget\?\.closest\?\.\("#seed-keyboard,\.seed-autocomplete-toggle"\)/);
   assert.match(app, /class="seed-entry-tools">\$\{hodlSeedKeyboardToggleMarkup\(\)\}<label class="seed-autocomplete-toggle"/);
   assert.match(app, /id="seed-meta"[^>]*><\/p>\$\{hodlSeedKeyboardMarkup\(\)\}<div id="last-words"/);
-  assert.match(app, /hodlBindSeedKeyboard\(input,config\.words\);hodlBindKeyFields\(\)/);
+  assert.match(appWhitespace, /hodlBindSeedKeyboard\(input,config\.words\);hodlBindKeyFields\(\)/);
   assert.match(app, /keyboard\.querySelectorAll\("\[data-seed-delete\]"\)\.forEach\(button=>hodlBindSeedKeyboardDelete\(\(\)=>activeInput,button\)\)/);
   assert.match(app, /modeButton\.disabled=!pass/);
   assert.match(app, /hodlSetSeedKeyboardLayout\(keyboard,modeButton,"lower"\)/);
   assert.match(app, /hodlApplySeedKeyboardKey\(activeInput,button\.dataset\.seedKey\|\|""\)/);
-  assert.match(app, /addEventListener\("pointerdown",event=>\{event\.preventDefault\(\);activeInput\.focus/);
+  assert.match(appWhitespace, /addEventListener\("pointerdown",event=>\{event\.preventDefault\(\);activeInput\.focus/);
   assert.match(app, /function hodlFilterSeed\(e\)\{[^}]*hodlLooksExtendedKey\(value\)\?value:value\.toLowerCase\(\)/);
   assert.match(css, /\.seed-entry-tools\s*\{[^}]*align-items: stretch[^}]*margin-top: var\(--space-component\)/s);
   assert.match(css, /\.passphrase-keyboard-tools \{[^}]*display: flex[^}]*margin-top: var\(--space-component\)/s);
@@ -226,28 +244,29 @@ test("multisig derivation settings follow the key inputs", () => {
 });
 
 test("key derivation and multisig use the accurate Script type label", () => {
-  for (const markup of [template, app]) {
+  for (const markup of [template, appWhitespace]) {
     assert.match(markup, /id="script-type-field">Script type\s*<select/);
     assert.match(markup, /<label class="field">Script type\s*<select id="msig-script-type"[^>]*>/);
-    assert.match(markup, /<option value="p2wsh" selected(?:="selected")?>Native SegWit · BIP48<\/option>/);
-    assert.match(markup, /<option value="p2tr">Taproot · BIP86<\/option>/);
+    assert.match(markup, /<option value="p2wsh" selected(?:="selected")?>Native SegWit (?:·|\\xB7) BIP48<\/option>/);
+    assert.match(markup, /<option value="p2tr">Taproot (?:·|\\xB7) BIP86<\/option>/);
     assert.doesNotMatch(markup, /name="msig-script"|Matches BIP48 script type|Bare P2SH/);
     assert.doesNotMatch(markup, />Address type</);
   }
 });
 
 test("multisig script type and placeholders follow detected co-signer exports", () => {
-  for (const markup of [template, app]) {
+  for (const markup of [template, appWhitespace]) {
     assert.match(markup, /option value="mixed" disabled data-custom-select-placeholder="true">Mixed · incompatible keys/);
     assert.match(markup, /id="msig-script-warning" role="status" hidden/);
     assert.match(markup, /id="msig-go"[^>]*aria-describedby="msig-script-warning"/);
   }
   assert.match(template, /placeholder="\[fingerprint\/48h\/0h\/0h\/2h\]Zpub…"/);
   assert.match(app, /function hodlMultisigKeyPlaceholder\(kind,network,legacyStandard="bip45"\)/);
-  assert.match(app, /kind==="p2sh"\)return`\[fingerprint\/45h\]\$\{testnet\?"tpub":"xpub"\}…`/);
+  assert.match(appWhitespace, /kind==="p2sh"\)return`\[fingerprint\/45h\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
+  assert.match(appWhitespace, /kind==="p2sh"&&legacyStandard==="bip87"\)return`\[fingerprint\/87h\/\$\{coin\}\/0h\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
   assert.match(app, /testnet\?"Upub":"Ypub"/);
   assert.match(app, /testnet\?"Vpub":"Zpub"/);
-  assert.match(app, /kind==="p2tr"\)return`\[fingerprint\/86h\/\$\{coin\}\/0h\]\$\{testnet\?"tpub":"xpub"\}…`/);
+  assert.match(appWhitespace, /kind==="p2tr"\)return`\[fingerprint\/86h\/\$\{coin\}\/0h\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
   assert.match(app, /if\(steps\[0\]!=="86h"\)return"BIP86 origin must start at 86h."/);
   assert.match(app, /Taproot BIP86 requires a depth-3 account key at m\/86h\/coinh\/accounth/);
   assert.doesNotMatch(app, /or BIP48 script 3h/);
@@ -261,17 +280,17 @@ test("multisig script type and placeholders follow detected co-signer exports", 
 
 test("key derivation shows the relevant paste-ready multisig co-signer exports", () => {
   assert.match(app, /function hodlBuildMultisigCosignerExports\(root,network,accountIndex,masterFingerprint\)/);
-  assert.match(app, /accountId:"bip44",kind:"p2sh",standard:"bip45",label:"Legacy · BIP45 · No account",family:"x",accountPath:"m\/45'",originPath:"45h"/);
-  assert.match(app, /accountId:"bip44",kind:"p2sh",standard:"bip87",label:`Legacy · BIP87 · Account \$\{accountIndex\}`,family:"x",accountPath:`m\/87'\/\$\{coinType\}'\/\$\{accountIndex\}'`,originPath:`87h\/\$\{coinType\}h\/\$\{accountIndex\}h`/);
-  assert.match(app, /accountId:"bip49",kind:"p2sh-p2wsh",label:"Nested SegWit · BIP48",family:"y",scriptIndex:1/);
-  assert.match(app, /accountId:"bip84",kind:"p2wsh",label:"Native SegWit · BIP48",family:"z",scriptIndex:2/);
-  assert.match(app, /accountId:"bip86",kind:"p2tr",label:"Taproot · BIP86",family:"x"/);
+  assert.match(appWhitespace, /accountId:"bip44",kind:"p2sh",standard:"bip45",label:"Legacy (?:·|\\xB7) BIP45 (?:·|\\xB7) No account",family:"x",accountPath:"m\/45'",originPath:"45h"/);
+  assert.match(appWhitespace, /accountId:"bip44",kind:"p2sh",standard:"bip87",label:`Legacy (?:·|\\xB7) BIP87 (?:·|\\xB7) Account \$\{accountIndex\}`,family:"x",accountPath:`m\/87'\/\$\{coinType\}'\/\$\{accountIndex\}'`,originPath:`87h\/\$\{coinType\}h\/\$\{accountIndex\}h`/);
+  assert.match(appWhitespace, /accountId:"bip49",kind:"p2sh-p2wsh",label:"Nested SegWit (?:·|\\xB7) BIP48",family:"y",scriptIndex:1/);
+  assert.match(appWhitespace, /accountId:"bip84",kind:"p2wsh",label:"Native SegWit (?:·|\\xB7) BIP48",family:"z",scriptIndex:2/);
+  assert.match(appWhitespace, /accountId:"bip86",kind:"p2tr",label:"Taproot (?:·|\\xB7) BIP86",family:"x"/);
   assert.match(app, /accountPath=definition\.accountPath\|\|`m\/48'\/\$\{coinType\}'\/\$\{accountIndex\}'\/\$\{definition\.scriptIndex\}'`/);
   assert.match(app, /value:`\[\$\{masterFingerprint\}\/\$\{originPath\}\]\$\{publicKey\}`/);
   assert.match(app, /multisigCosignerExports:root\.privateKey\?hodlBuildMultisigCosignerExports\(root,network,accountIndex,masterFingerprint\):\[\]/);
   assert.match(app, /function hodlRenderMultisigCosignerExport\(exports,accountId\)/);
   assert.match(app, /exports\.filter\(candidate=>candidate\.accountId===accountId\)/);
-  assert.match(app, /items\.map\(item=>ye\(`Multisig co-signer \$\{item\.prefix\} · \$\{item\.label\}`,item\.value\)\)\.join\(""\)/);
+  assert.match(appWhitespace, /items\.map\(item=>ye\(`Multisig co-signer \$\{item\.prefix\} · \$\{item\.label\}`,item\.value\)\)\.join\(""\)/);
   assert.match(app, /\$\{ye\(`Account \$\{account\.primaryPublicLabel\}`,account\.primaryPublic\)\}\s*\$\{hodlRenderMultisigCosignerExport\(re\.multisigCosignerExports,account\.def\.id\)\}/);
   assert.doesNotMatch(`${app}\n${css}`, /account-multisig-exports/);
   assert.match(app, /Legacy P2SH requires the depth-1 BIP45 purpose key at m\/45h/);
@@ -294,7 +313,9 @@ test("derived wallets offer an address match check", () => {
   assert.match(app, /Paste a receive or change address shown by another wallet/);
   assert.match(app, /even if the index is beyond the table above/);
   assert.doesNotMatch(app, /Address from Sparrow/);
-  assert.match(app, /var hodlAddressSearchLimit=1000/);
+  // esbuild's output normalizes numeric literals (1000 -> 1e3) in every
+  // transform, so check this literal against the untransformed source.
+  assert.match(appSource, /var hodlAddressSearchLimit\s*=\s*1000/);
   assert.match(app, /function hodlMatchHdAddressBeyond\(address,account,start\)/);
   assert.match(app, /function hodlMatchMsigAddressBeyond\(address,start\)/);
   assert.match(app, /hodlAddressTable\(account\.change,"Change addresses",hasPrivate\)\}\s*\$\{hodlAddressMatchMarkup\(\)/);
@@ -306,8 +327,8 @@ test("multisig key order is sorted by default and listed order is advanced", () 
   for (const markup of [template, app]) {
     assert.match(markup, /id="msig-advanced"/);
     assert.match(markup, /id="msig-key-order"/);
-    assert.match(markup, /<option value="sorted" selected(?:="selected")?>Sorted · sortedmulti<\/option>/);
-    assert.match(markup, /<option value="listed">As listed · multi<\/option>/);
+    assert.match(markup, /<option value="sorted" selected(?:="selected")?>Sorted (?:·|\\xB7) sortedmulti<\/option>/);
+    assert.match(markup, /<option value="listed">As listed (?:·|\\xB7) multi<\/option>/);
     assert.match(markup, /id="msig-key-order-status" hidden/);
   }
   assert.match(css, /\.msig-advanced summary/);
@@ -320,7 +341,7 @@ test("multisig key order is sorted by default and listed order is advanced", () 
   assert.match(app, /function hodlMsigScriptOrder\(keyTokens\)/);
   assert.match(app, /id="multisig-order-heading">Script key order/);
   assert.match(app, /keyOrder:"sorted"/);
-  assert.match(app, /if\(!sorted\)notes\.push\("This wallet uses "/);
+  assert.match(app, /notes\.push\("This wallet uses "/);
 });
 
 test("Legacy multisig defaults to BIP45 and offers BIP87 accounts only for Legacy", () => {
@@ -332,8 +353,8 @@ test("Legacy multisig defaults to BIP45 and offers BIP87 accounts only for Legac
   }
   assert.match(css, /\.msig-legacy-account-toggle\[hidden\] \{ display: none !important; \}/);
   assert.match(app, /legacy=hodlScriptKind\(\)==="p2sh"/);
-  assert.match(app, /if\(toggle\)toggle\.hidden=!legacy/);
-  assert.match(app, /checkbox\?\.checked\?"Legacy · BIP87":"Legacy · BIP45"/);
+  assert.match(appSource, /if \(toggle\) toggle\.hidden = !legacy/);
+  assert.match(appWhitespace, /checkbox\?\.checked\?"Legacy · BIP87":"Legacy · BIP45"/);
   assert.match(app, /legacyBip87:!1/);
   assert.match(app, /scriptStandard:kind==="p2tr"\?"bip86":kind==="p2sh"\?legacyStandard:"bip48"/);
   assert.match(app, /legacyScriptConflict=standards\.includes\("bip87"\)&&summary\.kinds\.some\(kind=>kind!=="p2sh"\)/);
@@ -385,12 +406,12 @@ test("multisig threshold labels describe signatures and keys", () => {
   assert.match(app, /nNumber\.min="1"/);
   assert.match(app, /n=hodlClampMsigThreshold\(nValue,1,hodlMsigSliderLimit\)/);
   assert.match(app, /m>=1&&n>=1&&m<=n&&n<=15/);
-  assert.match(app, /if\(moveOther\)\{if\(changed==="m"\)n=Math\.max\(n,m\);else if\(changed==="n"\)m=Math\.min\(m,n\)\}/);
+  assert.match(appWhitespace, /if\(moveOther\)\{if\(changed==="m"\)n=Math\.max\(n,m\);else if\(changed==="n"\)m=Math\.min\(m,n\)\}/);
   assert.match(app, /setActive=\(handle,value\)=>\{.*hodlChangeMsigThreshold\(handle,value,!0\)\}/);
   assert.match(app, /mInput\.addEventListener\("input",\(\)=>hodlChangeMsigThreshold\("m",mInput\.value,!0\)\)/);
   assert.match(app, /nInput\.addEventListener\("input",\(\)=>hodlChangeMsigThreshold\("n",nInput\.value,!0\)\)/);
   assert.match(app, /hodlChangeMsigThreshold\(handle,raw,!0\)/);
-  assert.match(app, /bindNumber\(mNumber,"m"\);bindNumber\(nNumber,"n"\)/);
+  assert.match(appWhitespace, /bindNumber\(mNumber,"m"\);bindNumber\(nNumber,"n"\)/);
   assert.match(app, /tick\.style\.setProperty\("--msig-tick-position",\(value-1\)\/span\*100\+"%"\)/);
 });
 
@@ -402,7 +423,7 @@ test("multisig consistently uses derive for its heading and action", () => {
     assert.doesNotMatch(markup, /Create a multisig wallet|Build Multisig/);
   }
   assert.match(app, /function hodlValidatedMsigInputs\(\)/);
-  assert.match(app, /hodlValidatedMsigInputs\(\);ready=!0/);
+  assert.match(appSource, /hodlValidatedMsigInputs\(\);\s*ready = true/);
   assert.match(app, /button\.disabled=!ready/);
   assert.match(app, /let\{network,count,n,m,kind,legacyStandard,nodes,xpubs,keyTokens,accountSummary,accountWarning\}=hodlValidatedMsigInputs\(\)/);
 });
@@ -422,7 +443,7 @@ test("multisig heading spans beneath the delete action on narrow screens", () =>
 });
 
 test("private alternate account exports are visible without an accordion", () => {
-  assert.match(app, /if\(includePrivate\)return`<div class="wallet-advanced">\$\{privateExport\}<\/div>`/);
+  assert.match(appWhitespace, /if\(includePrivate\)return`<div class="wallet-advanced">\$\{privateExport\}<\/div>`/);
   assert.doesNotMatch(app, /Advanced private export/);
 });
 
@@ -443,7 +464,7 @@ test("header theme toggle cycles dark, light, and OS themes without a flash", ()
   assert.match(template, /<script>\(function\(\)\{try\{var m=localStorage\.getItem\("entropylab-theme"\)/);
   assert.match(app, /var hodlThemeModes=\["dark","light","system"\],hodlThemeStorageKey="entropylab-theme"/);
   assert.match(app, /function hodlApplyTheme\(mode\)/);
-  assert.match(app, /hodlInitSecretFieldAutoClear\(\);hodlInitTheme\(\);/);
+  assert.match(appSource, /hodlInitSecretFieldAutoClear\(\);\s*hodlInitTheme\(\);/);
   assert.match(css, /:root\[data-theme="light"\] \{\s*color-scheme: light;/);
   assert.match(css, /@media print \{\s*:root, :root\[data-theme\] \{/);
   assert.match(css, /\.download-controls \.theme-toggle \{ flex: 0 0 40px; width: 40px; align-self: center; \}/);

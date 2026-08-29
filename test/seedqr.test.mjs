@@ -5,19 +5,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { wordlist as Ae } from "@scure/bip39/wordlists/english.js";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const read = (path) => readFileSync(join(root, "..", path), "utf8");
-const vendor = read("src/js/vendor.js");
 const app = read("src/js/app.js");
-
-const WORDLIST_OPEN = "var Ae=Object.freeze(`";
-const wordlistStart = vendor.indexOf(WORDLIST_OPEN);
-assert.ok(wordlistStart >= 0);
-const wordlistBody = vendor.slice(wordlistStart + WORDLIST_OPEN.length);
-const wordlistEnd = wordlistBody.indexOf("`");
-assert.ok(wordlistEnd > 0);
-const Ae = wordlistBody.slice(0, wordlistEnd).split("\n");
 assert.equal(Ae.length, 2048);
 assert.equal(Ae[0], "abandon");
 assert.equal(Ae[2047], "zoo");
