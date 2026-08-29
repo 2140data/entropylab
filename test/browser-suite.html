@@ -154,25 +154,24 @@
     assert(!document.querySelector(".sanity-failure"), "Failure screen rendered on a sane host");
   });
 
-  await test("hosted version manifest is fetched and allowlisted before entering the DOM", async () => {
-    const manifest = await until(
-      () => state.network.find((entry) => new URL(entry.url).pathname === "/versions.json" && entry.completed),
-      "completed version-manifest request",
-    );
-    assert(manifest.status === 200, `Version manifest returned HTTP ${manifest.status}`);
+  await test("hosted build stays network-silent and keeps its static version label", async () => {
     await wait(0);
-    // The manifest advertises v1.0.0 alongside a script-injecting entry and a
-    // path-traversal entry that claims a higher version. Only v1.0.0 may win.
+    // The app makes no requests beyond the document and its test-suite fetch:
+    // the CSP is connect-src 'none' and nothing fetches a version manifest.
+    const observed = [...state.network.map((entry) => entry.url), ...resources];
+    const external = observed.filter((url) => {
+      try { return new URL(url, location.href).origin !== location.origin; }
+      catch { return true; }
+    });
+    assert(external.length === 0, "External network activity: " + external.join(", "));
+    const manifestRequests = observed.filter((url) => /versions\.json$/.test(new URL(url, location.href).pathname));
+    assert(manifestRequests.length === 0, "A version manifest was fetched: " + manifestRequests.join(", "));
     const label = document.querySelector(".site-version");
-    equal(label.textContent.replace(/\s+/g, " ").trim(), currentVersion + " v1.0.0 available");
-    const update = label.querySelector("a.site-version-update");
-    assert(update, "Newer version was not offered");
-    const target = new URL(update.href);
-    assert(
-      target.origin === location.origin && target.pathname === "/entropylab-1.0.0.html",
-      "Unsafe manifest entry was accepted: " + update.getAttribute("href"),
-    );
-    assert(window.__browserTestInjected !== true, "Manifest executed script");
+    equal(label.textContent.replace(/\s+/g, " ").trim(), currentVersion + " (Latest)");
+    assert(!label.querySelector("a"), "The static version label links nowhere");
+    // The logo and the favicon travel inside the document, so neither is fetched.
+    const imageRequests = observed.filter((url) => /\/assets\/(entropylab_(dark|light)|logo-(dark|light)|favicon)\.png$/.test(new URL(url, location.href).pathname));
+    assert(imageRequests.length === 0, "Hosted mode fetched an inlined image: " + imageRequests.join(", "));
   });
 
   await test("limited private-key prefixes replace the full keypad until selected", async () => {
@@ -893,9 +892,9 @@
       catch { return true; }
     });
     assert(external.length === 0, "External network activity: " + external.join(", "));
-    for (const expectedPath of ["/versions.json", "/" + currentFile]) {
-      assert(observed.some((url) => new URL(url, location.href).pathname === expectedPath), `Expected request is missing: ${expectedPath}`);
-    }
+    // The app fetches nothing at runtime: no version manifest, no API calls.
+    const manifestRequests = observed.filter((url) => /versions\.json$/.test(new URL(url, location.href).pathname));
+    assert(manifestRequests.length === 0, "A version manifest was fetched: " + manifestRequests.join(", "));
     // The logo and the favicon travel inside the document, so neither is fetched.
     const imageRequests = observed.filter((url) => /\/assets\/(entropylab_(dark|light)|logo-(dark|light)|favicon)\.png$/.test(new URL(url, location.href).pathname));
     assert(imageRequests.length === 0, "Hosted mode fetched an inlined image: " + imageRequests.join(", "));

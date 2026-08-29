@@ -62,19 +62,6 @@ const stageSite = () => {
   const testHtmlPath = join(siteDir, "browser-tests.html");
   writeFileSync(testHtmlPath, testHtml, "utf8");
 
-  writeFileSync(
-    join(siteDir, "versions.json"),
-    `${JSON.stringify({
-      versions: [
-        { version: `v${appVersion}`, file: appFile },
-        { version: "<img src=x onerror=window.__browserTestInjected=true>", file: "javascript:window.__browserTestInjected=true" },
-        { version: "v9.9.9", file: "../../outside.html" },
-        { version: "v1.0.0", file: "entropylab-1.0.0.html" },
-      ],
-    })}\n`,
-    "utf8",
-  );
-
   writeFileSync(join(workDir, "not-found.txt"), "Not found\n", "utf8");
 
   const userJs = [
@@ -101,7 +88,6 @@ const createTestServer = ({ siteDir, testHtmlPath }) => {
   const routes = {
     "/": { file: testHtmlPath, type: "text/html; charset=utf-8" },
     "/browser-tests.html": { file: testHtmlPath, type: "text/html; charset=utf-8" },
-    "/versions.json": { file: join(siteDir, "versions.json"), type: "application/json" },
     [`/${appFile}`]: { file: join(siteDir, appFile), type: "text/html; charset=utf-8" },
   };
   const server = createServer((request, response) => {

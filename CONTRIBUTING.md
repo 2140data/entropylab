@@ -111,10 +111,10 @@ npm run ci            # test subset + build + verify, in order
 
 ### Edit sources, never the build output
 
-`entropylab.html` and `versions.json` are generated and gitignored. Change
+`entropylab.html` is generated and gitignored. Change
 `src/` instead; tests that need the compiled file build it automatically (or
-run `npm run build` yourself). Never commit the generated files — CI rebuilds
-them and commits them back to `main` after each merge, so pull requests no
+run `npm run build` yourself). Never commit the generated file — CI rebuilds
+it and commits it back to `main` after each merge, so pull requests no
 longer conflict on build output.
 
 ### Versioning and docs move together

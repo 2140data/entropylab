@@ -440,8 +440,7 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
    stops short of both ends: the wordmark wants the full contrast. */
 .site-title { flex: 0 0 auto; font-family: var(--display); font-size: 22px; font-weight: 600; letter-spacing: -0.02em; color: #ffffff; white-space: nowrap; }
 :root[data-theme="light"] .site-title { color: #000000; }
-/* The build stamps this version beside the logo. online.js swaps the tag for a
-   link to the newer file when versions.json advertises one. It takes the
+/* The build stamps this version beside the logo. It takes the
    kicker's accent and weight, but not its display tracking: this sits in a
    dense row of controls rather than above a title. */
 .site-version {
@@ -451,13 +450,6 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 /* Version strings opt out of the uppercase, so the "v" prefix stays lowercase
    wherever one appears in the label. */
 .site-version-number { text-transform: none; font-variant-numeric: tabular-nums; }
-/* The link keeps the accent and marks itself with an underline, so it never
-   leans on colour alone to read as a link. */
-a.site-version-tag { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
-a.site-version-tag:hover { color: var(--fg); }
-a.site-version-tag:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
-/* inline-block keeps the separator out from under the link's underline. */
-.site-version-update::before { content: "·"; display: inline-block; margin-right: 6px; }
 /* min-width: 0 lets the row shrink on narrow screens rather than pushing the
    controls out of the bar. */
 .download-controls { display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; margin-left: auto; min-width: 0; }
@@ -1007,9 +999,8 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   /* The wordmark gives back the width the icon-only buttons still need. */
   .site-title { font-size: 19px; }
   .download-controls { gap: 6px; }
-  /* Only the version itself survives; an update link stays, since it is the
-     one header item that is news. */
-  .site-version-tag:not(.site-version-update) { display: none; }
+  /* Only the version number itself survives on narrow screens. */
+  .site-version-tag { display: none; }
 }
 @media (max-width: 520px) {
   .key-panel-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; }

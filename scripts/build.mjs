@@ -25,13 +25,13 @@ if (!/^\d+(?:\.\d+)*$/.test(version)) {
 
 const appFile = "entropylab.html";
 const generated = () =>
-  [appFile, "versions.json", ...readdirSync(root).filter((name) =>
+  [appFile, ...readdirSync(root).filter((name) =>
     /^entropylab-\d+(?:\.\d+)*\.html$/.test(name)
   )];
 
 if (process.argv.includes("--clean")) {
   for (const name of generated()) rmSync(join(root, name), { force: true });
-  console.log("Removed generated files (entropylab.html, versions.json, entropylab-*.html)");
+  console.log("Removed generated files (entropylab.html, entropylab-*.html)");
   process.exit(0);
 }
 
@@ -84,11 +84,6 @@ for (const leftover of html.match(/\/\*@@|{{VERSION}}/g) || []) {
 for (const name of generated()) rmSync(join(root, name), { force: true });
 
 writeFileSync(join(root, appFile), html);
-writeFileSync(
-  join(root, "versions.json"),
-  JSON.stringify({ versions: [{ version: `v${version}`, file: appFile }] }) + "\n",
-);
 
 console.log(`Built EntropyLab v${version}`);
 console.log(`  ${appFile} (${Buffer.byteLength(html, "utf8")} bytes)`);
-console.log(`  versions.json`);

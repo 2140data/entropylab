@@ -103,7 +103,7 @@ test("the warning aside is parked in the disabled block, still hidden and wired 
   assert.match(build, /network-check\.js/);
 });
 
-test("CSP keeps connect-src locked down to 'self'", () => {
+test("CSP keeps connect-src locked down to 'none'", () => {
   const csp = read("src/index.html").match(/connect-src[^;"]*/)?.[0] ?? "";
-  assert.equal(csp.trim(), "connect-src 'self'");
+  assert.equal(csp.trim(), "connect-src 'none'");
 });
