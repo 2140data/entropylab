@@ -21,11 +21,57 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const read = (path) => readFileSync(join(root, path), "utf8");
-const firefoxBin = process.env.FIREFOX_BINARY ?? "firefox";
+
+const resolveFirefox = () => {
+  if (process.env.FIREFOX_BINARY) return process.env.FIREFOX_BINARY;
+  const tryRun = (bin) => {
+    try {
+      const result = spawnSync(bin, ["--version"], { stdio: "pipe" });
+      if (result.status === 0) return bin;
+    } catch {}
+    return null;
+  };
+  for (const bin of ["firefox", "firefox-developer-edition"]) {
+    const found = tryRun(bin);
+    if (found) return found;
+  }
+  const platform = process.platform;
+  const paths = [];
+  if (platform === "darwin") {
+    paths.push(
+      "/Applications/Firefox Developer Edition.app/Contents/MacOS/firefox",
+      "/Applications/Firefox.app/Contents/MacOS/firefox",
+    );
+  } else if (platform === "win32") {
+    paths.push(
+      "C:\\Program Files\\Firefox Developer Edition\\firefox.exe",
+      "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
+      "C:\\Program Files (x86)\\Firefox Developer Edition\\firefox.exe",
+      "C:\\Program Files (x86)\\Mozilla Firefox\\firefox.exe",
+    );
+  } else {
+    paths.push(
+      "/usr/bin/firefox",
+      "/usr/bin/firefox-developer-edition",
+      "/usr/local/bin/firefox",
+      "/usr/local/bin/firefox-developer-edition",
+      "/snap/bin/firefox",
+      "/snap/bin/firefox-developer-edition",
+      "/opt/firefox/firefox",
+      "/opt/firefox-developer-edition/firefox",
+    );
+  }
+  for (const p of paths) {
+    if (existsSync(p)) return p;
+  }
+  return "firefox";
+};
+
+const firefoxBin = resolveFirefox();
 
 const appVersion = JSON.parse(read("package.json")).version;
 const appFile = "entropylab.html";
@@ -66,7 +112,7 @@ const stageSite = () => {
 
   const userJs = [
     'user_pref("browser.download.folderList", 2);',
-    `user_pref("browser.download.dir", "${downloadDir}");`,
+    `user_pref("browser.download.dir", ${JSON.stringify(downloadDir)});`,
     'user_pref("browser.download.useDownloadDir", true);',
     'user_pref("browser.download.alwaysOpenPanel", false);',
     'user_pref("browser.helperApps.neverAsk.saveToDisk", "text/plain,application/octet-stream");',
@@ -165,7 +211,7 @@ test("headless Firefox runs the hosted and offline suites", async () => {
     const exportBytes = Buffer.from(await exportResponse.arrayBuffer());
     assert.ok(exportBytes.equals(readFileSync(appSource)), "HTML export is not the current self-contained release");
     const onlineUrl = `http://127.0.0.1:${port}/browser-tests.html?online-preview=1`;
-    const offlineUrl = `file://${testHtmlPath}?offline-test=1`;
+    const offlineUrl = `${pathToFileURL(testHtmlPath).href}?offline-test=1`;
     const onlineLog = join(workDir, "firefox-online.log");
     const offlineLog = join(workDir, "firefox-offline.log");
     browsers.push(spawnFirefox(onlineProfile, onlineUrl, onlineLog));
@@ -208,7 +254,10 @@ test("headless Firefox runs the hosted and offline suites", async () => {
     for (const browser of browsers) {
       browser.kill("SIGKILL");
     }
+    // Windows CI runners keep Firefox profile files locked briefly after
+    // SIGKILL; give the handles time to release before cleanup.
+    await new Promise((resolve) => setTimeout(resolve, 500));
     await new Promise((resolve) => server.close(resolve));
-    rmSync(workDir, { recursive: true, force: true });
+    rmSync(workDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
   }
 });
