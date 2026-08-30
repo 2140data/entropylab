@@ -158,7 +158,7 @@ test("scriptPushes reads a P2PKH scriptSig", () => {
 test("app inspects raw transactions and labels outputs", () => {
   assert.match(app, /hodlRenderRawTx/);
   assert.match(app, /hodlSessionOwnership/);
-  assert.match(app, /Address as or/);
+  assert.match(app, /Address as hodlBitcoinAddress/);
   assert.match(app, /not in this wallet/);
   assert.match(app, /No output belongs to this session wallet/);
   assert.match(app, /Uint8Array\.from\(script\.subarray/);

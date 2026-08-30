@@ -19,6 +19,7 @@ import {
   bytesToHex as hodlSpBytesToHex,
 } from "./bip352.js";
 import { inspectPsbtInscriptions, describeEnvelope } from "./inscription.js";
+import { parseOpReturn, describeOpReturn } from "./opreturn.js";
 import { parseRawTx, extractEcdsaSignatures, inscriptionHints, isPsbtMagic } from "./tx.js";
 import { indexHdKey, indexSingleKey, matchOwnership, pathLabel } from "./ownership.js";
 import { createBase58check as fi, hex as M } from "@scure/base";
@@ -8331,6 +8332,12 @@ function hodlDeclaredOutput(entries, script, network) {
   return null;
 }
 function hodlRenderOutputHtml(output, index, network, map, entries) {
+  let opReturn = parseOpReturn(output.script);
+  if (opReturn) {
+    let amount = typeof output.amount === "bigint" ? output.amount : BigInt(output.amount || 0);
+    let lines = describeOpReturn({ ...opReturn, amount, burned: amount !== 0n });
+    return "<p class='" + (opReturn.ok ? "psbt-warn" : "psbt-bad") + "'><strong>Output " + index + "</strong> \xB7 " + hodlSats(output.amount) + " BTC<br>" + lines.map($t).join("<br>") + "</p>";
+  }
   let scan = matchOwnership(map, output.script);
   let address = hodlAddr(output.script, network);
   if (scan.state !== "ours") scan = matchOwnership(map, address);

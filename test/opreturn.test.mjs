@@ -55,3 +55,14 @@ test("inspectPsbtOpReturns reports burns and skips pay-to-address outputs", () =
   assert.equal(report.outputs[1].burned, false);
   assert.equal(report.payloadBytes, 4 + 11);
 });
+
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+test("inspector source decodes OP_RETURN in the shared output renderer", () => {
+  const app = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "src/js/app.js"), "utf8");
+  assert.match(app, /from "\.\/opreturn\.js"/);
+  assert.match(app, /parseOpReturn\(output\.script\)/);
+  assert.match(app, /describeOpReturn/);
+});
