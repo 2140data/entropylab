@@ -940,13 +940,13 @@ test("the site header is fixed, carries the logo, and holds the version, downloa
     for (const control of [/class="site-version-number">v\{\{VERSION\}\}</, /class="btn secondary download-html header-button"/, /class="btn secondary github-repo-link header-button"/, /id="theme-toggle"/]) {
       assert.match(markup.slice(header, wrapper), control, `the fixed header is missing ${control}`);
     }
-    // The in-flow title block folded into the marketing card, so the wrapper
-    // opens on that card and carries no second header of its own.
+    // The in-flow title block folded into the marketing intro, so the wrapper
+    // opens on that section and carries no second header of its own.
     const live = markup.slice(wrapper).replace(/<!--[\s\S]*?-->/g, "");
     // The wrapper opens on the beta banner; the static template follows with
     // a no-JS notice the runtime page has no need of. Both then carry the
     // conditional warnings, which start hidden.
-    assert.match(live, /<div class="wrap">\s*<aside class="beta-warning no-print" id="beta-warning" role="alert">[\s\S]*?<\/aside>\s*(?:<noscript>[\s\S]*?<\/noscript>\s*)?(?:<aside[^>]*online-warning[\s\S]*?<\/aside>\s*)*<section class="card">/);
+    assert.match(live, /<div class="wrap">\s*<aside class="beta-warning no-print" id="beta-warning" role="alert">[\s\S]*?<\/aside>\s*(?:<noscript>[\s\S]*?<\/noscript>\s*)?(?:<aside[^>]*online-warning[\s\S]*?<\/aside>\s*)*<div class="workspace-shell">[\s\S]*?<div class="workspace-content">\s*<section class="workspace-intro">/);
     assert.doesNotMatch(markup.slice(wrapper), /<header>|download-controls/);
   }
   assert.doesNotMatch(css, /^header (\{|h1)/m);
@@ -974,7 +974,7 @@ test("the site header is fixed, carries the logo, and holds the version, downloa
   // markup is the only source, and the app makes no runtime requests.
   assert.doesNotMatch(online, /fetch\s*\(|site-version|innerHTML/);
   // Content clears the fixed header on screen, and reclaims the space in print.
-  assert.match(css, /\.wrap \{ max-width: 1000px; margin: 0 auto; padding: calc\(var\(--site-header-height\) \+ 20px\) 16px 64px; \}/);
+  assert.match(css, /\.wrap \{ max-width: 1196px; margin: 0 auto; padding: calc\(var\(--site-header-height\) \+ 20px\) 16px 64px; \}/);
   assert.match(css, /@media print \{[\s\S]*?\.wrap \{ padding-top: 20px; \}/);
   assert.match(css, /html \{[^}]*scroll-padding-top: calc\(var\(--site-header-height\) \+ 12px\)/);
   // Every header control is one height, and the bar is sized to match it.
@@ -1001,15 +1001,83 @@ test("the seam into the tool is wider than the page's other major seams", () => 
   // The pitch-to-tool seam is the page's widest; the closing Sources card keeps
   // the ordinary major one. Both collapse with a neighbouring card's 16px, so
   // the larger value wins rather than the two adding up.
-  assert.match(css, /#workspace \{ margin: var\(--space-lede\) 0 4px; \}/);
+  assert.match(css, /\.workspace-tools \{ margin-top: var\(--space-lede\); \}/);
   assert.match(css, /\.sources \{ margin-top: var\(--space-major\); \}/);
   for (const markup of [template, app]) {
     assert.match(markup, /<section class="card muted sources">/);
   }
 });
 
-test("the marketing card states its pitch as a list rather than a paragraph", () => {
+test("the workspace selector is a desktop sidebar and a narrow-screen drawer", () => {
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /class="workspace-shell"/);
+    assert.match(markup, /id="workspace-menu-toggle"[^>]*aria-controls="workspace-nav"[^>]*aria-expanded="false"/);
+    assert.match(markup, /<nav class="workspace-nav no-print" id="workspace-nav" aria-label="Tools">/);
+    assert.match(markup, /id="workspace" role="group" aria-label="Tool"/);
+    assert.match(markup, /id="workspace-backdrop" hidden/);
+    assert.match(markup, /<div class="workspace-shell">[\s\S]*?<nav class="workspace-nav no-print"[\s\S]*?<div class="workspace-content">\s*<section class="workspace-intro">[\s\S]*?<div class="workspace-tools">/);
+    assert.match(markup, /<div class="workspace-tools">[\s\S]*?<div id="out"><\/div>\s*<\/div>\s*<section class="card muted sources">/);
+    assert.doesNotMatch(markup, /segmented-control" id="workspace"/);
+  }
+  assert.match(css, /\.wrap \{ max-width: 1196px;/);
+  assert.match(css, /\.workspace-shell \{\s*display: grid; grid-template-columns: 180px minmax\(0, 1fr\)/);
+  assert.match(css, /\.workspace-nav \{[\s\S]*?position: sticky; top: calc\(var\(--site-header-height\) \+ 20px\)/);
+  assert.match(css, /#workspace > \.tab:not\(\.active\) \{ background: transparent; \}/);
+  assert.match(css, /@media \(max-width: 899px\) \{[\s\S]*?\.workspace-menu-toggle \{[\s\S]*?display: flex/);
+  assert.match(css, /@media \(max-width: 899px\) \{[\s\S]*?\.workspace-nav \{[\s\S]*?position: fixed; inset: 0 auto auto 0;[\s\S]*?height: 100vh; height: 100dvh;[\s\S]*?border-radius: 0;[\s\S]*?transform: translateX\(-105%\)/);
+  assert.match(css, /\.workspace-shell\.is-menu-open \.workspace-nav \{ visibility: visible; transform: translateX\(0\)/);
+  assert.match(css, /@media print \{[\s\S]*?\.workspace-shell \{ display: block; margin-top: 0; \}/);
+  assert.match(appSource, /function hodlInitWorkspaceMenu\(\)/);
+  assert.match(appSource, /event\.key !== "Escape"/);
+  assert.match(appSource, /W\("#workspace"\)\.querySelector\('\.tab\[aria-pressed="true"\]'\)/);
+  assert.match(appSource, /activeButton = W\("#workspace"\)\.querySelector\(`\[data-workspace="\$\{id\}"\]`\)/);
+  assert.doesNotMatch(appSource, /W\((?:"|'|`)#workspace [^)]*\)/);
+  assert.match(appSource, /hodlShowWorkspace\(id\);\s*hodlCloseWorkspaceMenu\(true\);/);
+});
+
+test("segmented controls collapse into a dropdown instead of a vertical button stack", () => {
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /id="modes" role="group" aria-label="Key input mode"/);
+    assert.match(markup, /id="sp-modes" role="group" aria-label="Silent payment mode"/);
+  }
+  assert.match(css, /\.segmented-control\.is-collapsed \{ display: none; \}/);
+  assert.match(css, /\.segmented-control\.is-collapsed \+ \.segmented-control-select \+ \.custom-select \{ display: block; \}/);
+  assert.doesNotMatch(css, /is-stacked/);
+  assert.match(appSource, /function hodlEnsureSegmentedControlSelect\(group\)/);
+  assert.match(appSource, /hodlSegmentedControlButtons\(group\)\[Number\(select\.value\)\]\?\.click\(\)/);
+  assert.match(appSource, /button\.offsetTop - firstTop[\s\S]*?group\.classList\.toggle\("is-collapsed", wrapped\)/);
+  assert.match(appSource, /groups\.map\(\(group\) => group\.parentElement\)/);
+});
+
+test("every workspace exposes its exact tool name above the inner content", () => {
+  const headings = [
+    ["calc", "Key Derivation", "key-manager", false],
+    ["bip85", "BIP-85", "bip85-card", true],
+    ["msig", "Multi Signature", "msig-manager", true],
+    ["sp", "Silent Payments", "sp-card", true],
+    ["psbt", "PSBT / Nonce", "psbt-card", true],
+  ];
+  for (const markup of [template, appSource]) {
+    assert.equal((markup.match(/data-workspace-heading=/g) || []).length, headings.length);
+    for (const [workspace, title, contentId, hidden] of headings) {
+      const hiddenAttribute = hidden ? " hidden" : "";
+      assert.match(
+        markup,
+        new RegExp(`<div class="workspace-tool-heading no-print" data-workspace-heading="${workspace}"${hiddenAttribute}><h2>${title.replace("/", "\\/")}<\\/h2><\\/div>\\s*<section[^>]*id="${contentId}"`),
+      );
+    }
+    assert.equal((markup.match(/<h2>Silent Payments<\/h2>/g) || []).length, 1);
+    assert.doesNotMatch(markup, /key-manager-head|<h2>Keys<\/h2>|<h2>Multisigs<\/h2>/);
+  }
+  assert.match(css, /\.workspace-tool-heading \{ margin: 14px 0 0; \}/);
+  assert.match(css, /\.workspace-tool-heading h2 \{ margin: 0; \}/);
+  assert.match(appSource, /querySelectorAll\("\[data-workspace-heading\]"\)[\s\S]*?heading\.hidden = heading\.dataset\.workspaceHeading !== id/);
+});
+
+test("the unframed marketing intro states its pitch as a list rather than a paragraph", () => {
   for (const markup of [template, app]) {
+    assert.match(markup, /<section class="workspace-intro">[\s\S]*?Hold or receive bitcoin without a signing device\./);
+    assert.doesNotMatch(markup, /<section class="[^"]*\bcard\b[^"]*\bworkspace-intro\b/);
     const list = markup.match(/<ul class="pitch-list muted">[\s\S]*?<\/ul>/)?.[0];
     assert.ok(list, "the pitch list is missing");
     assert.equal((list.match(/<li>/g) || []).length, 4);
@@ -1019,8 +1087,9 @@ test("the marketing card states its pitch as a list rather than a paragraph", ()
     assert.doesNotMatch(markup, /A signing device is only required when you spend/);
   }
   // The list stands in for a paragraph, so it carries the space a paragraph
-  // would have above it and leaves the card's padding to close it out.
+  // would have above it. The intro itself is deliberately unframed.
   assert.match(css, /\.pitch-list \{ display: grid; gap: 7px; margin: var\(--space-component\) 0 0; padding-left: 20px; \}/);
+  assert.match(css, /\.workspace-intro \{ margin: 2rem 0; \}/);
 });
 
 test("the favicon ships inside the document instead of the assets directory", () => {
