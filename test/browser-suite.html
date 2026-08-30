@@ -1084,11 +1084,14 @@
     await until(() => (document.getElementById("psbted-result-hex") || {}).value || document.getElementById("psbted-error").textContent, "editor rebuild");
     equal(document.getElementById("psbted-error").textContent, "", "editor rebuild failed");
     assert(document.getElementById("psbted-result-hex").value.includes(longValue.slice(0, -2) + "cd"), "overlay edit did not reach the rebuilt PSBT");
-    // A long key truncates read-only and Escape closes the overlay.
+    // A long key truncates read-only and Escape closes the overlay. The table
+    // re-rendered after each structural edit, so the add controls are fresh
+    // elements — re-query them.
     const longKey = "2a" + "11".repeat(40);
-    type.value = ""; // Custom type…: the keydata field carries the full key
-    input(keyInput, longKey);
-    input(valInput, "ff");
+    const typeAgain = document.querySelector('[data-add-type="output:0"]');
+    typeAgain.value = ""; // Custom type…: the keydata field carries the full key
+    input(document.querySelector('[data-add-key="output:0"]'), longKey);
+    input(document.querySelector('[data-add-val="output:0"]'), "ff");
     document.querySelector('[data-add="output:0"]').click();
     const keyCell = await until(() =>
       [...document.querySelectorAll("#psbted-out .exp-cell")].find((item) => item.dataset.exp === longKey),
