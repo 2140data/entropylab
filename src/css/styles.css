@@ -864,6 +864,36 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .psbted-note-warn { color: var(--warn); }
 .psbted-note-bad { color: var(--danger); }
 #psbted-result textarea { font-family: var(--mono); font-size: 12px; min-height: 90px; }
+/* Expandable cells: a truncated field reads as one quiet line of mono text
+   and announces its full length; the whole cell is the click target. */
+.exp-cell {
+  display: block; width: 100%; min-height: 0; margin-top: 0; padding: 6px 8px;
+  border: 1px dashed var(--border); border-radius: 6px; background: none;
+  color: inherit; font-family: var(--mono); font-size: 12px; line-height: 1.55;
+  text-align: left; overflow-wrap: anywhere; cursor: pointer;
+}
+.exp-cell:hover { background: var(--surface-2); border-color: var(--muted); }
+.exp-cell:focus-visible { outline: 2px solid var(--selection-accent); outline-offset: 1px; }
+.exp-len { color: var(--muted); font-size: 11px; white-space: nowrap; }
+/* The overlay mirrors the disclaimer gate: dimmed page, one centered card. */
+.exp-overlay {
+  position: fixed; inset: 0; z-index: 200; display: grid; place-items: center;
+  padding: 24px; box-sizing: border-box; background: rgb(0 0 0 / 55%);
+}
+.exp-overlay[hidden] { display: none; }
+.exp-card {
+  width: min(760px, 100%); padding: 20px; border: 1px solid var(--border);
+  border-radius: 12px; background: var(--surface);
+  box-shadow: 0 16px 36px rgb(0 0 0 / 55%);
+}
+.exp-title { margin: 0; font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+.exp-meta { margin: 4px 0 0; }
+.exp-card textarea {
+  min-height: 240px; max-height: 55vh; margin-top: var(--space-control);
+  font-family: var(--mono); font-size: 12px; overflow-wrap: anywhere;
+}
+.exp-card textarea[readonly] { color: var(--muted); }
+.exp-actions { margin-top: var(--space-component); }
 .sp-result, .sp-output { margin-top: var(--space-component); }
 .sp-qr { width: min(220px, 100%); margin: var(--space-control) 0; }
 .sp-qr svg { width: 100%; height: auto; display: block; background: #fff; border-radius: 8px; }

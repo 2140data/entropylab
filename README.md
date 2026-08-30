@@ -64,9 +64,12 @@ Official website: [entropylab.online](https://entropylab.online)
   per-input, and per-output maps is decoded (BIP-174 and BIP-371 taproot
   fields), editable as raw hex, and removable, new pairs can be added, and the
   unsigned transaction's version, locktime, input prevouts/sequences, and
-  output amounts/scripts get structured fields. Re-serialization is validated
-  by rust-bitcoin before the edited PSBT is shown. The editor never signs
-  anything.
+  output amounts/scripts get structured fields. Fields longer than 64
+  characters (a whole previous transaction, a large script) collapse to a
+  truncated preview with a length label; clicking the cell opens the full
+  text in an editor window, where values stay editable. Re-serialization is
+  validated by rust-bitcoin before the edited PSBT is shown. The editor never
+  signs anything.
 - Derives BIP-85 child entropy from the active key's BIP32 root (or a pasted
   root xprv): English BIP-39 mnemonics (12–24 words), HD-seed WIF, XPRV, HEX,
   and Base64/Base85 passwords. Same parent, application, and index always

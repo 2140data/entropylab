@@ -12,6 +12,7 @@
 // section on every build, so it is never edited directly.
 import { Address as BtcAddress, NETWORK as BTC_MAINNET, TEST_NETWORK as BTC_TESTNET, OutScript } from "@scure/btc-signer";
 import { psbtInspectDoc, psbtBuildBytes, psbtWasmReady } from "./psbt-wasm.js";
+import { expandableHtml, EXPAND_LIMIT, initExpandable } from "./expandable.js";
 
 const hexToBytes = (hex) => {
   if (!/^(?:[0-9a-f]{2})*$/i.test(hex)) throw new Error("Invalid hexadecimal input.");
@@ -202,6 +203,16 @@ export const initPsbtEditor = () => {
   let doc = null; // inspect document being edited; null when nothing is loaded
   let resultBytes = null; // last successfully built PSBT
 
+  initExpandable();
+  // Edits saved in the expandable editor window are pending field edits,
+  // exactly like typing in the plain value inputs (validated on Re-serialize).
+  out.addEventListener("expandable:apply", (event) => {
+    if (!doc) return;
+    const { kind, map, pair } = event.target.dataset;
+    if (kind === undefined || pair === undefined) return;
+    (kind === "global" ? doc.globals : kind === "input" ? doc.inputs[map] : doc.outputs[map])[Number(pair)].value = event.detail.text.trim();
+  });
+
   const setError = (message) => {
     error.textContent = message || "";
   };
@@ -212,13 +223,18 @@ export const initPsbtEditor = () => {
         const locked = kind === "global" && pair.key === "00";
         const note = describePair(pair, network.value);
         const tone = note.tone ? ` class="psbted-note-${note.tone}"` : "";
+        const name = pair.name || "pair";
+        // Long fields collapse to the standard truncated cell; activating it
+        // opens the full text in the expandable editor window. A long value
+        // stays editable there, so the write path matches the plain input's.
+        const valueCell = pair.value.length > EXPAND_LIMIT
+          ? expandableHtml(pair.value, { label: `Value bytes for ${name} (hex)`, editAttrs: `data-kind="${kind}" data-map="${mapIndex}" data-pair="${pairIndex}"` })
+          : `<input class="psbted-value" data-kind="${kind}" data-map="${mapIndex}" data-pair="${pairIndex}" value="${escapeHtml(pair.value)}" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Value bytes for ${escapeHtml(name)} (hex)">`;
         return `<tr>
           <td class="psbted-name">${escapeHtml(pair.name || "Unvalidated pair")}<br><span class="muted">type 0x${escapeHtml(pair.key.slice(0, 2) ?? "??")}</span></td>
-          <td class="psbted-hex">${escapeHtml(pair.key)}</td>
-          <td>${locked
-            ? `<span class="muted">managed by the transaction section</span>`
-            : `<input class="psbted-value" data-kind="${kind}" data-map="${mapIndex}" data-pair="${pairIndex}" value="${escapeHtml(pair.value)}" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Value bytes for ${escapeHtml(pair.name || "pair")} (hex)">`}</td>
-          <td${tone}>${escapeHtml(note.text)}</td>
+          <td class="psbted-hex">${expandableHtml(pair.key, { label: `Key bytes for ${name} (hex)` })}</td>
+          <td>${locked ? `<span class="muted">managed by the transaction section</span>` : valueCell}</td>
+          <td${tone}>${expandableHtml(note.text, { label: `${name} — decoded` })}</td>
           <td>${locked ? "" : `<button type="button" class="psbted-del" data-kind="${kind}" data-map="${mapIndex}" data-pair="${pairIndex}" aria-label="Delete ${escapeHtml(pair.name || "pair")}">×</button>`}</td>
         </tr>`;
       })

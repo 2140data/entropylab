@@ -1042,6 +1042,70 @@
     await until(() => !document.getElementById("calc-card").hidden, "key workspace");
   });
 
+  await test("PSBT editor truncates long fields and the overlay edits them", async () => {
+    const vector = "cHNidP8BAKACAAAAAqsJSaCMWvfEm4IS9Bfi8Vqz9cM9zxU4IagTn4d6W3vkAAAAAAD+////qwlJoIxa98SbghL0F+LxWrP1wz3PFTghqBOfh3pbe+QBAAAAAP7///8CYDvqCwAAAAAZdqkUdopAu9dAy+gdmI5x3ipNXHE5ax2IrI4kAAAAAAAAGXapFG9GILVT+glechue4O/p+gOcykWXiKwAAAAAAAEHakcwRAIgR1lmF5fAGwNrJZKJSGhiGDR9iYZLcZ4ff89X0eURZYcCIFMJ6r9Wqk2Ikf/REf3xM286KdqGbX+EhtdVRs7tr5MZASEDXNxh/HupccC1AaZGoqg7ECy0OIEhfKaC3Ibi1z+ogpIAAQEgAOH1BQAAAAAXqRQ1RebjO4MsRwUPJNPuuTycA5SLx4cBBBYAFIXRNTfy4mVAWjTbr6nj3aAfuCMIAAAA";
+    document.querySelector('#workspace [data-workspace="psbted"]').click();
+    const box = await until(() => document.getElementById("psbted-text"), "PSBT editor input");
+    input(box, vector);
+    document.getElementById("psbted-load").click();
+    await until(() => document.querySelector("#psbted-out .psbted-pairs"), "editor pair tables");
+    // The vector's 212-char finalized scriptSig value and the longest decoded
+    // notes collapse; the 50-char witness UTXO value stays a plain input.
+    const cellsBefore = document.querySelectorAll("#psbted-out .exp-cell").length;
+    assert(cellsBefore > 0, "long vector fields were not truncated");
+    assert(document.querySelector('.psbted-value[data-kind="input"][data-map="1"][data-pair="0"]'), "short value field lost its plain input");
+    // Add an output pair with a 300-char value: past the standard limit, so
+    // the value cell collapses to an editable truncated cell.
+    const longValue = "ab".repeat(150);
+    const type = document.querySelector('[data-add-type="output:0"]');
+    const keyInput = document.querySelector('[data-add-key="output:0"]');
+    const valInput = document.querySelector('[data-add-val="output:0"]');
+    type.value = "fc"; // PSBT_OUT_PROPRIETARY
+    input(keyInput, "016d00");
+    input(valInput, longValue);
+    document.querySelector('[data-add="output:0"]').click();
+    const cell = await until(() =>
+      [...document.querySelectorAll("#psbted-out .exp-cell")].find((item) => item.dataset.exp === longValue),
+    "truncated cell for the long value");
+    equal(document.querySelectorAll("#psbted-out .exp-cell").length, cellsBefore + 1, "the long value did not add exactly one truncated cell");
+    assert(cell.dataset.expEdit !== undefined, "long value cell is not editable");
+    assert(cell.textContent.includes("…") && cell.textContent.includes("300 hex chars (150 bytes)"), "cell does not announce its truncation");
+    cell.click();
+    const overlay = document.getElementById("exp-overlay");
+    await until(() => !overlay.hidden, "overlay did not open");
+    equal(document.getElementById("exp-title").textContent, "Value bytes for PSBT_OUT_PROPRIETARY (hex)");
+    const area = document.getElementById("exp-text");
+    equal(area.value, longValue, "overlay does not hold the full value");
+    assert(!area.readOnly && !document.getElementById("exp-apply").hidden, "value cell did not open editable");
+    area.value = longValue.slice(0, -2) + "cd";
+    document.getElementById("exp-apply").click();
+    assert(overlay.hidden, "Apply did not close the overlay");
+    document.getElementById("psbted-build").click();
+    await until(() => (document.getElementById("psbted-result-hex") || {}).value || document.getElementById("psbted-error").textContent, "editor rebuild");
+    equal(document.getElementById("psbted-error").textContent, "", "editor rebuild failed");
+    assert(document.getElementById("psbted-result-hex").value.includes(longValue.slice(0, -2) + "cd"), "overlay edit did not reach the rebuilt PSBT");
+    // A long key truncates read-only and Escape closes the overlay.
+    const longKey = "2a" + "11".repeat(40);
+    type.value = ""; // Custom type…: the keydata field carries the full key
+    input(keyInput, longKey);
+    input(valInput, "ff");
+    document.querySelector('[data-add="output:0"]').click();
+    const keyCell = await until(() =>
+      [...document.querySelectorAll("#psbted-out .exp-cell")].find((item) => item.dataset.exp === longKey),
+    "truncated cell for the long key");
+    assert(keyCell.dataset.expEdit === undefined, "key cell must not be editable");
+    keyCell.click();
+    await until(() => !overlay.hidden, "overlay did not reopen");
+    equal(document.getElementById("exp-text").value, longKey, "overlay does not hold the full key");
+    assert(document.getElementById("exp-text").readOnly && document.getElementById("exp-apply").hidden, "key cell opened editable");
+    document.getElementById("exp-text").dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    assert(overlay.hidden, "Escape did not close the overlay");
+    input(box, "");
+    document.getElementById("psbted-wipe").click();
+    document.querySelector('#workspace [data-workspace="calc"]').click();
+    await until(() => !document.getElementById("calc-card").hidden, "key workspace");
+  });
+
   await test("a known BIP39 wallet can be derived through the UI", async () => {
     document.querySelector('[data-seed-words="12"]').click();
     await chooseMode("Number bases");
