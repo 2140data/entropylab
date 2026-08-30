@@ -665,22 +665,22 @@ test("the beta banner carries a dismiss control in a narrow right-hand column", 
     );
   }
   // The banner is a row: the message takes the slack, the control does not.
-  assert.match(css, /#beta-warning \{ display: flex; align-items: flex-start; gap: 12px; \}/);
-  assert.match(css, /\.beta-warning-text \{ flex: 1; \}/);
-  assert.match(css, /\.beta-warning-dismiss \{[^}]*flex: none;[^}]*\}/s);
+  assert.match(css, /#beta-warning, #online-warning \{ display: flex; align-items: flex-start; gap: 12px; \}/);
+  assert.match(css, /\.beta-warning-text, \.online-warning-text \{ flex: 1; \}/);
+  assert.match(css, /\.beta-warning-dismiss, \.online-warning-dismiss \{[^}]*flex: none;[^}]*\}/s);
   // White on the dark banner, near-black on the light theme's pale one: the
   // glyph must stay legible in both.
-  assert.match(css, /\.beta-warning-dismiss \{[^}]*color: #ffffff;[^}]*\}/s);
-  assert.match(css, /:root\[data-theme="light"\] \.beta-warning-dismiss \{ color: var\(--fg\); \}/);
+  assert.match(css, /\.beta-warning-dismiss, \.online-warning-dismiss \{[^}]*color: #ffffff;[^}]*\}/s);
+  assert.match(css, /:root\[data-theme="light"\] :is\(\.beta-warning-dismiss, \.online-warning-dismiss\) \{ color: var\(--fg\); \}/);
   // The author display would otherwise beat the user agent's [hidden] rule
   // and the dismissed banner would stay on screen.
-  assert.match(css, /#beta-warning\[hidden\] \{ display: none; \}/);
+  assert.match(css, /#beta-warning\[hidden\], #online-warning\[hidden\] \{ display: none; \}/);
   // Only the dismissible banner uppercases its label; the noscript notice
   // shares .beta-warning and must keep its sentence casing.
-  assert.match(css, /\.beta-warning-text strong \{[^}]*line-height: 1; text-transform: uppercase;\s*color: var\(--danger-bright\);[^}]*\}/s);
+  assert.match(css, /\.beta-warning-text strong, \.online-warning-text strong \{[^}]*line-height: 1; text-transform: uppercase;\s*color: var\(--danger-bright\);[^}]*\}/s);
   // The label takes the banner's own size: a smaller one read as a caption
   // rather than the sentence's lead-in.
-  assert.doesNotMatch(css, /\.beta-warning-text strong \{[^}]*font-size/s);
+  assert.doesNotMatch(css, /\.beta-warning-text strong, \.online-warning-text strong \{[^}]*font-size/s);
   assert.doesNotMatch(css, /\.beta-warning strong \{[^}]*text-transform/);
   // Boot wires the control, and the click hides the banner outright.
   assert.match(appWhitespace, /function hodlInitBetaWarningDismiss\(\)\{/);
@@ -706,6 +706,43 @@ test("the beta banner carries a dismiss control in a narrow right-hand column", 
   assert.match(css, /:root\[data-beta-banner-dismissed\] #beta-warning \{ display: none; \}/);
   // Boot must not be the thing that hides an already-dismissed banner.
   assert.doesNotMatch(appWhitespace, /localStorage\.getItem\(hodlBetaBannerStorageKey\)/);
+});
+
+test("the online and noscript warnings are titled like the beta banner", () => {
+  // The online warning ships in both markups; the noscript notice is static
+  // only, because the application root it would live in is replaced at boot.
+  for (const markup of [template, app]) {
+    assert.match(
+      markup,
+      /<div class="online-warning-text"><strong>Online version<\/strong> Do not enter seed phrases/,
+      "the online warning must carry its label in a wrapper",
+    );
+    assert.match(
+      markup,
+      /<button type="button" class="online-warning-dismiss" id="online-warning-dismiss" aria-label="Dismiss the online version warning">/,
+    );
+    assert.ok(
+      markup.indexOf('class="online-warning-text"') < markup.indexOf('class="online-warning-dismiss"'),
+      "the dismiss column must follow the warning text",
+    );
+  }
+  assert.match(template, /<div class="beta-warning-text"><strong>JavaScript is required<\/strong> EntropyLab performs wallet/);
+  // No lead-in colons anywhere: the label is a line of its own now.
+  assert.doesNotMatch(`${template}\n${app}`, /<strong>(Online version|JavaScript is required|Beta software):<\/strong>/);
+  // The noscript notice carries no control: there is no JavaScript running to
+  // answer one. It takes the label treatment and nothing else.
+  const noscript = template.slice(template.indexOf("<noscript>"), template.indexOf("</noscript>"));
+  assert.doesNotMatch(noscript, /-dismiss/, "the noscript notice cannot carry a scripted control");
+  // Dismissal is owned by the unit that reveals the banner, so a dismissed
+  // warning is never shown rather than shown and then hidden.
+  assert.match(online, /const KEY = "entropylab-online-warning-dismissed";/);
+  assert.match(online, /if \(localStorage\.getItem\(KEY\) === VERSION\) return;/);
+  assert.match(online, /localStorage\.setItem\(KEY, VERSION\)/);
+  assert.match(online, /banner\.removeAttribute\("hidden"\)/);
+  assert.ok(
+    online.indexOf("localStorage.getItem(KEY)") < online.indexOf('removeAttribute("hidden")'),
+    "the dismissal must be checked before the banner is revealed",
+  );
 });
 
 test("the beta disclaimer gates the page as a modal until accepted", () => {
