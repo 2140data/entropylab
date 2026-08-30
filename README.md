@@ -59,6 +59,14 @@ Official website: [entropylab.online](https://entropylab.online)
 - Scans PSBT tap-leaf scripts and finalized witnesses for inscription envelopes
   (`OP_FALSE OP_IF "ord"`). Reports content-type, size, and text previews; does
   not number sats, fetch chain data, create inscriptions, or render images.
+- Edits PSBT v0 files field by field (a bip174.org-style editor backed by
+  rust-bitcoin compiled to WebAssembly): every key-value pair of the global,
+  per-input, and per-output maps is decoded (BIP-174 and BIP-371 taproot
+  fields), editable as raw hex, and removable, new pairs can be added, and the
+  unsigned transaction's version, locktime, input prevouts/sequences, and
+  output amounts/scripts get structured fields. Re-serialization is validated
+  by rust-bitcoin before the edited PSBT is shown. The editor never signs
+  anything.
 - Derives BIP-85 child entropy from the active key's BIP32 root (or a pasted
   root xprv): English BIP-39 mnemonics (12–24 words), HD-seed WIF, XPRV, HEX,
   and Base64/Base85 passwords. Same parent, application, and index always
@@ -210,6 +218,12 @@ same flow as the site artifact; byte identity across machines is not
 asserted, since the C side compiles with the builder's clang, and build-host
 paths are remapped out of the binary).
 
+PSBT parsing, typed field decoding, and re-serialization in the PSBT editor
+run on rust-bitcoin 0.32.102 compiled to WebAssembly from the pinned crate in
+`psbt-wasm/` (same pinning rules), exposed through `src/js/psbt-wasm.js` and
+committed as `src/js/psbt-wasm-b64.js`. The WASM sees only PSBT bytes and
+UTF-8 JSON; it holds no keys and generates no randomness.
+
 Requirements: Node.js 20.19 or newer.
 
 ```sh
@@ -217,9 +231,9 @@ npm ci
 npm run build
 ```
 
-To modify the Rust bindings (`entropylab-wasm/`), Rust (with the
+To modify the Rust bindings (`entropylab-wasm/`, `psbt-wasm/`), Rust (with the
 `wasm32-unknown-unknown` target, installed automatically by rustup) is also
-required; regenerate the committed artifact with `npm run build:wasm`.
+required; regenerate the committed artifacts with `npm run build:wasm`.
 
 Build output (generated; CI rebuilds it for every run and commits it back to
 `rock` after each merge so the file stays downloadable from the repository):

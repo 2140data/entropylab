@@ -990,6 +990,36 @@
     await until(() => !document.getElementById("calc-card").hidden, "key workspace");
   });
 
+  await test("PSBT editor decodes, edits, and re-serializes a BIP-174 vector", async () => {
+    // BIP-174 valid vector 2 (rust-bitcoin's valid_vector_2): two inputs —
+    // a finalized P2PKH scriptSig and a nested P2WPKH — and two outputs.
+    const vector = "cHNidP8BAKACAAAAAqsJSaCMWvfEm4IS9Bfi8Vqz9cM9zxU4IagTn4d6W3vkAAAAAAD+////qwlJoIxa98SbghL0F+LxWrP1wz3PFTghqBOfh3pbe+QBAAAAAP7///8CYDvqCwAAAAAZdqkUdopAu9dAy+gdmI5x3ipNXHE5ax2IrI4kAAAAAAAAGXapFG9GILVT+glechue4O/p+gOcykWXiKwAAAAAAAEHakcwRAIgR1lmF5fAGwNrJZKJSGhiGDR9iYZLcZ4ff89X0eURZYcCIFMJ6r9Wqk2Ikf/REf3xM286KdqGbX+EhtdVRs7tr5MZASEDXNxh/HupccC1AaZGoqg7ECy0OIEhfKaC3Ibi1z+ogpIAAQEgAOH1BQAAAAAXqRQ1RebjO4MsRwUPJNPuuTycA5SLx4cBBBYAFIXRNTfy4mVAWjTbr6nj3aAfuCMIAAAA";
+    document.querySelector('#workspace [data-workspace="psbted"]').click();
+    const box = await until(() => document.getElementById("psbted-text"), "PSBT editor input");
+    input(box, vector);
+    document.getElementById("psbted-load").click();
+    await until(() => document.querySelector("#psbted-out .psbted-pairs"), "editor pair tables");
+    const outText = () => document.getElementById("psbted-out").textContent;
+    assert(outText().includes("PSBT_IN_WITNESS_UTXO"), "typed pair names missing");
+    assert(outText().includes("100000000 sats"), "witness utxo amount missing");
+    assert(outText().includes("parses under rust-bitcoin"), "rust-bitcoin verdict missing");
+    const valueInput = document.querySelector("[data-txout-val='0']");
+    input(valueInput, "199901000");
+    document.getElementById("psbted-build").click();
+    await until(() => (document.getElementById("psbted-result-b64") || {}).value || document.getElementById("psbted-error").textContent, "editor rebuild");
+    equal(document.getElementById("psbted-error").textContent, "", "editor rebuild failed");
+    const edited = document.getElementById("psbted-result-b64").value;
+    assert(edited.startsWith("cHNidP8B") && edited !== vector, "edited PSBT missing or unchanged");
+    assert(outText().includes("199901000"), "edited amount was not re-decoded");
+    input(box, '<img src=x onerror="window.__browserTestInjected=true">');
+    document.getElementById("psbted-load").click();
+    await until(() => document.getElementById("psbted-error").textContent, "editor rejection");
+    assert(!document.querySelector("#psbted-card img") && window.__browserTestInjected !== true, "Editor input executed markup");
+    input(box, "");
+    document.querySelector('#workspace [data-workspace="calc"]').click();
+    await until(() => !document.getElementById("calc-card").hidden, "key workspace");
+  });
+
   await test("a known BIP39 wallet can be derived through the UI", async () => {
     document.querySelector('[data-seed-words="12"]').click();
     await chooseMode("Number bases");
