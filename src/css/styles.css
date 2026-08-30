@@ -867,6 +867,29 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .key-settings.single-key-mode #account-address-settings { grid-template-columns: minmax(0, 1fr); }
 .key-settings.single-key-mode .network-field { width: 100%; max-width: 50%; }
 .key-settings .field { min-width: 0; margin: 0; }
+.derivation-index-control {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; gap: var(--space-control);
+  min-width: 0; margin-top: var(--space-control);
+}
+.derivation-index-value { position: relative; display: block; min-width: 0; }
+.derivation-index-value input:not([type="checkbox"]) { appearance: textfield; margin-top: 0; padding-right: 24px; }
+.derivation-index-value input::-webkit-inner-spin-button,
+.derivation-index-value input::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.derivation-index-prime {
+  position: absolute; top: 50%; left: 12px; transform: translateY(-50%);
+  color: var(--fg); font-family: var(--mono); font-size: 14px; white-space: pre; pointer-events: none;
+}
+.derivation-index-prime::before { content: attr(data-index-value); color: transparent; }
+.derivation-index-control:has(.derivation-harden input:not(:checked)) .derivation-index-prime { display: none; }
+#msig-account:placeholder-shown + .derivation-index-prime,
+#msig-account[data-state="mixed"] + .derivation-index-prime,
+#msig-account[data-state="not-applicable"] + .derivation-index-prime { display: none; }
+.derivation-harden {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px;
+  padding: 0 12px; border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface-2); color: var(--fg); font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer;
+}
+.derivation-harden input { margin: 0; accent-color: var(--selection-accent); }
 #passphrase-field[hidden], #master-fingerprint-preview[hidden], #script-type-field[hidden], #purpose-field[hidden],
 #account-field[hidden], #address-range-settings[hidden], #derivation-path-preview[hidden] { display: none !important; }
 .field-note {
