@@ -454,12 +454,16 @@ test("derivation indexes keep adjacent Harden controls with safe defaults", () =
     for (const id of ["purpose", "network", "account", "msig-purpose", "msig-network", "msig-account"]) {
       assert.match(markup, new RegExp(`id="${id}"[\\s\\S]*?id="${id}-harden" type="checkbox" checked`));
     }
-    for (const id of ["address-start", "msig-address-start"]) {
+    for (const id of ["branch-start", "address-start", "msig-branch-start", "msig-address-start"]) {
       assert.match(markup, new RegExp(`id="${id}"[\\s\\S]*?id="${id}-harden" type="checkbox"(?! checked)`));
     }
   }
   assert.match(css, /\.derivation-index-control \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) auto;[\s\S]*?white-space: nowrap;/);
+  assert.match(css, /\.derivation-index-prime \{[\s\S]*?left: 12px;[\s\S]*?white-space: pre;/);
+  assert.match(css, /\.derivation-index-prime::before \{ content: attr\(data-index-value\); color: transparent; \}/);
   assert.match(appSource, /function hodlReadHardening\(prefix = ""\)/);
+  assert.match(appSource, /function hodlSyncDerivationPrime\(input\)/);
+  assert.match(appSource, /prime\.dataset\.indexValue = String\(input\.value \?\? ""\)/);
   assert.match(appSource, /hodlPathIndex\(e\.purpose, hardening\.purpose\)/);
   assert.match(appSource, /Hardened address indexes cannot be derived from multisig extended public keys/);
 });

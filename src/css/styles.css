@@ -873,9 +873,10 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .derivation-index-value input::-webkit-inner-spin-button,
 .derivation-index-value input::-webkit-outer-spin-button { appearance: none; margin: 0; }
 .derivation-index-prime {
-  position: absolute; top: 50%; right: 12px; transform: translateY(-50%);
-  color: var(--fg); font-family: var(--mono); font-size: 14px; pointer-events: none;
+  position: absolute; top: 50%; left: 12px; transform: translateY(-50%);
+  color: var(--fg); font-family: var(--mono); font-size: 14px; white-space: pre; pointer-events: none;
 }
+.derivation-index-prime::before { content: attr(data-index-value); color: transparent; }
 .derivation-index-control:has(.derivation-harden input:not(:checked)) .derivation-index-prime { display: none; }
 #msig-account:placeholder-shown + .derivation-index-prime,
 #msig-account[data-state="mixed"] + .derivation-index-prime,

@@ -1004,6 +1004,13 @@
     input(purpose, "2147483648");
     assert(document.getElementById("go").disabled && purpose.classList.contains("bad"), "An out-of-range purpose did not block derivation");
     input(purpose, "69420");
+    const purposePrime = purpose.nextElementSibling;
+    equal(purposePrime.dataset.indexValue, "69420", "The purpose prime mirror did not follow the edited number");
+    const purposeStyle = getComputedStyle(purpose);
+    const measure = document.createElement("canvas").getContext("2d");
+    measure.font = `${purposeStyle.fontStyle} ${purposeStyle.fontWeight} ${purposeStyle.fontSize} ${purposeStyle.fontFamily}`;
+    const expectedPrimeRight = purpose.getBoundingClientRect().left + parseFloat(purposeStyle.paddingLeft) + measure.measureText("69420'").width;
+    assert(Math.abs(purposePrime.getBoundingClientRect().right - expectedPrimeRight) < 2, "The purpose prime was not positioned directly after its number");
     const network = document.getElementById("network");
     assert(network?.matches('input[type="number"]'), "Coin type index input is missing");
     input(network, "2147483648");

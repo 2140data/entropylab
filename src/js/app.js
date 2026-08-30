@@ -175,11 +175,19 @@ function hodlHardeningFromFields(fields = {}) {
     address: Boolean(fields.addressHarden)
   };
 }
+function hodlSyncDerivationPrime(input) {
+  let prime = input?.parentElement?.querySelector(".derivation-index-prime");
+  if (prime) prime.dataset.indexValue = String(input.value ?? "");
+}
+function hodlSyncDerivationPrimes(root = document) {
+  root.querySelectorAll(".derivation-index-value > input").forEach(hodlSyncDerivationPrime);
+}
 function hodlSetHardeningControls(prefix = "", hardening = hodlDefaultHardening()) {
   [["purpose", "purpose"], ["network", "coinType"], ["account", "account"], ["branch-start", "branch"], ["address-start", "address"]].forEach(([id, key]) => {
     let input = document.getElementById(`${prefix}${id}-harden`);
     if (input) input.checked = Boolean(hardening[key]);
   });
+  hodlSyncDerivationPrimes();
 }
 function Ao(e, t, r = 0, hardening = hodlDefaultHardening()) {
   return `m/${hodlPathIndex(e.purpose, hardening.purpose)}/${hodlPathIndex(Rs(t), hardening.coinType)}/${hodlPathIndex(r, hardening.account)}`;
@@ -1836,7 +1844,10 @@ function hodlReadPurpose(mark = true) {
 function hodlSetPurpose(value) {
   let purpose = Number(value), input = document.getElementById("purpose");
   if (!Number.isSafeInteger(purpose) || purpose < 0 || purpose > hodlMaxPurpose) purpose = 84;
-  if (input) input.value = String(purpose);
+  if (input) {
+    input.value = String(purpose);
+    hodlSyncDerivationPrime(input);
+  }
   let state = hodlKeys[hodlActiveKey];
   if (state) state.fields.purpose = String(purpose);
   return purpose;
@@ -2296,6 +2307,10 @@ function hodlUpdateDerivationPathPreview() {
 function hodlInitDerivationControls() {
   let panel = document.getElementById("calc-card");
   if (!panel) return;
+  document.addEventListener("input", (event) => {
+    if (event.target instanceof Element && event.target.matches(".derivation-index-value > input")) hodlSyncDerivationPrime(event.target);
+  });
+  hodlSyncDerivationPrimes();
   let purposeInput = document.getElementById("purpose"), coinTypeInput = document.getElementById("network"), accountInput = document.getElementById("account"), branchInput = document.getElementById("branch-start"), addressInput = document.getElementById("address-start");
   [purposeInput, coinTypeInput, accountInput, branchInput, addressInput].forEach((input) => {
     input?.addEventListener("keydown", (event) => {
@@ -5843,7 +5858,10 @@ function hodlReadMsigPurpose(mark = true) {
 function hodlSetMsigPurpose(value) {
   let purpose = Number(value), input = document.getElementById("msig-purpose");
   if (!Number.isSafeInteger(purpose) || purpose < 0 || purpose > hodlMaxPurpose) purpose = 48;
-  if (input) input.value = String(purpose);
+  if (input) {
+    input.value = String(purpose);
+    hodlSyncDerivationPrime(input);
+  }
   let state = hodlMsigs[hodlActiveMsig];
   if (state) state.fields.purpose = String(purpose);
   return purpose;
@@ -6172,6 +6190,7 @@ function hodlUpdateMsigAccount() {
   }
   if (kind === "p2sh" && purpose === 45) {
     field.value = "";
+    hodlSyncDerivationPrime(field);
     field.placeholder = "Not applicable";
     field.dataset.state = "not-applicable";
     if (help) help.textContent = "BIP45 purpose keys do not contain an account number.";
@@ -6192,6 +6211,7 @@ function hodlUpdateMsigAccount() {
   }
   let summary = hodlSummarizeMultisigAccounts(accountNumbers), message = hodlMultisigAccountWarning(summary);
   field.value = summary.mixed ? "Mixed" : summary.account == null ? "" : String(summary.account);
+  hodlSyncDerivationPrime(field);
   field.placeholder = "Derived from keys";
   field.dataset.state = summary.mixed ? "mixed" : summary.account == null ? "empty" : "account";
   if (help) {
