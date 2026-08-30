@@ -668,7 +668,7 @@ function lr() {
     `;
     let e = document.getElementById("dice");
     e.dataset.previousValue = e.value;
-    at.querySelectorAll("[data-d]").forEach((t) => {
+    hodlBindKeypadPointer(at.querySelectorAll("[data-d]"), () => e), at.querySelectorAll("[data-d]").forEach((t) => {
       t.onclick = () => hodlInsertDiceControl(e, t, At);
     }), e.oninput = () => {
       hodlTrackDiceInputEdit(e);
@@ -2725,6 +2725,15 @@ function hodlSanitizeDPlusInput(input, targetWords = Pt) {
   input.setSelectionRange(cleanSelectionStart, cleanSelectionEnd, selectionDirection);
   return true;
 }
+function hodlBindKeypadPointer(buttons, getInput) {
+  buttons.forEach((button) => button.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    if (event.pointerType === "mouse") getInput()?.focus({ preventScroll: true });
+  }));
+}
+function hodlPlaceCaret(input, start, end = start) {
+  if (document.activeElement === input) input.setSelectionRange(start, end);
+}
 function hodlInsertDiceControl(input, button, update = hodlUpdateDice) {
   let inserted;
   try {
@@ -2739,9 +2748,7 @@ function hodlInsertDiceControl(input, button, update = hodlUpdateDice) {
   if (ge !== "dplus") hodlRebaseDiceCoinPositions(start, end, inserted.length, Boolean(button.dataset.coin));
   input.value = input.value.slice(0, start) + inserted + input.value.slice(end);
   input.dataset.previousValue = input.value;
-  let caret = start + inserted.length;
-  input.focus({ preventScroll: true });
-  input.setSelectionRange(caret, caret);
+  hodlPlaceCaret(input, start + inserted.length);
   hodlSanitizeDiceInput(input);
   update();
 }
@@ -2749,7 +2756,6 @@ function hodlInsertEntropyControl(input, button) {
   let inserted = button.dataset.entropyDigit || "";
   if (!input || !inserted) return;
   let start = Number.isInteger(input.selectionStart) ? input.selectionStart : input.value.length, end = Number.isInteger(input.selectionEnd) ? input.selectionEnd : start;
-  input.focus({ preventScroll: true });
   input.setRangeText(inserted, start, end, "end");
   input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: inserted }));
 }
@@ -3335,8 +3341,7 @@ function hodlUpdateCards() {
 }
 function hodlSetInputValueAtEnd(input, value) {
   input.value = value;
-  input.focus({ preventScroll: true });
-  input.setSelectionRange(input.value.length, input.value.length);
+  hodlPlaceCaret(input, input.value.length);
 }
 function hodlUndoCard() {
   let input = document.getElementById(hodlCardMethod === "direct" ? "direct-cards" : "cards");
@@ -3853,7 +3858,6 @@ function hodlApplySeedKeyboardKey(input, key, deleteBackward = false) {
   } else input.setRangeText(String(key ?? ""), start, end, "end");
   let event = typeof InputEvent === "function" ? new InputEvent("input", { bubbles: true, inputType, data }) : new Event("input", { bubbles: true });
   input.dispatchEvent(event);
-  input.focus({ preventScroll: true });
 }
 function hodlApplySeedNumberPadKey(input, key, deleteBackward = false) {
   if (!input) return;
@@ -3909,10 +3913,7 @@ function hodlUpdateSeedNumberPad(input, parsed = hodlParseSeedNumbers(input?.val
 function hodlBindSeedNumberPad(input, update) {
   let pad = document.querySelector(".seed-number-pad");
   if (!pad || !input) return;
-  pad.querySelectorAll("button").forEach((button) => button.addEventListener("pointerdown", (event) => {
-    event.preventDefault();
-    input.focus({ preventScroll: true });
-  }));
+  hodlBindKeypadPointer(pad.querySelectorAll("button"), () => input);
   pad.querySelectorAll("[data-seed-number-digit]").forEach((button) => {
     button.onclick = () => {
       let digit = button.dataset.seedNumberDigit || "";
@@ -4003,12 +4004,7 @@ function hodlBindSeedKeyboard(input, targetWords = Pt) {
     hodlSetOnScreenKeyboardOpen(!hodlOnScreenKeyboardOpen);
     refresh();
   };
-  keyboard.querySelectorAll("button").forEach((button) => {
-    button.addEventListener("pointerdown", (event) => {
-      event.preventDefault();
-      activeInput.focus({ preventScroll: true });
-    });
-  });
+  hodlBindKeypadPointer(keyboard.querySelectorAll("button"), () => activeInput);
   keyboard.querySelectorAll("[data-seed-character-key],.seed-keyboard-space").forEach((button) => {
     button.onclick = () => hodlApplySeedKeyboardKey(activeInput, button.dataset.seedKey || "");
   });
@@ -4033,12 +4029,7 @@ function hodlBindPassphraseKeyboard(inputId = "pass", toggleId = "passphrase-key
     hodlSetOnScreenKeyboardOpen(!hodlOnScreenKeyboardOpen);
     refresh();
   };
-  keyboard.querySelectorAll("button").forEach((button) => {
-    button.addEventListener("pointerdown", (event) => {
-      event.preventDefault();
-      input.focus({ preventScroll: true });
-    });
-  });
+  hodlBindKeypadPointer(keyboard.querySelectorAll("button"), () => input);
   keyboard.querySelectorAll("[data-seed-character-key],.seed-keyboard-space").forEach((button) => {
     button.onclick = () => hodlApplySeedKeyboardKey(input, button.dataset.seedKey || "");
   });
@@ -4073,12 +4064,7 @@ function hodlBindBase64Keyboard(input) {
     hodlSetOnScreenKeyboardOpen(!hodlOnScreenKeyboardOpen);
     refresh();
   };
-  keyboard.querySelectorAll("button").forEach((button) => {
-    button.addEventListener("pointerdown", (event) => {
-      event.preventDefault();
-      input.focus({ preventScroll: true });
-    });
-  });
+  hodlBindKeypadPointer(keyboard.querySelectorAll("button"), () => input);
   keyboard.querySelectorAll("[data-seed-character-key],.seed-keyboard-space").forEach((button) => {
     button.onclick = () => hodlApplySeedKeyboardKey(input, button.dataset.seedKey || "");
   });
@@ -4503,6 +4489,7 @@ function hodlRenderKeyForm() {
     input.dataset.previousValue = input.value;
     let fairnessToggle = document.getElementById("dice-fairness-toggle");
     if (fairnessToggle) fairnessToggle.onclick = () => hodlSetDiceFairnessOpen(!hodlDiceFairnessIsOpen());
+    hodlBindKeypadPointer(at.querySelectorAll("[data-d]"), () => input);
     at.querySelectorAll("[data-d]").forEach((button) => {
       button.onclick = () => hodlInsertDiceControl(input, button);
     });
@@ -4607,11 +4594,11 @@ function hodlRenderKeyForm() {
         hodlUpdateCards();
       };
     });
+    hodlBindKeypadPointer(at.querySelectorAll("[data-direct-card-rank], #card-undo"), () => input);
     at.querySelectorAll("[data-direct-card-rank]").forEach((button) => {
       button.onclick = () => {
         let rank = button.getAttribute("data-direct-card-rank");
         let start = Number.isInteger(input.selectionStart) ? input.selectionStart : input.value.length, end = Number.isInteger(input.selectionEnd) ? input.selectionEnd : start;
-        input.focus({ preventScroll: true });
         input.setRangeText(rank, start, end, "end");
         input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: rank }));
       };
@@ -4686,6 +4673,7 @@ function hodlRenderKeyForm() {
     hodlBindKeyFields();
     let entropyInput = document.getElementById(inputId);
     if (entropyInput) {
+      hodlBindKeypadPointer(at.querySelectorAll("[data-entropy-digit]"), () => entropyInput);
       at.querySelectorAll("[data-entropy-digit]").forEach((button) => {
         button.onclick = () => hodlInsertEntropyControl(entropyInput, button);
       });
