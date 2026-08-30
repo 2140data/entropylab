@@ -593,7 +593,14 @@
         localStorage.getItem("entropylab-beta-banner-dismissed") === document.querySelector(".site-version-number").textContent.replace(/^v/, ""),
         "Dismissal was not persisted against this build's version",
       );
+      // A visit after a dismissal never paints the banner: the inline head
+      // script stamps the root before first paint and the stylesheet keeps
+      // the row out of the first frame, rather than boot removing it later.
+      banner.hidden = false;
+      document.documentElement.dataset.betaBannerDismissed = "";
+      assert(getComputedStyle(banner).display === "none", "The pre-paint attribute did not hide the banner");
     } finally {
+      delete document.documentElement.dataset.betaBannerDismissed;
       localStorage.removeItem("entropylab-beta-banner-dismissed");
       banner.hidden = false;
     }

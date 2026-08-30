@@ -8165,20 +8165,17 @@ function hodlApplyTheme(mode) {
 // the theme and the beta disclaimer, keyed to this build's version: every new
 // release warns again. When storage is unavailable (file:// origins, private
 // modes) the banner simply returns on every load, which is the safe direction
-// for a wallet tool.
+// for a wallet tool. Re-hiding it on a later visit belongs to the inline head
+// script, which runs before first paint; boot is far too late to avoid a
+// flash, so this only has to handle the click.
 var hodlBetaBannerStorageKey = "entropylab-beta-banner-dismissed";
 function hodlInitBetaWarningDismiss() {
   let banner = document.getElementById("beta-warning");
   let dismiss = document.getElementById("beta-warning-dismiss");
   if (!banner || !dismiss) return;
-  let version = "{{VERSION}}";
-  try {
-    if (localStorage.getItem(hodlBetaBannerStorageKey) === version) banner.hidden = true;
-  } catch (e) {
-  }
   dismiss.onclick = () => {
     try {
-      localStorage.setItem(hodlBetaBannerStorageKey, version);
+      localStorage.setItem(hodlBetaBannerStorageKey, "{{VERSION}}");
     } catch (e) {
     }
     banner.hidden = true;

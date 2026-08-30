@@ -690,9 +690,22 @@ test("the beta banner carries a dismiss control in a narrow right-hand column", 
   // The dismissal outlives a reload, keyed to the build version so every
   // release warns again, and wrapped so a storage-less origin still boots.
   assert.match(app, /"entropylab-beta-banner-dismissed"/);
-  assert.match(appWhitespace, /localStorage\.getItem\(hodlBetaBannerStorageKey\)===version/);
-  assert.match(appWhitespace, /localStorage\.setItem\(hodlBetaBannerStorageKey,version\)/);
-  assert.match(appWhitespace, /try\{localStorage\.setItem\(hodlBetaBannerStorageKey,version\)\}catch/);
+  assert.match(appWhitespace, /try\{localStorage\.setItem\(hodlBetaBannerStorageKey,"\{\{VERSION\}\}"\)\}catch/);
+  // Re-hiding on a later visit runs before first paint, not at boot: the
+  // application waits on the WebAssembly module, so a banner hidden there
+  // would paint first and flash. The inline head script sets the attribute
+  // and the stylesheet keeps the row out of the very first frame.
+  assert.match(
+    template,
+    /try\{if\(localStorage\.getItem\("entropylab-beta-banner-dismissed"\)==="\{\{VERSION\}\}"\)document\.documentElement\.dataset\.betaBannerDismissed=""\}catch\(e\)\{\}/,
+  );
+  assert.ok(
+    template.indexOf("betaBannerDismissed") < template.indexOf("<body"),
+    "the pre-paint check must ship in the head",
+  );
+  assert.match(css, /:root\[data-beta-banner-dismissed\] #beta-warning \{ display: none; \}/);
+  // Boot must not be the thing that hides an already-dismissed banner.
+  assert.doesNotMatch(appWhitespace, /localStorage\.getItem\(hodlBetaBannerStorageKey\)/);
 });
 
 test("the beta disclaimer gates the page as a modal until accepted", () => {
