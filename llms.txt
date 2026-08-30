@@ -11,6 +11,7 @@ EntropyLab is a single HTML file with no runtime dependencies. It is designed to
 - Builds multisignature wallets, including watch-only multisig from extended public keys alone.
 - Inspects PSBT v0 transactions: amounts, fees, repeated ECDSA nonces, and optional anti-exfil transcript checks.
 - Derives BIP-85 child entropy from a BIP32 root: English BIP-39, WIF, XPRV, HEX, and Base64/Base85 passwords.
+- Derives BIP-352 Silent Payment addresses, labeled codes, and BIP-392 descriptors; computes sender taproot outputs and verifies pasted outputs offline. Does not scan the chain.
 - Exports a Bitcoin Core wallet.dat (watch-only by default) with all derived descriptors imported.
 - Runs startup sanity checks on the host browser and refuses to render if they fail.
 

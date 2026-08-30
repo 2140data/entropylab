@@ -38,6 +38,10 @@ material. Its security posture rests on the following model:
 - Wallet security depends on the quality and secrecy of the entropy, seed
   phrase, passphrase, or private key supplied by the user, and on the
   integrity of the machine it runs on.
+- Silent Payments (BIP-352) support is a calculator: it derives reusable
+  addresses, sender outputs, and spend tweaks from user-supplied keys and
+  pasted transaction data. It does not connect to a node, Electrum server, or
+  indexer, and cannot detect payments on its own.
 - Low-entropy dice and card transcripts are accepted intentionally so the
   calculator can be used for deterministic tests, demonstrations, and
   recovery experiments. EntropyLab does not claim that hashing a short input
