@@ -640,6 +640,36 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 .online-warning strong { color: var(--danger); }
 .online-warning a { font-weight: 700; white-space: nowrap; }
 .beta-warning strong { color: var(--danger); }
+/* The dismissible beta banner keeps its label on its own line; the noscript
+   notice shares .beta-warning and must not pick that up. */
+#beta-warning { display: flex; align-items: flex-start; gap: 12px; }
+/* The author display wins over the UA [hidden] rule, so restate it. */
+#beta-warning[hidden] { display: none; }
+/* A banner dismissed on an earlier visit must never paint. The inline head
+   script sets this attribute before first paint, so the row is gone from the
+   first frame instead of flashing until the application boots. */
+:root[data-beta-banner-dismissed] #beta-warning { display: none; }
+.beta-warning-text { flex: 1; }
+/* line-height 1 so the label sits where the padding puts it: the banner's 1.5
+   would add half its leading above the caps as invisible space. The gap down
+   to the sentence is then an explicit margin. */
+.beta-warning-text strong {
+  display: block; margin-bottom: 4px; line-height: 1; text-transform: uppercase;
+  color: var(--danger-bright);
+}
+.beta-warning-dismiss {
+  /* Negative margins pull the control out of the banner padding so it sits
+     up in the corner rather than level with the first line of text. */
+  flex: none; display: grid; place-items: center; width: 32px; height: 32px;
+  margin: -6px -8px 0 0; padding: 0; border: 0; border-radius: 6px;
+  background: none; color: #ffffff; cursor: pointer;
+}
+/* White reads against the dark banner, but the light theme tints the same
+   banner pale, so the glyph takes the theme's near-black foreground there.
+   Both explicit light and system-light land on this attribute. */
+:root[data-theme="light"] .beta-warning-dismiss { color: var(--fg); }
+.beta-warning-dismiss:hover { background: color-mix(in oklab, var(--danger) 20%, transparent); }
+.beta-warning-dismiss:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; }
 .disclaimer-overlay {
   position: fixed; inset: 0; z-index: 200; display: grid; place-items: center;
   padding: 24px; box-sizing: border-box; background: rgb(0 0 0 / 55%);

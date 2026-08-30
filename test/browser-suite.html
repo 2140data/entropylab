@@ -558,6 +558,54 @@
     }
   });
 
+  await test("the beta banner's dismiss control clears the banner from the page", () => {
+    const banner = document.getElementById("beta-warning");
+    const dismiss = document.getElementById("beta-warning-dismiss");
+    assert(banner && dismiss && banner.contains(dismiss), "Beta banner dismiss control is missing");
+    try {
+      // A narrow column at the banner's top right: hard against the right
+      // edge, and nearer the top than the banner's own vertical middle.
+      const box = banner.getBoundingClientRect();
+      const button = dismiss.getBoundingClientRect();
+      assert(button.width <= box.width / 4, "Dismiss column is not narrow");
+      assert(Math.abs(button.right - box.right) < 12, "Dismiss control is not at the banner's right edge");
+      assert(button.top < box.top + box.height / 2, "Dismiss control is not near the banner's top");
+      // The icon reads white against the red banner.
+      assert(getComputedStyle(dismiss).color === "rgb(255, 255, 255)", "Dismiss icon is not white");
+      // The light theme tints the banner pale, so white would vanish there.
+      const theme = document.documentElement.dataset.theme;
+      try {
+        document.documentElement.dataset.theme = "light";
+        const light = getComputedStyle(dismiss).color;
+        assert(light !== "rgb(255, 255, 255)", "Dismiss icon stayed white in the light theme");
+        const [r, g, b] = light.match(/\d+/g).map(Number);
+        assert(r < 60 && g < 60 && b < 60, `Dismiss icon is not near-black in the light theme (${light})`);
+      } finally {
+        if (theme) document.documentElement.dataset.theme = theme;
+        else delete document.documentElement.dataset.theme;
+      }
+      assert(getComputedStyle(banner).display !== "none", "Beta banner did not start visible");
+      dismiss.click();
+      assert(getComputedStyle(banner).display === "none", "Beta banner survived its dismiss control");
+      // The choice is remembered for this build, so a reload does not bring
+      // the banner back until the next release.
+      assert(
+        localStorage.getItem("entropylab-beta-banner-dismissed") === document.querySelector(".site-version-number").textContent.replace(/^v/, ""),
+        "Dismissal was not persisted against this build's version",
+      );
+      // A visit after a dismissal never paints the banner: the inline head
+      // script stamps the root before first paint and the stylesheet keeps
+      // the row out of the first frame, rather than boot removing it later.
+      banner.hidden = false;
+      document.documentElement.dataset.betaBannerDismissed = "";
+      assert(getComputedStyle(banner).display === "none", "The pre-paint attribute did not hide the banner");
+    } finally {
+      delete document.documentElement.dataset.betaBannerDismissed;
+      localStorage.removeItem("entropylab-beta-banner-dismissed");
+      banner.hidden = false;
+    }
+  });
+
   await test("dice, hex, seed, and private-key keyboard toggles share their open state", async () => {
     await chooseMode("Seed phrase");
     let toggle = await until(() => document.getElementById("seed-keyboard-toggle"), "seed keyboard toggle");
