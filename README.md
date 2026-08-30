@@ -46,6 +46,9 @@ Official website: [entropylab.online](https://entropylab.online)
   byte are decoded without a key; anything other than exact SIGHASH_ALL is a
   blocking warning. Finalized signatures that cannot be decoded or associated
   with a key block any clean nonce verdict.
+- Scans PSBT tap-leaf scripts and finalized witnesses for inscription envelopes
+  (`OP_FALSE OP_IF "ord"`). Reports content-type, size, and text previews; does
+  not number sats, fetch chain data, create inscriptions, or render images.
 - Derives BIP-85 child entropy from the active key's BIP32 root (or a pasted
   root xprv): English BIP-39 mnemonics (12–24 words), HD-seed WIF, XPRV, HEX,
   and Base64/Base85 passwords. Same parent, application, and index always

@@ -42,6 +42,8 @@ material. Its security posture rests on the following model:
   addresses, sender outputs, and spend tweaks from user-supplied keys and
   pasted transaction data. It does not connect to a node, Electrum server, or
   indexer, and cannot detect payments on its own.
+- Inscription envelope detection is a parser of witness/tap-leaf scripts. It
+  does not render inscription media, assign sat numbers, or contact an indexer.
 - Low-entropy dice and card transcripts are accepted intentionally so the
   calculator can be used for deterministic tests, demonstrations, and
   recovery experiments. EntropyLab does not claim that hashing a short input
