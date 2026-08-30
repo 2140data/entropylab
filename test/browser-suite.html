@@ -575,6 +575,68 @@
     }
   });
 
+  await test("the beta disclaimer titles its warning the way the banner does", () => {
+    const overlay = document.getElementById("beta-disclaimer");
+    const icon = overlay && overlay.querySelector(".disclaimer-icon");
+    const title = document.getElementById("beta-disclaimer-title");
+    const text = document.getElementById("beta-disclaimer-text");
+    const accept = document.getElementById("beta-disclaimer-accept");
+    assert(overlay && icon && title && text && accept, "Beta disclaimer parts are missing");
+    // The scrim darkens and defocuses the page behind the card.
+    const overlayStyle = getComputedStyle(overlay);
+    assert(/blur\(6px\)/.test(overlayStyle.backdropFilter || overlayStyle.webkitBackdropFilter || ""), "The overlay does not blur the page behind it");
+    const titleStyle = getComputedStyle(title);
+    const textStyle = getComputedStyle(text);
+    // Rendered uppercase, and a step above the sentence it labels.
+    assert(titleStyle.textTransform === "uppercase", "Disclaimer title is not uppercase");
+    // A paragraph, so the weight has to be asked for: it renders at 400 otherwise.
+    assert(Number(titleStyle.fontWeight) >= 700, `Disclaimer title renders at weight ${titleStyle.fontWeight}`);
+    assert(
+      parseFloat(titleStyle.fontSize) > parseFloat(textStyle.fontSize),
+      `Disclaimer title is ${titleStyle.fontSize} against the text's ${textStyle.fontSize}`,
+    );
+    // Title and icon share one red, and it is not the body foreground.
+    assert(
+      titleStyle.color === getComputedStyle(icon).color,
+      "Disclaimer title and icon are not the same colour",
+    );
+    assert(titleStyle.color !== textStyle.color, "Disclaimer title did not take the alert red");
+    // The title has air under it before the sentence starts.
+    assert(
+      text.getBoundingClientRect().top - title.getBoundingClientRect().bottom >= 8,
+      "The warning text crowds the title",
+    );
+    // The sentence is inset from the card, so it wraps shorter than the frame.
+    const card = overlay.querySelector(".disclaimer-card");
+    assert(
+      text.getBoundingClientRect().width < card.getBoundingClientRect().width - 80,
+      "The warning text runs the full width of the card",
+    );
+    // The button answers a blocking warning, so it is not a toolbar control:
+    // wider, uppercase, and set at the title's size.
+    const acceptStyle = getComputedStyle(accept);
+    assert(acceptStyle.textTransform === "uppercase", "Accept button label is not uppercase");
+    assert(
+      parseFloat(acceptStyle.fontSize) > parseFloat(textStyle.fontSize),
+      `Accept label is ${acceptStyle.fontSize} against the text's ${textStyle.fontSize}`,
+    );
+    assert(parseFloat(acceptStyle.paddingLeft) >= 32, `Accept button padding is only ${acceptStyle.paddingLeft}`);
+    // Other buttons keep the shared base.
+    const plain = document.querySelector(".wrap .btn");
+    if (plain) {
+      assert(getComputedStyle(plain).textTransform !== "uppercase", "The card rule leaked onto buttons outside the modal");
+    }
+    // The button stands clear of the warning it answers.
+    assert(
+      parseFloat(textStyle.marginBottom) >= 28,
+      `Only ${textStyle.marginBottom} separates the warning from its button`,
+    );
+    assert(
+      accept.getBoundingClientRect().top - text.getBoundingClientRect().bottom >= 28,
+      "The confirmation button crowds the warning text",
+    );
+  });
+
   await test("the beta banner's dismiss control clears the banner from the page", () => {
     const banner = document.getElementById("beta-warning");
     const dismiss = document.getElementById("beta-warning-dismiss");
