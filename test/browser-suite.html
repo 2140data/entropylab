@@ -986,6 +986,20 @@
     const scriptType = document.getElementById("script-type");
     scriptType.value = "bip44";
     scriptType.dispatchEvent(new Event("change", { bubbles: true }));
+    const purpose = document.getElementById("purpose");
+    equal(purpose.value, "44", "Legacy did not restore its standard purpose");
+    scriptType.value = "bip49";
+    scriptType.dispatchEvent(new Event("change", { bubbles: true }));
+    equal(purpose.value, "49", "Nested SegWit did not restore its standard purpose");
+    scriptType.value = "bip86";
+    scriptType.dispatchEvent(new Event("change", { bubbles: true }));
+    equal(purpose.value, "86", "Taproot did not restore its standard purpose");
+    scriptType.value = "bip84";
+    scriptType.dispatchEvent(new Event("change", { bubbles: true }));
+    equal(purpose.value, "84", "Native SegWit did not restore its standard purpose");
+    input(purpose, "2147483648");
+    assert(document.getElementById("go").disabled && purpose.classList.contains("bad"), "An out-of-range purpose did not block derivation");
+    input(purpose, "69420");
     const network = document.getElementById("network");
     assert(network && [...network.options].some((option) => option.value === "testnet"), "Network selector is missing or has no testnet option");
     network.value = "testnet";
@@ -1003,6 +1017,10 @@
     const receiveLead = document.querySelector("#acct .account-address-lead");
     assert(receiveLead?.querySelector("h4")?.textContent.includes("#7"), "The first requested address was not used for the receive QR");
     assert(receiveLead?.querySelector('.qr[aria-label="Receive address 7 QR code"]'), "The receive QR did not use the starting address index");
+    equal(receiveLead?.querySelector("p.mono:not(.muted)")?.textContent.trim(), "tb1qq88mz59zeavyc2nvncjmr5fnyhy9wfgg7spmjf", "The custom-purpose Native SegWit address did not match the independent BIP32 vector");
+    assert(receiveLead?.querySelector(".muted.mono")?.textContent.includes("m/69420h/1h/0h/0/7"), "The custom purpose was not used in the displayed address path");
+    assert(document.querySelector("#acct .kicker")?.textContent.includes("Purpose 69420h"), "The result mislabeled the custom purpose as a standard BIP");
+    assert(document.querySelector("#acct .account-watch-section")?.textContent.includes("/69420h/1h/0h]"), "The custom purpose was not used in the descriptor origin");
     const receiveRows = document.querySelectorAll('#acct [data-address-table="hd-receive"] tbody tr');
     equal(receiveRows.length, 5, "The requested receive address range was not rendered");
     equal(receiveRows[0].querySelector("th")?.textContent.trim(), "7", "The receive table did not start at the requested index");
@@ -1166,6 +1184,7 @@
     const text = await blob.text();
     assert(state.downloadName === "bitcoin-recovery-sheet.txt", "Unexpected filename");
     assert(text.includes(versionHeader) && text.includes("Network: testnet"), "Export headers are missing");
+    assert(text.includes("Native SegWit (Purpose 69420h)") && text.includes("m/69420h/1h/0h"), "The recovery sheet omitted the custom purpose");
     assert(text.includes("PRIVATE RECOVERY MATERIAL OMITTED"), "Omission notice is missing");
     assert(!text.includes("YOUR SEED PHRASE") && !text.includes("MASTER SEED HEX") && !text.includes("BIP32 ROOT TPRV"), "Watch-only export leaked private data");
 

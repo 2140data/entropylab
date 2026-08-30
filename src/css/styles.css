@@ -861,11 +861,11 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .key-settings-row {
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-component);
 }
-.key-settings.single-key-mode .key-settings-row:first-child { grid-template-columns: minmax(0, 1fr); }
+.key-settings.single-key-mode #account-address-settings { grid-template-columns: minmax(0, 1fr); }
 .key-settings.single-key-mode .network-field { width: 100%; max-width: 50%; }
 .key-settings .field { min-width: 0; margin: 0; }
-#passphrase-field[hidden], #master-fingerprint-preview[hidden], #script-type-field[hidden],
-#account-address-settings[hidden], #address-range-settings[hidden], #derivation-path-preview[hidden] { display: none !important; }
+#passphrase-field[hidden], #master-fingerprint-preview[hidden], #script-type-field[hidden], #purpose-field[hidden],
+#account-field[hidden], #address-range-settings[hidden], #derivation-path-preview[hidden] { display: none !important; }
 .field-note {
   display: block; margin-top: var(--space-control); color: var(--muted); font-size: 12px; font-weight: 400; line-height: 1.4;
 }

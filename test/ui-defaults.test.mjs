@@ -395,6 +395,21 @@ test("key derivation and multisig use the accurate Script type label", () => {
   }
 });
 
+test("key derivation separates script type from the hardened purpose index", () => {
+  for (const markup of [template, appWhitespace]) {
+    assert.match(markup, /id="script-type-field">Script type\s*<select id="script-type"><option value="bip44">Legacy<\/option><option value="bip49">Nested SegWit<\/option><option value="bip84" selected(?:="selected")?>Native SegWit<\/option><option value="bip86">Taproot<\/option><\/select>/);
+    assert.match(markup, /id="script-type"[\s\S]*id="purpose"[\s\S]*id="network"[\s\S]*id="account"/);
+    assert.match(markup, /id="purpose" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="84"/);
+    assert.match(markup, /id="purpose-help">Hardened purpose index (?:·|\\xB7) 0 to 2,147,483,647/);
+  }
+  assert.match(appSource, /function hodlReadPurpose\(mark = true\)/);
+  assert.match(appSource, /hodlSetSelectedScriptType\(target\.value, true\)/);
+  assert.match(appSource, /let derivedDefinition = \{ \.\.\.definition, purpose: purposeIndex \}/);
+  assert.match(appSource, /originPath = `\$\{purposeIndex\}h\/\$\{Rs\(network\)\}h\/\$\{accountIndex\}h`/);
+  assert.match(appSource, /context\.textContent = `\$\{definition\.label\} \\xB7 Purpose \$\{purpose\}h`/);
+  assert.match(appSource, /fields: \{ pass: "", script: "bip84", purpose: "84", network: "mainnet"/);
+});
+
 test("multisig script type and placeholders follow detected co-signer exports", () => {
   for (const markup of [template, appWhitespace]) {
     assert.match(markup, /option value="mixed" disabled data-custom-select-placeholder="true">Mixed · incompatible keys/);

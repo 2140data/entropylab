@@ -122,14 +122,18 @@ words, pick one of the checksum words.</span></span>
       <div class="key-settings" id="key-settings">
         <div class="key-settings-row">
           <label class="field" id="script-type-field">Script type
-            <select id="script-type"><option value="bip44">Legacy · BIP44</option><option value="bip49">Nested SegWit · BIP49</option><option value="bip84" selected="selected">Native SegWit · BIP84</option><option value="bip86">Taproot · BIP86</option></select>
+            <select id="script-type"><option value="bip44">Legacy</option><option value="bip49">Nested SegWit</option><option value="bip84" selected="selected">Native SegWit</option><option value="bip86">Taproot</option></select>
           </label>
-          <label class="field network-field">Network
-            <select id="network"><option value="mainnet" selected="selected">Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
+          <label class="field" id="purpose-field">Purpose
+            <input id="purpose" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="84" aria-describedby="purpose-help">
+            <span class="field-note" id="purpose-help">Hardened purpose index · 0 to 2,147,483,647</span>
           </label>
         </div>
         <div class="key-settings-row" id="account-address-settings">
-          <label class="field">Account
+          <label class="field network-field">Network
+            <select id="network"><option value="mainnet" selected="selected">Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
+          </label>
+          <label class="field" id="account-field">Account
             <input id="account" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0" aria-describedby="account-help">
             <span class="field-note" id="account-help">Hardened account index · 0 to 2,147,483,647</span>
           </label>
