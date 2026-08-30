@@ -24,9 +24,11 @@ Official website: [entropylab.online](https://entropylab.online)
   next to its deterministic [LifeHash](https://lifehash.info) icon so two
   keys can be told apart at a glance.
 - Supports legacy, nested SegWit, native SegWit, and Taproot single-signature
-  address types. Script type and the BIP32 purpose index are separate: choosing
-  a script restores its conventional 44/49/84/86 purpose, while an advanced
-  user can enter any valid purpose index and choose whether to harden it.
+  address types. Derivation-scheme presets cover the BIP44, BIP49, BIP84,
+  BIP86, and six-level BIP48 layouts and label each path level accordingly.
+  A custom mode accepts an arbitrary-depth BIP32 account path, keeps Bitcoin
+  network selection explicit, and appends the selected branch and address
+  ranges. Typing `h` or `'` after a preset index enables its Harden control.
 - Supports numeric coin-type and account indexes for single-signature and
   multisignature derivation. Purpose, coin type, and account indexes are
   hardened by default; the starting address index is unhardened by default.
