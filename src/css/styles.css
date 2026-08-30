@@ -660,6 +660,10 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
   margin: -6px -8px 0 0; padding: 0; border: 0; border-radius: 6px;
   background: none; color: #ffffff; cursor: pointer;
 }
+/* White reads against the dark banner, but the light theme tints the same
+   banner pale, so the glyph takes the theme's near-black foreground there.
+   Both explicit light and system-light land on this attribute. */
+:root[data-theme="light"] .beta-warning-dismiss { color: var(--fg); }
 .beta-warning-dismiss:hover { background: color-mix(in oklab, var(--danger) 20%, transparent); }
 .beta-warning-dismiss:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; }
 .disclaimer-overlay {

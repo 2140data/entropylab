@@ -668,6 +668,10 @@ test("the beta banner carries a dismiss control in a narrow right-hand column", 
   assert.match(css, /#beta-warning \{ display: flex; align-items: flex-start; gap: 12px; \}/);
   assert.match(css, /\.beta-warning-text \{ flex: 1; \}/);
   assert.match(css, /\.beta-warning-dismiss \{[^}]*flex: none;[^}]*\}/s);
+  // White on the dark banner, near-black on the light theme's pale one: the
+  // glyph must stay legible in both.
+  assert.match(css, /\.beta-warning-dismiss \{[^}]*color: #ffffff;[^}]*\}/s);
+  assert.match(css, /:root\[data-theme="light"\] \.beta-warning-dismiss \{ color: var\(--fg\); \}/);
   // The author display would otherwise beat the user agent's [hidden] rule
   // and the dismissed banner would stay on screen.
   assert.match(css, /#beta-warning\[hidden\] \{ display: none; \}/);

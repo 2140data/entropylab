@@ -572,6 +572,18 @@
       assert(button.top < box.top + box.height / 2, "Dismiss control is not near the banner's top");
       // The icon reads white against the red banner.
       assert(getComputedStyle(dismiss).color === "rgb(255, 255, 255)", "Dismiss icon is not white");
+      // The light theme tints the banner pale, so white would vanish there.
+      const theme = document.documentElement.dataset.theme;
+      try {
+        document.documentElement.dataset.theme = "light";
+        const light = getComputedStyle(dismiss).color;
+        assert(light !== "rgb(255, 255, 255)", "Dismiss icon stayed white in the light theme");
+        const [r, g, b] = light.match(/\d+/g).map(Number);
+        assert(r < 60 && g < 60 && b < 60, `Dismiss icon is not near-black in the light theme (${light})`);
+      } finally {
+        if (theme) document.documentElement.dataset.theme = theme;
+        else delete document.documentElement.dataset.theme;
+      }
       assert(getComputedStyle(banner).display !== "none", "Beta banner did not start visible");
       dismiss.click();
       assert(getComputedStyle(banner).display === "none", "Beta banner survived its dismiss control");
