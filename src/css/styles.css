@@ -172,6 +172,8 @@ textarea { display: block; min-height: 96px; letter-spacing: 0.08em; }
 .passphrase-keyboard-tools[hidden] { display: none; }
 .passphrase-keyboard-tools .seed-keyboard-toggle { align-self: stretch; height: auto; }
 .passphrase-bip39-toggle { flex: 1 1 auto; margin-top: 0; }
+.brain-wallet-trim-toggle { flex: 1 1 auto; margin-top: 0; }
+.brain-wallet-trim-toggle[hidden] { display: none; }
 .dice-input-shell.passphrase-input-shell input {
   position: relative; z-index: 1; margin-top: 0; background: transparent;
   color: transparent; -webkit-text-fill-color: transparent; caret-color: var(--fg); line-height: 1.45;

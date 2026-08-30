@@ -285,7 +285,7 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(css, /\.private-key-hex-keypad \{ display: grid; gap: 4px; \}/);
   assert.match(app, /id="private-key-highlight" aria-hidden="true"/);
   assert.match(app, /id="private-key-meta" aria-live="polite"/);
-  assert.match(app, /function hodlPrivateKeyInputAnalysis\(value,kind,network\)/);
+  assert.match(app, /function hodlPrivateKeyInputAnalysis\(value,kind,network,trimBrainWallet=hodlBrainWalletTrimEnabled\(\)\)/);
   assert.match(app, /function hodlRenderPrivateKeyInputState\(input\)/);
   assert.match(app, /\$\{count2\} of 64 hexadecimal characters entered/);
   assert.match(app, /invalid character\$\{invalid\.length===1\?"":"s"\} highlighted/);
@@ -311,7 +311,7 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(appWhitespace, /if\(kind==="hex-key"\)return hodlHexPrivateKeyPrefix\(candidate\)/);
   assert.match(appWhitespace, /return hodlWifPrivateKeyPrefix\(candidate,hodlSelectedNetwork/);
   assert.match(app, /inputType==="insertFromPaste"/);
-  assert.match(app, /function hodlAssertPrivateKeyKind\(value,network,kind\)/);
+  assert.match(app, /function hodlAssertPrivateKeyKind\(value,network,kind,trimBrainWallet=!1\)/);
   assert.match(app, /keyKind:"wif"/);
   assert.match(app, /\^S\[1-9A-HJ-NP-Za-km-z\]\*\$/);
   assert.match(app, /prefixes=network==="testnet"\?\["9","c"\]:\["5","K","L"\]/);
@@ -330,6 +330,12 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /function hodlPassphraseBip39CanEnterSpace\(input\)/);
   assert.match(app, /passphraseBip39Words:!1/);
   assert.match(app, /hodlPrivateKeyKeyboardToggleMarkup\(\)/);
+  assert.match(app, /function hodlBrainWalletTrimEnabled\(\)/);
+  assert.match(app, /id="brain-wallet-trim"/);
+  assert.match(app, />Trim leading and trailing whitespace<\/strong>/);
+  assert.match(app, /brainWalletTrim:!1/);
+  assert.match(css, /\.brain-wallet-trim-toggle\[hidden\] \{ display: none; \}/);
+  assert.doesNotMatch(appSource, /bitaddress\.org-style brain wallet/);
   assert.match(app, /id="private-key-input-help"[\s\S]*hodlPrivateKeyKeyboardToggleMarkup\(\)[\s\S]*<textarea id="key"/);
   assert.match(app, /privateKey\?"key":"pass",privateKey\?"private-keyboard-toggle":"passphrase-keyboard-toggle"/);
   assert.match(app, /hodlRenderPassphraseKeyboard\(\);return/);
