@@ -32,7 +32,6 @@ const requiredFiles = [
   "llms.txt",
   "assets/favicon.png",
   "assets/entropylab_dark.png",
-  "assets/entropylab_light.png",
   "assets/entropylab_banner.png",
   "assets/entropylab-social.png",
   "scripts/build.mjs",
