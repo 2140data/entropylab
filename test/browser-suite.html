@@ -1180,6 +1180,7 @@
     equal(multisigReceiveRows.length, 5, "The requested multisig receive address range was not rendered");
     equal(multisigReceiveRows[0].querySelector("th")?.textContent.trim(), "11", "The multisig receive table did not start at the requested index");
 
+    input(document.getElementById("msig-x-0"), "");
     multisigScript.value = "p2wsh";
     multisigScript.dispatchEvent(new Event("change", { bubbles: true }));
     equal(multisigPurpose.value, "48", "Native SegWit did not restore its standard multisig purpose");
