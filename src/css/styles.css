@@ -1228,6 +1228,10 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .address-match-field .hint { display: block; margin-top: var(--space-control); }
 .wallet-result-messages li.is-warning { color: var(--fg); }
 .wallet-result-messages li.is-warning::marker { color: var(--warn); }
+.wallet-result-messages li.is-danger { color: var(--danger-bright); }
+.wallet-result-messages li.is-danger::marker { color: var(--danger-bright); }
+.electrum-generate { margin: 12px 0 4px; }
+.electrum-type-grid { margin-top: 8px; }
 .wallet-data-fields { margin-top: 16px; }
 .wallet-data-fields > :first-child { margin-top: 0; }
 .wallet-data-fields > :last-child { margin-bottom: 0; }

@@ -12,11 +12,15 @@ Official website: [entropylab.online](https://entropylab.online)
 ## Features
 
 - Accepts dice rolls, coin flips, hexadecimal entropy, BIP39 seed phrases,
-  extended keys, WIF keys, raw private keys, and Casascius mini private keys.
-  All five BIP39 phrase lengths (12, 15, 18, 21, and 24 words) are supported
-  for every entropy entry method.
+  Electrum 2.0+ native seeds, extended keys, WIF keys, raw private keys, and
+  Casascius mini private keys. All five BIP39 phrase lengths (12, 15, 18, 21,
+  and 24 words) are supported for every entropy entry method. Electrum phrases
+  are detected by HMAC-SHA512("Seed version") and restored with the Electrum
+  PBKDF2 salt — Standard (01) on m/0 and m/1, SegWit (100) on m/0h/0 and
+  m/0h/1 — never treated as BIP39.
 - Derives BIP39 seeds, BIP32 extended keys, wallet fingerprints, addresses,
-  and Bitcoin Core-compatible descriptors. Each master fingerprint is shown
+  and Bitcoin Core-compatible descriptors. Native Electrum seeds use pkh() or
+  wpkh() descriptors on the real Electrum paths. Each master fingerprint is shown
   next to its deterministic [LifeHash](https://lifehash.info) icon so two
   keys can be told apart at a glance.
 - Supports legacy, nested SegWit, native SegWit, and Taproot single-signature
