@@ -127,13 +127,18 @@ test("key and multisig derivation use an indexed address window with an estimate
 test("key and multisig derivation select one or two address branches", () => {
   for (const markup of [template, appSource]) {
     assert.match(markup, /id="branch-start"[^>]*value="0"/);
+    assert.match(markup, /id="branch-start-harden"[^>]*type="checkbox"/);
     assert.match(markup, /id="branch-range"[^>]*max="2"[^>]*value="2"/);
     assert.match(markup, /id="msig-branch-start"[^>]*value="0"/);
+    assert.match(markup, /id="msig-branch-start-harden"[^>]*type="checkbox"/);
     assert.match(markup, /id="msig-branch-range"[^>]*max="2"[^>]*value="2"/);
     assert.match(markup, /0 is Receive (?:·|\xB7) 1 is Change/);
   }
   assert.match(appSource, /function hodlReadBranchWindow\(prefix = "", mark = true\)/);
   assert.match(appSource, /function hodlAddressBranchLabel\(branch\)/);
+  assert.match(appSource, /branch: Boolean\(fields\.branchHarden\)/);
+  assert.match(appSource, /hodlPathIndex\(chain, branchHardened\)/);
+  assert.match(appSource, /Hardened address branches cannot be derived from the supplied multisig extended public keys/);
   assert.match(appSource, /branch === 0 \? "Receive" : branch === 1 \? "Change" : `Custom branch \$\{branch\}`/);
   assert.match(appSource, /progress\.setTotal\(count \* branchRange\)/);
   assert.match(appSource, /hodlAddressBranchTables\(branches, hasPrivate, "hd"\)/);

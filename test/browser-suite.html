@@ -1020,8 +1020,10 @@
     const addressRange = document.getElementById("address-range");
     const branchStart = document.getElementById("branch-start");
     const branchRange = document.getElementById("branch-range");
+    const branchHarden = document.getElementById("branch-start-harden");
     equal(branchStart.value, "0", "Address branches did not start at Receive by default");
     equal(branchRange.value, "2", "Address branches did not include Receive and Change by default");
+    assert(!branchHarden.checked, "Starting address branch did not default to unhardened");
     equal(document.getElementById("branch-range-help").textContent, "Derives Receive and Change branches · Max 2");
     input(addressRange, "10001");
     equal(addressRange.value, "10000", "An oversized singlesig address range was not clamped immediately");
@@ -1078,6 +1080,7 @@
   await test("custom address branches are labeled and limited to the selected one or two tables", async () => {
     const branchStart = document.getElementById("branch-start");
     const branchRange = document.getElementById("branch-range");
+    const branchHarden = document.getElementById("branch-start-harden");
     const addressRange = document.getElementById("address-range");
     const derive = document.getElementById("go");
     input(addressRange, "1");
@@ -1092,6 +1095,15 @@
     assert(!document.querySelector('#acct [data-address-table="hd-change"]'), "An unselected Change table was rendered");
     assert(document.querySelector("#acct .account-address-lead h4")?.textContent.includes("Custom branch 2 address #7"), "The custom branch QR label was unclear");
     assert(document.querySelector('#acct .account-address-lead .qr[aria-label="Custom branch 2 address 7 QR code"]'), "The first custom branch address was not used for the QR");
+
+    branchHarden.click();
+    assert(document.getElementById("branch-start-help").textContent.includes("Hardened"), "Address branch help did not reflect hardened derivation");
+    assert(document.querySelector('[data-path="receive"]').textContent.includes("/2'/7"), "The custom branch preview did not show a hardened branch index");
+    derive.click();
+    await until(() => document.querySelector('#acct .account-address-lead .muted.mono')?.textContent.includes("/2h/7"), "hardened address branch result");
+    const hardenedWatchText = document.querySelector("#acct .account-watch-section")?.textContent || "";
+    assert(hardenedWatchText.includes("/2h]") && hardenedWatchText.includes("/*"), "The hardened branch watch-only descriptor did not use a branch-level xpub origin");
+    branchHarden.click();
 
     input(branchRange, "2");
     derive.click();
@@ -1249,8 +1261,14 @@
     const multisigAddressRange = document.getElementById("msig-address-range");
     const multisigBranchStart = document.getElementById("msig-branch-start");
     const multisigBranchRange = document.getElementById("msig-branch-range");
+    const multisigBranchHarden = document.getElementById("msig-branch-start-harden");
     equal(multisigBranchStart.value, "0", "Multisig address branches did not start at Receive by default");
     equal(multisigBranchRange.value, "2", "Multisig address branches did not include Receive and Change by default");
+    assert(!multisigBranchHarden.checked, "Multisig address branch did not default to unhardened");
+    multisigBranchHarden.click();
+    assert(document.getElementById("msig-branch-start-help").textContent.includes("Hardened"), "Multisig address branch help did not reflect hardened derivation");
+    assert(document.getElementById("msig-go").disabled, "Multisig allowed hardened branch derivation from account-level public keys");
+    multisigBranchHarden.click();
     input(multisigAddressRange, "10001");
     equal(multisigAddressRange.value, "10000", "An oversized multisig address range was not clamped immediately");
     assert(!multisigAddressStart.classList.contains("bad") && !multisigAddressRange.classList.contains("bad"), "Clamping an oversized multisig range left an invalid field state");

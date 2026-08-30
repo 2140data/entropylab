@@ -154,7 +154,7 @@ function hodlOriginPathIndex(value, hardened = false) {
   return `${value}${hardened ? "h" : ""}`;
 }
 function hodlDefaultHardening() {
-  return { purpose: true, coinType: true, account: true, address: false };
+  return { purpose: true, coinType: true, account: true, branch: false, address: false };
 }
 function hodlReadHardening(prefix = "") {
   let defaults = hodlDefaultHardening(), read = (name) => document.getElementById(`${prefix}${name}-harden`)?.checked;
@@ -162,6 +162,7 @@ function hodlReadHardening(prefix = "") {
     purpose: read("purpose") ?? defaults.purpose,
     coinType: read("network") ?? defaults.coinType,
     account: read("account") ?? defaults.account,
+    branch: read("branch-start") ?? defaults.branch,
     address: read("address-start") ?? defaults.address
   };
 }
@@ -170,11 +171,12 @@ function hodlHardeningFromFields(fields = {}) {
     purpose: fields.purposeHarden !== false,
     coinType: fields.coinTypeHarden !== false,
     account: fields.accountHarden !== false,
+    branch: Boolean(fields.branchHarden),
     address: Boolean(fields.addressHarden)
   };
 }
 function hodlSetHardeningControls(prefix = "", hardening = hodlDefaultHardening()) {
-  [["purpose", "purpose"], ["network", "coinType"], ["account", "account"], ["address-start", "address"]].forEach(([id, key]) => {
+  [["purpose", "purpose"], ["network", "coinType"], ["account", "account"], ["branch-start", "branch"], ["address-start", "address"]].forEach(([id, key]) => {
     let input = document.getElementById(`${prefix}${id}-harden`);
     if (input) input.checked = Boolean(hardening[key]);
   });
@@ -254,15 +256,15 @@ function pf(e, t, r) {
     }
   }
 }
-function hodlDerivedAddressRow(node, accountPath, script, network, role, index, addressHardened = false) {
-  let chain = Number.isSafeInteger(role) ? role : role === "receive" ? 0 : 1, indexStep = hodlPathIndex(index, addressHardened), child = node.derive(`m/${chain}/${indexStep}`), publicKey = child.publicKey;
+function hodlDerivedAddressRow(node, accountPath, script, network, role, index, addressHardened = false, branchHardened = false) {
+  let chain = Number.isSafeInteger(role) ? role : role === "receive" ? 0 : 1, branchStep = hodlPathIndex(chain, branchHardened), indexStep = hodlPathIndex(index, addressHardened), child = node.derive(`m/${branchStep}/${indexStep}`), publicKey = child.publicKey;
   if (!publicKey) throw new Error("Missing public key");
   let privateKey = child.privateKey;
-  return { index, role: hodlAddressBranchRole(chain), branch: chain, path: `${accountPath}/${chain}/${indexStep}`, address: pf(script, publicKey, network), wif: privateKey ? rn(privateKey, true, network) : null, pubkey: M.encode(publicKey), privHex: privateKey ? M.encode(privateKey) : null };
+  return { index, role: hodlAddressBranchRole(chain), branch: chain, branchHardened, path: `${accountPath}/${branchStep}/${indexStep}`, address: pf(script, publicKey, network), wif: privateKey ? rn(privateKey, true, network) : null, pubkey: M.encode(publicKey), privHex: privateKey ? M.encode(privateKey) : null };
 }
-function nn(e, t, r, n, o, i, startIndex = 0, addressHardened = false) {
+function nn(e, t, r, n, o, i, startIndex = 0, addressHardened = false, branchHardened = false) {
   let rows = [];
-  for (let index = startIndex; index < startIndex + o; index++) rows.push(hodlDerivedAddressRow(e, t, r, n, i, index, addressHardened));
+  for (let index = startIndex; index < startIndex + o; index++) rows.push(hodlDerivedAddressRow(e, t, r, n, i, index, addressHardened, branchHardened));
   return rows;
 }
 var gf = "0123456789()[],'/*abcdefgh@:$%{}IJKLMNOPQRSTUVWXYZ&+-.;<=>?!^_|~ijklmnopqrstuvwxyzABCDEFGH`JKLMNOPQRSTUVWXYZ", yf = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
@@ -511,10 +513,10 @@ ec.innerHTML = `
           </div>
         </div>
         <div class="key-settings-row address-branch-settings" id="address-branch-settings">
-          <label class="field">Starting address branch index
-            <input id="branch-start" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0" aria-describedby="branch-start-help">
-            <span class="field-note" id="branch-start-help">First address branch to derive · 0 is Receive · 1 is Change · 0 to 2,147,483,647</span>
-          </label>
+          <div class="field"><label for="branch-start">Starting address branch index</label>
+            <div class="derivation-index-control"><span class="derivation-index-value"><input id="branch-start" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0" aria-describedby="branch-start-help"><span class="derivation-index-prime" aria-hidden="true">'</span></span><label class="derivation-harden"><input id="branch-start-harden" type="checkbox"><span>Harden</span></label></div>
+            <span class="field-note" id="branch-start-help">First address branch to derive · 0 is Receive · 1 is Change · Unhardened · 0 to 2,147,483,647</span>
+          </div>
           <label class="field">Address branch range
             <input id="branch-range" type="number" min="1" max="2" step="1" inputmode="numeric" value="2" aria-describedby="branch-range-help">
             <span class="field-note" id="branch-range-help">Derives Receive and Change branches · Max 2</span>
@@ -605,10 +607,10 @@ ec.innerHTML = `
           </div>
         </div>
         <div class="key-settings-row address-branch-settings">
-          <label class="field">Starting address branch index
-            <input id="msig-branch-start" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0" aria-describedby="msig-branch-start-help">
-            <span class="field-note" id="msig-branch-start-help">First address branch to derive · 0 is Receive · 1 is Change · 0 to 2,147,483,647</span>
-          </label>
+          <div class="field"><label for="msig-branch-start">Starting address branch index</label>
+            <div class="derivation-index-control"><span class="derivation-index-value"><input id="msig-branch-start" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0" aria-describedby="msig-branch-start-help"><span class="derivation-index-prime" aria-hidden="true">'</span></span><label class="derivation-harden"><input id="msig-branch-start-harden" type="checkbox"><span>Harden</span></label></div>
+            <span class="field-note" id="msig-branch-start-help">First address branch to derive · 0 is Receive · 1 is Change · Unhardened · 0 to 2,147,483,647</span>
+          </div>
           <label class="field">Address branch range
             <input id="msig-branch-range" type="number" min="1" max="2" step="1" inputmode="numeric" value="2" aria-describedby="msig-branch-range-help">
             <span class="field-note" id="msig-branch-range-help">Derives Receive and Change branches · Max 2</span>
@@ -1020,7 +1022,7 @@ function hodlWatchOnlyDescriptorExport(receiveDescriptor, changeDescriptor, addr
   let branches = (addressBranches?.length ? addressBranches : [
     { branch: 0, label: "Receive", publicDescriptor: receiveDescriptor },
     { branch: 1, label: "Change", publicDescriptor: changeDescriptor }
-  ]).filter((entry) => entry.publicDescriptor), first = branches[0], multipath = first ? hodlWatchOnlyMultipathDescriptor(first.publicDescriptor, branches.map((entry) => entry.branch)) : "", qr = "";
+  ]).filter((entry) => entry.publicDescriptor), first = branches[0], multipath = first ? branches.length === 1 ? first.publicDescriptor : hodlWatchOnlyMultipathDescriptor(first.publicDescriptor, branches.map((entry) => entry.branch)) : "", qr = "";
   if (multipath) {
     try {
       if (multipath.length > 1e3) throw new Error("Descriptor too long for a static QR.");
@@ -1036,16 +1038,18 @@ function hodlAccountResult(node, definition, network, count, options = {}) {
   let rawPublic = node.publicExtendedKey, rawPrivate = node.privateKey ? node.privateExtendedKey : null, family = hodlAccountExportFamily(definition), primaryConfig = cr[network][family], genericConfig = cr[network].x;
   let genericPublic = hodlSerializeExtendedKey(rawPublic, network, "x", false), genericPrivate = hodlSerializeExtendedKey(rawPrivate, network, "x", true);
   let primaryPublic = hodlSerializeExtendedKey(rawPublic, network, family, false), primaryPrivate = hodlSerializeExtendedKey(rawPrivate, network, family, true);
-  let origin = options.originFingerprint && options.originPath ? `[${options.originFingerprint}/${options.originPath}]` : "", addressHardened = Boolean(options.addressHardened), wildcard = addressHardened ? "*'" : "*", branchStart = options.branchStart ?? 0, branchRange = options.branchRange ?? 2;
+  let origin = options.originFingerprint && options.originPath ? `[${options.originFingerprint}/${options.originPath}]` : "", branchHardened = Boolean(options.branchHardened), addressHardened = Boolean(options.addressHardened), wildcard = addressHardened ? "*'" : "*", branchStart = options.branchStart ?? 0, branchRange = options.branchRange ?? 2;
   let addressBranches = Array.from({ length: branchRange }, (_, offset) => {
-    let branch = branchStart + offset, publicToken = addressHardened ? null : `${origin}${genericPublic}/${branch}/${wildcard}`, privateToken = genericPrivate ? `${origin}${genericPrivate}/${branch}/${wildcard}` : null;
+    let branch = branchStart + offset, branchStep = hodlPathIndex(branch, branchHardened), branchOrigin = options.originFingerprint && options.originPath ? `[${options.originFingerprint}/${options.originPath}/${hodlOriginPathIndex(branch, branchHardened)}]` : "", branchNode = branchHardened && node.privateKey ? node.derive(`m/${branchStep}`) : null, branchPublic = branchNode ? hodlSerializeExtendedKey(branchNode.publicExtendedKey, network, "x", false) : null;
+    let publicToken = addressHardened ? null : branchHardened ? branchPublic ? `${branchOrigin}${branchPublic}/${wildcard}` : null : `${origin}${genericPublic}/${branchStep}/${wildcard}`, privateToken = genericPrivate ? `${origin}${genericPrivate}/${branchStep}/${wildcard}` : null;
     return {
       branch,
+      branchHardened,
       role: hodlAddressBranchRole(branch),
       label: hodlAddressBranchLabel(branch),
       publicDescriptor: publicToken ? Le(Ye(definition.script, publicToken)) : null,
       privateDescriptor: privateToken ? Le(Ye(definition.script, privateToken)) : null,
-      rows: options.addressBranches?.find((entry) => entry.branch === branch)?.rows ?? nn(node, options.accountPath ?? "Imported account key", definition.script, network, count, branch, options.addressStart ?? 0, addressHardened)
+      rows: options.addressBranches?.find((entry) => entry.branch === branch)?.rows ?? nn(node, options.accountPath ?? "Imported account key", definition.script, network, count, branch, options.addressStart ?? 0, addressHardened, branchHardened)
     };
   });
   let receiveBranch = addressBranches.find((entry) => entry.branch === 0), changeBranch = addressBranches.find((entry) => entry.branch === 1);
@@ -1085,9 +1089,10 @@ function hodlAccountResult(node, definition, network, count, options = {}) {
     branchRange,
     receiveDescriptor: receiveBranch?.publicDescriptor ?? null,
     changeDescriptor: changeBranch?.publicDescriptor ?? null,
-    walletDescriptor: addressBranches[0]?.publicDescriptor ? hodlWatchOnlyMultipathDescriptor(addressBranches[0].publicDescriptor, addressBranches.map((entry) => entry.branch)) : null,
+    walletDescriptor: addressBranches[0]?.publicDescriptor ? addressBranches.length === 1 ? addressBranches[0].publicDescriptor : hodlWatchOnlyMultipathDescriptor(addressBranches[0].publicDescriptor, addressBranches.map((entry) => entry.branch)) : null,
     receiveDescriptorPriv: receiveBranch?.privateDescriptor ?? null,
     changeDescriptorPriv: changeBranch?.privateDescriptor ?? null,
+    branchHardened,
     addressHardened,
     receive: receiveBranch?.rows ?? [],
     change: changeBranch?.rows ?? []
@@ -1162,10 +1167,10 @@ Po = function(value, network, count, accountIndex = 0, addressStart = 0) {
     accounts: [account]
   };
 };
-async function hodlAddressRowsWithProgress(node, accountPath, script, network, count, role, addressStart, tracker, addressHardened = false) {
+async function hodlAddressRowsWithProgress(node, accountPath, script, network, count, role, addressStart, tracker, addressHardened = false, branchHardened = false) {
   let rows = [];
   for (let index = addressStart; index < addressStart + count; index++) {
-    rows.push(hodlDerivedAddressRow(node, accountPath, script, network, role, index, addressHardened));
+    rows.push(hodlDerivedAddressRow(node, accountPath, script, network, role, index, addressHardened, branchHardened));
     let pause = tracker.step();
     if (pause) await pause;
   }
@@ -1175,7 +1180,7 @@ async function hodlAccountResultWithProgress(node, definition, network, count, o
   let accountPath = options.accountPath ?? "Imported account key";
   let branchStart = options.branchStart ?? 0, branchRange = options.branchRange ?? 2, addressBranches = [];
   for (let branch = branchStart; branch < branchStart + branchRange; branch++) {
-    addressBranches.push({ branch, rows: await hodlAddressRowsWithProgress(node, accountPath, definition.script, network, count, branch, options.addressStart ?? 0, tracker, options.addressHardened) });
+    addressBranches.push({ branch, rows: await hodlAddressRowsWithProgress(node, accountPath, definition.script, network, count, branch, options.addressStart ?? 0, tracker, options.addressHardened, options.branchHardened) });
   }
   return hodlAccountResult(node, definition, network, count, { ...options, addressBranches });
 }
@@ -1184,7 +1189,7 @@ async function hodlRootWalletWithProgress(root, network, count, source, accountI
   tracker.setTotal(addressCount * To.length * branchRange);
   for (let definition of To) {
     let derivedDefinition = { ...definition, purpose: purposeIndex, purposeHardened: hardening.purpose }, accountPath = Ao(derivedDefinition, coinType, accountIndex, hardening), node = root.derive(accountPath), originPath = `${hodlOriginPathIndex(purposeIndex, hardening.purpose)}/${hodlOriginPathIndex(coinType, hardening.coinType)}/${hodlOriginPathIndex(accountIndex, hardening.account)}`;
-    accounts.push(await hodlAccountResultWithProgress(node, derivedDefinition, network, addressCount, { accountPath, accountIndex, masterFingerprint, originFingerprint: masterFingerprint, originPath, addressStart, addressHardened: hardening.address, branchStart, branchRange }, tracker));
+    accounts.push(await hodlAccountResultWithProgress(node, derivedDefinition, network, addressCount, { accountPath, accountIndex, masterFingerprint, originFingerprint: masterFingerprint, originPath, addressStart, branchHardened: hardening.branch, addressHardened: hardening.address, branchStart, branchRange }, tracker));
   }
   return hodlRootWalletResult(root, network, source, accountIndex, masterFingerprint, accounts, coinType);
 }
@@ -1209,10 +1214,10 @@ async function hodlImportedWalletWithProgress(value, network, count, accountInde
     return hodlRootWalletWithProgress(node, network, count, { mnemonic: null, passphraseUsed: false, entropyHex: null, seedHex: null, notes, warnings: [] }, accountIndex, addressStart, tracker, purposeIndex, coinType, hardening, branchStart, branchRange);
   }
   if (node.depth !== 3) throw new Error(`This extended key is depth ${node.depth}. Key Derivation accepts a BIP32 root private key (depth 0) or an account-level extended key (depth 3).`);
-  if (hardening.address && !parsed.isPrivate) throw new Error("Hardened address indexes cannot be derived from an account extended public key. Turn off Harden or import the matching extended private key offline.");
+  if ((hardening.branch || hardening.address) && !parsed.isPrivate) throw new Error(`Hardened ${hardening.branch ? "address branches" : "address indexes"} cannot be derived from an account extended public key. Turn off Harden or import the matching extended private key offline.`);
   let definition = hodlImportedScriptDefinition(parsed), addressCount = Math.min(Math.max(count, 1), hodlMaxAddressRange), parentFingerprint = Us(node.parentFingerprint), nodeFingerprint = Us(node.fingerprint);
   tracker.setTotal(addressCount * branchRange);
-  let account = await hodlAccountResultWithProgress(node, definition, network, addressCount, { accountPath: "Imported account key", accountIndex: null, imported: true, parentFingerprint, nodeFingerprint, addressStart, addressHardened: hardening.address, branchStart, branchRange }, tracker);
+  let account = await hodlAccountResultWithProgress(node, definition, network, addressCount, { accountPath: "Imported account key", accountIndex: null, imported: true, parentFingerprint, nodeFingerprint, addressStart, branchHardened: hardening.branch, addressHardened: hardening.address, branchStart, branchRange }, tracker);
   return {
     kind: "hd",
     network,
@@ -1325,20 +1330,20 @@ function hodlAddressMatchMarkup(){
 var hodlAddressSearchLimit = 1000;
 
 function hodlMatchHdAddressBeyond(address, account, start) {
-  let xpub = account?.xpub || account?.genericPublic;
-  if (!xpub || !account?.def) return {
+  let extendedKey = account?.branchHardened ? account?.xprv || account?.genericPrivate : account?.xpub || account?.genericPublic;
+  if (!extendedKey || !account?.def) return {
     state: "miss",
     searchedTo: start
   };
-  let node = Gt.fromExtendedKey(xpub),
+  let node = Gt.fromExtendedKey(extendedKey),
     network = account.network || re.network,
     script = account.def.script,
     base = account.accountPath || "m";
   let searchEnd = Math.min(hodlMaxAddressIndex + 1, start + hodlAddressSearchLimit);
   for (let index = start; index < searchEnd; index++) {
     for (let branch of hodlAccountAddressBranches(account)) {
-      let chain = branch.branch, role = branch.role;
-      let child = node.derive(`m/${chain}/${index}`),
+      let chain = branch.branch, role = branch.role, branchStep = hodlPathIndex(chain, account.branchHardened), indexStep = hodlPathIndex(index, account.addressHardened);
+      let child = node.derive(`m/${branchStep}/${indexStep}`),
         pk = child.publicKey;
       if (!pk) continue;
       if (hodlAddressesEqual(address, pf(script, pk, network))) return {
@@ -1346,7 +1351,7 @@ function hodlMatchHdAddressBeyond(address, account, start) {
         chain: role,
         branch: chain,
         index,
-        path: `${base}/${chain}/${index}`,
+        path: `${base}/${branchStep}/${indexStep}`,
         beyond: !0
       }
     }
@@ -1862,9 +1867,10 @@ function hodlUpdateCoinTypeHelp(input = document.getElementById("network"), help
   help.textContent = `Coin type index · ${label} · ${hardened ? "Hardened" : "Unhardened"} · 0 to 2,147,483,647`;
 }
 function hodlUpdateHardeningHelp(prefix = "") {
-  let hardening = hodlReadHardening(prefix), purpose = document.getElementById(`${prefix}purpose-help`), account = document.getElementById(`${prefix}account-help`), start = document.getElementById(`${prefix}address-start-help`);
+  let hardening = hodlReadHardening(prefix), purpose = document.getElementById(`${prefix}purpose-help`), account = document.getElementById(`${prefix}account-help`), branch = document.getElementById(`${prefix}branch-start-help`), start = document.getElementById(`${prefix}address-start-help`);
   if (purpose) purpose.textContent = `Purpose index · ${hardening.purpose ? "Hardened" : "Unhardened"} · 0 to 2,147,483,647`;
   if (account && !(prefix && document.getElementById(`${prefix}account`)?.dataset.state === "not-applicable")) account.textContent = prefix ? `Account index · ${hardening.account ? "Hardened" : "Unhardened"} · Derived from co-signer key origins.` : `Account index · ${hardening.account ? "Hardened" : "Unhardened"} · 0 to 2,147,483,647`;
+  if (branch) branch.textContent = `First address branch to derive · 0 is Receive · 1 is Change · ${hardening.branch ? "Hardened" : "Unhardened"} · 0 to 2,147,483,647`;
   if (start) start.textContent = `First receive and change index to derive · ${hardening.address ? "Hardened" : "Unhardened"} · 0 to 2,147,483,647`;
   hodlUpdateCoinTypeHelp(document.getElementById(`${prefix}network`), document.getElementById(`${prefix}network-help`));
 }
@@ -1955,7 +1961,7 @@ function hodlReadBranchWindow(prefix = "", mark = true) {
   }
   if (!startValid) throw new Error("Starting address branch index must be a whole number from 0 to 2,147,483,647.");
   if (!rangeValid) throw new Error(`Address branch range must be a whole number from 1 to ${maximum}.`);
-  if (!endValid) throw new Error("The address branch range extends beyond the maximum non-hardened branch index of 2,147,483,647.");
+  if (!endValid) throw new Error("The address branch range extends beyond the maximum BIP32 child index of 2,147,483,647.");
   return { start, range, end: start + range - 1, branches: Array.from({ length: range }, (_, offset) => start + offset) };
 }
 function hodlAddressBranchSummary(branches) {
@@ -1985,7 +1991,7 @@ function hodlReadAddressWindow(prefix = "", mark = true) {
   }
   if (!startValid) throw new Error("Starting address index must be a whole number from 0 to 2,147,483,647.");
   if (!rangeValid) throw new Error(`Address range must be a whole number from 1 to ${maximum.toLocaleString()}.`);
-  if (!endValid) throw new Error("The address range extends beyond the maximum non-hardened address index of 2,147,483,647.");
+  if (!endValid) throw new Error("The address range extends beyond the maximum BIP32 child index of 2,147,483,647.");
   return { start, range, end: start + range - 1 };
 }
 function hodlFormatAddressEstimate(milliseconds) {
@@ -1999,10 +2005,10 @@ function hodlUpdateAddressEstimate(prefix = "") {
   if (!estimate || !help || !startHelp || !branchHelp) return;
   let maximum = hodlSyncAddressRangeLimit(prefix), branchMaximum = hodlSyncBranchRangeLimit(prefix);
   try {
-    let { range } = hodlReadAddressWindow(prefix, false), { branches } = hodlReadBranchWindow(prefix, false), keyCount = prefix ? Math.max(1, Number(document.getElementById("msig-n")?.value) || 1) : (hodlImportedExtendedKeyDepth() ?? 0) > 0 ? 1 : 4;
+    let { range } = hodlReadAddressWindow(prefix, false), { branches } = hodlReadBranchWindow(prefix, false), hardening = hodlReadHardening(prefix), keyCount = prefix ? Math.max(1, Number(document.getElementById("msig-n")?.value) || 1) : (hodlImportedExtendedKeyDepth() ?? 0) > 0 ? 1 : 4;
     let branchLabels = hodlAddressBranchSummary(branches), addressCopies = branches.map((branch) => `${range.toLocaleString()} ${hodlAddressBranchLabel(branch).toLowerCase()}`).join(" and ");
-    branchHelp.textContent = `Derives ${branchLabels} ${branches.length === 1 ? "branch" : "branches"} · Max ${branchMaximum}`;
-    startHelp.textContent = `First ${branchLabels.toLowerCase()} index to derive · ${hodlReadHardening(prefix).address ? "Hardened" : "Unhardened"} · 0 to 2,147,483,647`;
+    branchHelp.textContent = `Derives ${branchLabels} ${hardening.branch ? "hardened " : ""}${branches.length === 1 ? "branch" : "branches"} · Max ${branchMaximum}`;
+    startHelp.textContent = `First ${branchLabels.toLowerCase()} index to derive · ${hardening.address ? "Hardened" : "Unhardened"} · 0 to 2,147,483,647`;
     help.textContent = `Derives ${addressCopies} ${range * branches.length === 1 ? "address" : "addresses"} · Max ${maximum.toLocaleString()}`;
     estimate.textContent = hodlAddressBenchmarkMs == null ? "Measuring this device\u2026" : `Estimated derivation time on this device: ${hodlFormatAddressEstimate(hodlAddressBenchmarkMs * range * branches.length * keyCount)}.`;
   } catch (error) {
@@ -2028,8 +2034,8 @@ function hodlInitAddressBenchmark() {
   if ("requestIdleCallback" in window) requestIdleCallback(run, { timeout: 750 });
   else setTimeout(run, 0);
   document.addEventListener("input", (event) => {
-    if (["branch-start", "branch-range", "address-start", "address-range", "seed"].includes(event.target?.id)) hodlUpdateAddressEstimate();
-    if (["msig-branch-start", "msig-branch-range", "msig-address-start", "msig-address-range", "msig-m-number", "msig-n-number", "msig-m", "msig-n"].includes(event.target?.id)) hodlUpdateAddressEstimate("msig-");
+    if (["branch-start", "branch-start-harden", "branch-range", "address-start", "address-range", "seed"].includes(event.target?.id)) hodlUpdateAddressEstimate();
+    if (["msig-branch-start", "msig-branch-start-harden", "msig-branch-range", "msig-address-start", "msig-address-range", "msig-m-number", "msig-n-number", "msig-m", "msig-n"].includes(event.target?.id)) hodlUpdateAddressEstimate("msig-");
   });
 }
 class HodlDerivationCancelledError extends Error {
@@ -2276,7 +2282,7 @@ function hodlUpdateDerivationPathPreview() {
   if ((hodlImportedExtendedKeyDepth() ?? 0) > 0) {
     context.textContent = `${definition.label} \xB7 Imported account key`;
     setPath("account", "Imported key base");
-    branchWindow.branches.forEach((branch, slot) => setPath(slot === 0 ? "receive" : "change", pathRange(`imported-key/${branch}`)));
+    branchWindow.branches.forEach((branch, slot) => setPath(slot === 0 ? "receive" : "change", pathRange(`imported-key/${hodlPathIndex(branch, hardening.branch)}`)));
     message.hidden = false;
     message.classList.add("is-note");
     message.textContent = "This non-root extended key is reused directly. Purpose and Account cannot select a different hardened sibling.";
@@ -2285,7 +2291,7 @@ function hodlUpdateDerivationPathPreview() {
   context.textContent = `${definition.label} \xB7 Purpose ${hodlPathIndex(purpose, hardening.purpose)}`;
   let base = `m/${hodlPathIndex(purpose, hardening.purpose)}/${hodlPathIndex(coinType, hardening.coinType)}/${hodlPathIndex(account, hardening.account)}`;
   setPath("account", base);
-  branchWindow.branches.forEach((branch, slot) => setPath(slot === 0 ? "receive" : "change", pathRange(`${base}/${branch}`)));
+  branchWindow.branches.forEach((branch, slot) => setPath(slot === 0 ? "receive" : "change", pathRange(`${base}/${hodlPathIndex(branch, hardening.branch)}`)));
 }
 function hodlInitDerivationControls() {
   let panel = document.getElementById("calc-card");
@@ -2302,12 +2308,12 @@ function hodlInitDerivationControls() {
   panel.addEventListener("input", (event) => {
     let target = event.target;
     if (!(target instanceof Element)) return;
-    if (["purpose", "network", "account", "branch-start", "branch-range", "address-start", "address-range", "purpose-harden", "network-harden", "account-harden", "address-start-harden"].includes(target.id)) {
+    if (["purpose", "network", "account", "branch-start", "branch-range", "address-start", "address-range", "purpose-harden", "network-harden", "account-harden", "branch-start-harden", "address-start-harden"].includes(target.id)) {
       if (target.id === "branch-start" || target.id === "branch-range") hodlSyncBranchRangeLimit();
       if (target.id === "address-start" || target.id === "address-range") hodlSyncAddressRangeLimit();
       let state = hodlKeys[hodlActiveKey];
       if (state) {
-        let hardeningField = { "purpose-harden": "purposeHarden", "network-harden": "coinTypeHarden", "account-harden": "accountHarden", "address-start-harden": "addressHarden" }[target.id];
+        let hardeningField = { "purpose-harden": "purposeHarden", "network-harden": "coinTypeHarden", "account-harden": "accountHarden", "branch-start-harden": "branchHarden", "address-start-harden": "addressHarden" }[target.id];
         if (hardeningField) state.fields[hardeningField] = target.checked;
         else state.fields[target.id === "network" ? "coinType" : target.id === "branch-start" ? "branchStart" : target.id === "branch-range" ? "branchRange" : target.id === "address-start" ? "addressStart" : target.id === "address-range" ? "addressRange" : target.id] = target.value;
       }
@@ -2427,7 +2433,7 @@ function hodlSinglesigImportStatus(value, network) {
     if (depth === 0 && !parsed.isPrivate && Object.values(hardening).some(Boolean)) return { ok: false, message: "Root extended public keys cannot derive the selected hardened path \xB7 turn every Harden option off or import a private root key offline" };
     if (depth === 0 && parsed.family !== "x") return { ok: false, message: "A root private key must use an xprv/tprv prefix" };
     if (depth !== 0 && depth !== 3) return { ok: false, message: `Depth ${depth} extended key \xB7 use a root private key or depth-3 account key` };
-    if (depth === 3 && !parsed.isPrivate && hardening.address) return { ok: false, message: "Account extended public keys cannot derive hardened address indexes \xB7 turn off Address Harden" };
+    if (depth === 3 && !parsed.isPrivate && (hardening.branch || hardening.address)) return { ok: false, message: `Account extended public keys cannot derive hardened ${hardening.branch ? "address branches" : "address indexes"} \xB7 turn off the corresponding Harden option` };
     let definition = depth === 3 ? hodlImportedScriptDefinition(parsed) : null, detail = definition ? ` \xB7 ${definition.label} ${definition.bip}` : "";
     return { ok: true, message: `${parsed.prefix} ${parsed.isPrivate ? "private" : "watch-only"} key detected \xB7 ${network}${detail} \xB7 ready to derive` };
   } catch (error) {
@@ -6680,7 +6686,7 @@ function hodlInitMsig() {
     recheck();
     hodlSyncMsigClearButton(true);
   });
-  ["msig-purpose-harden", "msig-network-harden", "msig-account-harden", "msig-address-start-harden"].forEach((id) => document.getElementById(id)?.addEventListener("change", () => {
+  ["msig-purpose-harden", "msig-network-harden", "msig-account-harden", "msig-branch-start-harden", "msig-address-start-harden"].forEach((id) => document.getElementById(id)?.addEventListener("change", () => {
     hodlUpdateHardeningHelp("msig-");
     hodlUpdateMsigKeyPlaceholders();
     hodlUpdateMsigAccount();
@@ -6759,6 +6765,7 @@ function hodlMsigAddr(pubkeys, m, network, kind, sorted = !0) {
 }
 function hodlValidatedMsigInputs() {
   let coinType = hodlReadCoinType(document.getElementById("msig-network")), network = hodlNetworkFromCoinType(coinType), addressWindow = hodlReadAddressWindow("msig-"), branchWindow = hodlReadBranchWindow("msig-"), count = addressWindow.range, addressStart = addressWindow.start, branchStart = branchWindow.start, branchRange = branchWindow.range, hardening = hodlReadHardening("msig-"), n = Number(document.getElementById("msig-n")?.value), m = Number(document.getElementById("msig-m")?.value);
+  if (hardening.branch) throw new Error("Hardened address branches cannot be derived from the supplied multisig extended public keys. Turn off Harden for Starting address branch index.");
   if (hardening.address) throw new Error("Hardened address indexes cannot be derived from multisig extended public keys. Turn off Harden for Starting address index.");
   if (!(m >= 1 && n >= 1 && m <= n && n <= 15)) throw new Error("Pick how many signatures out of how many keys.");
   let kind = hodlScriptKind(), purpose = hodlReadMsigPurpose(), legacyStandard = hodlSelectedLegacyMultisigStandard(), nodes = [], xpubs = [], keyTokens = [], accountNumbers = [], purposeIndexes = [];
@@ -7664,7 +7671,7 @@ function hodlPrivateKeyValues(fields) {
 }
 function hodlNewKeyState(name, keyId, keyNumber) {
   let id = keyId ?? hodlNextKeyId++, number = keyNumber ?? hodlNextKeyNumber++;
-  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: false, passphraseBip39Words: false, brainWalletTrim: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", purpose: "84", purposeHarden: true, coinType: "0", coinTypeHarden: true, network: "mainnet", account: "0", accountHarden: true, branchStart: "0", branchRange: "2", addressStart: "0", addressHarden: false, addressRange: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
+  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: false, passphraseBip39Words: false, brainWalletTrim: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", purpose: "84", purposeHarden: true, coinType: "0", coinTypeHarden: true, network: "mainnet", account: "0", accountHarden: true, branchStart: "0", branchHarden: false, branchRange: "2", addressStart: "0", addressHarden: false, addressRange: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
 }
 function hodlRestoreFormFields(state) {
   if (!state) return;
@@ -7714,7 +7721,7 @@ function hodlSetMode(mode) {
 function hodlKeyStateNeedsClear(state) {
   if (!state) return false;
   let fields = state.fields || {}, privateKeys = hodlPrivateKeyValues(fields), hasText = (id) => String(fields[id] ?? "").length > 0;
-  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || Boolean(state.seedAutocomplete) || Boolean(state.passphraseBip39Words) || Boolean(state.brainWalletTrim) || Boolean(state.showCards) || Boolean(state.showDiceFairness) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.purpose ?? "84") !== "84" || fields.purposeHarden === false || String(fields.coinType ?? (fields.network === "testnet" ? "1" : "0")) !== "0" || fields.coinTypeHarden === false || String(fields.account ?? "0") !== "0" || fields.accountHarden === false || String(fields.branchStart ?? "0") !== "0" || String(fields.branchRange ?? "2") !== "2" || String(fields.addressStart ?? "0") !== "0" || Boolean(fields.addressHarden) || String(fields.addressRange ?? fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
+  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || Boolean(state.seedAutocomplete) || Boolean(state.passphraseBip39Words) || Boolean(state.brainWalletTrim) || Boolean(state.showCards) || Boolean(state.showDiceFairness) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.purpose ?? "84") !== "84" || fields.purposeHarden === false || String(fields.coinType ?? (fields.network === "testnet" ? "1" : "0")) !== "0" || fields.coinTypeHarden === false || String(fields.account ?? "0") !== "0" || fields.accountHarden === false || String(fields.branchStart ?? "0") !== "0" || Boolean(fields.branchHarden) || String(fields.branchRange ?? "2") !== "2" || String(fields.addressStart ?? "0") !== "0" || Boolean(fields.addressHarden) || String(fields.addressRange ?? fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
 }
 function hodlSyncKeyClearButton(capture = false) {
   if (capture) hodlCaptureKey();
@@ -7773,6 +7780,7 @@ function hodlCaptureKey() {
   state.fields.purposeHarden = hardening.purpose;
   state.fields.coinTypeHarden = hardening.coinType;
   state.fields.accountHarden = hardening.account;
+  state.fields.branchHarden = hardening.branch;
   state.fields.addressHarden = hardening.address;
   try {
     state.fields.network = hodlSelectedNetwork(document.getElementById("network"));
@@ -8128,6 +8136,7 @@ function hodlNewMsigState(name, msigId, msigNumber) {
       network: "mainnet",
       accountHarden: true,
       branchStart: "0",
+      branchHarden: false,
       branchRange: "2",
       addressStart: "0",
       addressHarden: false,
@@ -8140,7 +8149,7 @@ function hodlMsigStateNeedsClear(state) {
   let fields = state.fields || {},
     xpubs = Array.isArray(fields.xpubs) ? fields.xpubs : [];
   return Boolean(state.result) || String(state.error ?? "").length > 0 || xpubs.some(value => String(value ?? "").length > 0) ||
-    String(fields.m ?? "2") !== "2" || String(fields.n ?? "3") !== "3" || String(fields.script ?? "p2wsh") !== "p2wsh" || String(fields.purpose ?? "48") !== "48" || fields.purposeHarden === false || Boolean(fields.legacyBip87) || String(fields.keyOrder ?? "sorted") !== "sorted" || String(fields.coinType ?? (fields.network === "testnet" ? "1" : "0")) !== "0" || fields.coinTypeHarden === false || fields.accountHarden === false || String(fields.branchStart ?? "0") !== "0" || String(fields.branchRange ?? "2") !== "2" || String(fields.addressStart ?? "0") !== "0" || Boolean(fields.addressHarden) || String(fields.addressRange ?? fields.count ?? "5") !== "5"
+    String(fields.m ?? "2") !== "2" || String(fields.n ?? "3") !== "3" || String(fields.script ?? "p2wsh") !== "p2wsh" || String(fields.purpose ?? "48") !== "48" || fields.purposeHarden === false || Boolean(fields.legacyBip87) || String(fields.keyOrder ?? "sorted") !== "sorted" || String(fields.coinType ?? (fields.network === "testnet" ? "1" : "0")) !== "0" || fields.coinTypeHarden === false || fields.accountHarden === false || String(fields.branchStart ?? "0") !== "0" || Boolean(fields.branchHarden) || String(fields.branchRange ?? "2") !== "2" || String(fields.addressStart ?? "0") !== "0" || Boolean(fields.addressHarden) || String(fields.addressRange ?? fields.count ?? "5") !== "5"
 }
 
 function hodlSyncMsigClearButton(capture = !1) {
@@ -8165,6 +8174,7 @@ function hodlCaptureMsig() {
   state.fields.purposeHarden = hardening.purpose;
   state.fields.coinTypeHarden = hardening.coinType;
   state.fields.accountHarden = hardening.account;
+  state.fields.branchHarden = hardening.branch;
   state.fields.addressHarden = hardening.address;
   try {
     state.fields.network = hodlSelectedNetwork(document.getElementById("msig-network"));
