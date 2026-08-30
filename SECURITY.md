@@ -44,6 +44,8 @@ material. Its security posture rests on the following model:
   indexer, and cannot detect payments on its own.
 - Inscription envelope detection is a parser of witness/tap-leaf scripts. It
   does not render inscription media, assign sat numbers, or contact an indexer.
+- OP_RETURN detection is a parser of output scripts. It does not create
+  data-carrier outputs, assign protocol meaning, or contact an indexer.
 - Low-entropy dice and card transcripts are accepted intentionally so the
   calculator can be used for deterministic tests, demonstrations, and
   recovery experiments. EntropyLab does not claim that hashing a short input

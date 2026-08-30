@@ -46,6 +46,14 @@ Official website: [entropylab.online](https://entropylab.online)
   byte are decoded without a key; anything other than exact SIGHASH_ALL is a
   blocking warning. Finalized signatures that cannot be decoded or associated
   with a key block any clean nonce verdict.
+- Accepts a fully signed raw Bitcoin transaction (hex or base64) in the same
+  inspector: outputs, extracted ECDSA nonces, and inscription-envelope hints.
+  Fee and RFC 6979 cannot be checked without previous outputs.
+- With a session seed, root xprv, WIF, or hex key, labels each output as
+  change, receive, or not in this wallet (accounts 0–2, 50 receive + 50
+  change, all four script types). A two-or-more-output transaction with no
+  matching change is a blocking warning. OP_RETURN outputs are decoded for size and a text/hex
+  preview; the tool does not create data-carrier outputs.
 - Scans PSBT tap-leaf scripts and finalized witnesses for inscription envelopes
   (`OP_FALSE OP_IF "ord"`). Reports content-type, size, and text previews; does
   not number sats, fetch chain data, create inscriptions, or render images.
