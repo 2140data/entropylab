@@ -315,11 +315,18 @@ function Ns(e) {
   if (!$o(e)) throw new Error("Not a valid Casascius mini private key.");
   return Z(new TextEncoder().encode(e.trim()));
 }
-function Io(e, t, r) {
-  let n = [], o = [], i, s = null, c = t, a = e.trim();
+function hodlBrainWalletPassphrase(value, trimBoundaryWhitespace = false) {
+  let passphrase = String(value ?? ""), normalized = trimBoundaryWhitespace ? passphrase.trim() : passphrase;
+  if (!normalized.length) throw new Error(trimBoundaryWhitespace && passphrase.length ? "Trimming boundary whitespace leaves an empty brain-wallet recovery passphrase." : "Enter the brain-wallet recovery passphrase.");
+  return normalized;
+}
+function hodlBrainWalletPrivateKey(value, trimBoundaryWhitespace = false) {
+  return Z(new TextEncoder().encode(hodlBrainWalletPassphrase(value, trimBoundaryWhitespace)));
+}
+function Io(e, t, r, trimBrainWallet = false) {
+  let n = [], o = [], i, s = null, c = t, a = r === "brain" ? hodlBrainWalletPassphrase(e, trimBrainWallet) : e.trim();
   if (r === "brain") {
-    if (!a) throw new Error("Enter the brain-wallet passphrase.");
-    o.push("Brain wallets are dangerous. Humans pick guessable phrases. Anyone who guesses the phrase takes the coins. Prefer dice or a hardware-verified seed."), i = Z(new TextEncoder().encode(a)), n.push("bitaddress.org-style brain wallet: SHA-256 of the passphrase is the private key.");
+    o.push("Brain wallets are dangerous. Humans pick guessable phrases. Anyone who guesses the phrase takes the coins. Prefer dice or a hardware-verified seed."), i = hodlBrainWalletPrivateKey(e, trimBrainWallet), n.push(trimBrainWallet ? "Brain wallet recovery: SHA-256 used the passphrase after trimming leading and trailing whitespace." : "Brain wallet recovery: SHA-256 used the passphrase exactly as entered.");
   } else if (r === "minikey" || $o(a)) i = Ns(a), s = a, n.push("Casascius mini private key decoded via SHA-256.");
   else if (/^[5KL9c][1-9A-HJ-NP-Za-km-z]{50,51}$/.test(a)) {
     let E = Ls(a);
@@ -778,7 +785,7 @@ function Ff() {
       re = /^[xtyYzZvVun][A-Za-z0-9]+$/.test(n) && n.length > 80 ? Po(n, e, t) : ar(n, r, e, t);
     } else {
       let n = document.querySelector("input[name=kk]:checked")?.value || "wif-or-hex";
-      re = Io(document.getElementById("key").value, e, n);
+      re = Io(document.getElementById("key").value, e, n, hodlBrainWalletTrimEnabled());
     }
     Ge = false, hodlAccountId = null, tc();
   } catch (e) {
@@ -3568,8 +3575,14 @@ function hodlPassphraseKeyboardToggleMarkup() {
 function hodlPassphraseBip39ToggleMarkup(checked = hodlPassphraseBip39Enabled()) {
   return `<label class="seed-autocomplete-toggle passphrase-bip39-toggle"><input type="checkbox" id="passphrase-bip39-words" ${checked ? "checked" : ""} /><span><strong>Build passphrase from BIP39 words</strong> <span class="seed-autocomplete-note">(lowercase words separated by single spaces)</span></span></label>`;
 }
+function hodlBrainWalletTrimEnabled() {
+  return Boolean(document.getElementById("brain-wallet-trim")?.checked);
+}
+function hodlBrainWalletTrimToggleMarkup(checked = Boolean(hodlKeys[hodlActiveKey]?.brainWalletTrim)) {
+  return `<label class="seed-autocomplete-toggle brain-wallet-trim-toggle" data-brain-wallet-trim-control hidden><input type="checkbox" id="brain-wallet-trim" ${checked ? "checked" : ""} /><span><strong>Trim leading and trailing whitespace</strong></span></label>`;
+}
 function hodlPrivateKeyKeyboardToggleMarkup() {
-  return `<div class="passphrase-keyboard-tools">${hodlKeyboardToggleMarkup("private-keyboard-toggle", "on-screen private key keyboard")}</div>`;
+  return `<div class="passphrase-keyboard-tools">${hodlKeyboardToggleMarkup("private-keyboard-toggle", "on-screen private key keyboard")}${hodlBrainWalletTrimToggleMarkup()}</div>`;
 }
 function hodlBase64KeyboardToggleMarkup() {
   return hodlKeyboardToggleMarkup("base64-keyboard-toggle", "on-screen Base64 keyboard", "base64-keyboard");
@@ -3772,6 +3785,8 @@ function hodlUpdatePrivateKeyInputPresentation() {
   let input = document.getElementById("key");
   if (!input) return;
   let kind = hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value, input.value), network = hodlSelectedNetwork(document.getElementById("network"));
+  let trimControl = document.querySelector("[data-brain-wallet-trim-control]");
+  if (trimControl) trimControl.hidden = kind !== "brain";
   input.placeholder = hodlPrivateKeyPlaceholder(kind, network);
   input.setAttribute("inputmode", kind === "hex-key" ? "text" : "text");
   input.setAttribute("autocapitalize", "off");
@@ -4975,11 +4990,22 @@ function hodlPrivateKeyCharacterEntries(value) {
   }
   return entries;
 }
-function hodlPrivateKeyInputAnalysis(value, kind, network) {
+function hodlPrivateKeyInputAnalysis(value, kind, network, trimBrainWallet = hodlBrainWalletTrimEnabled()) {
   let selected = hodlNormalizePrivateKeyKind(kind, value), entries = hodlPrivateKeyCharacterEntries(value), invalidRanges = [], ready = false, status = "", first = entries[0], last = entries.at(-1), markAll = () => {
     if (first && last) invalidRanges.push([first.start, last.end]);
   };
-  if (selected === "brain") return { invalidRanges, ready: Boolean(String(value ?? "").length), status: String(value ?? "").length ? "Recovery passphrase entered \xB7 brain wallets are unsafe \xB7 recovery only" : "No recovery passphrase entered \xB7 brain wallets are unsafe \xB7 recovery only", kind: selected };
+  if (selected === "brain") {
+    let exact = String(value ?? ""), hasBoundaryWhitespace = exact !== exact.trim();
+    try {
+      hodlBrainWalletPassphrase(exact, trimBrainWallet);
+      ready = true;
+    } catch {
+      ready = false;
+    }
+    let convention = trimBrainWallet ? hasBoundaryWhitespace ? "boundary whitespace will be trimmed" : "trim enabled; no boundary whitespace present" : hasBoundaryWhitespace ? "exact text will be used, including boundary whitespace" : "exact text will be used";
+    let status = exact.length ? ready ? `Recovery passphrase entered \xB7 ${convention} \xB7 brain wallets are unsafe \xB7 recovery only` : "Boundary whitespace trimming leaves an empty passphrase \xB7 enter non-whitespace text or turn trimming off" : "No recovery passphrase entered \xB7 brain wallets are unsafe \xB7 recovery only";
+    return { invalidRanges, ready, status, kind: selected };
+  }
   if (selected === "hex-key") {
     let prefixed = entries[0]?.character === "0" && /^x$/i.test(entries[1]?.character || ""), characters = entries.slice(prefixed ? 2 : 0), valid = characters.filter((entry) => /^[0-9a-fA-F]$/.test(entry.character)), invalid2 = characters.filter((entry) => !/^[0-9a-fA-F]$/.test(entry.character)), excess2 = valid.slice(64);
     invalidRanges.push(...invalid2.map((entry) => [entry.start, entry.end]), ...excess2.map((entry) => [entry.start, entry.end]));
@@ -5115,6 +5141,13 @@ function hodlBindKeyFields() {
       radio.addEventListener("change", change);
     });
     document.getElementById("network")?.addEventListener("change", apply);
+    let trim = document.getElementById("brain-wallet-trim");
+    if (trim) trim.onchange = () => {
+      if (state) state.brainWalletTrim = trim.checked;
+      hodlRenderPrivateKeyInputState(key);
+      hodlSyncKeyClearButton();
+      hodlSyncDeriveButton();
+    };
     apply();
   }
 }
@@ -5123,11 +5156,11 @@ function hodlSelectedEntropy(targetWords = Pt) {
   return hodlNumberBaseEntropy(value, format, targetWords);
 }
 function hodlPrivateKeyInputIsValid() {
-  let input = document.getElementById("key"), value = input?.value.trim() || "";
-  if (!value) return false;
+  let input = document.getElementById("key"), value = input?.value ?? "";
+  if (!value.length) return false;
   let kind = hodlNormalizePrivateKeyKind(document.querySelector("input[name=kk]:checked")?.value, value);
   try {
-    hodlAssertPrivateKeyKind(value, hodlSelectedNetwork(document.getElementById("network")), kind);
+    hodlAssertPrivateKeyKind(value, hodlSelectedNetwork(document.getElementById("network")), kind, hodlBrainWalletTrimEnabled());
     return true;
   } catch {
     return false;
@@ -5433,9 +5466,10 @@ async function hodlCalculateKey(progress) {
       }
     } else {
       let value = document.getElementById("key").value, kind = hodlNormalizePrivateKeyKind(document.querySelector("input[name=kk]:checked")?.value, value);
-      hodlAssertPrivateKeyKind(value, network, kind);
+      let trimBrainWallet = hodlBrainWalletTrimEnabled();
+      hodlAssertPrivateKeyKind(value, network, kind, trimBrainWallet);
       progress.setTotal(1);
-      re = Io(value, network, kind);
+      re = Io(value, network, kind, trimBrainWallet);
       progress.step();
     }
     if (re?.network !== network) throw new Error(`The supplied key is for ${re.network}, but Network is set to ${network}.`);
@@ -5472,10 +5506,11 @@ function hodlDecodeMiniPrivateKey(value) {
   if (!/^S(?:[1-9A-HJ-NP-Za-km-z]{21}|[1-9A-HJ-NP-Za-km-z]{29})$/.test(candidate)) throw new Error("Mini keys must start with S and contain 22 or 30 Bitcoin Base58 characters.");
   return Ns(candidate);
 }
-function hodlAssertPrivateKeyKind(value, network, kind) {
-  let candidate = String(value ?? "").trim(), selected = hodlNormalizePrivateKeyKind(kind, candidate);
-  if (!candidate) throw new Error(selected === "brain" ? "Enter the brain-wallet recovery passphrase." : "Enter a private key.");
-  if (selected === "brain") return candidate;
+function hodlAssertPrivateKeyKind(value, network, kind, trimBrainWallet = false) {
+  let raw = String(value ?? ""), selected = hodlNormalizePrivateKeyKind(kind, raw);
+  if (selected === "brain") return hodlBrainWalletPassphrase(raw, trimBrainWallet);
+  let candidate = raw.trim();
+  if (!candidate) throw new Error("Enter a private key.");
   if (selected === "minikey") {
     hf(hodlDecodeMiniPrivateKey(candidate));
     return candidate;
@@ -7254,7 +7289,7 @@ function hodlPrivateKeyValues(fields) {
 }
 function hodlNewKeyState(name, keyId, keyNumber) {
   let id = keyId ?? hodlNextKeyId++, number = keyNumber ?? hodlNextKeyNumber++;
-  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: false, passphraseBip39Words: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", network: "mainnet", account: "0", addressStart: "0", addressRange: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
+  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: false, passphraseBip39Words: false, brainWalletTrim: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", network: "mainnet", account: "0", addressStart: "0", addressRange: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
 }
 function hodlRestoreFormFields(state) {
   if (!state) return;
@@ -7304,7 +7339,7 @@ function hodlSetMode(mode) {
 function hodlKeyStateNeedsClear(state) {
   if (!state) return false;
   let fields = state.fields || {}, privateKeys = hodlPrivateKeyValues(fields), hasText = (id) => String(fields[id] ?? "").length > 0;
-  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || Boolean(state.seedAutocomplete) || Boolean(state.passphraseBip39Words) || Boolean(state.showCards) || Boolean(state.showDiceFairness) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.network ?? "mainnet") !== "mainnet" || String(fields.account ?? "0") !== "0" || String(fields.addressStart ?? "0") !== "0" || String(fields.addressRange ?? fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
+  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || Boolean(state.seedAutocomplete) || Boolean(state.passphraseBip39Words) || Boolean(state.brainWalletTrim) || Boolean(state.showCards) || Boolean(state.showDiceFairness) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.network ?? "mainnet") !== "mainnet" || String(fields.account ?? "0") !== "0" || String(fields.addressStart ?? "0") !== "0" || String(fields.addressRange ?? fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
 }
 function hodlSyncKeyClearButton(capture = false) {
   if (capture) hodlCaptureKey();
@@ -7335,6 +7370,8 @@ function hodlCaptureKey() {
   if (seedAutocomplete) state.seedAutocomplete = seedAutocomplete.checked;
   let passphraseBip39Words = document.getElementById("passphrase-bip39-words");
   if (passphraseBip39Words) state.passphraseBip39Words = passphraseBip39Words.checked;
+  let brainWalletTrim = document.getElementById("brain-wallet-trim");
+  if (brainWalletTrim) state.brainWalletTrim = brainWalletTrim.checked;
   let showCards = document.getElementById("show-cards");
   if (showCards) state.showCards = showCards.checked;
   let fairnessToggle = document.getElementById("dice-fairness-toggle");
