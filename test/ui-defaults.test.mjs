@@ -1099,3 +1099,12 @@ test("workspace tabs place BIP-85 between Key Derivation and Multi Signature", (
   }
   assert.match(css, /#bip85-card\[hidden\]/);
 });
+
+test("BIP-85 entry point sits beside Derive Wallet and opens the BIP-85 tab", () => {
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /id="go"[^>]*>Derive Wallet<\/button>[\s\S]*?id="bip85-open"[^>]*>Derive BIP-85 child<\/button>[\s\S]*?id="wipe"/);
+  }
+  assert.match(appSource, /getElementById\("bip85-open"\)/);
+  assert.match(appSource, /open\.onclick = \(\) => \{\s*hodlShowWorkspace\("bip85"\)/);
+  assert.match(appSource, /open\.onclick[\s\S]*?hodlUseActiveKeyForBip85\(\)/);
+});

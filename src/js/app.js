@@ -503,6 +503,7 @@ ec.innerHTML = `
       <div class="row key-action-row current-item-actions">
         <button class="btn primary" id="go" disabled aria-disabled="true">Derive Wallet</button>
         <div class="derive-progress" id="derive-progress" role="progressbar" aria-label="Wallet derivation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0% complete" hidden><span class="derive-progress-track"><span class="derive-progress-bar"></span></span><span class="derive-progress-label">0%</span></div>
+        <button class="btn secondary" id="bip85-open" type="button">Derive BIP-85 child</button>
         <button class="btn clear-current-action" id="wipe" type="button" disabled aria-disabled="true">Clear Current Key</button>
       </div>
       <p class="err" id="error"></p>
@@ -7543,6 +7544,22 @@ function hodlInitBip85() {
   let go = document.getElementById("bip85-go");
   if (!go) return;
   go.onclick = hodlRunBip85;
+  // Entry point beside Derive Wallet (idea adopted from PR #150): jump to the
+  // BIP-85 tab with the active key loaded as parent. Errors land in the tab's
+  // own error line; secrets stay behind the existing reveal/wipe flow.
+  let open = document.getElementById("bip85-open");
+  if (open) open.onclick = () => {
+    hodlShowWorkspace("bip85");
+    let error = document.getElementById("bip85-error");
+    if (error) error.textContent = "";
+    try {
+      hodlUseActiveKeyForBip85();
+      let session = document.getElementById("bip85-session");
+      if (session) session.textContent = hodlBip85Note;
+    } catch (exception) {
+      if (error) error.textContent = exception.message || String(exception);
+    }
+  };
   document.getElementById("bip85-use-calc").onclick = () => {
     let error = document.getElementById("bip85-error");
     if (error) error.textContent = "";
