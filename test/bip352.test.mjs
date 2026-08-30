@@ -119,6 +119,7 @@ for (const [index, vector] of vectors.entries()) {
           const full = spendPrivForOutput(spend, row.priv_key_tweak);
           const pub = secp256k1.getPublicKey(full, true);
           assert.equal(bytesToHex(pub.slice(1)), row.pub_key);
+          if (row.label !== null) assert.ok((given.labels || []).includes(row.label), `label ${row.label} must come from the scanned label set`);
         }
       } else if ("n_outputs" in expected) {
         assert.equal(result.outputs.length, expected.n_outputs);
@@ -176,6 +177,17 @@ test("hrp follows the wallet network", () => {
   assert.equal(hrpForNetwork("mainnet"), "sp");
   assert.equal(hrpForNetwork("testnet"), "tsp");
   assert.equal(hrpForNetwork("signet"), "tsp");
+});
+
+test("group sizes beyond K_max fail before any expansion", () => {
+  const address = vectors[0].receiving[0].expected.addresses[0];
+  const vin = vectors[0].sending[0].given.vin;
+  // A pasted count this large would exhaust memory if recipients were
+  // expanded before the per-group K_max check; it must fail silently instead.
+  const result = createSilentPaymentOutputs(vin, [{ address, count: 1e10 }], { hrp: "sp" });
+  assert.deepEqual(result.outputs, []);
+  assert.equal(result.sharedSecrets, null);
+  assert.throws(() => createSilentPaymentOutputs(vin, [{ address, count: 0 }], { hrp: "sp" }), /positive integer/);
 });
 
 test("generateLabel is deterministic", () => {

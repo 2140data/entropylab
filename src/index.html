@@ -339,7 +339,7 @@ words, pick one of the checksum words.</span></span>
       <p class="muted" id="sp-session" aria-live="polite">No session key. Receive and verify need a seed or root xprv.</p>
       <div id="sp-receive">
         <label class="field">Label <code>m</code>
-          <input id="sp-label" type="number" min="0" max="2147483647" step="1" inputmode="numeric" placeholder="blank = unlabeled · 0 = change (do not hand out)">
+          <input id="sp-label" type="number" min="0" max="4294967295" step="1" inputmode="numeric" placeholder="blank = unlabeled · 0 = change (do not hand out)">
           <span class="field-note">Unlabeled is the reusable address you publish. <code>m = 0</code> is reserved for change. <code>m ≥ 1</code> is an extra labeled code from the same scan key.</span>
         </label>
         <div class="row psbt-actions">

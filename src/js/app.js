@@ -693,7 +693,7 @@ ec.innerHTML = `
       <p class="muted" id="sp-session" aria-live="polite">No session key. Receive and verify need a seed or root xprv.</p>
       <div id="sp-receive">
         <label class="field">Label <code>m</code>
-          <input id="sp-label" type="number" min="0" max="2147483647" step="1" inputmode="numeric" placeholder="blank = unlabeled · 0 = change (do not hand out)">
+          <input id="sp-label" type="number" min="0" max="4294967295" step="1" inputmode="numeric" placeholder="blank = unlabeled · 0 = change (do not hand out)">
           <span class="field-note">Unlabeled is the reusable address you publish. <code>m = 0</code> is reserved for change. <code>m ≥ 1</code> is an extra labeled code from the same scan key.</span>
         </label>
         <div class="row psbt-actions">
@@ -7709,7 +7709,7 @@ function hodlSpNetwork() {
 }
 function hodlSpAccount() {
   let value = Number(document.getElementById("sp-account")?.value || 0);
-  if (!Number.isInteger(value) || value < 0) throw new Error("Account index must be a non-negative integer.");
+  if (!Number.isInteger(value) || value < 0 || value > 0x7fffffff) throw new Error("Account index must be an integer between 0 and 2147483647.");
   return value;
 }
 function hodlSpCoinType() {
@@ -7815,7 +7815,7 @@ function hodlSpParseLabels(text) {
   if (!raw) return [];
   return raw.split(/[,\s]+/).filter(Boolean).map((item) => {
     let value = Number(item);
-    if (!Number.isInteger(value) || value < 0) throw new Error(`Invalid label: ${item}`);
+    if (!Number.isInteger(value) || value < 0 || value > 0xffffffff) throw new Error(`Invalid label: ${item}`);
     return value;
   });
 }
@@ -7849,7 +7849,7 @@ function hodlRenderSpReceive() {
   let labelField = document.getElementById("sp-label")?.value;
   let labeled = String(labelField ?? "").trim() !== "";
   let m = labeled ? Number(labelField) : null;
-  if (labeled && (!Number.isInteger(m) || m < 0)) throw new Error("Label m must be a non-negative integer.");
+  if (labeled && (!Number.isInteger(m) || m < 0 || m > 0xffffffff)) throw new Error("Label m must be an integer between 0 and 4294967295.");
   let scanPoint = xe.Point.fromBytes(hodlSpKeys.scanPub);
   let spendPoint = xe.Point.fromBytes(hodlSpKeys.spendPub);
   let address = labeled ? createLabeledSilentPaymentAddress(hodlSpKeys.scanPriv, spendPoint, m, hrp) : encodeSilentPaymentAddress(scanPoint, spendPoint, hrp);
@@ -7913,7 +7913,8 @@ function hodlRenderSpVerify() {
   document.getElementById("sp-out").innerHTML = `<p class="psbt-ok">${result.outputs.length} matching output${result.outputs.length === 1 ? "" : "s"}.</p>` + result.outputs.map((row, index) => {
     let address = p2trAddressFromXonly(row.pub_key, network);
     let spend = hodlSpReveal ? hodlSpBytesToHex(spendPrivForOutput(hodlSpKeys.spendPriv, row.priv_key_tweak)) : "";
-    return `<div class="sp-output"><p class="label">Match ${index + 1}</p><p class="psbt-kv">${hodlSpEscape(address)}</p><p class="psbt-kv">tweak ${hodlSpEscape(row.priv_key_tweak)}</p>${hodlSpReveal ? `<p class="psbt-kv">spend key ${hodlSpEscape(spend)}</p>` : ""}</div>`;
+    let labelNote = row.label === null ? "" : ` · label m = ${row.label}${row.label === 0 ? " (change)" : ""}`;
+    return `<div class="sp-output"><p class="label">Match ${index + 1}${labelNote}</p><p class="psbt-kv">${hodlSpEscape(address)}</p><p class="psbt-kv">tweak ${hodlSpEscape(row.priv_key_tweak)}</p>${hodlSpReveal ? `<p class="psbt-kv">spend key ${hodlSpEscape(spend)}</p>` : ""}</div>`;
   }).join("") + `<label class="choice"><input type="checkbox" id="sp-reveal" ${hodlSpReveal ? "checked" : ""}> <span>Reveal spend private keys for matches</span></label>`;
   document.getElementById("sp-reveal")?.addEventListener("change", (event) => {
     hodlSpReveal = event.target.checked;

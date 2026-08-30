@@ -365,16 +365,6 @@ export function eligibleInputKeys(vins) {
   return { pubkeys, privkeys };
 }
 
-const expandRecipients = (recipients) => {
-  const expanded = [];
-  for (const recipient of recipients) {
-    const count = recipient.count ?? 1;
-    if (!Number.isInteger(count) || count < 1) throw new Error("Recipient count must be a positive integer.");
-    for (let i = 0; i < count; i++) expanded.push(recipient);
-  }
-  return expanded;
-};
-
 export function createSilentPaymentOutputs(vins, recipients, { hrp = "sp" } = {}) {
   const { pubkeys, privkeys } = eligibleInputKeys(vins);
   if (!pubkeys.length) return { outputs: [], inputPubKeys: [], inputPrivateKeySum: null, sharedSecrets: [] };
@@ -400,21 +390,25 @@ export function createSilentPaymentOutputs(vins, recipients, { hrp = "sp" } = {}
   const A = Point.BASE.multiply(aSum);
   const outpoints = vins.map((vin) => ({ txid: vin.txid, vout: vin.vout }));
   const hash = scalarFromBytes(inputHash(outpoints, A));
-  const expanded = expandRecipients(recipients);
   const groups = [];
   const groupIndex = new Map();
-  for (const recipient of expanded) {
+  for (const recipient of recipients) {
+    const count = recipient.count ?? 1;
+    if (!Number.isInteger(count) || count < 1) throw new Error("Recipient count must be a positive integer.");
     const decoded = decodeSilentPaymentAddress(recipient.address, hrp);
     const scanHex = bytesToHex(pointToCompressed(decoded.scan));
     let group = groupIndex.get(scanHex);
     if (!group) {
-      group = { scan: decoded.scan, scanHex, spends: [] };
+      group = { scan: decoded.scan, scanHex, spends: [], size: 0 };
       groupIndex.set(scanHex, group);
       groups.push(group);
     }
-    group.spends.push(decoded.spend);
+    group.spends.push({ spend: decoded.spend, count });
+    group.size += count;
   }
-  if (groups.some((group) => group.spends.length > BIP352_K_MAX)) {
+  // The K_max check runs on the summed counts, before any expansion, so a
+  // huge pasted count fails instead of allocating an attacker-sized array.
+  if (groups.some((group) => group.size > BIP352_K_MAX)) {
     return {
       outputs: [],
       inputPubKeys: pubkeys.map((entry) => bytesToHex(pointToCompressed(entry.point))),
@@ -433,11 +427,15 @@ export function createSilentPaymentOutputs(vins, recipients, { hrp = "sp" } = {}
       sharedSecrets.push(secretHex);
       seenScan.add(group.scanHex);
     }
-    for (let k = 0; k < group.spends.length; k++) {
-      const tK = scalarFromBytes(taggedHash("BIP0352/SharedSecret", pointToCompressed(secretPoint), serUint32(k)));
-      const tweaked = pointAdd(group.spends[k], Point.BASE.multiply(tK));
-      if (!tweaked) throw new Error("Silent payment output is the point at infinity.");
-      outputs.push(bytesToHex(pointToXOnly(tweaked)));
+    // Per-group expansion is bounded by K_max after the check above.
+    let k = 0;
+    for (const { spend, count } of group.spends) {
+      for (let copy = 0; copy < count; copy++, k++) {
+        const tK = scalarFromBytes(taggedHash("BIP0352/SharedSecret", pointToCompressed(secretPoint), serUint32(k)));
+        const tweaked = pointAdd(spend, Point.BASE.multiply(tK));
+        if (!tweaked) throw new Error("Silent payment output is the point at infinity.");
+        outputs.push(bytesToHex(pointToXOnly(tweaked)));
+      }
     }
   }
   return {
@@ -463,7 +461,7 @@ export function scanSilentPaymentOutputs({ scanPriv, spendPub, vins, outputs, la
   for (const m of labels) {
     const scalar = generateLabel(scanScalar, m);
     const point = Point.BASE.multiply(scalar);
-    labelMap.set(bytesToHex(pointToCompressed(point)), scalar);
+    labelMap.set(bytesToHex(pointToCompressed(point)), { scalar, m });
   }
   const remaining = outputs.map((item) => (typeof item === "string" ? hexToBytes(item) : item)).map((bytes) => bytes.slice());
   const found = [];
@@ -490,12 +488,12 @@ export function scanSilentPaymentOutputs({ scanPriv, spendPub, vins, outputs, la
           labelHex = labelPoint ? bytesToHex(pointToCompressed(labelPoint)) : "";
         }
         if (labelMap.has(labelHex)) {
-          const labelScalar = labelMap.get(labelHex);
+          const { scalar: labelScalar, m } = labelMap.get(labelHex);
           const P_km = pointAdd(P_k, Point.BASE.multiply(labelScalar));
           found.push({
             pub_key: bytesToHex(pointToXOnly(P_km)),
             priv_key_tweak: bytesToHex(bigToBytes32((tK + labelScalar) % ORDER)),
-            label: labelHex,
+            label: m,
           });
           remaining.splice(i, 1);
           k += 1;

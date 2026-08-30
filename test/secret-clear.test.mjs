@@ -44,3 +44,14 @@ test("Silent Payments session key and passphrase fields are explicitly cleared",
   assert.match(lifecycle, /spKey\.value\s*=\s*""/);
   assert.match(lifecycle, /spPass\.value\s*=\s*""/);
 });
+
+test("Silent Payments private-bearing inputs and revealed output are cleared", () => {
+  // #sp-send-vins carries per-input private keys; #sp-out renders revealed
+  // scan/spend private material. Both must go when the page lifecycle clears.
+  assert.match(lifecycle, /getElementById\("sp-send-vins"\)/);
+  assert.match(lifecycle, /spVins\.value\s*=\s*""/);
+  assert.match(lifecycle, /getElementById\("sp-out"\)/);
+  assert.match(lifecycle, /spOut\.innerHTML\s*=\s*""/);
+  assert.match(lifecycle, /spError\.textContent\s*=\s*""/);
+  assert.match(lifecycle, /spSession\.textContent\s*=\s*hodlSpNote/);
+});
