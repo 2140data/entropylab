@@ -679,6 +679,10 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 .disclaimer-overlay {
   position: fixed; inset: 0; z-index: 200; display: grid; place-items: center;
   padding: 24px; box-sizing: border-box; background: rgb(0 0 0 / 55%);
+  /* The blur puts the page out of focus behind the card, so the warning is
+     the only thing that reads. The prefix is for WebKit, which shipped the
+     property unprefixed only recently. */
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   opacity: 0; transition: opacity .24s ease;
 }
 .disclaimer-overlay[hidden] { display: none; }
@@ -690,9 +694,20 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
   background: color-mix(in oklab, var(--danger) 10%, var(--surface));
   box-shadow: 0 16px 36px rgb(0 0 0 / 55%);
 }
-.disclaimer-icon { width: 48px; height: 48px; color: var(--danger); }
-.disclaimer-title { margin: 12px 0 6px; font-size: 22px; color: var(--fg); }
-.disclaimer-text { margin: 0 0 18px; color: var(--fg); line-height: 1.5; }
+/* The icon and the title take the brighter alert red, the same pairing the
+   beta banner uses at the top of the page. A step above the body size, well
+   short of the heading it used to be. */
+.disclaimer-icon { width: 48px; height: 48px; color: var(--danger-bright); }
+.disclaimer-title { margin: 12px 0 12px; font-size: 18px; font-weight: 700; text-transform: uppercase; color: var(--danger-bright); }
+/* The gap below carries the weight of the decision: the button wants clear
+   air between it and the warning it is answering. The side inset matches the
+   card's own padding, so the sentence sits a clear step inside the frame and
+   breaks into shorter lines. */
+.disclaimer-text { margin: 0 24px 28px; color: var(--fg); line-height: 1.5; }
+/* Scoped to the card: the shared .btn base is every button in the app. The
+   answer to a blocking warning should carry more weight than a toolbar
+   control, so it takes a wider block and the title's size and casing. */
+.disclaimer-card .btn { padding: 0 32px; font-size: 18px; text-transform: uppercase; }
 @media (prefers-reduced-motion: reduce) { .disclaimer-overlay { transition: none; } }
 .sanity-failure {
   min-height: 100dvh; display: grid; place-items: center; padding: 24px; box-sizing: border-box;
@@ -1273,7 +1288,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   </div>
   <div class="wrap">
     <aside class="beta-warning no-print" id="beta-warning" role="alert">
-      <div class="beta-warning-text"><strong>Beta software</strong> EntropyLab is experimental and currently should only be used for testing.</div>
+      <div class="beta-warning-text"><strong>Beta software</strong> EntropyLab is experimental and should only be used for testing and educational purposes.</div>
       <button type="button" class="beta-warning-dismiss" id="beta-warning-dismiss" aria-label="Dismiss the beta software warning"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </aside>
     <noscript>
@@ -1546,7 +1561,7 @@ words, pick one of the checksum words.</span></span>
   <div class="disclaimer-card">
     <svg class="disclaimer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 10v4M12 17.5h.01"/></svg>
     <p class="disclaimer-title" id="beta-disclaimer-title">Beta software</p>
-    <p class="disclaimer-text" id="beta-disclaimer-text">EntropyLab is experimental and can be dangerous: a bug could produce wrong keys or addresses, and funds sent to them could be lost. Do not use it in production, and never with funds you cannot afford to lose.</p>
+    <p class="disclaimer-text" id="beta-disclaimer-text">EntropyLab is experimental and should only be used for testing and educational purposes. This tool is intended for offline use by advanced users only. Any use online or with real funds can be dangerous.</p>
     <button class="btn primary" id="beta-disclaimer-accept" type="button">I understand</button>
   </div>
 </div>
@@ -3779,7 +3794,7 @@ zoo`.split(`
   </div>
   <div class="wrap">
     <aside class="beta-warning no-print" id="beta-warning" role="alert">
-      <div class="beta-warning-text"><strong>Beta software</strong> EntropyLab is experimental and currently should only be used for testing.</div>
+      <div class="beta-warning-text"><strong>Beta software</strong> EntropyLab is experimental and should only be used for testing and educational purposes.</div>
       <button type="button" class="beta-warning-dismiss" id="beta-warning-dismiss" aria-label="Dismiss the beta software warning"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </aside>
     <aside class="online-warning no-print" id="online-warning" role="alert" hidden>
