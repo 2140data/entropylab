@@ -3026,12 +3026,14 @@ function hodlBinaryEntropy(value, targetWords = Pt) {
   return hodlNumberBaseEntropy(value, "bin", targetWords);
 }
 function hodlCardNeeded(targetWords = Pt) {
+  // Derived from the selected BIP39 entropy target, not policy constants:
+  // the smallest without-replacement deal whose entropy reaches the target.
+  // One deck tops out at ~225.6 bits, so a 256-bit seed finishes with extra
+  // cards from a second shuffled deck.
   let bits = hodlSeedConfig(targetWords).bits;
-  if (bits <= 128) return { first: 25, extra: 0 };
-  if (bits <= 160) return { first: 31, extra: 0 };
-  if (bits <= 192) return { first: 39, extra: 0 };
-  if (bits <= 224) return { first: 50, extra: 0 };
-  return { first: 52, extra: 6 };
+  for (let first = 1; first <= 52; first++) if (hodlCardWithoutReplacementBits(first) >= bits) return { first, extra: 0 };
+  for (let extra = 1; extra <= 52; extra++) if (hodlCardWithoutReplacementBits(52) + hodlCardWithoutReplacementBits(extra) >= bits) return { first: 52, extra };
+  return { first: 52, extra: 52 };
 }
 function hodlCardWithoutReplacementBits(count) {
   let bits = 0, n = Math.min(Math.max(0, Number(count) || 0), 52);
