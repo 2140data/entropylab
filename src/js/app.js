@@ -8,7 +8,7 @@ import { createBase58check as fi, hex as M } from "@scure/base";
 import { HDKey as Gt } from "@scure/bip32";
 import { entropyToMnemonic as bi, mnemonicToEntropy as Er, mnemonicToSeedSync as wi, validateMnemonic as Pn } from "@scure/bip39";
 import { wordlist as bip39English } from "@scure/bip39/wordlists/english.js";
-import { NETWORK as Ie, OutScript as Oe, TEST_NETWORK as mo, p2pkh as ir, p2sh as Jr, p2tr as en, p2wpkh as Tt, utils as bitcoinUtils } from "@scure/btc-signer";
+import { Address as hodlBitcoinAddress, NETWORK as Ie, OutScript as Oe, TEST_NETWORK as mo, p2pkh as ir, p2sh as Jr, p2tr as en, p2wpkh as Tt, utils as bitcoinUtils } from "@scure/btc-signer";
 import { renderSVG as Xs } from "uqr";
 const Ae = Object.freeze(bip39English);
 const tr = Z;
@@ -6499,7 +6499,7 @@ function hodlMsigAddr(pubkeys, m, network, kind, sorted = !0) {
   });
   if (kind === "p2wsh") {
     let hash = tr(ms);
-    return { address: or(net).encode({ type: "wsh", hash }), scriptHex: M.encode(ms), kind };
+    return { address: hodlBitcoinAddress(net).encode({ type: "wsh", hash }), scriptHex: M.encode(ms), kind };
   }
   if (kind === "p2sh-p2wsh") {
     let hash = tr(ms);
@@ -6871,7 +6871,7 @@ function hodlSats(number) {
 }
 function hodlAddr(script, network) {
   try {
-    return or(_s(network)).encode(Oe.decode(script));
+    return hodlBitcoinAddress(_s(network)).encode(Oe.decode(script));
   } catch {
     return "script " + M.encode(script);
   }

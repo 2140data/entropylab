@@ -526,6 +526,12 @@ test("multisig separates script type from purpose and keeps the Legacy BIP87 sho
   assert.match(app, /purposeIndexes\.push\(hodlMultisigPurposeIndex\(parsed\.origin\)\)/);
 });
 
+test("Native SegWit multisig uses the imported Bitcoin address encoder", () => {
+  assert.match(appSource, /import \{ Address as hodlBitcoinAddress,/);
+  assert.match(appSource, /hodlBitcoinAddress\(net\)\.encode\(\{ type: "wsh", hash \}\)/);
+  assert.doesNotMatch(appSource, /\bor\(net\)\.encode/);
+});
+
 test("the master fingerprint cards reserve a compact empty square for each LifeHash", () => {
   // Both cards keep a frame beside the value, while the image itself starts hidden.
   assert.match(app, /id="base-master-fingerprint-card"[\s\S]*?class="master-fingerprint-lifehash-frame"[\s\S]*?id="base-master-fingerprint-lifehash"[^>]*hidden/);
