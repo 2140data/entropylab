@@ -532,8 +532,11 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 }
 /* The build inlines both marks as SVG inside this span; the light one is
    shown only when the light theme sets data-theme on the root element. */
+/* Above the status tag, whose halo reaches up under the mark: a flex item
+   takes z-index without needing to be positioned, and both sit in the
+   header's stacking context, so 2 clears the tag's 1. */
 .site-logo {
-  flex: 0 0 auto; width: 36px; height: 36px; margin-right: -6px;
+  flex: 0 0 auto; width: 36px; height: 36px; margin-right: -6px; z-index: 2;
   box-sizing: border-box; padding: 1.5px 2.5px 3.5px;
 }
 .site-logo svg { display: block; width: 100%; height: 100%; }
@@ -565,9 +568,16 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
    is transparent but kept at 1px: it kills the outline without changing the
    tag's height, which is what sets how far it rises above the rule. */
 .network-status {
-  position: absolute; left: var(--site-header-pad); bottom: 0; transform: translateY(50%); z-index: 1;
-  padding: 3px 6px; border: 1px solid transparent; border-radius: 999px;
-  background: var(--bg);
+  /* Nudged 3px past the bar's own padding: the halo reaches further left
+     than the text does, so aligning the box would leave the label looking
+     short of the lockup above it. */
+  position: absolute; left: calc(var(--site-header-pad) + 3px); bottom: 0; transform: translateY(50%); z-index: 1;
+  padding: 1px 2px; border: 1px solid transparent; border-radius: 0;
+  /* The ground is carried past the pill's edge as a blurred halo in the same
+     colour, so the tag fades into the bar instead of cutting a hard shape
+     over whatever is scrolling beneath it. The bar is the same --bg, so the
+     halo is invisible above the rule and only softens the overhang below. */
+  background: var(--bg); box-shadow: 0 0 6px 5px var(--bg);
   font-size: 11px; font-weight: 700; line-height: 1; letter-spacing: 0.1em; text-transform: uppercase;
   text-indent: 0.1em; white-space: nowrap;
 }
@@ -643,27 +653,27 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 .beta-warning, .online-warning {
   border-color: var(--danger); background: color-mix(in oklab, var(--danger) 14%, var(--surface));
 }
-.online-warning strong { color: var(--danger); }
 .online-warning a { font-weight: 700; white-space: nowrap; }
-.beta-warning strong { color: var(--danger); }
-/* The dismissible beta banner keeps its label on its own line; the noscript
-   notice shares .beta-warning and must not pick that up. */
-#beta-warning { display: flex; align-items: flex-start; gap: 12px; }
+/* Every banner that can be dismissed is a row: the message takes the slack,
+   the control column does not. The noscript notice carries no control and
+   stays a plain block, but its label is wrapped like the others so it takes
+   the same treatment. */
+#beta-warning, #online-warning { display: flex; align-items: flex-start; gap: 12px; }
 /* The author display wins over the UA [hidden] rule, so restate it. */
-#beta-warning[hidden] { display: none; }
+#beta-warning[hidden], #online-warning[hidden] { display: none; }
 /* A banner dismissed on an earlier visit must never paint. The inline head
    script sets this attribute before first paint, so the row is gone from the
    first frame instead of flashing until the application boots. */
 :root[data-beta-banner-dismissed] #beta-warning { display: none; }
-.beta-warning-text { flex: 1; }
+.beta-warning-text, .online-warning-text { flex: 1; }
 /* line-height 1 so the label sits where the padding puts it: the banner's 1.5
    would add half its leading above the caps as invisible space. The gap down
    to the sentence is then an explicit margin. */
-.beta-warning-text strong {
+.beta-warning-text strong, .online-warning-text strong {
   display: block; margin-bottom: 4px; line-height: 1; text-transform: uppercase;
   color: var(--danger-bright);
 }
-.beta-warning-dismiss {
+.beta-warning-dismiss, .online-warning-dismiss {
   /* Negative margins pull the control out of the banner padding so it sits
      up in the corner rather than level with the first line of text. */
   flex: none; display: grid; place-items: center; width: 32px; height: 32px;
@@ -673,9 +683,9 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 /* White reads against the dark banner, but the light theme tints the same
    banner pale, so the glyph takes the theme's near-black foreground there.
    Both explicit light and system-light land on this attribute. */
-:root[data-theme="light"] .beta-warning-dismiss { color: var(--fg); }
-.beta-warning-dismiss:hover { background: color-mix(in oklab, var(--danger) 20%, transparent); }
-.beta-warning-dismiss:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; }
+:root[data-theme="light"] :is(.beta-warning-dismiss, .online-warning-dismiss) { color: var(--fg); }
+.beta-warning-dismiss:hover, .online-warning-dismiss:hover { background: color-mix(in oklab, var(--danger) 20%, transparent); }
+.beta-warning-dismiss:focus-visible, .online-warning-dismiss:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; }
 .disclaimer-overlay {
   position: fixed; inset: 0; z-index: 200; display: grid; place-items: center;
   padding: 24px; box-sizing: border-box; background: rgb(0 0 0 / 55%);
@@ -1293,11 +1303,12 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
     </aside>
     <noscript>
       <aside class="beta-warning no-print" role="alert">
-        <strong>JavaScript is required:</strong> EntropyLab performs wallet calculations locally inside your browser. With JavaScript disabled the calculator cannot derive keys or addresses. Enable JavaScript, then run this file offline on an air-gapped computer.
+        <div class="beta-warning-text"><strong>JavaScript is required</strong> EntropyLab performs wallet calculations locally inside your browser. With JavaScript disabled the calculator cannot derive keys or addresses. Enable JavaScript, then run this file offline on an air-gapped computer.</div>
       </aside>
     </noscript>
     <aside class="online-warning no-print" id="online-warning" role="alert" hidden>
-      <strong>Online version:</strong> Do not enter seed phrases, private keys, or other wallet secrets on an internet-connected device. <a href="entropylab.html" download="entropylab.html">Download EntropyLab</a> and run the HTML file offline on a trusted, air-gapped computer.
+      <div class="online-warning-text"><strong>Online version</strong> Do not enter seed phrases, private keys, or other wallet secrets on an internet-connected device. <a href="entropylab.html" download="entropylab.html">Download EntropyLab</a> and run the HTML file offline on a trusted, air-gapped computer.</div>
+      <button type="button" class="online-warning-dismiss" id="online-warning-dismiss" aria-label="Dismiss the online version warning"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </aside>
     <!-- TODO: This copy is being kept for the network-detected modal that will
          replace the banner. Verbatim, with the lead-in as the modal's title:
@@ -3798,7 +3809,8 @@ zoo`.split(`
       <button type="button" class="beta-warning-dismiss" id="beta-warning-dismiss" aria-label="Dismiss the beta software warning"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </aside>
     <aside class="online-warning no-print" id="online-warning" role="alert" hidden>
-      <strong>Online version:</strong> Do not enter seed phrases, private keys, or other wallet secrets on an internet-connected device. <a href="entropylab.html" download="entropylab.html">Download EntropyLab</a> and run the HTML file offline on a trusted, air-gapped computer.
+      <div class="online-warning-text"><strong>Online version</strong> Do not enter seed phrases, private keys, or other wallet secrets on an internet-connected device. <a href="entropylab.html" download="entropylab.html">Download EntropyLab</a> and run the HTML file offline on a trusted, air-gapped computer.</div>
+      <button type="button" class="online-warning-dismiss" id="online-warning-dismiss" aria-label="Dismiss the online version warning"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </aside>
     <!-- TODO: This copy is being kept for the network-detected modal that will
          replace the banner. Verbatim, with the lead-in as the modal's title:
@@ -4854,7 +4866,26 @@ var hodlWalletExport = (() => {
   ) && new URLSearchParams(location.search).get("online-preview") === "1";
   if (!isHostedOnline && !isLocalPreview) return;
 
-  document.getElementById("online-warning")?.removeAttribute("hidden");
+  const banner = document.getElementById("online-warning");
+  if (!banner) return;
+  // This unit owns the banner's visibility, so a dismissal is checked here
+  // rather than hidden again afterwards: the row is never revealed at all.
+  // Keyed to the build version, the same store the beta banner and the
+  // disclaimer use, so a new release warns again. Without storage the
+  // warning simply returns, which is the safe direction for this one.
+  const KEY = "entropylab-online-warning-dismissed";
+  const VERSION = "0.1.3";
+  try {
+    if (localStorage.getItem(KEY) === VERSION) return;
+  } catch (e) {}
+  banner.removeAttribute("hidden");
+  const dismiss = document.getElementById("online-warning-dismiss");
+  if (dismiss) dismiss.onclick = () => {
+    try {
+      localStorage.setItem(KEY, VERSION);
+    } catch (e) {}
+    banner.hidden = true;
+  };
 })();
 
 function hodlFormatRecoverySheet(text) {
