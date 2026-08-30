@@ -231,18 +231,33 @@ for (const file of htmlFiles) {
       Buffer.from(inlined[1], "base64").equals(readFileSync(join(root, "assets/favicon.png"))),
       `${file} favicon does not match assets/favicon.png`,
     );
-    const svgIcon = read(file).match(/<link rel="icon" type="image\/svg\+xml" href="data:image\/svg\+xml,([^"]+)">/);
-    assert.ok(svgIcon, `${file} has no inlined SVG favicon`);
-    assert.ok(decodeURIComponent(svgIcon[1]).includes("<svg "), `${file} SVG favicon is not SVG markup`);
   });
-  test(`${file} inlines the header logo for both themes`, () => {
-    const html = read(file);
-    // The downloaded file has no assets/ beside it, so the logo has to travel
+  test(`${file} never fetches the header logo or favicon from assets`, () => {
+    // The downloaded file has no assets/ beside it, so both have to travel
     // inside the document or the fixed header renders empty when air-gapped.
-    assert.match(html, /<span class="site-logo" aria-hidden="true"><svg class="site-logo-dark" aria-hidden="true" focusable="false" [^>]*>[\s\S]*?<\/svg><svg class="site-logo-light" aria-hidden="true" focusable="false" [^>]*>[\s\S]*?<\/svg><\/span>/);
-    assert.doesNotMatch(html, /\.site-logo \{[^}]*data:image/);
+    // Asserted as an absence so it holds for the committed artifact on a pull
+    // request too, which CI rebuilds only after the merge (see the head test
+    // below); the inlined SVG markup itself is asserted on the sources.
+    assert.doesNotMatch(read(file), /assets\/(logo-(dark|light)|favicon)\.(png|svg)/);
   });
 }
+
+test("the build inlines the header logo and SVG favicon from src/assets", () => {
+  // Asserted on the sources rather than the committed artifact, which on a
+  // pull request predates the change (CI rebuilds it only after the merge).
+  const build = read("scripts/build.mjs");
+  const template = read("src/index.html");
+  for (const name of ["logo-dark", "logo-light", "favicon"]) {
+    assert.ok(existsSync(join(root, "src/assets", `${name}.svg`)), `src/assets/${name}.svg is missing`);
+  }
+  assert.match(read("src/assets/favicon.svg"), /^<svg /);
+  assert.match(build, /logoSvg\("logo-dark"\)/);
+  assert.match(build, /logoSvg\("logo-light"\)/);
+  assert.match(build, /read\("assets\/favicon\.svg"\)/);
+  assert.match(build, /\.split\(siteLogoSpan\)\.join\(siteLogo\)/);
+  assert.match(template, /<span class="site-logo" aria-hidden="true"><\/span>/);
+  assert.match(template, /<link rel="icon" type="image\/svg\+xml" href="data:image\/svg\+xml,\/\*@@FAVICON_SVG@@\*\/">/);
+});
 
 test("the document head declares its link-preview card", () => {
   // Asserted on the template, not the committed artifact: CI rebuilds and
