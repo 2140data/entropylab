@@ -469,7 +469,8 @@ ec.innerHTML = `
         </div>
         <div class="key-settings-row" id="account-address-settings">
           <label class="field network-field">Network
-            <select id="network"><option value="mainnet" selected>Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
+            <select id="network" aria-describedby="network-help"><option value="mainnet" selected>Bitcoin mainnet \xB7 0h</option><option value="testnet">Testnet (practice) \xB7 1h</option></select>
+            <span class="field-note" id="network-help">Hardened coin type index in the derivation path.</span>
           </label>
           <label class="field" id="account-field">Account
             <input id="account" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0" aria-describedby="account-help">
@@ -482,9 +483,8 @@ ec.innerHTML = `
             <span class="field-note" id="address-start-help">First receive and change index to derive.</span>
           </label>
           <label class="field">Address range
-            <input id="address-range" type="number" min="1" max="10000" step="1" inputmode="numeric" value="5" aria-describedby="address-range-help address-estimate">
+            <input id="address-range" type="number" min="1" max="10000" step="1" inputmode="numeric" value="5" aria-describedby="address-range-help">
             <span class="field-note" id="address-range-help">Derives 5 receive and 5 change addresses.</span>
-            <span class="field-note address-estimate" id="address-estimate" role="status">Measuring this device\u2026</span>
           </label>
         </div>
       </div>
@@ -497,6 +497,7 @@ ec.innerHTML = `
         </dl>
         <p class="derivation-path-error" id="derivation-path-error" hidden></p>
       </section>
+      <p class="field-note address-estimate derivation-estimate" id="address-estimate" role="status">Measuring this device\u2026</p>
       <div class="row key-action-row current-item-actions">
         <button class="btn primary" id="go" disabled aria-disabled="true">Derive Wallet</button>
         <div class="derive-progress" id="derive-progress" role="progressbar" aria-label="Wallet derivation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0% complete" hidden><span class="derive-progress-track"><span class="derive-progress-bar"></span></span><span class="derive-progress-label">0%</span></div>
@@ -540,14 +541,20 @@ ec.innerHTML = `
         </label>
         <div class="key-settings-row">
           <label class="field">Script type
-            <select id="msig-script-type" aria-describedby="msig-script-warning"><option value="p2sh">Legacy \xB7 BIP45</option><option value="p2sh-p2wsh">Nested SegWit \xB7 BIP48</option><option value="p2wsh" selected>Native SegWit \xB7 BIP48</option><option value="p2tr">Taproot \xB7 BIP86</option><option value="mixed" disabled data-custom-select-placeholder="true">Mixed \xB7 incompatible keys</option></select>
+            <select id="msig-script-type" aria-describedby="msig-script-warning"><option value="p2sh">Legacy</option><option value="p2sh-p2wsh">Nested SegWit</option><option value="p2wsh" selected>Native SegWit</option><option value="p2tr">Taproot</option><option value="mixed" disabled data-custom-select-placeholder="true">Mixed \xB7 incompatible keys</option></select>
             <span class="field-note msig-script-warning" id="msig-script-warning" role="status" hidden></span>
           </label>
-          <label class="field">Network
-            <select id="msig-network"><option value="mainnet" selected>Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
+          <label class="field">Purpose
+            <input id="msig-purpose" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="48" aria-describedby="msig-purpose-help msig-purpose-warning">
+            <span class="field-note" id="msig-purpose-help">Hardened purpose index \xB7 0 to 2,147,483,647</span>
+            <span class="field-note msig-purpose-warning" id="msig-purpose-warning" role="status" hidden></span>
           </label>
         </div>
         <div class="key-settings-row">
+          <label class="field">Network
+            <select id="msig-network" aria-describedby="msig-network-help"><option value="mainnet" selected>Bitcoin mainnet \xB7 0h</option><option value="testnet">Testnet (practice) \xB7 1h</option></select>
+            <span class="field-note" id="msig-network-help">Hardened coin type index in the derivation path.</span>
+          </label>
           <label class="field">Account
             <input id="msig-account" type="text" value="" placeholder="Derived from keys" disabled aria-describedby="msig-account-help msig-account-warning">
             <span class="field-note" id="msig-account-help">Derived from co-signer key origins.</span>
@@ -560,9 +567,8 @@ ec.innerHTML = `
             <span class="field-note" id="msig-address-start-help">First receive and change index to derive.</span>
           </label>
           <label class="field">Address range
-            <input id="msig-address-range" type="number" min="1" max="10000" step="1" inputmode="numeric" value="5" aria-describedby="msig-address-range-help msig-address-estimate">
+            <input id="msig-address-range" type="number" min="1" max="10000" step="1" inputmode="numeric" value="5" aria-describedby="msig-address-range-help">
             <span class="field-note" id="msig-address-range-help">Derives 5 receive and 5 change addresses.</span>
-            <span class="field-note address-estimate" id="msig-address-estimate" role="status">Measuring this device\u2026</span>
           </label>
         </div>
         <details class="msig-advanced" id="msig-advanced">
@@ -576,6 +582,7 @@ ec.innerHTML = `
           </label>
         </details>
       </div>
+      <p class="field-note address-estimate derivation-estimate" id="msig-address-estimate" role="status">Measuring this device\u2026</p>
       <div class="row current-item-actions">
         <button class="btn primary" id="msig-go" type="button" aria-describedby="msig-script-warning" disabled aria-disabled="true">Derive Multisig</button>
         <div class="derive-progress" id="msig-derive-progress" role="progressbar" aria-label="Multisig derivation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0% complete" hidden><span class="derive-progress-track"><span class="derive-progress-bar"></span></span><span class="derive-progress-label">0%</span></div>
@@ -5603,53 +5610,72 @@ function hodlOriginMatchesParsedKey(origin, parsed) {
   if (indexes[indexes.length - 1] !== parsed.childNumber) return "Key origin path does not end at this extended key.";
   return "";
 }
-function hodlMultisigDerivationStandard(origin) {
-  let steps = hodlNormalizeOriginPath(origin?.path).split("/").filter(Boolean);
-  if (steps[0] === "45h") return "bip45";
-  if (steps[0] === "86h") return "bip86";
-  if (steps[0] === "87h") return "bip87";
-  if (steps[0] === "48h") return "bip48";
-  return null;
+function hodlMultisigPurposeIndex(origin) {
+  let first = hodlNormalizeOriginPath(origin?.path).split("/").filter(Boolean)[0], match = first?.match(/^(\d+)h$/);
+  if (!match) throw new Error("The purpose index in the key origin must be hardened.");
+  let purpose = Number(match[1]);
+  if (!Number.isSafeInteger(purpose) || purpose < 0 || purpose > hodlMaxPurpose) throw new Error("The purpose index in the key origin is out of range.");
+  return purpose;
 }
-function hodlOriginScriptError(origin, kind, network, legacyStandard = "bip45") {
+function hodlReadMsigPurpose(mark = true) {
+  let input = document.getElementById("msig-purpose"), raw = String(input?.value ?? "").trim(), value = Number(raw), valid = /^\d+$/.test(raw) && Number.isSafeInteger(value) && value >= 0 && value <= hodlMaxPurpose;
+  if (mark) {
+    input?.classList.toggle("bad", !valid);
+    input?.setAttribute("aria-invalid", String(!valid));
+  }
+  if (!valid) throw new Error("Purpose must be a whole number from 0 to 2,147,483,647.");
+  return value;
+}
+function hodlSetMsigPurpose(value) {
+  let purpose = Number(value), input = document.getElementById("msig-purpose");
+  if (!Number.isSafeInteger(purpose) || purpose < 0 || purpose > hodlMaxPurpose) purpose = 48;
+  if (input) input.value = String(purpose);
+  let state = hodlMsigs[hodlActiveMsig];
+  if (state) state.fields.purpose = String(purpose);
+  return purpose;
+}
+function hodlStandardMsigPurpose(kind = hodlScriptKind()) {
+  if (kind === "p2sh") return document.getElementById("msig-legacy-bip87")?.checked ? 87 : 45;
+  if (kind === "p2tr") return 86;
+  return 48;
+}
+function hodlOriginScriptError(origin, kind, network, purpose) {
   let steps = hodlNormalizeOriginPath(origin.path).split("/");
+  let expectedPurpose = `${purpose}h`;
+  if (steps[0] !== expectedPurpose) return `This key origin uses purpose ${steps[0] || "none"}; the selected Purpose is ${expectedPurpose}.`;
   if (kind === "p2tr") {
-    if (steps[0] !== "86h") return "BIP86 origin must start at 86h.";
     let coin = network === "testnet" ? "1h" : "0h";
-    if (steps[1] !== coin) return `This ${network} BIP86 origin should use ${coin} as the coin type.`;
-    if (steps.length !== 3) return "BIP86 origin must be 86h/coin/account.";
-    if (!/^\d+h$/.test(steps[2])) return "BIP86 account index must be hardened.";
+    if (steps[1] !== coin) return `This ${network} origin should use ${coin} as the coin type.`;
+    if (steps.length !== 3) return "Taproot origin must be purposeh/coinh/accounth.";
+    if (!/^\d+h$/.test(steps[2])) return "The account index must be hardened.";
     return ""
   }
   if (kind === "p2wsh" || kind === "p2sh-p2wsh") {
-    if (steps[0] !== "48h") return "This script type's origin must start at 48h.";
     let coin = network === "testnet" ? "1h" : "0h";
     if (steps[1] !== coin) return `This ${network} origin should use ${coin} as the coin type.`;
-    if (steps.length !== 4) return "BIP48 origin must be 48h/coin/account/script.";
-    if (!/^\d+h$/.test(steps[2])) return "BIP48 account index must be hardened.";
+    if (steps.length !== 4) return "SegWit multisig origin must be purposeh/coinh/accounth/scripth.";
+    if (!/^\d+h$/.test(steps[2])) return "The account index must be hardened.";
     let last = kind === "p2wsh" ? "2h" : "1h";
     if (steps[3] !== last) return `This script type's origin must end in ${last}.`;
     return "";
   }
-  if (legacyStandard === "bip87") {
-    if (steps[0] !== "87h") return "Legacy BIP87 origin must start at 87h.";
+  if (purpose !== 45) {
     let coin = network === "testnet" ? "1h" : "0h";
-    if (steps[1] !== coin) return `This ${network} BIP87 origin should use ${coin} as the coin type.`;
-    if (steps.length !== 3) return "BIP87 origin must be 87h/coin/account.";
-    if (!/^\d+h$/.test(steps[2])) return "BIP87 account index must be hardened.";
+    if (steps[1] !== coin) return `This ${network} origin should use ${coin} as the coin type.`;
+    if (steps.length !== 3) return "Account-based Legacy origin must be purposeh/coinh/accounth.";
+    if (!/^\d+h$/.test(steps[2])) return "The account index must be hardened.";
     return "";
   }
-  if (steps.length !== 1 || steps[0] !== "45h") return "Legacy P2SH requires the BIP45 purpose origin 45h.";
+  if (steps.length !== 1) return "Legacy purpose 45 uses the BIP45 purpose key at m/45h without an account.";
   return "";
 }
-function hodlMultisigAccountNumber(origin, kind) {
+function hodlMultisigAccountNumber(origin, kind, purpose) {
   let steps = hodlNormalizeOriginPath(origin?.path).split("/");
-  if (kind === "p2sh" && steps[0] === "45h") return null;
-  let standard = kind === "p2tr" ? "BIP86" : kind === "p2sh" ? "BIP87" : "BIP48",
-    match = steps[2]?.match(/^(\d+)h$/);
-  if (!match) throw new Error(`${standard} account index must be hardened.`);
+  if (kind === "p2sh" && purpose === 45) return null;
+  let match = steps[2]?.match(/^(\d+)h$/);
+  if (!match) throw new Error("The account index must be hardened.");
   let account = Number(match[1]);
-  if (!Number.isSafeInteger(account) || account < 0 || account > 2147483647) throw new Error(`${standard} account index is out of range.`);
+  if (!Number.isSafeInteger(account) || account < 0 || account > 2147483647) throw new Error("The account index is out of range.");
   return account;
 }
 function hodlSummarizeMultisigAccounts(accountNumbers) {
@@ -5662,8 +5688,9 @@ function hodlMultisigAccountWarning(summary) {
 }
 function hodlMultisigOriginScriptKind(origin) {
   let steps = hodlNormalizeOriginPath(origin?.path).split("/").filter(Boolean);
-  if (steps.length === 1 && steps[0] === "45h") return "p2sh";
+  if (steps.length === 1) return "p2sh";
   if (steps[0] === "86h" && steps.length === 3) return "p2tr";
+  if (steps[0] === "87h" && steps.length === 3) return "p2sh";
   if (steps[0] !== "48h" || steps.length !== 4) return null;
   if (steps[3] === "1h") return "p2sh-p2wsh";
   if (steps[3] === "2h") return "p2wsh";
@@ -5671,7 +5698,7 @@ function hodlMultisigOriginScriptKind(origin) {
 }
 function hodlMultisigScriptEvidence(parsed) {
   let prefixKind = parsed?.scope === "multisig" ? parsed.family === "y" ? "p2sh-p2wsh" : parsed.family === "z" ? "p2wsh" : null : null;
-  return { prefixKind, originKind: hodlMultisigOriginScriptKind(parsed?.origin), standard: hodlMultisigDerivationStandard(parsed?.origin) };
+  return { prefixKind, originKind: hodlMultisigOriginScriptKind(parsed?.origin) };
 }
 function hodlSummarizeMultisigScriptKinds(kinds) {
   let supported = ["p2sh", "p2sh-p2wsh", "p2wsh", "p2tr"],
@@ -5688,47 +5715,86 @@ function hodlParseMultisigCosigner(raw) {
   return parsed;
 }
 function hodlDetectMsigScriptSummary(values = hodlReadMsigXpubs()) {
-  let kinds = [], legacyStandards = [];
+  let kinds = [];
   for (let raw of values) {
     if (!String(raw ?? "").trim()) continue;
     try {
       let evidence = hodlMultisigScriptEvidence(hodlParseMultisigCosigner(raw));
       if (evidence.prefixKind) kinds.push(evidence.prefixKind);
       if (evidence.originKind) kinds.push(evidence.originKind);
-      if (evidence.standard === "bip45" || evidence.standard === "bip87") legacyStandards.push(evidence.standard);
     } catch {
     }
   }
-  let summary = hodlSummarizeMultisigScriptKinds(kinds), standards = [...new Set(legacyStandards)], legacyScriptConflict = standards.includes("bip87") && summary.kinds.some((kind) => kind !== "p2sh");
-  return { ...summary, legacyStandard: standards.length === 1 ? standards[0] : null, legacyStandards: standards, legacyMixed: standards.length > 1, legacyScriptConflict };
+  return hodlSummarizeMultisigScriptKinds(kinds);
 }
 function hodlMultisigScriptLabel(kind) {
   return kind === "p2sh" ? "Legacy" : kind === "p2sh-p2wsh" ? "Nested SegWit" : kind === "p2wsh" ? "Native SegWit" : kind === "p2tr" ? "Taproot" : "Unknown"
 }
 function hodlSelectedLegacyMultisigStandard() {
-  return document.getElementById("msig-legacy-bip87")?.checked ? "bip87" : "bip45";
+  let purpose;
+  try {
+    purpose = hodlReadMsigPurpose(false);
+  } catch {
+    return "custom";
+  }
+  return purpose === 45 ? "bip45" : purpose === 87 ? "bip87" : "custom";
 }
 function hodlUpdateMsigLegacyControls() {
-  let checkbox = document.getElementById("msig-legacy-bip87"), toggle = document.getElementById("msig-legacy-account-toggle"), option = document.querySelector('#msig-script-type option[value="p2sh"]'), legacy = hodlScriptKind() === "p2sh";
+  let checkbox = document.getElementById("msig-legacy-bip87"), toggle = document.getElementById("msig-legacy-account-toggle"), legacy = hodlScriptKind() === "p2sh", purpose;
+  try {
+    purpose = hodlReadMsigPurpose(false);
+  } catch {
+    purpose = null;
+  }
   if (toggle) toggle.hidden = !legacy;
-  if (option) option.textContent = checkbox?.checked ? "Legacy \xB7 BIP87" : "Legacy \xB7 BIP45";
+  if (checkbox) checkbox.checked = purpose === 87;
 }
-function hodlMultisigKeyPlaceholder(kind, network, legacyStandard = "bip45") {
+function hodlMultisigKeyPlaceholder(kind, network, purpose) {
   let testnet = network === "testnet",
-    coin = testnet ? "1h" : "0h";
-  if (kind === "p2sh" && legacyStandard === "bip87") return `[fingerprint/87h/${coin}/0h]${testnet?"tpub":"xpub"}\u2026`;
-  if (kind === "p2sh") return `[fingerprint/45h]${testnet?"tpub":"xpub"}\u2026`;
-  if (kind === "p2sh-p2wsh") return `[fingerprint/48h/${coin}/0h/1h]${testnet?"Upub":"Ypub"}\u2026`;
-  if (kind === "p2wsh") return `[fingerprint/48h/${coin}/0h/2h]${testnet?"Vpub":"Zpub"}\u2026`;
-  if (kind === "p2tr") return `[fingerprint/86h/${coin}/0h]${testnet?"tpub":"xpub"}\u2026`;
+    coin = testnet ? "1h" : "0h", purposeStep = `${purpose}h`;
+  if (kind === "p2sh" && purpose === 45) return `[fingerprint/${purposeStep}]${testnet?"tpub":"xpub"}\u2026`;
+  if (kind === "p2sh") return `[fingerprint/${purposeStep}/${coin}/0h]${testnet?"tpub":"xpub"}\u2026`;
+  if (kind === "p2sh-p2wsh") return `[fingerprint/${purposeStep}/${coin}/0h/1h]${testnet?"Upub":"Ypub"}\u2026`;
+  if (kind === "p2wsh") return `[fingerprint/${purposeStep}/${coin}/0h/2h]${testnet?"Vpub":"Zpub"}\u2026`;
+  if (kind === "p2tr") return `[fingerprint/${purposeStep}/${coin}/0h]${testnet?"tpub":"xpub"}\u2026`;
   return "Use matching multisig extended public keys"
 }
 
 function hodlUpdateMsigKeyPlaceholders() {
-  let kind = hodlScriptKind(), network = hodlSelectedNetwork(document.getElementById("msig-network")), placeholder = hodlMultisigKeyPlaceholder(kind, network, hodlSelectedLegacyMultisigStandard());
+  let kind = hodlScriptKind(), network = hodlSelectedNetwork(document.getElementById("msig-network")), purpose;
+  try {
+    purpose = hodlReadMsigPurpose(false);
+  } catch {
+    purpose = hodlStandardMsigPurpose(kind);
+  }
+  let placeholder = hodlMultisigKeyPlaceholder(kind, network, purpose);
   document.querySelectorAll("#msig-keys textarea").forEach((textarea) => {
     textarea.placeholder = placeholder;
   });
+}
+function hodlUpdateMsigPurposeDetection() {
+  let input = document.getElementById("msig-purpose"), warning = document.getElementById("msig-purpose-warning"), purposes = [];
+  if (!input) return { purposes, mixed: false, purpose: null };
+  for (let raw of hodlReadMsigXpubs()) {
+    if (!String(raw ?? "").trim()) continue;
+    try {
+      let parsed = hodlParseMultisigCosigner(raw);
+      if (parsed.origin) purposes.push(hodlMultisigPurposeIndex(parsed.origin));
+    } catch {
+    }
+  }
+  purposes = [...new Set(purposes)].sort((left, right) => left - right);
+  let mixed = purposes.length > 1, purpose = purposes.length === 1 ? purposes[0] : null;
+  if (purpose != null) hodlSetMsigPurpose(purpose);
+  let message = mixed ? `Co-signer purpose indexes do not match (${purposes.map(value => `${value}h`).join(", ")}).` : "";
+  input.classList.toggle("bad", mixed);
+  input.setAttribute("aria-invalid", String(mixed));
+  if (warning) {
+    warning.textContent = message;
+    warning.hidden = !message;
+  }
+  hodlUpdateMsigLegacyControls();
+  return { purposes, mixed, purpose };
 }
 function hodlSyncMsigDeriveButton() {
   let button = document.getElementById("msig-go");
@@ -5759,7 +5825,7 @@ function hodlSyncMsigDeriveButton() {
 function hodlUpdateMsigScriptDetection() {
   let select = document.getElementById("msig-script-type");
   if (!select) return hodlSummarizeMultisigScriptKinds([]);
-  let summary = hodlDetectMsigScriptSummary(), desired = summary.mixed || summary.legacyMixed || summary.legacyScriptConflict ? "mixed" : summary.kind, checkbox = document.getElementById("msig-legacy-bip87");
+  let summary = hodlDetectMsigScriptSummary(), desired = summary.mixed ? "mixed" : summary.kind;
   if (desired === "mixed") {
     if (select.value !== "mixed") select.dataset.lastConcrete = select.value;
     hodlSyncSelect(select, "mixed");
@@ -5769,9 +5835,9 @@ function hodlUpdateMsigScriptDetection() {
   } else if (select.value === "mixed") {
     hodlSyncSelect(select, select.dataset.lastConcrete || "p2wsh");
   } else select.dataset.lastConcrete = select.value;
-  if ((desired === "p2sh" || select.value === "p2sh") && summary.legacyStandard && checkbox) checkbox.checked = summary.legacyStandard === "bip87";
+  hodlUpdateMsigPurposeDetection();
   hodlUpdateMsigLegacyControls();
-  let warning = document.getElementById("msig-script-warning"), labels = summary.kinds.map(hodlMultisigScriptLabel), bip87NeedsScript = summary.legacyStandard === "bip87" && !summary.kind && select.value !== "p2sh", message = summary.legacyMixed ? "Legacy co-signer exports mix BIP45 and BIP87. Choose one derivation standard and export every key from it." : summary.legacyScriptConflict ? "BIP87 account keys are script-agnostic, but this app uses them only with Legacy P2SH. They cannot be combined here with BIP48 keys." : summary.mixed ? `Co-signer exports indicate different script types (${labels.join(" and ")}). A Mixed selection does not define one multisig output policy; export every key for the same script type before deriving.` : bip87NeedsScript ? "BIP87 keys do not encode a script type. Select Legacy P2SH to use this standardized account key here." : "";
+  let warning = document.getElementById("msig-script-warning"), labels = summary.kinds.map(hodlMultisigScriptLabel), message = summary.mixed ? `Co-signer exports indicate different script types (${labels.join(" and ")}). A Mixed selection does not define one multisig output policy; export every key for the same script type before deriving.` : "";
   if (warning) {
     warning.textContent = message;
     warning.hidden = !message;
@@ -5878,8 +5944,13 @@ function hodlMergeMsigXpubs(state, values) {
 function hodlUpdateMsigAccount() {
   let field = document.getElementById("msig-account");
   if (!field) return hodlSummarizeMultisigAccounts([]);
-  let kind = hodlScriptKind(), legacyStandard = hodlSelectedLegacyMultisigStandard(), help = document.getElementById("msig-account-help"), warning = document.getElementById("msig-account-warning");
-  if (kind === "p2sh" && legacyStandard === "bip45") {
+  let kind = hodlScriptKind(), purpose, help = document.getElementById("msig-account-help"), warning = document.getElementById("msig-account-warning");
+  try {
+    purpose = hodlReadMsigPurpose(false);
+  } catch {
+    purpose = hodlStandardMsigPurpose(kind);
+  }
+  if (kind === "p2sh" && purpose === 45) {
     field.value = "";
     field.placeholder = "Not applicable";
     field.dataset.state = "not-applicable";
@@ -5895,7 +5966,7 @@ function hodlUpdateMsigAccount() {
     if (!raw.trim()) continue;
     try {
       let parsed = hodlParseMultisigCosigner(raw.trim());
-      if (parsed.origin) accountNumbers.push(hodlMultisigAccountNumber(parsed.origin, kind));
+      if (parsed.origin) accountNumbers.push(hodlMultisigAccountNumber(parsed.origin, kind, purpose));
     } catch {
     }
   }
@@ -5903,7 +5974,7 @@ function hodlUpdateMsigAccount() {
   field.value = summary.mixed ? "Mixed" : summary.account == null ? "" : String(summary.account);
   field.placeholder = "Derived from keys";
   field.dataset.state = summary.mixed ? "mixed" : summary.account == null ? "empty" : "account";
-  if (help) help.textContent = summary.mixed ? "Co-signer key origins use different account numbers." : summary.account == null ? kind === "p2sh" ? "Derived from BIP87 co-signer key origins." : "Derived from co-signer key origins." : "Derived from the co-signer account paths.";
+  if (help) help.textContent = summary.mixed ? "Co-signer key origins use different account numbers." : summary.account == null ? "Derived from co-signer key origins." : "Derived from the co-signer account paths.";
   if (warning) {
     warning.textContent = message;
     warning.hidden = !message;
@@ -6244,21 +6315,21 @@ function hodlMultisigPrefixCompatible(parsed, kind) {
   if (kind === "p2wsh") return parsed.family === "z";
   return false;
 }
-function hodlMultisigAccountKeyError(parsed, kind, legacyStandard = "bip45") {
+function hodlMultisigAccountKeyError(parsed, kind, purpose) {
   if (kind === "p2tr") {
-    if (parsed.depth !== 3) return `Taproot BIP86 requires a depth-3 account key at m/86h/coinh/accounth; this key is depth ${parsed.depth}.`;
-    if (parsed.childNumber < 0x80000000) return "A BIP86 account index must be hardened.";
+    if (parsed.depth !== 3) return `Taproot requires a depth-3 account key at m/purposeh/coinh/accounth; this key is depth ${parsed.depth}.`;
+    if (parsed.childNumber < 0x80000000) return "The account index must be hardened.";
     return ""
   }
   if (kind === "p2wsh" || kind === "p2sh-p2wsh") {
     let scriptIndex = kind === "p2wsh" ? 2 : 1, label = kind === "p2wsh" ? "Native SegWit" : "Nested SegWit", expected = 2147483648 + scriptIndex;
-    if (parsed.depth !== 4) return `${label} requires a depth-4 BIP48 script-account key ending in /${scriptIndex}h; this key is depth ${parsed.depth}.`;
-    if (parsed.childNumber !== expected) return `${label} requires a BIP48 script-account key whose final hardened child is ${scriptIndex}h.`;
+    if (parsed.depth !== 4) return `${label} requires a depth-4 script-account key ending in /${scriptIndex}h; this key is depth ${parsed.depth}.`;
+    if (parsed.childNumber !== expected) return `${label} requires a script-account key whose final hardened child is ${scriptIndex}h.`;
     return "";
   }
-  if (legacyStandard === "bip87") {
-    if (parsed.depth !== 3) return `Legacy BIP87 requires a depth-3 account key at m/87h/coinh/accounth; this key is depth ${parsed.depth}.`;
-    if (parsed.childNumber < 2147483648) return "A BIP87 account index must be hardened.";
+  if (purpose !== 45) {
+    if (parsed.depth !== 3) return `Account-based Legacy derivation requires a depth-3 key at m/purposeh/coinh/accounth; this key is depth ${parsed.depth}.`;
+    if (parsed.childNumber < 2147483648) return "The account index must be hardened.";
     return "";
   }
   if (parsed.depth !== 1) return `Legacy P2SH requires the depth-1 BIP45 purpose key at m/45h; this key is depth ${parsed.depth}.`;
@@ -6290,17 +6361,17 @@ function hodlCheckXpub(ta) {
     return;
   }
   try {
-    let parsed = hodlParseMultisigCosigner(value), network = hodlSelectedNetwork(document.getElementById("msig-network")), kind = hodlScriptKind(), legacyStandard = hodlSelectedLegacyMultisigStandard();
-    if (kind === "mixed") throw new Error("These keys do not define one compatible multisig policy. Use one script type and one Legacy derivation standard.");
+    let parsed = hodlParseMultisigCosigner(value), network = hodlSelectedNetwork(document.getElementById("msig-network")), kind = hodlScriptKind(), purpose = hodlReadMsigPurpose();
+    if (kind === "mixed") throw new Error("These keys do not define one compatible multisig policy. Use one script type.");
     if (parsed.isPrivate) throw new Error("Paste an extended public key, never an extended private key.");
     if (parsed.network !== network) throw new Error(`${parsed.prefix} is for ${parsed.network}; the multisig is set to ${network}.`);
     if (!hodlMultisigPrefixCompatible(parsed, kind)) throw new Error(parsed.scope === "singlesig" ? "Use a generic xpub/tpub here, or a proper uppercase multisig SLIP-132 export." : `${parsed.prefix} does not match the selected multisig script type.`);
-    let accountError = hodlMultisigAccountKeyError(parsed, kind, legacyStandard);
+    let accountError = hodlMultisigAccountKeyError(parsed, kind, purpose);
     if (accountError) throw new Error(accountError);
-    if (!parsed.origin) throw new Error(`Paste ${hodlMultisigKeyPlaceholder(kind, network, legacyStandard)} so a signer can recognize this key.`);
+    if (!parsed.origin) throw new Error(`Paste ${hodlMultisigKeyPlaceholder(kind, network, purpose)} so a signer can recognize this key.`);
     let originError = hodlOriginMatchesParsedKey(parsed.origin, parsed);
     if (originError) throw new Error(originError);
-    let scriptOriginError = hodlOriginScriptError(parsed.origin, kind, network, legacyStandard);
+    let scriptOriginError = hodlOriginScriptError(parsed.origin, kind, network, purpose);
     if (scriptOriginError) throw new Error(scriptOriginError);
     if (hodlDuplicateMultisigKey(ta, parsed)) throw new Error("This duplicates another co-signer. Every co-signer must use a distinct extended public key.");
     hodlHint(ta, true, `${parsed.prefix} origin, checksum, and derivation path look valid`);
@@ -6311,6 +6382,7 @@ function hodlCheckXpub(ta) {
 function hodlResetMsigForm() {
   hodlSetMsigThresholds(2, 3);
   hodlSyncSelect(document.getElementById("msig-script-type"), "p2wsh");
+  hodlSetMsigPurpose(48);
   let legacy = document.getElementById("msig-legacy-bip87");
   if (legacy) legacy.checked = false;
   hodlUpdateMsigLegacyControls();
@@ -6334,13 +6406,33 @@ function hodlInitMsig() {
       hodlUpdateMsigKeyOrderStatus()
     },
     script = document.getElementById("msig-script-type"),
+    purpose = document.getElementById("msig-purpose"),
     legacy = document.getElementById("msig-legacy-bip87"),
     keyOrder = document.getElementById("msig-key-order");
   script.addEventListener("change", () => {
     if (script.value !== "mixed") script.dataset.lastConcrete = script.value;
+    hodlSetMsigPurpose(hodlStandardMsigPurpose(script.value));
     recheck();
   });
+  purpose?.addEventListener("keydown", (event) => {
+    if (["e", "E", "+", "-", "."].includes(event.key)) event.preventDefault();
+  });
+  purpose?.addEventListener("paste", (event) => {
+    if (!/^\d+$/.test(event.clipboardData?.getData("text") ?? "")) event.preventDefault();
+  });
+  purpose?.addEventListener("input", () => {
+    try {
+      hodlReadMsigPurpose();
+    } catch {
+    }
+    hodlUpdateMsigLegacyControls();
+    hodlUpdateMsigKeyPlaceholders();
+    hodlInvalidateMsig();
+    document.querySelectorAll("#msig-keys textarea").forEach(hodlCheckXpub);
+    hodlSyncMsigClearButton(true);
+  });
   if (legacy) legacy.addEventListener("change", () => {
+    hodlSetMsigPurpose(legacy.checked ? 87 : 45);
     hodlUpdateMsigLegacyControls();
     hodlUpdateMsigKeyPlaceholders();
     hodlInvalidateMsig();
@@ -6421,7 +6513,7 @@ function hodlMsigAddr(pubkeys, m, network, kind, sorted = !0) {
 function hodlValidatedMsigInputs() {
   let network = hodlSelectedNetwork(document.getElementById("msig-network")), addressWindow = hodlReadAddressWindow("msig-"), count = addressWindow.range, addressStart = addressWindow.start, n = Number(document.getElementById("msig-n")?.value), m = Number(document.getElementById("msig-m")?.value);
   if (!(m >= 1 && n >= 1 && m <= n && n <= 15)) throw new Error("Pick how many signatures out of how many keys.");
-  let kind = hodlScriptKind(), legacyStandard = hodlSelectedLegacyMultisigStandard(), nodes = [], xpubs = [], keyTokens = [], accountNumbers = [];
+  let kind = hodlScriptKind(), purpose = hodlReadMsigPurpose(), legacyStandard = hodlSelectedLegacyMultisigStandard(), nodes = [], xpubs = [], keyTokens = [], accountNumbers = [], purposeIndexes = [];
   if (kind === "mixed") throw new Error("Co-signer keys indicate different script types. Export every key for the same multisig script type before deriving.");
   for (let index = 0; index < n; index++) {
     let field = document.getElementById("msig-x-" + index), raw = field?.value.trim() || "";
@@ -6430,14 +6522,15 @@ function hodlValidatedMsigInputs() {
     if (parsed.isPrivate) throw new Error("Co-signer " + (index + 1) + " is an extended private key. Paste only an extended public key.");
     if (parsed.network !== network) throw new Error(`Co-signer ${index + 1}'s ${parsed.prefix} is for ${parsed.network}, but this multisig is set to ${network}.`);
     if (!hodlMultisigPrefixCompatible(parsed, kind)) throw new Error(parsed.scope === "singlesig" ? `Co-signer ${index + 1} uses a singlesig ${parsed.prefix}. Use a generic ${cr[network].x.pubName}, or the proper uppercase multisig export for this script type.` : `Co-signer ${index + 1}'s ${parsed.prefix} does not match the selected multisig script type.`);
-    let accountError = hodlMultisigAccountKeyError(parsed, kind, legacyStandard);
+    let accountError = hodlMultisigAccountKeyError(parsed, kind, purpose);
     if (accountError) throw new Error(`Co-signer ${index + 1}: ${accountError}`);
-    if (!parsed.origin) throw new Error(`Co-signer ${index + 1} needs a key origin so a signer can recognize this key. Paste ${hodlMultisigKeyPlaceholder(kind, network, legacyStandard)} as exported by the device.`);
+    if (!parsed.origin) throw new Error(`Co-signer ${index + 1} needs a key origin so a signer can recognize this key. Paste ${hodlMultisigKeyPlaceholder(kind, network, purpose)} as exported by the device.`);
+    purposeIndexes.push(hodlMultisigPurposeIndex(parsed.origin));
     let originError = hodlOriginMatchesParsedKey(parsed.origin, parsed);
     if (originError) throw new Error(`Co-signer ${index + 1}: ${originError}`);
-    let scriptOriginError = hodlOriginScriptError(parsed.origin, kind, network, legacyStandard);
+    let scriptOriginError = hodlOriginScriptError(parsed.origin, kind, network, purpose);
     if (scriptOriginError) throw new Error(`Co-signer ${index + 1}: ${scriptOriginError}`);
-    let accountNumber = hodlMultisigAccountNumber(parsed.origin, kind);
+    let accountNumber = hodlMultisigAccountNumber(parsed.origin, kind, purpose);
     if (accountNumber != null) accountNumbers.push(accountNumber);
     let node = parsed.node, canonical = hodlCanonicalMultisigKey(parsed);
     if (xpubs.includes(canonical)) throw new Error(`Co-signer ${index + 1} duplicates an earlier co-signer. Every slot must use a distinct extended public key.`);
@@ -6445,8 +6538,10 @@ function hodlValidatedMsigInputs() {
     xpubs.push(canonical);
     keyTokens.push(hodlMultisigKeyToken(parsed, network));
   }
+  let uniquePurposes = [...new Set(purposeIndexes)];
+  if (uniquePurposes.length !== 1 || uniquePurposes[0] !== purpose) throw new Error("Every co-signer purpose index must match the selected Purpose.");
   let accountSummary = hodlSummarizeMultisigAccounts(accountNumbers), accountWarning = hodlMultisigAccountWarning(accountSummary);
-  return { network, count, addressStart, n, m, kind, legacyStandard, nodes, xpubs, keyTokens, accountSummary, accountWarning };
+  return { network, count, addressStart, n, m, kind, purpose, legacyStandard, nodes, xpubs, keyTokens, accountSummary, accountWarning };
 }
 async function hodlBuildMsig(progress) {
   let error = document.getElementById("msig-error");
@@ -6459,6 +6554,7 @@ async function hodlBuildMsig(progress) {
       n,
       m,
       kind,
+      purpose,
       legacyStandard,
       nodes,
       xpubs,
@@ -6516,9 +6612,10 @@ async function hodlBuildMsig(progress) {
       m,
       n,
       script: kind,
+      purpose,
       sorted,
       scriptOrder: hodlMsigScriptOrder(keyTokens),
-      scriptStandard: kind === "p2tr" ? "bip86" : kind === "p2sh" ? legacyStandard : "bip48",
+      scriptStandard: legacyStandard,
       account: accountSummary.account,
       accountMixed: accountSummary.mixed,
       addressStart,
@@ -6549,10 +6646,10 @@ async function hodlBuildMsig(progress) {
 function hodlShowMsig() {
   if (!re || re.kind !== "msig") return;
   Ge = false;
-  let accountLabel = re.accountMixed ? " \xB7 Account Mixed" : re.account == null ? "" : ` \xB7 Account ${re.account}`, standardLabel = re.scriptStandard ? ` \xB7 ${re.scriptStandard.toUpperCase()}` : "", firstReceive = re.receive[0], firstIndex = firstReceive?.index ?? 0;
+  let accountLabel = re.accountMixed ? " \xB7 Account Mixed" : re.account == null ? "" : ` \xB7 Account ${re.account}`, purposeLabel = Number.isSafeInteger(re.purpose) ? ` \xB7 Purpose ${re.purpose}h` : "", firstReceive = re.receive[0], firstIndex = firstReceive?.index ?? 0;
   dr.innerHTML = `
     <section class="card account-result-card">
-      <div class="kicker">${re.m}-of-${re.n} multisig${standardLabel}${re.sorted===!1?" \xB7 listed order":""} \xB7 ${re.network}${accountLabel}</div>
+      <div class="kicker">${re.m}-of-${re.n} multisig${purposeLabel}${re.sorted===!1?" \xB7 listed order":""} \xB7 ${re.network}${accountLabel}</div>
       <h2 tabindex="-1">Your multisig receive wallet</h2>
       <p class="muted">Anyone can pay these addresses. Spending later needs ${re.m} signature${re.m===1?"":"s"} from the configured ${re.n} signing key${re.n===1?"":"s"}. This screen has no private keys.</p>
       ${hodlWalletMessages(re,"multisig")}
@@ -7765,6 +7862,7 @@ function hodlNewMsigState(name, msigId, msigNumber) {
       m: "2",
       n: "3",
       script: "p2wsh",
+      purpose: "48",
       legacyBip87: !1,
       keyOrder: "sorted",
       xpubs: ["", "", ""],
@@ -7779,7 +7877,7 @@ function hodlMsigStateNeedsClear(state) {
   let fields = state.fields || {},
     xpubs = Array.isArray(fields.xpubs) ? fields.xpubs : [];
   return Boolean(state.result) || String(state.error ?? "").length > 0 || xpubs.some(value => String(value ?? "").length > 0) ||
-    String(fields.m ?? "2") !== "2" || String(fields.n ?? "3") !== "3" || String(fields.script ?? "p2wsh") !== "p2wsh" || Boolean(fields.legacyBip87) || String(fields.keyOrder ?? "sorted") !== "sorted" || String(fields.network ?? "mainnet") !== "mainnet" || String(fields.addressStart ?? "0") !== "0" || String(fields.addressRange ?? fields.count ?? "5") !== "5"
+    String(fields.m ?? "2") !== "2" || String(fields.n ?? "3") !== "3" || String(fields.script ?? "p2wsh") !== "p2wsh" || String(fields.purpose ?? "48") !== "48" || Boolean(fields.legacyBip87) || String(fields.keyOrder ?? "sorted") !== "sorted" || String(fields.network ?? "mainnet") !== "mainnet" || String(fields.addressStart ?? "0") !== "0" || String(fields.addressRange ?? fields.count ?? "5") !== "5"
 }
 
 function hodlSyncMsigClearButton(capture = !1) {
@@ -7795,6 +7893,7 @@ function hodlCaptureMsig() {
   state.fields.n = document.getElementById("msig-n").value || "3";
   state.fields.m = document.getElementById("msig-m").value || "2";
   state.fields.script = hodlScriptKind();
+  state.fields.purpose = document.getElementById("msig-purpose")?.value || "48";
   state.fields.legacyBip87 = hodlSelectedLegacyMultisigStandard() === "bip87";
   state.fields.keyOrder = hodlMsigKeysSorted() ? "sorted" : "listed";
   hodlMergeMsigXpubs(state);
@@ -7817,8 +7916,9 @@ function hodlRestoreMsig() {
   }
   hodlSetMsigThresholds(state.fields.m || "2", state.fields.n || "3");
   let legacy = document.getElementById("msig-legacy-bip87");
-  if (legacy) legacy.checked = Boolean(state.fields.legacyBip87);
   hodlSyncSelect(document.getElementById("msig-script-type"), state.fields.script || "p2wsh");
+  hodlSetMsigPurpose(state.fields.purpose ?? (state.fields.legacyBip87 ? 87 : hodlStandardMsigPurpose(state.fields.script || "p2wsh")));
+  if (legacy) legacy.checked = hodlReadMsigPurpose(false) === 87;
   hodlUpdateMsigLegacyControls();
   state.fields.keyOrder = state.fields.keyOrder === "listed" ? "listed" : "sorted";
   hodlSyncSelect(document.getElementById("msig-key-order"), state.fields.keyOrder);

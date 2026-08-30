@@ -131,7 +131,8 @@ words, pick one of the checksum words.</span></span>
         </div>
         <div class="key-settings-row" id="account-address-settings">
           <label class="field network-field">Network
-            <select id="network"><option value="mainnet" selected="selected">Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
+            <select id="network" aria-describedby="network-help"><option value="mainnet" selected="selected">Bitcoin mainnet · 0h</option><option value="testnet">Testnet (practice) · 1h</option></select>
+            <span class="field-note" id="network-help">Hardened coin type index in the derivation path.</span>
           </label>
           <label class="field" id="account-field">Account
             <input id="account" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0" aria-describedby="account-help">
@@ -144,9 +145,8 @@ words, pick one of the checksum words.</span></span>
             <span class="field-note" id="address-start-help">First receive and change index to derive.</span>
           </label>
           <label class="field">Address range
-            <input id="address-range" type="number" min="1" max="10000" step="1" inputmode="numeric" value="5" aria-describedby="address-range-help address-estimate">
+            <input id="address-range" type="number" min="1" max="10000" step="1" inputmode="numeric" value="5" aria-describedby="address-range-help">
             <span class="field-note" id="address-range-help">Derives 5 receive and 5 change addresses.</span>
-            <span class="field-note address-estimate" id="address-estimate" role="status">Measuring this device…</span>
           </label>
         </div>
       </div>
@@ -159,6 +159,7 @@ words, pick one of the checksum words.</span></span>
         </dl>
         <p class="derivation-path-error" id="derivation-path-error" hidden></p>
       </section>
+      <p class="field-note address-estimate derivation-estimate" id="address-estimate" role="status">Measuring this device…</p>
       <div class="row key-action-row current-item-actions">
         <button class="btn primary" id="go" disabled aria-disabled="true">Derive Wallet</button>
         <div class="derive-progress" id="derive-progress" role="progressbar" aria-label="Wallet derivation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0% complete" hidden><span class="derive-progress-track"><span class="derive-progress-bar"></span></span><span class="derive-progress-label">0%</span></div>
@@ -202,14 +203,20 @@ words, pick one of the checksum words.</span></span>
         </label>
         <div class="key-settings-row">
           <label class="field">Script type
-            <select id="msig-script-type" aria-describedby="msig-script-warning"><option value="p2sh">Legacy · BIP45</option><option value="p2sh-p2wsh">Nested SegWit · BIP48</option><option value="p2wsh" selected="selected">Native SegWit · BIP48</option><option value="p2tr">Taproot · BIP86</option><option value="mixed" disabled data-custom-select-placeholder="true">Mixed · incompatible keys</option></select>
+            <select id="msig-script-type" aria-describedby="msig-script-warning"><option value="p2sh">Legacy</option><option value="p2sh-p2wsh">Nested SegWit</option><option value="p2wsh" selected="selected">Native SegWit</option><option value="p2tr">Taproot</option><option value="mixed" disabled data-custom-select-placeholder="true">Mixed · incompatible keys</option></select>
             <span class="field-note msig-script-warning" id="msig-script-warning" role="status" hidden></span>
           </label>
-          <label class="field">Network
-            <select id="msig-network"><option value="mainnet" selected="selected">Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
+          <label class="field">Purpose
+            <input id="msig-purpose" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="48" aria-describedby="msig-purpose-help msig-purpose-warning">
+            <span class="field-note" id="msig-purpose-help">Hardened purpose index · 0 to 2,147,483,647</span>
+            <span class="field-note msig-purpose-warning" id="msig-purpose-warning" role="status" hidden></span>
           </label>
         </div>
         <div class="key-settings-row">
+          <label class="field">Network
+            <select id="msig-network" aria-describedby="msig-network-help"><option value="mainnet" selected="selected">Bitcoin mainnet · 0h</option><option value="testnet">Testnet (practice) · 1h</option></select>
+            <span class="field-note" id="msig-network-help">Hardened coin type index in the derivation path.</span>
+          </label>
           <label class="field">Account
             <input id="msig-account" type="text" value="" placeholder="Derived from keys" disabled aria-describedby="msig-account-help msig-account-warning">
             <span class="field-note" id="msig-account-help">Derived from co-signer key origins.</span>
@@ -222,9 +229,8 @@ words, pick one of the checksum words.</span></span>
             <span class="field-note" id="msig-address-start-help">First receive and change index to derive.</span>
           </label>
           <label class="field">Address range
-            <input id="msig-address-range" type="number" min="1" max="10000" step="1" inputmode="numeric" value="5" aria-describedby="msig-address-range-help msig-address-estimate">
+            <input id="msig-address-range" type="number" min="1" max="10000" step="1" inputmode="numeric" value="5" aria-describedby="msig-address-range-help">
             <span class="field-note" id="msig-address-range-help">Derives 5 receive and 5 change addresses.</span>
-            <span class="field-note address-estimate" id="msig-address-estimate" role="status">Measuring this device…</span>
           </label>
         </div>
         <details class="msig-advanced" id="msig-advanced">
@@ -238,6 +244,7 @@ words, pick one of the checksum words.</span></span>
           </label>
         </details>
       </div>
+      <p class="field-note address-estimate derivation-estimate" id="msig-address-estimate" role="status">Measuring this device…</p>
       <div class="row current-item-actions">
         <button class="btn primary" id="msig-go" type="button" aria-describedby="msig-script-warning" disabled aria-disabled="true">Derive Multisig</button>
         <div class="derive-progress" id="msig-derive-progress" role="progressbar" aria-label="Multisig derivation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0% complete" hidden><span class="derive-progress-track"><span class="derive-progress-bar"></span></span><span class="derive-progress-label">0%</span></div>

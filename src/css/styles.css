@@ -870,12 +870,14 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   display: block; margin-top: var(--space-control); color: var(--muted); font-size: 12px; font-weight: 400; line-height: 1.4;
 }
 .address-estimate { color: var(--accent); }
+.derivation-estimate { margin: var(--space-control) 0 0; }
 .msig-legacy-account-toggle { margin: 0; }
 .msig-legacy-account-toggle[hidden] { display: none !important; }
 .msig-legacy-account-toggle input { margin-top: 2px; }
 #msig-account:disabled { cursor: not-allowed; color: var(--muted); opacity: 1; }
 #msig-account[data-state="mixed"] { color: var(--warn); }
 .msig-account-warning { color: var(--warn); }
+.msig-purpose-warning { color: var(--danger); }
 .msig-script-warning { color: var(--danger); }
 .derivation-path-preview {
   margin-top: var(--space-component); padding: var(--space-component); border: 1px solid var(--border); border-radius: 12px;
