@@ -35,7 +35,10 @@ env:
   NODE_VERSION: "22"
 
 jobs:
-  # ── Build: compile src/ first — every later job tests the generated site ──
+  # ── Build: compile src/ once — every gate and every publication path ─────
+  # consumes this exact object (issue #93). The recorded SHA-256 digest is
+  # checked wherever the candidate is downloaded, so a rebuild in a test or
+  # publication job can never diverge silently from the tested bytes.
 
   build:
     name: Build · compile site + Pages artifact
@@ -46,6 +49,8 @@ jobs:
       # Keyless Sigstore attestation of the exact wallet HTML (issue #58).
       id-token: write
       attestations: write
+    outputs:
+      sha256: ${{ steps.digest.outputs.sha256 }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -68,6 +73,15 @@ jobs:
         with:
           name: entropylab-sha256sums
           path: SHA256SUMS.txt
+          retention-days: 7
+      - name: Record the candidate digest
+        id: digest
+        run: echo "sha256=$(sha256sum entropylab.html | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      - name: Upload the tested candidate for downstream jobs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: entropylab-candidate
+          path: entropylab.html
           retention-days: 7
       - name: Prepare static site
         run: |
@@ -147,8 +161,13 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
-      - name: Build static site
-        run: npm run build
+      # Test the exact object the build job produced — never a rebuild.
+      - name: Download the tested candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: entropylab-candidate
+      - name: Verify the candidate digest
+        run: echo "${{ needs.build.outputs.sha256 }}  entropylab.html" | sha256sum -c -
       - name: Run complete CI test suite
         run: npm run test:ci
 
@@ -174,8 +193,13 @@ jobs:
       - name: Install Firefox (Windows)
         if: inputs.install-firefox && runner.os == 'Windows'
         run: choco install firefox
-      - name: Build static site
-        run: npm run build
+      # Test the exact object the build job produced — never a rebuild.
+      - name: Download the tested candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: entropylab-candidate
+      - name: Verify the candidate digest
+        run: echo "${{ needs.build.outputs.sha256 }}  entropylab.html" | sha256sum -c -
       - name: Run headless Firefox tests
         run: npm run test:browser
 
@@ -206,8 +230,14 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
-      - name: Build static site
-        run: npm run build
+      # browser-check.test.mjs reads the compiled entropylab.html — test the
+      # exact object the build job produced, never a rebuild.
+      - name: Download the tested candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: entropylab-candidate
+      - name: Verify the candidate digest
+        run: echo "${{ needs.build.outputs.sha256 }}  entropylab.html" | sha256sum -c -
       - name: Run browser-check tests
         run: npm run test:browser-check
 
@@ -228,6 +258,7 @@ jobs:
 
   test-invariants:
     name: Test · repo invariants (manifest, assets, security)
+    needs: [build]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -238,6 +269,14 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
+      # validate.test.mjs reads the compiled entropylab.html — test the exact
+      # object the build job produced, never a rebuild.
+      - name: Download the tested candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: entropylab-candidate
+      - name: Verify the candidate digest
+        run: echo "${{ needs.build.outputs.sha256 }}  entropylab.html" | sha256sum -c -
       - name: Run source-invariant tests
         run: npm run test:invariants
 
@@ -280,12 +319,17 @@ jobs:
       - name: Run number-base tests
         run: npm run test:number-bases
 
-  # ── Artifact: commit the rebuilt site after merges to rock ────────────────
+  # ── Artifact: commit the tested site after merges to rock ────────────────
+  # Gated on every behavioral job (unit, browser, structural, WASM), then
+  # commits the exact tested candidate — it never rebuilds the wallet HTML.
+  # The secp256k1 WASM artifact is still rebuilt here from the pinned Rust
+  # sources (cross-machine byte identity is not claimed for it; the build-wasm
+  # job gates its behavior).
 
   artifact:
-    name: Artifact · commit rebuilt site after merge
+    name: Artifact · commit tested site after merge
     if: github.ref == 'refs/heads/rock' && github.event_name == 'push'
-    needs: [verify, build-wasm]
+    needs: [build, verify, test-ci, test-browser, build-wasm]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -300,8 +344,12 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Rebuild the secp256k1 WASM artifact from the Rust sources
         run: npm run build:wasm
-      - name: Build static site
-        run: npm run build
+      - name: Download the tested candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: entropylab-candidate
+      - name: Verify the candidate digest
+        run: echo "${{ needs.build.outputs.sha256 }}  entropylab.html" | sha256sum -c -
       - name: Generate the SHA-256 checksum manifest
         run: sha256sum entropylab.html > SHA256SUMS.txt
       - name: Commit the generated artifact
@@ -331,8 +379,13 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts
-      - name: Build static site
-        run: npm run build
+      # Verify the exact object the build job produced — never a rebuild.
+      - name: Download the tested candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: entropylab-candidate
+      - name: Verify the candidate digest
+        run: echo "${{ needs.build.outputs.sha256 }}  entropylab.html" | sha256sum -c -
       - name: Verify site artifact
         run: npm run verify
 
