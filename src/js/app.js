@@ -5034,7 +5034,7 @@ function hodlUpdateDice() {
       complete = result.complete || Boolean(selectedFinal);
     let rollPhrase = "",
       rollRange = "",
-      groupsEntered = `${result.completedGroups} of ${config.partialWords} groups entered \xB7 word ${result.activeGroupIndex+1}`,
+      groupsEntered = `Group ${result.completedGroups} of ${config.partialWords} \xB7 word ${result.activeGroupIndex+1}`,
       rollsComplete = `${config.partialWords} of ${config.partialWords} word rolls complete`;
     if (result.waiting === "d8") {
       status = groupsEntered;
@@ -5052,7 +5052,7 @@ function hodlUpdateDice() {
       let invalid = result.firstInvalid,
         specSteps = hodlDPlusFinalSteps(config.words),
         position = invalid?.final ? hodlDPlusStepChecksumLabel(specSteps[invalid.position]) : `word ${(invalid?.groupIndex??0)+1}'s ${invalid?.position===0?"D8":invalid?.position===1?"first D16":"second D16"} roll`;
-      status = `${result.completedGroups} of ${config.partialWords} groups entered \xB7 correct ${result.invalidRequiredCount} highlighted invalid result${result.invalidRequiredCount===1?"":"s"}, starting with ${position}`
+      status = `Group ${result.completedGroups} of ${config.partialWords} \xB7 correct ${result.invalidRequiredCount} highlighted invalid result${result.invalidRequiredCount===1?"":"s"}, starting with ${position}`
     } else if (selectingFinal) status = selectedFinal ? `${config.words} of ${config.words} seed words \xB7 checksum valid \xB7 ready to derive` : `${rollsComplete} \xB7 choose the final checksum word`;
     else if (result.waiting === "checksum-d8") {
       status = rollsComplete;
