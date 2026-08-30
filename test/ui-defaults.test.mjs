@@ -633,7 +633,7 @@ test("the beta notice sits at the top of the page as a banner", () => {
     const live = markup.slice(wrapper).replace(/<!--[\s\S]*?-->/g, "");
     // It is a load-time warning again, so it keeps the alert role and leads
     // the wrap, ahead of the hosted-site warning and the pitch card.
-    assert.match(live, /<aside class="beta-warning no-print" id="beta-warning" role="alert">\s*<div class="beta-warning-text"><strong>Beta software<\/strong> EntropyLab is experimental and currently should only be used for testing\.<\/div>/);
+    assert.match(live, /<aside class="beta-warning no-print" id="beta-warning" role="alert">\s*<div class="beta-warning-text"><strong>Beta software<\/strong> EntropyLab is experimental and should only be used for testing and educational purposes\.<\/div>/);
     assert.ok(
       live.indexOf("<strong>Beta software") < live.indexOf('id="online-warning"'),
       "the beta banner must precede the online warning",
@@ -726,17 +726,29 @@ test("the beta disclaimer gates the page as a modal until accepted", () => {
   assert.match(template, /<p class="disclaimer-title" id="beta-disclaimer-title">Beta software<\/p>/);
   assert.match(
     template,
-    /<p class="disclaimer-text" id="beta-disclaimer-text">EntropyLab is experimental and can be dangerous:.*Do not use it in production, and never with funds you cannot afford to lose\.<\/p>/,
+    /<p class="disclaimer-text" id="beta-disclaimer-text">EntropyLab is experimental and should only be used for testing and educational purposes\. This tool is intended for offline use by advanced users only\. Any use online or with real funds can be dangerous\.<\/p>/,
   );
   assert.match(template, /<button class="btn primary" id="beta-disclaimer-accept" type="button">I understand<\/button>/);
   // The fade: transparent until .is-visible, faded out and inert once
   // .is-dismissed, and motion-free when the user prefers reduced motion.
   assert.match(css, /\.disclaimer-overlay \{\s*position: fixed; inset: 0;[^}]*opacity: 0; transition: opacity \.24s ease;/s);
+  // The page behind the card is defocused as well as darkened.
+  assert.match(css, /\.disclaimer-overlay \{[^}]*-webkit-backdrop-filter: blur\(6px\); backdrop-filter: blur\(6px\);/s);
   assert.match(css, /\.disclaimer-overlay\[hidden\] \{ display: none; \}/);
   assert.match(css, /\.disclaimer-overlay\.is-visible \{ opacity: 1; \}/);
   assert.match(css, /\.disclaimer-overlay\.is-dismissed \{ opacity: 0; pointer-events: none; \}/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ \.disclaimer-overlay \{ transition: none; \} \}/);
   assert.match(css, /\.disclaimer-card \{[^}]*border: 1px solid var\(--danger\);/s);
+  // Icon and title share the banner's brighter alert red, and the title takes
+  // the body size so it labels the sentence instead of heading it.
+  assert.match(css, /\.disclaimer-icon \{[^}]*color: var\(--danger-bright\); \}/);
+  assert.match(css, /\.disclaimer-title \{ margin: 12px 0 12px; font-size: 18px; font-weight: 700; text-transform: uppercase; color: var\(--danger-bright\); \}/);
+  // The button sits clear of the warning it answers.
+  assert.match(css, /\.disclaimer-text \{ margin: 0 24px 28px;/);
+  // The accept button is widened and uppercased in the card only; the shared
+  // .btn base still carries every other button in the app.
+  assert.match(css, /\.disclaimer-card \.btn \{ padding: 0 32px; font-size: 18px; text-transform: uppercase; \}/);
+  assert.match(css, /\.tab, \.btn \{\s*min-height: 44px; padding: 0 14px;/);
 });
 
 test("the lockup steps down again below 400px", () => {
