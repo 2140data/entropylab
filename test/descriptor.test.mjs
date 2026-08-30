@@ -66,7 +66,7 @@ function loadSlice(startNeedle, endNeedle, extra) {
 const originPath = loadSlice(
   "function hodlFilterXpub",
   "function hodlParseMultisigCosigner",
-  "export { hodlFilterXpub, hodlNormalizeOriginPath, hodlParseKeyOrigin, hodlOriginPathIndexes, hodlOriginMatchesParsedKey, hodlMultisigDerivationStandard, hodlOriginScriptError, hodlMultisigAccountNumber, hodlSummarizeMultisigAccounts, hodlMultisigAccountWarning, hodlMultisigOriginScriptKind, hodlMultisigScriptEvidence, hodlSummarizeMultisigScriptKinds };",
+  "const hodlMaxPurpose = 2147483647;\nexport { hodlFilterXpub, hodlNormalizeOriginPath, hodlParseKeyOrigin, hodlOriginPathIndexes, hodlOriginMatchesParsedKey, hodlMultisigPurposeIndex, hodlOriginScriptError, hodlMultisigAccountNumber, hodlSummarizeMultisigAccounts, hodlMultisigAccountWarning, hodlMultisigOriginScriptKind, hodlMultisigScriptEvidence, hodlSummarizeMultisigScriptKinds };",
 );
 const {
   hodlFilterXpub,
@@ -74,7 +74,7 @@ const {
   hodlParseKeyOrigin,
   hodlOriginPathIndexes,
   hodlOriginMatchesParsedKey,
-  hodlMultisigDerivationStandard,
+  hodlMultisigPurposeIndex,
   hodlOriginScriptError,
   hodlMultisigAccountNumber,
   hodlSummarizeMultisigAccounts,
@@ -131,40 +131,36 @@ test("origin path must match key depth and script", () => {
   const mock = { depth: 4, childNumber: 0x80000002 };
   assert.equal(hodlOriginMatchesParsedKey(origin, mock), "");
   assert.match(hodlOriginMatchesParsedKey({ fingerprint: "73c5da0a", path: "48h/1h/0h" }, mock), /steps/);
-  assert.equal(hodlOriginScriptError(origin, "p2wsh", "testnet"), "");
-  assert.equal(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "48h/0h/0h/2h" }, "p2wsh", "mainnet"), "");
-  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "48h/0h/0h/2h" }, "p2wsh", "testnet"), /1h/);
+  assert.equal(hodlOriginScriptError(origin, "p2wsh", "testnet", 48), "");
+  assert.equal(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "48h/0h/0h/2h" }, "p2wsh", "mainnet", 48), "");
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "48h/0h/0h/2h" }, "p2wsh", "testnet", 48), /1h/);
   assert.equal(hodlOriginMatchesParsedKey({ fingerprint: "73c5da0a", path: "45h" }, { depth: 1, childNumber: 0x8000002d }), "");
-  assert.equal(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "45h" }, "p2sh", "mainnet"), "");
-  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "45h/0" }, "p2sh", "mainnet"), /purpose origin/);
+  assert.equal(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "45h" }, "p2sh", "mainnet", 45), "");
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "45h/0" }, "p2sh", "mainnet", 45), /without an account/);
   const bip87 = { fingerprint: "73c5da0a", path: "87h/0h/7h" };
   assert.equal(hodlOriginMatchesParsedKey(bip87, { depth: 3, childNumber: 0x80000007 }), "");
   assert.match(
-    hodlOriginScriptError({ fingerprint: "73c5da0a", path: "45h" }, "p2sh", "mainnet", "bip87"),
+    hodlOriginScriptError({ fingerprint: "73c5da0a", path: "45h" }, "p2sh", "mainnet", 87),
     /87h/,
   );
-  assert.equal(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "86h/0h/0h" }, "p2tr", "mainnet"), "");
-  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "48h/0h/0h/3h" }, "p2tr", "mainnet"), /86h/);
-  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "84h/0h/0h" }, "p2tr", "mainnet"), /86h/);
-  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "48h/0h/0h/2h" }, "p2tr", "mainnet"), /86h/);
-  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "44h/0h/0h" }, "p2tr", "mainnet"), /86h/);
-  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "45h" }, "p2tr", "mainnet"), /86h/);
-  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "87h/0h/0h" }, "p2tr", "mainnet"), /86h/);
-  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "86h/0h/0h/0h" }, "p2tr", "mainnet"), /86h\/coin\/account/);
-  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "86h/1h/0h" }, "p2tr", "mainnet"), /0h/);
+  assert.equal(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "86h/0h/0h" }, "p2tr", "mainnet", 86), "");
+  assert.equal(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "69420h/0h/0h" }, "p2tr", "mainnet", 69420), "");
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "84h/0h/0h" }, "p2tr", "mainnet", 86), /selected Purpose is 86h/);
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "86h/0h/0h/0h" }, "p2tr", "mainnet", 86), /purposeh\/coinh\/accounth/);
+  assert.match(hodlOriginScriptError({ fingerprint: "73c5da0a", path: "86h/1h/0h" }, "p2tr", "mainnet", 86), /0h/);
   assert.equal(hodlOriginPathIndexes("48h/1h/0h/2h").at(-1), 0x80000002);
 });
 test("multisig account is derived from BIP48 and BIP87 origins", () => {
-  assert.equal(hodlMultisigAccountNumber({ path: "48h/0h/7h/2h" }, "p2wsh"), 7);
-  assert.equal(hodlMultisigAccountNumber({ path: "48h/0h/3h/1h" }, "p2sh-p2wsh"), 3);
-  assert.equal(hodlMultisigAccountNumber({ path: "87h/0h/9h" }, "p2sh"), 9);
-  assert.equal(hodlMultisigAccountNumber({ path: "86h/0h/4h" }, "p2tr"), 4);
-  assert.equal(hodlMultisigAccountNumber({ path: "45h" }, "p2sh"), null);
+  assert.equal(hodlMultisigAccountNumber({ path: "48h/0h/7h/2h" }, "p2wsh", 48), 7);
+  assert.equal(hodlMultisigAccountNumber({ path: "48h/0h/3h/1h" }, "p2sh-p2wsh", 48), 3);
+  assert.equal(hodlMultisigAccountNumber({ path: "87h/0h/9h" }, "p2sh", 87), 9);
+  assert.equal(hodlMultisigAccountNumber({ path: "86h/0h/4h" }, "p2tr", 86), 4);
+  assert.equal(hodlMultisigAccountNumber({ path: "45h" }, "p2sh", 45), null);
   assert.throws(
-    () => hodlMultisigAccountNumber({ path: "48h/0h/7/2h" }, "p2wsh"),
+    () => hodlMultisigAccountNumber({ path: "48h/0h/7/2h" }, "p2wsh", 48),
     /must be hardened/,
   );
-  assert.match(hodlOriginScriptError({ path: "48h/0h/7/2h" }, "p2wsh", "mainnet"), /must be hardened/);
+  assert.match(hodlOriginScriptError({ path: "48h/0h/7/2h" }, "p2wsh", "mainnet", 48), /must be hardened/);
 });
 
 test("multisig account summary reports mismatched accounts as mixed", () => {
@@ -179,28 +175,27 @@ test("multisig account summary reports mismatched accounts as mixed", () => {
 
 test("multisig script type is inferred from SLIP-132 prefixes and key origins", () => {
   assert.equal(hodlMultisigOriginScriptKind({ path: "45h" }), "p2sh");
-  assert.equal(hodlMultisigOriginScriptKind({ path: "87h/0h/0h" }), null);
+  assert.equal(hodlMultisigOriginScriptKind({ path: "87h/0h/0h" }), "p2sh");
   assert.equal(hodlMultisigOriginScriptKind({ path: "48h/0h/0h/1h" }), "p2sh-p2wsh");
   assert.equal(hodlMultisigOriginScriptKind({ path: "48h/0h/0h/2h" }), "p2wsh");
   assert.equal(hodlMultisigOriginScriptKind({ path: "86h/0h/0h" }), "p2tr");
   assert.equal(hodlMultisigOriginScriptKind({ path: "48h/0h/0h/3h" }), null);
   assert.equal(hodlMultisigOriginScriptKind({ path: "84h/0h/0h" }), null);
-  assert.equal(hodlMultisigDerivationStandard({ path: "45h" }), "bip45");
-  assert.equal(hodlMultisigDerivationStandard({ path: "86h/0h/0h" }), "bip86");
-  assert.equal(hodlMultisigDerivationStandard({ path: "87h/0h/0h" }), "bip87");
-  assert.equal(hodlMultisigDerivationStandard({ path: "48h/0h/0h/2h" }), "bip48");
+  assert.equal(hodlMultisigPurposeIndex({ path: "45h" }), 45);
+  assert.equal(hodlMultisigPurposeIndex({ path: "69420h/0h/0h/2h" }), 69420);
+  assert.throws(() => hodlMultisigPurposeIndex({ path: "48/0h/0h/2h" }), /must be hardened/);
 
   assert.deepEqual(
     hodlMultisigScriptEvidence({ scope: "multisig", family: "y", origin: { path: "48h/0h/0h/1h" } }),
-    { prefixKind: "p2sh-p2wsh", originKind: "p2sh-p2wsh", standard: "bip48" },
+    { prefixKind: "p2sh-p2wsh", originKind: "p2sh-p2wsh" },
   );
   assert.deepEqual(
     hodlMultisigScriptEvidence({ scope: "multisig", family: "z", origin: { path: "48h/0h/0h/1h" } }),
-    { prefixKind: "p2wsh", originKind: "p2sh-p2wsh", standard: "bip48" },
+    { prefixKind: "p2wsh", originKind: "p2sh-p2wsh" },
   );
   assert.deepEqual(
     hodlMultisigScriptEvidence({ scope: "singlesig", family: "x", origin: { path: "87h/0h/0h" } }),
-    { prefixKind: null, originKind: null, standard: "bip87" },
+    { prefixKind: null, originKind: "p2sh" },
   );
 
   assert.deepEqual(hodlSummarizeMultisigScriptKinds(["p2wsh", "p2wsh"]), {

@@ -47,12 +47,17 @@ test("every enabled button uses orange and black momentary press feedback", () =
 });
 
 test("all wallet network selectors enable and default to mainnet", () => {
-  for (const id of ["network", "msig-network", "psbt-network"]) {
+  for (const id of ["network", "msig-network"]) {
     const selectedMainnet = new RegExp(
-      `<select id="${id}"><option value="mainnet" selected(?:="selected")?>Bitcoin mainnet</option>`,
+      `<select id="${id}"[^>]*><option value="mainnet" selected(?:="selected")?>Bitcoin mainnet · 0h</option>`,
     );
     assert.match(template, selectedMainnet);
-    assert.match(app, selectedMainnet);
+    assert.match(appWhitespace, selectedMainnet);
+  }
+  for (const markup of [template, appWhitespace]) {
+    assert.match(markup, /id="network-help">Hardened coin type index in the derivation path\./);
+    assert.match(markup, /id="msig-network-help">Hardened coin type index in the derivation path\./);
+    assert.match(markup, /<select id="psbt-network"><option value="mainnet" selected(?:="selected")?>Bitcoin mainnet<\/option>/);
   }
   assert.doesNotMatch(`${template}\n${app}`, /option value="mainnet"[^>]*disabled/);
   assert.doesNotMatch(app, /hodlForceTestnet|temporarily disabled/);
@@ -60,8 +65,8 @@ test("all wallet network selectors enable and default to mainnet", () => {
 });
 
 test("single-key network selector is half width on wide screens and full width on narrow screens", () => {
-  assert.match(template, /<label class="field network-field">Network\s*<select id="network">/);
-  assert.match(app, /<label class="field network-field">Network\s*<select id="network">/);
+  assert.match(template, /<label class="field network-field">Network\s*<select id="network"[^>]*>/);
+  assert.match(app, /<label class="field network-field">Network\s*<select id="network"[^>]*>/);
   assert.match(css, /\.key-settings\.single-key-mode \.network-field \{ width: 100%; max-width: 50%; \}/);
   assert.match(
     css,
@@ -78,6 +83,8 @@ test("key and multisig derivation use an indexed address window with an estimate
     assert.match(markup, /id="derive-progress"[^>]*role="progressbar"/);
     assert.match(markup, /id="msig-derive-progress"[^>]*role="progressbar"/);
     assert.doesNotMatch(markup, /id="(?:msig-)?count"/);
+    assert.match(markup, /id="derivation-path-preview"[\s\S]*id="address-estimate"[\s\S]*id="go"/);
+    assert.match(markup, /id="msig-address-range"[\s\S]*id="msig-address-estimate"[\s\S]*id="msig-go"/);
   }
   assert.match(appSource, /function hodlReadAddressWindow\(prefix = "", mark = true\)/);
   assert.match(appSource, /for \(let index = startIndex; index < startIndex \+ o; index\+\+\)/);
@@ -379,7 +386,7 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
 });
 
 test("multisig derivation settings follow the key inputs", () => {
-  const fieldOrder = /id="msig-keys"[\s\S]*id="msig-key-order-status"[\s\S]*id="msig-hint"[\s\S]*id="msig-script-type"[\s\S]*id="msig-network"[\s\S]*id="msig-account"[\s\S]*id="msig-address-start"[\s\S]*id="msig-address-range"[\s\S]*id="msig-key-order"[\s\S]*id="msig-go"/;
+  const fieldOrder = /id="msig-keys"[\s\S]*id="msig-key-order-status"[\s\S]*id="msig-hint"[\s\S]*id="msig-script-type"[\s\S]*id="msig-purpose"[\s\S]*id="msig-network"[\s\S]*id="msig-account"[\s\S]*id="msig-address-start"[\s\S]*id="msig-address-range"[\s\S]*id="msig-key-order"[\s\S]*id="msig-go"/;
   assert.match(template, fieldOrder);
   assert.match(app, fieldOrder);
 });
@@ -388,11 +395,27 @@ test("key derivation and multisig use the accurate Script type label", () => {
   for (const markup of [template, appWhitespace]) {
     assert.match(markup, /id="script-type-field">Script type\s*<select/);
     assert.match(markup, /<label class="field">Script type\s*<select id="msig-script-type"[^>]*>/);
-    assert.match(markup, /<option value="p2wsh" selected(?:="selected")?>Native SegWit (?:·|\\xB7) BIP48<\/option>/);
-    assert.match(markup, /<option value="p2tr">Taproot (?:·|\\xB7) BIP86<\/option>/);
+    assert.match(markup, /<option value="p2wsh" selected(?:="selected")?>Native SegWit<\/option>/);
+    assert.match(markup, /<option value="p2tr">Taproot<\/option>/);
+    assert.doesNotMatch(markup, /<option value="p2wsh"[^>]*>[^<]*BIP48/);
     assert.doesNotMatch(markup, /name="msig-script"|Matches BIP48 script type|Bare P2SH/);
     assert.doesNotMatch(markup, />Address type</);
   }
+});
+
+test("key derivation separates script type from the hardened purpose index", () => {
+  for (const markup of [template, appWhitespace]) {
+    assert.match(markup, /id="script-type-field">Script type\s*<select id="script-type"><option value="bip44">Legacy<\/option><option value="bip49">Nested SegWit<\/option><option value="bip84" selected(?:="selected")?>Native SegWit<\/option><option value="bip86">Taproot<\/option><\/select>/);
+    assert.match(markup, /id="script-type"[\s\S]*id="purpose"[\s\S]*id="network"[\s\S]*id="account"/);
+    assert.match(markup, /id="purpose" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="84"/);
+    assert.match(markup, /id="purpose-help">Hardened purpose index (?:·|\\xB7) 0 to 2,147,483,647/);
+  }
+  assert.match(appSource, /function hodlReadPurpose\(mark = true\)/);
+  assert.match(appSource, /hodlSetSelectedScriptType\(target\.value, true\)/);
+  assert.match(appSource, /let derivedDefinition = \{ \.\.\.definition, purpose: purposeIndex \}/);
+  assert.match(appSource, /originPath = `\$\{purposeIndex\}h\/\$\{Rs\(network\)\}h\/\$\{accountIndex\}h`/);
+  assert.match(appSource, /context\.textContent = `\$\{definition\.label\} \\xB7 Purpose \$\{purpose\}h`/);
+  assert.match(appSource, /fields: \{ pass: "", script: "bip84", purpose: "84", network: "mainnet"/);
 });
 
 test("multisig script type and placeholders follow detected co-signer exports", () => {
@@ -402,19 +425,17 @@ test("multisig script type and placeholders follow detected co-signer exports", 
     assert.match(markup, /id="msig-go"[^>]*aria-describedby="msig-script-warning"/);
   }
   assert.match(template, /placeholder="\[fingerprint\/48h\/0h\/0h\/2h\]Zpub…"/);
-  assert.match(app, /function hodlMultisigKeyPlaceholder\(kind,network,legacyStandard="bip45"\)/);
-  assert.match(appWhitespace, /kind==="p2sh"\)return`\[fingerprint\/45h\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
-  assert.match(appWhitespace, /kind==="p2sh"&&legacyStandard==="bip87"\)return`\[fingerprint\/87h\/\$\{coin\}\/0h\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
+  assert.match(app, /function hodlMultisigKeyPlaceholder\(kind,network,purpose\)/);
+  assert.match(appWhitespace, /kind==="p2sh"&&purpose===45\)return`\[fingerprint\/\$\{purposeStep\}\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
+  assert.match(appWhitespace, /kind==="p2sh"\)return`\[fingerprint\/\$\{purposeStep\}\/\$\{coin\}\/0h\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
   assert.match(app, /testnet\?"Upub":"Ypub"/);
   assert.match(app, /testnet\?"Vpub":"Zpub"/);
-  assert.match(appWhitespace, /kind==="p2tr"\)return`\[fingerprint\/86h\/\$\{coin\}\/0h\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
-  assert.match(app, /if\(steps\[0\]!=="86h"\)return"BIP86 origin must start at 86h."/);
-  assert.match(app, /Taproot BIP86 requires a depth-3 account key at m\/86h\/coinh\/accounth/);
+  assert.match(appWhitespace, /kind==="p2tr"\)return`\[fingerprint\/\$\{purposeStep\}\/\$\{coin\}\/0h\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
+  assert.match(app, /function hodlMultisigPurposeIndex\(origin\)/);
+  assert.match(app, /function hodlUpdateMsigPurposeDetection\(\)/);
   assert.doesNotMatch(app, /or BIP48 script 3h/);
   assert.doesNotMatch(app, /if\(steps\[3\]==="3h"\)return"p2tr"/);
-  assert.match(app, /summary\.legacyMixed\?"Legacy co-signer exports mix BIP45 and BIP87/);
-  assert.match(app, /summary\.legacyScriptConflict\?"BIP87 account keys are script-agnostic/);
-  assert.match(app, /BIP87 keys do not encode a script type\. Select Legacy P2SH/);
+  assert.match(app, /Co-signer purpose indexes do not match/);
   assert.match(app, /button\.disabled=!ready/);
   assert.match(app, /if\(kind==="mixed"\)throw new Error\("Co-signer keys indicate different script types/);
 });
@@ -485,8 +506,11 @@ test("multisig key order is sorted by default and listed order is advanced", () 
   assert.match(app, /notes\.push\("This wallet uses "/);
 });
 
-test("Legacy multisig defaults to BIP45 and offers BIP87 accounts only for Legacy", () => {
+test("multisig separates script type from purpose and keeps the Legacy BIP87 shortcut", () => {
   for (const markup of [template, app]) {
+    assert.match(markup, /id="msig-script-type"[\s\S]*id="msig-purpose"[\s\S]*id="msig-network"[\s\S]*id="msig-account"/);
+    assert.match(markup, /id="msig-purpose" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="48"/);
+    assert.match(markup, /id="msig-purpose-help">Hardened purpose index (?:·|\\xB7) 0 to 2,147,483,647/);
     assert.match(markup, /id="msig-legacy-account-toggle" hidden/);
     assert.match(markup, /id="msig-legacy-bip87" type="checkbox"/);
     assert.match(markup, />Use standardized BIP87 accounts</);
@@ -495,10 +519,17 @@ test("Legacy multisig defaults to BIP45 and offers BIP87 accounts only for Legac
   assert.match(css, /\.msig-legacy-account-toggle\[hidden\] \{ display: none !important; \}/);
   assert.match(app, /legacy=hodlScriptKind\(\)==="p2sh"/);
   assert.match(appSource, /if \(toggle\) toggle\.hidden = !legacy/);
-  assert.match(appWhitespace, /checkbox\?\.checked\?"Legacy · BIP87":"Legacy · BIP45"/);
+  assert.match(app, /hodlSetMsigPurpose\(legacy\.checked\?87:45\)/);
+  assert.match(app, /hodlSetMsigPurpose\(hodlStandardMsigPurpose\(script\.value\)\)/);
   assert.match(app, /legacyBip87:!1/);
-  assert.match(app, /scriptStandard:kind==="p2tr"\?"bip86":kind==="p2sh"\?legacyStandard:"bip48"/);
-  assert.match(app, /legacyScriptConflict=standards\.includes\("bip87"\)&&summary\.kinds\.some\(kind=>kind!=="p2sh"\)/);
+  assert.match(app, /purpose:"48"/);
+  assert.match(app, /purposeIndexes\.push\(hodlMultisigPurposeIndex\(parsed\.origin\)\)/);
+});
+
+test("Native SegWit multisig uses the imported Bitcoin address encoder", () => {
+  assert.match(appSource, /import \{ Address as hodlBitcoinAddress,/);
+  assert.match(appSource, /hodlBitcoinAddress\(net\)\.encode\(\{ type: "wsh", hash \}\)/);
+  assert.doesNotMatch(appSource, /\bor\(net\)\.encode/);
 });
 
 test("the master fingerprint cards reserve a compact empty square for each LifeHash", () => {
@@ -587,7 +618,7 @@ test("multisig consistently uses derive for its heading and action", () => {
   assert.match(app, /function hodlValidatedMsigInputs\(\)/);
   assert.match(appSource, /hodlValidatedMsigInputs\(\);\s*ready = true/);
   assert.match(app, /button\.disabled=!ready/);
-  assert.match(app, /let\{network,count,addressStart,n,m,kind,legacyStandard,nodes,xpubs,keyTokens,accountSummary,accountWarning\}=hodlValidatedMsigInputs\(\)/);
+  assert.match(app, /let\{network,count,addressStart,n,m,kind,purpose,legacyStandard,nodes,xpubs,keyTokens,accountSummary,accountWarning\}=hodlValidatedMsigInputs\(\)/);
 });
 
 test("key and multisig add controls stay pinned to the right of their tab strips", () => {

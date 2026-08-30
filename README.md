@@ -20,11 +20,16 @@ Official website: [entropylab.online](https://entropylab.online)
   next to its deterministic [LifeHash](https://lifehash.info) icon so two
   keys can be told apart at a glance.
 - Supports legacy, nested SegWit, native SegWit, and Taproot single-signature
-  address types.
+  address types. Script type and the hardened BIP32 purpose index are separate:
+  choosing a script restores its conventional 44/49/84/86 purpose, while an
+  advanced user can enter any valid hardened purpose index for a custom path.
 - Supports Mainnet and Testnet wallet derivation, multisignature construction,
   and PSBT address rendering. Mainnet is selected by default.
 - Derives watch-only multisignature wallets from extended public keys without
-  requiring private keys.
+  requiring private keys. Multisig script type and hardened purpose are
+  separate as well; conventional script choices restore their standard purpose,
+  while pasted co-signer origins auto-detect and must agree with the selected
+  purpose.
 - Inspects PSBT v0 transactions, reports PSBT-provided amounts and fees, checks
   for repeated ECDSA nonces from the same public key, verifies optional Jade
   anti-exfil (sign-to-contract) transcripts without a key, and can compare supported
