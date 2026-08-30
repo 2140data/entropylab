@@ -118,6 +118,56 @@ change the resulting BitBox entropy. Wallet security still depends on the
 quality and secrecy of the entropy, seed phrase, passphrase, or private key
 supplied by the user.
 
+## FAQ
+
+### Does EntropyLab generate a seed or private key for me?
+
+No. EntropyLab deterministically transforms entropy or key material that you
+supply. It does not create secret wallet entropy. BIP-85 children are derived
+from the parent root you provide and are reproducible from that same root,
+application, and index.
+
+### Can I enter a real seed phrase on the website?
+
+Do not enter wallet secrets on an internet-connected device. Download the
+self-contained HTML, verify it, transfer it to a trusted air-gapped computer,
+and open it there. Keep backups and verify important results independently
+before receiving funds.
+
+### Does EntropyLab replace a hardware wallet or signing device?
+
+No. EntropyLab is a calculator and verification tool. It can derive recovery
+information, construct watch-only wallet data, and inspect supported PSBT
+details, but it is not intended to be a transaction signer or broadcaster.
+Use a separately verified wallet or signing device when spending bitcoin.
+
+### How should I check an address or descriptor before using it?
+
+Derive the same wallet with an independent implementation or signing device
+and compare the address, derivation path, fingerprint, and descriptor. Do not
+rely on matching only a shortened value or a visual icon.
+
+### How do I know the downloaded HTML is authentic?
+
+Follow [Verifying the download](#verifying-the-download). Check the SHA-256
+manifest together with the GitHub artifact attestation, or build the file from
+the reviewed source. A checksum by itself detects changed bytes but does not
+authenticate who produced them.
+
+### Why does EntropyLab accept short dice or card transcripts?
+
+Short inputs are useful for deterministic tests, demonstrations, and recovery
+experiments, so they are accepted with a warning. Hashing a short transcript
+does not add entropy. Never secure funds with an input below the displayed
+recommendation.
+
+### How should I report a possible security problem?
+
+Do not open a public issue for a suspected vulnerability involving incorrect
+derivations, secret exposure, injected code, unexpected network access, or
+possible loss of funds. Follow the private reporting instructions in
+[SECURITY.md](SECURITY.md).
+
 ## Building from source
 
 The build imports the cryptographic libraries declared in `package.json`,
