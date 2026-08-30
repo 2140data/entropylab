@@ -390,8 +390,9 @@ ec.innerHTML = `
     </div>
   </div>
   <div class="wrap">
-    <aside class="beta-warning no-print" role="alert">
-      <strong>Beta software:</strong> EntropyLab is experimental and should be used only for testing. Do not rely on it to secure real bitcoin, and never test with funds you cannot afford to lose.
+    <aside class="beta-warning no-print" id="beta-warning" role="alert">
+      <div class="beta-warning-text"><strong>Beta software</strong> EntropyLab is experimental and currently should only be used for testing.</div>
+      <button type="button" class="beta-warning-dismiss" id="beta-warning-dismiss" aria-label="Dismiss the beta software warning"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </aside>
     <aside class="online-warning no-print" id="online-warning" role="alert" hidden>
       <strong>Online version:</strong> Do not enter seed phrases, private keys, or other wallet secrets on an internet-connected device. <a href="entropylab.html" download="entropylab.html">Download EntropyLab</a> and run the HTML file offline on a trusted, air-gapped computer.
@@ -8160,6 +8161,29 @@ function hodlApplyTheme(mode) {
   let meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = light ? "#ffffff" : "#000000";
 }
+// The dismissal is remembered in localStorage, the same site-settings store as
+// the theme and the beta disclaimer, keyed to this build's version: every new
+// release warns again. When storage is unavailable (file:// origins, private
+// modes) the banner simply returns on every load, which is the safe direction
+// for a wallet tool.
+var hodlBetaBannerStorageKey = "entropylab-beta-banner-dismissed";
+function hodlInitBetaWarningDismiss() {
+  let banner = document.getElementById("beta-warning");
+  let dismiss = document.getElementById("beta-warning-dismiss");
+  if (!banner || !dismiss) return;
+  let version = "{{VERSION}}";
+  try {
+    if (localStorage.getItem(hodlBetaBannerStorageKey) === version) banner.hidden = true;
+  } catch (e) {
+  }
+  dismiss.onclick = () => {
+    try {
+      localStorage.setItem(hodlBetaBannerStorageKey, version);
+    } catch (e) {
+    }
+    banner.hidden = true;
+  };
+}
 function hodlInitTheme() {
   hodlApplyTheme(hodlReadThemeMode());
   let toggle = document.getElementById("theme-toggle");
@@ -8216,6 +8240,7 @@ function hodlBoot() {
   hodlInitClearActionState();
   hodlInitSecretFieldAutoClear();
   hodlInitTheme();
+  hodlInitBetaWarningDismiss();
   hodlInitMasterFingerprintPreview();
   hodlInitDerivationControls();
   hodlInitAddressBenchmark();

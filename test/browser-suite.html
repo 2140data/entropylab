@@ -558,6 +558,35 @@
     }
   });
 
+  await test("the beta banner's dismiss control clears the banner from the page", () => {
+    const banner = document.getElementById("beta-warning");
+    const dismiss = document.getElementById("beta-warning-dismiss");
+    assert(banner && dismiss && banner.contains(dismiss), "Beta banner dismiss control is missing");
+    try {
+      // A narrow column at the banner's top right: hard against the right
+      // edge, and nearer the top than the banner's own vertical middle.
+      const box = banner.getBoundingClientRect();
+      const button = dismiss.getBoundingClientRect();
+      assert(button.width <= box.width / 4, "Dismiss column is not narrow");
+      assert(Math.abs(button.right - box.right) < 12, "Dismiss control is not at the banner's right edge");
+      assert(button.top < box.top + box.height / 2, "Dismiss control is not near the banner's top");
+      // The icon reads white against the red banner.
+      assert(getComputedStyle(dismiss).color === "rgb(255, 255, 255)", "Dismiss icon is not white");
+      assert(getComputedStyle(banner).display !== "none", "Beta banner did not start visible");
+      dismiss.click();
+      assert(getComputedStyle(banner).display === "none", "Beta banner survived its dismiss control");
+      // The choice is remembered for this build, so a reload does not bring
+      // the banner back until the next release.
+      assert(
+        localStorage.getItem("entropylab-beta-banner-dismissed") === document.querySelector(".site-version-number").textContent.replace(/^v/, ""),
+        "Dismissal was not persisted against this build's version",
+      );
+    } finally {
+      localStorage.removeItem("entropylab-beta-banner-dismissed");
+      banner.hidden = false;
+    }
+  });
+
   await test("dice, hex, seed, and private-key keyboard toggles share their open state", async () => {
     await chooseMode("Seed phrase");
     let toggle = await until(() => document.getElementById("seed-keyboard-toggle"), "seed keyboard toggle");

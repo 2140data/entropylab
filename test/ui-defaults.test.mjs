@@ -633,13 +633,13 @@ test("the beta notice sits at the top of the page as a banner", () => {
     const live = markup.slice(wrapper).replace(/<!--[\s\S]*?-->/g, "");
     // It is a load-time warning again, so it keeps the alert role and leads
     // the wrap, ahead of the hosted-site warning and the pitch card.
-    assert.match(live, /<aside class="beta-warning no-print" role="alert">\s*<strong>Beta software:<\/strong> EntropyLab is experimental and should be used only for testing\. Do not rely on it to secure real bitcoin, and never test with funds you cannot afford to lose\.\s*<\/aside>/);
+    assert.match(live, /<aside class="beta-warning no-print" id="beta-warning" role="alert">\s*<div class="beta-warning-text"><strong>Beta software<\/strong> EntropyLab is experimental and currently should only be used for testing\.<\/div>/);
     assert.ok(
-      live.indexOf("<strong>Beta software:") < live.indexOf('id="online-warning"'),
+      live.indexOf("<strong>Beta software") < live.indexOf('id="online-warning"'),
       "the beta banner must precede the online warning",
     );
     assert.ok(
-      live.indexOf("<strong>Beta software:") < live.indexOf('class="kicker"'),
+      live.indexOf("<strong>Beta software") < live.indexOf('class="kicker"'),
       "the beta banner must precede the pitch card",
     );
     // The closing footer disclaimer is gone; the only other .beta-warning is
@@ -647,6 +647,48 @@ test("the beta notice sits at the top of the page as a banner", () => {
     assert.doesNotMatch(live, /site-footer|fine-print/);
   }
   assert.doesNotMatch(css, /\.site-footer|\.fine-print/);
+});
+
+test("the beta banner carries a dismiss control in a narrow right-hand column", () => {
+  // Both markups ship the control: the static template renders before boot,
+  // and the runtime template replaces it once the application takes over.
+  for (const markup of [template, app]) {
+    assert.match(
+      markup,
+      /<button type="button" class="beta-warning-dismiss" id="beta-warning-dismiss" aria-label="Dismiss the beta software warning">/,
+      "the dismiss button must ship in both markups",
+    );
+    // The label sits after the message, so the column reads last.
+    assert.ok(
+      markup.indexOf('class="beta-warning-text"') < markup.indexOf('class="beta-warning-dismiss"'),
+      "the dismiss column must follow the warning text",
+    );
+  }
+  // The banner is a row: the message takes the slack, the control does not.
+  assert.match(css, /#beta-warning \{ display: flex; align-items: flex-start; gap: 12px; \}/);
+  assert.match(css, /\.beta-warning-text \{ flex: 1; \}/);
+  assert.match(css, /\.beta-warning-dismiss \{[^}]*flex: none;[^}]*\}/s);
+  // The author display would otherwise beat the user agent's [hidden] rule
+  // and the dismissed banner would stay on screen.
+  assert.match(css, /#beta-warning\[hidden\] \{ display: none; \}/);
+  // Only the dismissible banner uppercases its label; the noscript notice
+  // shares .beta-warning and must keep its sentence casing.
+  assert.match(css, /\.beta-warning-text strong \{[^}]*line-height: 1; text-transform: uppercase;\s*color: var\(--danger-bright\);[^}]*\}/s);
+  // The label takes the banner's own size: a smaller one read as a caption
+  // rather than the sentence's lead-in.
+  assert.doesNotMatch(css, /\.beta-warning-text strong \{[^}]*font-size/s);
+  assert.doesNotMatch(css, /\.beta-warning strong \{[^}]*text-transform/);
+  // Boot wires the control, and the click hides the banner outright.
+  assert.match(appWhitespace, /function hodlInitBetaWarningDismiss\(\)\{/);
+  assert.match(appWhitespace, /hodlInitBetaWarningDismiss\(\)/);
+  assert.match(app, /getElementById\("beta-warning-dismiss"\)/);
+  assert.match(app, /banner\.hidden\s*=\s*!0|banner\.hidden\s*=\s*true/);
+  // The dismissal outlives a reload, keyed to the build version so every
+  // release warns again, and wrapped so a storage-less origin still boots.
+  assert.match(app, /"entropylab-beta-banner-dismissed"/);
+  assert.match(appWhitespace, /localStorage\.getItem\(hodlBetaBannerStorageKey\)===version/);
+  assert.match(appWhitespace, /localStorage\.setItem\(hodlBetaBannerStorageKey,version\)/);
+  assert.match(appWhitespace, /try\{localStorage\.setItem\(hodlBetaBannerStorageKey,version\)\}catch/);
 });
 
 test("the beta disclaimer gates the page as a modal until accepted", () => {
@@ -737,7 +779,7 @@ test("the site header is fixed, carries the logo, and holds the version, downloa
     // The wrapper opens on the beta banner; the static template follows with
     // a no-JS notice the runtime page has no need of. Both then carry the
     // conditional warnings, which start hidden.
-    assert.match(live, /<div class="wrap">\s*<aside class="beta-warning no-print" role="alert">[\s\S]*?<\/aside>\s*(?:<noscript>[\s\S]*?<\/noscript>\s*)?(?:<aside[^>]*online-warning[\s\S]*?<\/aside>\s*)*<section class="card">/);
+    assert.match(live, /<div class="wrap">\s*<aside class="beta-warning no-print" id="beta-warning" role="alert">[\s\S]*?<\/aside>\s*(?:<noscript>[\s\S]*?<\/noscript>\s*)?(?:<aside[^>]*online-warning[\s\S]*?<\/aside>\s*)*<section class="card">/);
     assert.doesNotMatch(markup.slice(wrapper), /<header>|download-controls/);
   }
   assert.doesNotMatch(css, /^header (\{|h1)/m);
