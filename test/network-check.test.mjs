@@ -158,9 +158,12 @@ test("the status tag ships online, sits in the header, and is wired to the build
   // Nothing repaints it for the offline state; it falls back to the grey.
   assert.match(css, /\.site-header \{[^}]*border-bottom: 1px solid var\(--border\);/s);
   // Left-aligned under the lockup, which needs the header row as its containing
-  // block. It shares one token with the bar's padding so the two cannot drift.
-  assert.match(css, /\.network-status \{[^}]*position: absolute; left: var\(--site-header-pad\); bottom: 0; transform: translateY\(50%\);/s);
+  // block. Still derived from the bar's own padding token so the two cannot
+  // drift, offset by the 3px the halo reaches past the label.
+  assert.match(css, /\.network-status \{[^}]*position: absolute; left: calc\(var\(--site-header-pad\) \+ 3px\); bottom: 0; transform: translateY\(50%\);/s);
   assert.match(css, /\.site-header-inner \{\s*position: relative;/);
+  // The tag's halo reaches up under the lockup, so the mark outranks it.
+  assert.match(css, /\.site-logo \{[^}]*z-index: 2;/s);
   assert.match(css, /\.site-header-inner \{[^}]*padding: 0 var\(--site-header-pad\);/s);
   // Hung half over the bottom rule, with an opaque fill so the rule stops at
   // the tag's edges instead of striking through the word.

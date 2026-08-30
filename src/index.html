@@ -21,11 +21,12 @@
     </aside>
     <noscript>
       <aside class="beta-warning no-print" role="alert">
-        <strong>JavaScript is required:</strong> EntropyLab performs wallet calculations locally inside your browser. With JavaScript disabled the calculator cannot derive keys or addresses. Enable JavaScript, then run this file offline on an air-gapped computer.
+        <div class="beta-warning-text"><strong>JavaScript is required</strong> EntropyLab performs wallet calculations locally inside your browser. With JavaScript disabled the calculator cannot derive keys or addresses. Enable JavaScript, then run this file offline on an air-gapped computer.</div>
       </aside>
     </noscript>
     <aside class="online-warning no-print" id="online-warning" role="alert" hidden>
-      <strong>Online version:</strong> Do not enter seed phrases, private keys, or other wallet secrets on an internet-connected device. <a href="entropylab.html" download="entropylab.html">Download EntropyLab</a> and run the HTML file offline on a trusted, air-gapped computer.
+      <div class="online-warning-text"><strong>Online version</strong> Do not enter seed phrases, private keys, or other wallet secrets on an internet-connected device. <a href="entropylab.html" download="entropylab.html">Download EntropyLab</a> and run the HTML file offline on a trusted, air-gapped computer.</div>
+      <button type="button" class="online-warning-dismiss" id="online-warning-dismiss" aria-label="Dismiss the online version warning"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </aside>
     <!-- TODO: This copy is being kept for the network-detected modal that will
          replace the banner. Verbatim, with the lead-in as the modal's title:
