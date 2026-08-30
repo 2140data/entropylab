@@ -1189,7 +1189,10 @@
     const deriveCustomMultisig = await until(() => !document.getElementById("msig-go").disabled && document.getElementById("msig-go"), "custom-purpose multisig derive button");
     deriveCustomMultisig.click();
     await until(() => document.getElementById("out").textContent.includes("Purpose 69420h") || document.getElementById("msig-error").textContent, "custom-purpose multisig result");
-    assert(!document.getElementById("msig-error").textContent, "Custom-purpose multisig derivation failed");
+    assert(
+      !document.getElementById("msig-error").textContent,
+      `Custom-purpose multisig derivation failed: ${document.getElementById("msig-error").textContent}`,
+    );
     assert(document.getElementById("out").textContent.includes("/69420h/1h/0h/2h"), "Custom multisig purpose was not preserved in the descriptor origin");
 
     document.querySelector('#workspace [data-workspace="calc"]').click();
