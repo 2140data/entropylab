@@ -385,7 +385,7 @@ ec.innerHTML = `
       <div class="download-controls">
         <a class="btn secondary download-html header-button" href="entropylab.html" download="entropylab.html" aria-label="Download EntropyLab"><svg class="download-mark" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 3v12M7 11l5 5 5-5M5 21h14"/></svg><span class="control-label">Download</span></a>
         <a class="btn secondary github-repo-link header-button" href="https://github.com/w-s-bitcoin/entropylab" target="_blank" rel="noopener noreferrer" aria-label="View the EntropyLab GitHub repository in a new tab"><svg class="github-mark" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span class="control-label">GitHub</span></a>
-<button type="button" class="seed-keyboard-toggle theme-toggle header-button" id="theme-toggle" data-theme-mode="dark" aria-label="Theme: dark. Switch to light"><svg class="theme-icon-dark" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><svg class="theme-icon-light" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><svg class="theme-icon-system" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></button>
+<button type="button" class="seed-keyboard-toggle theme-toggle header-button" id="theme-toggle" data-theme-mode="dark" aria-label="Theme: dark. Switch to light"><svg class="theme-icon-dark" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><svg class="theme-icon-light" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
       </div>
     </div>
   </div>
@@ -8133,30 +8133,33 @@ function hodlInitSegmentedControls() {
   window.addEventListener("resize", hodlQueueSegmentedControlSync, { passive: true });
   hodlQueueSegmentedControlSync();
 }
-var hodlThemeModes = ["dark", "light", "system"], hodlThemeStorageKey = "entropylab-theme", hodlThemeLightQuery = matchMedia("(prefers-color-scheme: light)");
-function hodlReadThemeMode() {
+// The toggle is two-state. Which of the two a first visit opens in is the
+// operating system's call, so an unset store means "ask the system" rather
+// than "dark" — which is why both modes are now written explicitly, where
+// dark used to be encoded as the absence of the key. A store left over from
+// the old third state reads as unset, so those users keep following the
+// system until they touch the toggle.
+var hodlThemeModes = ["dark", "light"], hodlThemeStorageKey = "entropylab-theme", hodlThemeLightQuery = matchMedia("(prefers-color-scheme: light)");
+function hodlStoredThemeMode() {
   try {
     let mode = localStorage.getItem(hodlThemeStorageKey);
-    return hodlThemeModes.includes(mode) ? mode : "dark";
+    return hodlThemeModes.includes(mode) ? mode : null;
   } catch (e) {
-    return "dark";
+    return null;
   }
+}
+function hodlReadThemeMode() {
+  return hodlStoredThemeMode() || (hodlThemeLightQuery.matches ? "light" : "dark");
 }
 function hodlApplyTheme(mode) {
   if (!hodlThemeModes.includes(mode)) mode = "dark";
-  let light = mode === "light" || mode === "system" && hodlThemeLightQuery.matches;
+  let light = mode === "light";
   if (light) document.documentElement.dataset.theme = "light";
   else delete document.documentElement.dataset.theme;
-  try {
-    if (mode === "dark") localStorage.removeItem(hodlThemeStorageKey);
-    else localStorage.setItem(hodlThemeStorageKey, mode);
-  } catch (e) {
-  }
   let toggle = document.getElementById("theme-toggle");
   if (toggle) {
-    let next = hodlThemeModes[(hodlThemeModes.indexOf(mode) + 1) % hodlThemeModes.length];
     toggle.dataset.themeMode = mode;
-    toggle.setAttribute("aria-label", `Theme: ${mode}. Switch to ${next}`);
+    toggle.setAttribute("aria-label", `Theme: ${mode}. Switch to ${light ? "dark" : "light"}`);
   }
   let meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = light ? "#ffffff" : "#000000";
@@ -8184,9 +8187,18 @@ function hodlInitBetaWarningDismiss() {
 function hodlInitTheme() {
   hodlApplyTheme(hodlReadThemeMode());
   let toggle = document.getElementById("theme-toggle");
-  if (toggle) toggle.onclick = () => hodlApplyTheme(hodlThemeModes[(hodlThemeModes.indexOf(hodlReadThemeMode()) + 1) % hodlThemeModes.length]);
+  if (toggle) toggle.onclick = () => {
+    let mode = hodlReadThemeMode() === "light" ? "dark" : "light";
+    try {
+      localStorage.setItem(hodlThemeStorageKey, mode);
+    } catch (e) {
+    }
+    hodlApplyTheme(mode);
+  };
+  // Until the toggle is used the system still leads, so a mid-session change
+  // to its setting follows along without pinning a choice the user never made.
   hodlThemeLightQuery.addEventListener("change", () => {
-    if (hodlReadThemeMode() === "system") hodlApplyTheme("system");
+    if (!hodlStoredThemeMode()) hodlApplyTheme(hodlReadThemeMode());
   });
 }
 function hodlInitSecretFieldAutoClear() {

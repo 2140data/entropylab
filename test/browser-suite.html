@@ -535,24 +535,41 @@
     input(seed, "");
   });
 
-  await test("theme toggle cycles dark, light, and system and persists the choice", () => {
+  await test("theme toggle flips between dark and light and opens the way the system asks", async () => {
     const toggle = document.getElementById("theme-toggle");
     const controls = document.querySelector(".download-controls");
     const background = () => getComputedStyle(document.body).backgroundColor;
     assert(toggle && controls.contains(toggle), "Theme toggle is missing from the download controls");
     assert(Math.abs(toggle.getBoundingClientRect().right - controls.getBoundingClientRect().right) < 1, "Theme toggle is not at the right edge of its row");
+    // Two icons, because there are two states to show.
+    assert(toggle.querySelectorAll("svg").length === 2, "Theme toggle should carry exactly two icons");
+    assert(!toggle.querySelector(".theme-icon-system"), "Theme toggle still carries the retired system icon");
+    const opening = toggle.dataset.themeMode;
+    assert(opening === "dark" || opening === "light", `Theme toggle opened in an unknown mode (${opening})`);
     try {
-      assert(toggle.dataset.themeMode === "dark" && !document.documentElement.dataset.theme, "Theme did not start dark");
-      const dark = background();
+      // Nothing stored means the operating system decides which mode opens.
+      if (localStorage.getItem("entropylab-theme") === null) {
+        const wanted = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+        assert(opening === wanted, `A first visit opened ${opening} while the system asked for ${wanted}`);
+      }
+      const flipped = opening === "light" ? "dark" : "light";
+      const openingBackground = background();
       toggle.click();
-      assert(toggle.dataset.themeMode === "light" && document.documentElement.dataset.theme === "light", "Theme did not switch to light");
-      assert(background() !== dark, "Light theme did not change the page background");
-      assert(localStorage.getItem("entropylab-theme") === "light", "Light theme was not persisted");
+      assert(toggle.dataset.themeMode === flipped, `Toggle did not flip from ${opening} to ${flipped}`);
+      assert((document.documentElement.dataset.theme === "light") === (flipped === "light"), "The root theme attribute did not follow the toggle");
+      // The ground eases between themes, so the colour is read once it settles
+      // rather than in the same frame as the click.
+      const easing = getComputedStyle(document.body);
+      assert(/background-color/.test(easing.transitionProperty), "The page background does not transition");
+      assert(easing.transitionDuration === "0.21s", `Background transition is ${easing.transitionDuration}, not 0.21s`);
+      await until(() => background() !== openingBackground, "the page background to reach the flipped theme");
+      // Both modes persist explicitly: dark is no longer an absent key, which
+      // now means "follow the system" instead.
+      assert(localStorage.getItem("entropylab-theme") === flipped, `The ${flipped} choice was not persisted`);
       toggle.click();
-      assert(toggle.dataset.themeMode === "system" && localStorage.getItem("entropylab-theme") === "system", "Theme did not switch to system");
-      toggle.click();
-      assert(toggle.dataset.themeMode === "dark" && !document.documentElement.dataset.theme && localStorage.getItem("entropylab-theme") === null, "Theme did not return to dark");
-      assert(background() === dark, "Dark theme background was not restored");
+      assert(toggle.dataset.themeMode === opening, "Toggle did not flip back");
+      assert(localStorage.getItem("entropylab-theme") === opening, `The ${opening} choice was not persisted`);
+      await until(() => background() === openingBackground, "the page background to return to the opening theme");
     } finally {
       localStorage.removeItem("entropylab-theme");
     }
@@ -570,11 +587,13 @@
       assert(button.width <= box.width / 4, "Dismiss column is not narrow");
       assert(Math.abs(button.right - box.right) < 12, "Dismiss control is not at the banner's right edge");
       assert(button.top < box.top + box.height / 2, "Dismiss control is not near the banner's top");
-      // The icon reads white against the red banner.
-      assert(getComputedStyle(dismiss).color === "rgb(255, 255, 255)", "Dismiss icon is not white");
-      // The light theme tints the banner pale, so white would vanish there.
+      // Each theme is named rather than assumed: which one the page opens in
+      // now follows the operating system, so neither is the ambient default.
       const theme = document.documentElement.dataset.theme;
       try {
+        delete document.documentElement.dataset.theme;
+        assert(getComputedStyle(dismiss).color === "rgb(255, 255, 255)", "Dismiss icon is not white in the dark theme");
+        // The light theme tints the banner pale, so white would vanish there.
         document.documentElement.dataset.theme = "light";
         const light = getComputedStyle(dismiss).color;
         assert(light !== "rgb(255, 255, 255)", "Dismiss icon stayed white in the light theme");
