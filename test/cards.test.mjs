@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { mnemonicToEntropy, validateMnemonic } from "@scure/bip39";
+import { entropyToMnemonic, mnemonicToEntropy, validateMnemonic } from "@scure/bip39";
 import { wordlist as bip39English } from "@scure/bip39/wordlists/english.js";
 
 const root = dirname(fileURLToPath(import.meta.url));
@@ -45,7 +45,11 @@ const hodlSeedLengths = {
 function hodlSeedConfig(words = 12) {
   return hodlSeedLengths[words];
 }
-const hodlCardNeeded = new Function("hodlSeedConfig", `${loadSlice("hodlCardNeeded")}; return hodlCardNeeded;`)(hodlSeedConfig);
+const hodlCardNeeded = new Function(
+  "hodlSeedConfig",
+  "hodlCardWithoutReplacementBits",
+  `${loadSlice("hodlCardNeeded")}; return hodlCardNeeded;`,
+)(hodlSeedConfig, hodlCardWithoutReplacementBits);
 const hodlParseCards = new Function(
   "hodlCardNeeded",
   "hodlNormalizeCardToken",
@@ -199,6 +203,35 @@ test("one valid card produces a deterministic testing seed", () => {
   assert.match(entropy.warnings.join(" "), /Use only for testing/);
   assert.equal(hodlCardsEntropy("AS AS", 24).ok, false);
   assert.equal(hodlCardsEntropy("ZZ", 24).ok, false);
+});
+
+test("recommended card counts are the smallest deals reaching the entropy target", () => {
+  for (const [words, first, extra] of [[12, 25, 0], [15, 31, 0], [18, 39, 0], [21, 50, 0], [24, 52, 6]]) {
+    const needed = hodlCardNeeded(words);
+    assert.equal(needed.first, first, `${words}-word first count`);
+    assert.equal(needed.extra, extra, `${words}-word extra count`);
+    const bits = hodlSeedConfig(words).bits;
+    const supplied = hodlCardWithoutReplacementBits(needed.first) + hodlCardWithoutReplacementBits(needed.extra);
+    assert.ok(supplied >= bits, `${words} words: ${supplied.toFixed(1)} bits reaches the ${bits}-bit target`);
+    const oneFewer = needed.extra
+      ? hodlCardWithoutReplacementBits(needed.first) + hodlCardWithoutReplacementBits(needed.extra - 1)
+      : hodlCardWithoutReplacementBits(needed.first - 1);
+    assert.ok(oneFewer < bits, `${words} words: one fewer card falls below the ${bits}-bit target`);
+  }
+});
+
+test("a complete card transcript keeps deriving the expected deterministic seed", () => {
+  // 24 words: full deck plus six cards from a second shuffle.
+  const transcript = `${DECK.join(" ")} ${DECK.slice(0, 6).join(" ")}`;
+  const entropy = hodlCardsEntropy(transcript, 24);
+  assert.equal(entropy.ok, true);
+  assert.equal(entropy.warnings.length, 0);
+  assert.equal(entropy.bytes.length, 32);
+  const expected = createHash("sha256").update(transcript, "utf8").digest();
+  assert.deepEqual([...entropy.bytes], [...expected.subarray(0, 32)]);
+  const mnemonic = entropyToMnemonic(entropy.bytes, bip39English);
+  assert.equal(mnemonic.split(" ").length, 24);
+  assert.ok(validateMnemonic(mnemonic, bip39English));
 });
 
 test("hashed-card controls accept either suit or rank first and filter the other row", () => {
