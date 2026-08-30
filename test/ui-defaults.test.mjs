@@ -49,7 +49,7 @@ test("every enabled button uses orange and black momentary press feedback", () =
 test("wallet coin type indexes enable and default to mainnet", () => {
   for (const id of ["network", "msig-network"]) {
     const mainnetCoinType = new RegExp(
-      `<input id="${id}" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0"`,
+      `<input id="${id}" type="(?:text|number)"[^>]*inputmode="numeric" value="0"`,
     );
     assert.match(template, mainnetCoinType);
     assert.match(appWhitespace, mainnetCoinType);
@@ -438,16 +438,35 @@ test("key derivation separates script type from the hardened purpose index", () 
   for (const markup of [template, appWhitespace]) {
     assert.match(markup, /id="script-type-field">Script type\s*<select id="script-type"><option value="bip44">Legacy<\/option><option value="bip49">Nested SegWit<\/option><option value="bip84" selected(?:="selected")?>Native SegWit<\/option><option value="bip86">Taproot<\/option><\/select>/);
     assert.match(markup, /id="script-type"[\s\S]*id="purpose"[\s\S]*id="network"[\s\S]*id="account"/);
-    assert.match(markup, /id="purpose" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="84"/);
+    assert.match(markup, /id="purpose" type="text" inputmode="numeric" value="84"/);
     assert.match(markup, /id="purpose-help">Purpose index (?:·|\\xB7) Hardened (?:·|\\xB7) 0 to 2,147,483,647/);
     assert.match(markup, /id="account-help">Account index (?:·|\\xB7) Hardened (?:·|\\xB7) 0 to 2,147,483,647/);
   }
   assert.match(appSource, /function hodlReadPurpose\(mark = true\)/);
-  assert.match(appSource, /hodlSetSelectedScriptType\(target\.value, true\)/);
+  assert.match(appSource, /hodlSetSelectedScriptType\(target\.value, !\["bip48", "custom"\]\.includes\(scheme\)\)/);
   assert.match(appSource, /let derivedDefinition = \{ \.\.\.definition, purpose: purposeIndex, purposeHardened: hardening\.purpose \}/);
-  assert.match(appSource, /originPath = `\$\{hodlOriginPathIndex\(purposeIndex, hardening\.purpose\)\}\/\$\{hodlOriginPathIndex\(coinType, hardening\.coinType\)\}\/\$\{hodlOriginPathIndex\(accountIndex, hardening\.account\)\}`/);
-  assert.match(appSource, /context\.textContent = `\$\{definition\.label\} \\xB7 Purpose \$\{hodlPathIndex\(purpose, hardening\.purpose\)\}`/);
-  assert.match(appSource, /fields: \{ pass: "", script: "bip84", purpose: "84", purposeHarden: true, coinType: "0", coinTypeHarden: true, network: "mainnet"/);
+  assert.match(appSource, /originPath = derivationPlan\?\.originPath \?\?/);
+  assert.match(appSource, /context\.textContent = `\$\{definition\.label\} \\xB7 \$\{plan\.label\}`/);
+  assert.match(appSource, /fields: \{ pass: "", script: "bip84", derivationScheme: "bip84", purpose: "84", purposeHarden: true, coinType: "0", coinTypeHarden: true, network: "mainnet"/);
+});
+
+test("derivation schemes expose BIP48 and an arbitrary-depth custom account path", () => {
+  for (const markup of [template, appWhitespace]) {
+    assert.match(markup, /id="derivation-scheme"[\s\S]*?<option value="bip48">BIP48 (?:·|\\xB7) Multisig<\/option>[\s\S]*?<option value="custom">Custom path<\/option>/);
+    assert.match(markup, /id="scheme-script-index" type="text" inputmode="numeric" value="2"/);
+    assert.match(markup, /id="custom-derivation-path" type="text" value="m\/84'\/0'\/0'"/);
+    assert.match(markup, /id="custom-network"[\s\S]*?<option value="mainnet" selected/);
+  }
+  assert.match(appSource, /function hodlParseCustomDerivationPath\(value\)/);
+  assert.match(appSource, /if \(scheme === "bip48"\) parts\.push/);
+  assert.match(appSource, /accountPath = derivationPlan\?\.accountPath \|\| Ao/);
+});
+
+test("typing h or an apostrophe checks the adjacent Harden control", () => {
+  assert.match(appSource, /function hodlConsumeDerivationHardeningSuffix\(input\)/);
+  assert.match(appSource, /\^\(\\d\+\)\(\[hH'\]\)\$/);
+  assert.match(appSource, /checkbox\.checked = true/);
+  assert.match(appSource, /\^\\d\+\[hH'\]\?\$/);
 });
 
 test("derivation indexes keep adjacent Harden controls with safe defaults", () => {

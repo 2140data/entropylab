@@ -948,8 +948,9 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   background: var(--surface-2); color: var(--fg); font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer;
 }
 .derivation-harden input { margin: 0; accent-color: var(--selection-accent); }
-#passphrase-field[hidden], #master-fingerprint-preview[hidden], #script-type-field[hidden], #purpose-field[hidden],
-#account-field[hidden], #address-range-settings[hidden], #derivation-path-preview[hidden] { display: none !important; }
+#passphrase-field[hidden], #master-fingerprint-preview[hidden], #derivation-scheme-field[hidden], #script-type-field[hidden], #purpose-field[hidden],
+#purpose-network-settings[hidden], #account-field[hidden], #scheme-script-index-field[hidden], #custom-derivation-settings[hidden],
+#address-range-settings[hidden], #derivation-path-preview[hidden] { display: none !important; }
 .field-note {
   display: block; margin-top: var(--space-control); color: var(--muted); font-size: 12px; font-weight: 400; line-height: 1.4;
 }
