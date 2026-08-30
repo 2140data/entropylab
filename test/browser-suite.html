@@ -592,11 +592,16 @@
       toggle.click();
       assert(toggle.dataset.themeMode === flipped, `Toggle did not flip from ${opening} to ${flipped}`);
       assert((document.documentElement.dataset.theme === "light") === (flipped === "light"), "The root theme attribute did not follow the toggle");
-      // The ground eases between themes, so the colour is read once it settles
-      // rather than in the same frame as the click.
+      // The ground eases between themes unless the operating system asks for
+      // reduced motion. macOS CI commonly enables that preference, so test
+      // the browser's requested behavior instead of requiring an animation.
       const easing = getComputedStyle(document.body);
-      assert(/background-color/.test(easing.transitionProperty), "The page background does not transition");
-      assert(easing.transitionDuration === "0.21s", `Background transition is ${easing.transitionDuration}, not 0.21s`);
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        assert(easing.transitionDuration.split(",").every((duration) => duration.trim() === "0s"), `Reduced-motion background transition is ${easing.transitionDuration}, not disabled`);
+      } else {
+        assert(/background-color/.test(easing.transitionProperty), "The page background does not transition");
+        assert(easing.transitionDuration === "0.21s", `Background transition is ${easing.transitionDuration}, not 0.21s`);
+      }
       await until(() => background() !== openingBackground, "the page background to reach the flipped theme");
       // Both modes persist explicitly: dark is no longer an absent key, which
       // now means "follow the system" instead.
