@@ -124,6 +124,22 @@ test("key and multisig derivation use an indexed address window with an estimate
   assert.match(appSource, /hodlHandleDerivationButton\("msig", hodlBuildMsig\)/);
 });
 
+test("key and multisig derivation select one or two address branches", () => {
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /id="branch-start"[^>]*value="0"/);
+    assert.match(markup, /id="branch-range"[^>]*max="2"[^>]*value="2"/);
+    assert.match(markup, /id="msig-branch-start"[^>]*value="0"/);
+    assert.match(markup, /id="msig-branch-range"[^>]*max="2"[^>]*value="2"/);
+    assert.match(markup, /0 is Receive (?:·|\xB7) 1 is Change/);
+  }
+  assert.match(appSource, /function hodlReadBranchWindow\(prefix = "", mark = true\)/);
+  assert.match(appSource, /function hodlAddressBranchLabel\(branch\)/);
+  assert.match(appSource, /branch === 0 \? "Receive" : branch === 1 \? "Change" : `Custom branch \$\{branch\}`/);
+  assert.match(appSource, /progress\.setTotal\(count \* branchRange\)/);
+  assert.match(appSource, /hodlAddressBranchTables\(branches, hasPrivate, "hd"\)/);
+  assert.match(appSource, /hodlAddressBranchTables\(branches, false, "msig"\)/);
+});
+
 test("a running derivation yields off the main thread, survives hidden tabs, and cancels on edits", () => {
   assert.match(appSource, /function hodlDerivationPause\(\)/);
   assert.match(appSource, /requestAnimationFrame\(finish\)/);
@@ -481,13 +497,13 @@ test("key derivation shows the relevant paste-ready multisig co-signer exports",
   assert.match(app, /\$\{ye\(`Account \$\{account\.primaryPublicLabel\}`,account\.primaryPublic\)\}\s*\$\{hodlRenderMultisigCosignerExport\(re\.multisigCosignerExports,account\.def\.id\)\}/);
   assert.doesNotMatch(`${app}\n${css}`, /account-multisig-exports/);
   assert.match(app, /Legacy P2SH requires the depth-1 BIP45 purpose key at m\/45h/);
-  assert.match(app, /receiveSuffix=bip45\?"\/0\/0\/\*":"\/0\/\*"/);
+  assert.match(app, /suffix=bip45\?`\/0\/\$\{branch\}\/\*`:`\/\$\{branch\}\/\*`/);
   assert.match(app, /Legacy BIP45 addresses use co-signer branch 0/);
   assert.match(app, /Legacy P2SH uses the selected BIP87 account paths/);
   assert.match(app, /function hodlMsigInnerDescriptor\(kind,m,inner,sorted\)/);
   assert.match(app, /function hodlMsigPolicyOp\(kind,sorted\)/);
   assert.match(app, /kind==="p2tr"\?sorted\?"sortedmulti_a":"multi_a":sorted\?"sortedmulti":"multi"/);
-  assert.match(app, /hodlMsigAddr\(receivePublicKeys,m,network,kind,sorted\)/);
+  assert.match(app, /hodlMsigAddr\(publicKeys,m,network,kind,sorted\)/);
   assert.match(app, /function hodlTaprootNumsKey\(\)/);
   assert.match(app, /function hodlXOnlyPubkey\(pubkey\)/);
 });
@@ -497,7 +513,7 @@ test("derived wallets offer an address match check", () => {
   assert.match(app, /id="address-match"/);
   assert.match(app, /id="address-match-status"/);
   assert.match(app, /address-match-field">Check an address/);
-  assert.match(app, /Paste a receive or change address shown by another wallet/);
+  assert.match(app, /Paste an address shown by another wallet/);
   assert.match(app, /even if the index is beyond the table above/);
   assert.doesNotMatch(app, /Address from Sparrow/);
   // esbuild's output normalizes numeric literals (1000 -> 1e3) in every
@@ -505,8 +521,8 @@ test("derived wallets offer an address match check", () => {
   assert.match(appSource, /var hodlAddressSearchLimit\s*=\s*1000/);
   assert.match(app, /function hodlMatchHdAddressBeyond\(address,account,start\)/);
   assert.match(app, /function hodlMatchMsigAddressBeyond\(address,start\)/);
-  assert.match(app, /hodlAddressTable\(account\.change,"Change addresses",hasPrivate,"hd-change"\)\}\s*\$\{hodlAddressMatchMarkup\(\)/);
-  assert.match(app, /hodlAddressTable\(re\.change,"Multisig change addresses",!1,"msig-change"\)\}\s*\$\{hodlAddressMatchMarkup\(\)/);
+  assert.match(app, /hodlAddressBranchTables\(branches,hasPrivate,"hd"\)\}\s*\$\{hodlAddressMatchMarkup\(\)/);
+  assert.match(app, /hodlAddressBranchTables\(branches,!1,"msig"\)\}\s*\$\{hodlAddressMatchMarkup\(\)/);
   assert.match(css, /\.address-match-field/);
 });
 
@@ -644,7 +660,7 @@ test("multisig consistently uses derive for its heading and action", () => {
   assert.match(app, /function hodlValidatedMsigInputs\(\)/);
   assert.match(appSource, /hodlValidatedMsigInputs\(\);\s*ready = true/);
   assert.match(app, /button\.disabled=!ready/);
-  assert.match(app, /let\{network,coinType,count,addressStart,n,m,kind,purpose,hardening,legacyStandard,nodes,xpubs,keyTokens,accountSummary,accountWarning\}=hodlValidatedMsigInputs\(\)/);
+  assert.match(app, /let\{network,coinType,count,addressStart,branchStart,branchRange,n,m,kind,purpose,hardening,legacyStandard,nodes,xpubs,keyTokens,accountSummary,accountWarning\}=hodlValidatedMsigInputs\(\)/);
 });
 
 test("key and multisig add controls stay pinned to the right of their tab strips", () => {

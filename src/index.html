@@ -139,6 +139,16 @@ words, pick one of the checksum words.</span></span>
             <span class="field-note" id="account-help">Account index · Hardened · 0 to 2,147,483,647</span>
           </div>
         </div>
+        <div class="key-settings-row address-branch-settings" id="address-branch-settings">
+          <label class="field">Starting address branch index
+            <input id="branch-start" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0" aria-describedby="branch-start-help">
+            <span class="field-note" id="branch-start-help">First address branch to derive · 0 is Receive · 1 is Change · 0 to 2,147,483,647</span>
+          </label>
+          <label class="field">Address branch range
+            <input id="branch-range" type="number" min="1" max="2" step="1" inputmode="numeric" value="2" aria-describedby="branch-range-help">
+            <span class="field-note" id="branch-range-help">Derives Receive and Change branches · Max 2</span>
+          </label>
+        </div>
         <div class="key-settings-row address-range-settings" id="address-range-settings">
           <div class="field"><label for="address-start">Starting address index</label>
             <div class="derivation-index-control"><span class="derivation-index-value"><input id="address-start" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0" aria-describedby="address-start-help"><span class="derivation-index-prime" aria-hidden="true">'</span></span><label class="derivation-harden"><input id="address-start-harden" type="checkbox"><span>Harden</span></label></div>
@@ -154,8 +164,8 @@ words, pick one of the checksum words.</span></span>
         <div class="derivation-path-head"><p class="label" id="derivation-path-heading">Derivation paths</p><span class="derivation-path-context" id="derivation-path-context"></span></div>
         <dl class="derivation-path-list">
           <div class="derivation-path-row"><dt>Account</dt><dd><code data-path="account"></code></dd></div>
-          <div class="derivation-path-row"><dt>Receive</dt><dd><code data-path="receive"></code></dd></div>
-          <div class="derivation-path-row"><dt>Change</dt><dd><code data-path="change"></code></dd></div>
+          <div class="derivation-path-row" data-branch-path-row="0"><dt data-branch-path-label="0">Receive</dt><dd><code data-path="receive"></code></dd></div>
+          <div class="derivation-path-row" data-branch-path-row="1"><dt data-branch-path-label="1">Change</dt><dd><code data-path="change"></code></dd></div>
         </dl>
         <p class="derivation-path-error" id="derivation-path-error" hidden></p>
       </section>
@@ -222,6 +232,16 @@ words, pick one of the checksum words.</span></span>
             <span class="field-note" id="msig-account-help">Account index · Hardened · Derived from co-signer key origins.</span>
             <span class="field-note msig-account-warning" id="msig-account-warning" role="status" hidden></span>
           </div>
+        </div>
+        <div class="key-settings-row address-branch-settings">
+          <label class="field">Starting address branch index
+            <input id="msig-branch-start" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0" aria-describedby="msig-branch-start-help">
+            <span class="field-note" id="msig-branch-start-help">First address branch to derive · 0 is Receive · 1 is Change · 0 to 2,147,483,647</span>
+          </label>
+          <label class="field">Address branch range
+            <input id="msig-branch-range" type="number" min="1" max="2" step="1" inputmode="numeric" value="2" aria-describedby="msig-branch-range-help">
+            <span class="field-note" id="msig-branch-range-help">Derives Receive and Change branches · Max 2</span>
+          </label>
         </div>
         <div class="key-settings-row address-range-settings">
           <div class="field"><label for="msig-address-start">Starting address index</label>
