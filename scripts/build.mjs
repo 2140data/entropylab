@@ -16,7 +16,6 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const SRC = join(root, "src");
 
 const read = (path) => readFileSync(join(SRC, path), "utf8");
-const readBase64 = (path) => readFileSync(join(SRC, path)).toString("base64");
 const version = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version;
 
 if (!/^\d+(?:\.\d+)*$/.test(version)) {
@@ -36,14 +35,22 @@ if (process.argv.includes("--clean")) {
 }
 
 const template = read("index.html");
-// The header logo is inlined as a data URI so the downloaded file shows it
-// without reaching for assets/ (which only exists on the hosted site).
-const css = read("css/styles.css")
-  .replace("/*@@LOGO_DARK@@*/", () => readBase64("assets/logo-dark.png"))
-  .replace("/*@@LOGO_LIGHT@@*/", () => readBase64("assets/logo-light.png"));
-// Inlined from the same file the site publishes, so the downloaded document
-// and the hosted tab icon can never drift apart.
+const css = read("css/styles.css");
+// The header logo is inlined as SVG markup so the downloaded file shows it
+// without reaching for assets/ (which only exists on the hosted site). The
+// empty span is replaced in the template and in the runtime header template.
+const logoSvg = (name) =>
+  read(`assets/${name}.svg`).trim()
+    .replace("<svg ", `<svg class="site-${name}" aria-hidden="true" focusable="false" `);
+const siteLogoSpan = '<span class="site-logo" aria-hidden="true"></span>';
+const siteLogo = `<span class="site-logo" aria-hidden="true">${logoSvg("logo-dark")}${logoSvg("logo-light")}</span>`;
+// Inlined from the same files the site publishes, so the downloaded document
+// and the hosted tab icon can never drift apart. The SVG icon is listed last
+// so capable browsers prefer it; the PNG stays for those that ignore SVG icons.
 const favicon = readFileSync(join(root, "assets/favicon.png")).toString("base64");
+const faviconSvg = read("assets/favicon.svg").trim()
+  .replace(/\s+/g, " ")
+  .replace(/[#<>"%]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
 const jsMain = buildSync({
   entryPoints: [join(SRC, "js/app.js")],
   bundle: true,
@@ -54,7 +61,7 @@ const jsMain = buildSync({
   target: "es2022",
   legalComments: "none",
   charset: "utf8",
-}).outputFiles[0].text;
+}).outputFiles[0].text.split(siteLogoSpan).join(siteLogo);
 const jsSqliteWriter = read("js/sqlite-writer.js");
 const jsWalletExport = read("js/wallet-export.js");
 const jsOnline = read("js/online.js");
@@ -65,7 +72,9 @@ const jsEnhanced = read("js/enhanced-inputs.js");
 const jsRepeat = read("js/repeat-inputs.js");
 
 let html = template
+  .split(siteLogoSpan).join(siteLogo)
   .replace("/*@@FAVICON@@*/", () => favicon)
+  .replace("/*@@FAVICON_SVG@@*/", () => faviconSvg)
   .replace("/*@@CSS@@*/", () => css)
   .replace("/*@@JS_MAIN@@*/", () => jsMain)
   .replace("/*@@JS_SQLITE_WRITER@@*/", () => jsSqliteWriter)

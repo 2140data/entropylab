@@ -774,8 +774,11 @@ test("the site header is fixed, carries the logo, and holds the version, downloa
 });
 
 test("the header logo is inlined for both themes and never fetched from assets", () => {
-  assert.match(css, /\.site-logo \{[^}]*background: url\("data:image\/png;base64,\/\*@@LOGO_DARK@@\*\/"\) center \/ contain no-repeat;/s);
-  assert.match(css, /:root\[data-theme="light"\] \.site-logo \{ background-image: url\("data:image\/png;base64,\/\*@@LOGO_LIGHT@@\*\/"\); \}/);
+  assert.match(css, /\.site-logo svg \{ display: block; width: 100%; height: 100%; \}/);
+  assert.match(css, /\.site-logo \.site-logo-light \{ display: none; \}/);
+  assert.match(css, /:root\[data-theme="light"\] \.site-logo \.site-logo-dark \{ display: none; \}/);
+  assert.match(css, /:root\[data-theme="light"\] \.site-logo \.site-logo-light \{ display: block; \}/);
+  assert.doesNotMatch(css, /data:image/);
   // No markup copy may point the logo at the hosted assets directory.
   for (const markup of [template, app]) {
     assert.doesNotMatch(markup, /online-brand-mark/);
@@ -814,7 +817,7 @@ test("the marketing card states its pitch as a list rather than a paragraph", ()
 test("the favicon ships inside the document instead of the assets directory", () => {
   assert.match(
     template,
-    /<title>EntropyLab — Offline Bitcoin Key &amp; Wallet Calculator<\/title><link rel="icon" type="image\/png" sizes="64x64" href="data:image\/png;base64,\/\*@@FAVICON@@\*\/">/,
+    /<title>EntropyLab — Offline Bitcoin Key &amp; Wallet Calculator<\/title><link rel="icon" type="image\/png" sizes="64x64" href="data:image\/png;base64,\/\*@@FAVICON@@\*\/"><link rel="icon" type="image\/svg\+xml" href="data:image\/svg\+xml,\/\*@@FAVICON_SVG@@\*\/">/,
   );
   // The inlined icon covers hosted and offline alike, so online.js no longer
   // layers a same-origin link over it.

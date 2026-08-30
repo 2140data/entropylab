@@ -524,16 +524,16 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
   display: flex; align-items: center; gap: 6px; height: var(--site-header-height);
   max-width: 1000px; margin: 0 auto; padding: 0 var(--site-header-pad);
 }
-/* Both marks are inlined as data URIs at build time; the light one wins when
-   the light theme sets data-theme on the root element. The negative margin
-   cancels the flex gap on this side only: the art carries 20px of transparent
-   margin per side in a 96px square, so it already supplies ~7.5px of space at
-   the rendered 36px and the 6px gap on top of it read as a hole. */
+/* The build inlines both marks as SVG inside this span; the light one is
+   shown only when the light theme sets data-theme on the root element. */
 .site-logo {
   flex: 0 0 auto; width: 36px; height: 36px; margin-right: -6px;
-  background: url("data:image/png;base64,/*@@LOGO_DARK@@*/") center / contain no-repeat;
+  box-sizing: border-box; padding: 1.5px 2.5px 3.5px;
 }
-:root[data-theme="light"] .site-logo { background-image: url("data:image/png;base64,/*@@LOGO_LIGHT@@*/"); }
+.site-logo svg { display: block; width: 100%; height: 100%; }
+.site-logo .site-logo-light { display: none; }
+:root[data-theme="light"] .site-logo .site-logo-dark { display: none; }
+:root[data-theme="light"] .site-logo .site-logo-light { display: block; }
 /* The wordmark takes the h1's display face, so the bar reads as the same brand
    as the page title below it. Pure white and pure black rather than --fg, which
    stops short of both ends: the wordmark wants the full contrast. */
