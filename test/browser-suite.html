@@ -1018,6 +1018,11 @@
     network.dispatchEvent(new Event("input", { bubbles: true }));
     const addressStart = document.getElementById("address-start");
     const addressRange = document.getElementById("address-range");
+    input(addressRange, "10001");
+    equal(addressRange.value, "10000", "An oversized singlesig address range was not clamped immediately");
+    assert(!addressStart.classList.contains("bad") && !addressRange.classList.contains("bad"), "Clamping an oversized singlesig range left an invalid field state");
+    assert(document.getElementById("derivation-path-error").hidden, "Clamping an oversized singlesig range left a derivation warning");
+    input(addressRange, "5");
     input(addressStart, "2147483646");
     equal(addressRange.max, "2", "A near-limit starting index did not lower the singlesig range maximum");
     equal(addressRange.value, "2", "A singlesig range beyond the last address index was not clamped");
@@ -1202,6 +1207,10 @@
     input(document.getElementById("msig-x-0"), bip87Export);
     const multisigAddressStart = document.getElementById("msig-address-start");
     const multisigAddressRange = document.getElementById("msig-address-range");
+    input(multisigAddressRange, "10001");
+    equal(multisigAddressRange.value, "10000", "An oversized multisig address range was not clamped immediately");
+    assert(!multisigAddressStart.classList.contains("bad") && !multisigAddressRange.classList.contains("bad"), "Clamping an oversized multisig range left an invalid field state");
+    input(multisigAddressRange, "5");
     input(multisigAddressStart, "2147483646");
     equal(multisigAddressRange.max, "2", "A near-limit starting index did not lower the multisig range maximum");
     equal(multisigAddressRange.value, "2", "A multisig range beyond the last address index was not clamped");

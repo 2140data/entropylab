@@ -1893,8 +1893,8 @@ function hodlReadAddressWindow(prefix = "", mark = true) {
   let rangeValid = /^\d+$/.test(rangeRaw) && Number.isSafeInteger(range) && range >= 1 && range <= maximum;
   let endValid = startValid && rangeValid && start + range - 1 <= hodlMaxAddressIndex;
   if (mark) {
-    startInput?.classList.toggle("bad", !startValid || !endValid);
-    startInput?.setAttribute("aria-invalid", String(!startValid || !endValid));
+    startInput?.classList.toggle("bad", !startValid);
+    startInput?.setAttribute("aria-invalid", String(!startValid));
     rangeInput?.classList.toggle("bad", !rangeValid || !endValid);
     rangeInput?.setAttribute("aria-invalid", String(!rangeValid || !endValid));
   }
@@ -2199,7 +2199,7 @@ function hodlInitDerivationControls() {
     let target = event.target;
     if (!(target instanceof Element)) return;
     if (["purpose", "network", "account", "address-start", "address-range", "purpose-harden", "network-harden", "account-harden", "address-start-harden"].includes(target.id)) {
-      if (target.id === "address-start") hodlSyncAddressRangeLimit();
+      if (target.id === "address-start" || target.id === "address-range") hodlSyncAddressRangeLimit();
       let state = hodlKeys[hodlActiveKey];
       if (state) {
         let hardeningField = { "purpose-harden": "purposeHarden", "network-harden": "coinTypeHarden", "account-harden": "accountHarden", "address-start-harden": "addressHarden" }[target.id];
@@ -6577,7 +6577,10 @@ function hodlInitMsig() {
     recheck();
     hodlSyncMsigClearButton(true);
   }));
-  ["msig-address-start", "msig-address-range"].forEach((id) => document.getElementById(id)?.addEventListener("input", hodlInvalidateMsig));
+  ["msig-address-start", "msig-address-range"].forEach((id) => document.getElementById(id)?.addEventListener("input", () => {
+    hodlSyncAddressRangeLimit("msig-");
+    hodlInvalidateMsig();
+  }));
   hodlResetMsigForm();
   W("#msig-go").onclick = () => hodlHandleDerivationButton("msig", hodlBuildMsig);
   W("#msig-wipe").onclick = hodlWipeActiveMsig;
