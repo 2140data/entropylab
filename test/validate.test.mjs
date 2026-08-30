@@ -42,8 +42,9 @@ const requiredFiles = [
   "test/browser-instrumentation.html",
   "test/browser-suite.html",
   "src/index.html",
-  "src/assets/logo-dark.png",
-  "src/assets/logo-light.png",
+  "src/assets/logo-dark.svg",
+  "src/assets/logo-light.svg",
+  "src/assets/favicon.svg",
   "src/css/styles.css",
   "src/js/app.js",
   "src/js/online.js",
@@ -230,13 +231,16 @@ for (const file of htmlFiles) {
       Buffer.from(inlined[1], "base64").equals(readFileSync(join(root, "assets/favicon.png"))),
       `${file} favicon does not match assets/favicon.png`,
     );
+    const svgIcon = read(file).match(/<link rel="icon" type="image\/svg\+xml" href="data:image\/svg\+xml,([^"]+)">/);
+    assert.ok(svgIcon, `${file} has no inlined SVG favicon`);
+    assert.ok(decodeURIComponent(svgIcon[1]).includes("<svg "), `${file} SVG favicon is not SVG markup`);
   });
   test(`${file} inlines the header logo for both themes`, () => {
     const html = read(file);
     // The downloaded file has no assets/ beside it, so the logo has to travel
     // inside the document or the fixed header renders empty when air-gapped.
-    assert.match(html, /\.site-logo \{[^}]*background: url\("data:image\/png;base64,[A-Za-z0-9+/=]+"\) center \/ contain no-repeat;/);
-    assert.match(html, /:root\[data-theme="light"\] \.site-logo \{ background-image: url\("data:image\/png;base64,[A-Za-z0-9+/=]+"\); \}/);
+    assert.match(html, /<span class="site-logo" aria-hidden="true"><svg class="site-logo-dark" aria-hidden="true" focusable="false" [^>]*>[\s\S]*?<\/svg><svg class="site-logo-light" aria-hidden="true" focusable="false" [^>]*>[\s\S]*?<\/svg><\/span>/);
+    assert.doesNotMatch(html, /\.site-logo \{[^}]*data:image/);
   });
 }
 
