@@ -771,7 +771,25 @@ test("header theme toggle cycles dark, light, and OS themes without a flash", ()
     assert.match(markup, /class="seed-keyboard-toggle theme-toggle header-button" id="theme-toggle" data-theme-mode="dark" aria-label="Theme: dark\. Switch to light"/);
   }
   assert.match(template, /<script>\(function\(\)\{try\{var m=localStorage\.getItem\("entropylab-theme"\)/);
-  assert.match(app, /var hodlThemeModes=\["dark","light","system"\],hodlThemeStorageKey="entropylab-theme"/);
+  assert.match(app, /var hodlThemeModes=\["dark","light"\],hodlThemeStorageKey="entropylab-theme"/);
+  // The page eases between the two grounds, and holds still for anyone who
+  // asked the system for less motion.
+  assert.match(css, /html, body \{[^}]*transition: background-color \.21s ease; \}/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ html, body \{ transition: none; \} \}/);
+  // Two states only: the toggle flips, it does not cycle.
+  assert.doesNotMatch(`${template}\n${app}`, /theme-icon-system|"system"/);
+  assert.doesNotMatch(css, /theme-icon-system/);
+  // A first visit opens in whichever mode the operating system asks for,
+  // before first paint as well as at boot.
+  assert.match(
+    template,
+    /if\(m==="light"\|\|\(m!=="dark"&&matchMedia\("\(prefers-color-scheme: light\)"\)\.matches\)\)document\.documentElement\.dataset\.theme="light"/,
+  );
+  assert.match(appWhitespace, /return hodlStoredThemeMode\(\)\|\|\(hodlThemeLightQuery\.matches\?"light":"dark"\)/);
+  // Both modes are stored explicitly now: dark can no longer be encoded as a
+  // missing key, because a missing key is what defers to the system.
+  assert.doesNotMatch(appWhitespace, /removeItem\(hodlThemeStorageKey\)/);
+  assert.match(appWhitespace, /localStorage\.setItem\(hodlThemeStorageKey,mode\)/);
   assert.match(app, /function hodlApplyTheme\(mode\)/);
   assert.match(appSource, /hodlInitSecretFieldAutoClear\(\);\s*hodlInitTheme\(\);/);
   assert.match(css, /:root\[data-theme="light"\] \{\s*color-scheme: light;/);

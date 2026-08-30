@@ -73,7 +73,11 @@
 *::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 *::-webkit-scrollbar-corner { background: var(--scrollbar-track); }
 html { overflow-y: scroll; scrollbar-gutter: stable; scroll-padding-top: calc(var(--site-header-height) + 12px); }
-html, body { margin: 0; min-width: var(--site-min-width); background: var(--bg); color: var(--fg); font-family: var(--sans); }
+html, body { margin: 0; min-width: var(--site-min-width); background: var(--bg); color: var(--fg); font-family: var(--sans); transition: background-color .21s ease; }
+/* Flipping the theme eases the page between the two grounds rather than
+   cutting. The first paint is not a transition, so the opening theme still
+   arrives instantly. */
+@media (prefers-reduced-motion: reduce) { html, body { transition: none; } }
 body { min-height: 100vh; }
 h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; }
 h1 { font-size: 1.5rem; margin: 8px 0; }
@@ -587,7 +591,7 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
    base is 44px wide and stays that way everywhere else in the app. */
 .download-controls .theme-toggle { flex: 0 0 40px; width: 40px; align-self: center; }
 .theme-toggle svg { display: none; width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.theme-toggle[data-theme-mode="dark"] .theme-icon-dark, .theme-toggle[data-theme-mode="light"] .theme-icon-light, .theme-toggle[data-theme-mode="system"] .theme-icon-system { display: block; }
+.theme-toggle[data-theme-mode="dark"] .theme-icon-dark, .theme-toggle[data-theme-mode="light"] .theme-icon-light { display: block; }
 .btn:is(.download-html, .save-recovery-sheet, .save-wallet-dat) {
   border-color: color-mix(in oklab, var(--ok) 65%, var(--border));
   background: color-mix(in oklab, var(--ok) 14%, var(--surface)); color: var(--ok);
