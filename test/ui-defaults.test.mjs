@@ -352,7 +352,7 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /modeButton\.disabled=!pass/);
   assert.match(app, /hodlSetSeedKeyboardLayout\(keyboard,modeButton,"lower"\)/);
   assert.match(app, /hodlApplySeedKeyboardKey\(activeInput,button\.dataset\.seedKey\|\|""\)/);
-  assert.match(appWhitespace, /addEventListener\("pointerdown",event=>\{event\.preventDefault\(\);activeInput\.focus/);
+  assert.match(appWhitespace, /hodlBindKeypadPointer\(keyboard\.querySelectorAll\("button"\),\(\)=>activeInput\)/);
   assert.match(app, /function hodlFilterSeed\(e\)\{[^}]*hodlLooksExtendedKey\(value\)\?value:value\.toLowerCase\(\)/);
   assert.match(css, /\.seed-entry-tools\s*\{[^}]*align-items: stretch[^}]*margin-top: var\(--space-component\)/s);
   assert.match(css, /\.passphrase-keyboard-tools \{[^}]*display: flex[^}]*margin-top: var\(--space-control\)/s);
@@ -904,4 +904,18 @@ test("card suit glyphs have explicit local symbol-font fallbacks (issue #104)", 
   // Fonts are local system fonts only: no webfont may ever be downloaded.
   assert.doesNotMatch(css, /@font-face|\.woff2?|fonts\.googleapis|fonts\.gstatic/);
   assert.doesNotMatch(template, /@font-face|\.woff2?|fonts\.googleapis|fonts\.gstatic/);
+});
+
+test("virtual keypads never focus the field on touch so the mobile keyboard stays closed (#123)", () => {
+  const body = (name) => appSource.slice(appSource.indexOf(`function ${name}(`), appSource.indexOf("\nfunction ", appSource.indexOf(`function ${name}(`) + 1));
+  for (const name of ["hodlInsertDiceControl", "hodlInsertEntropyControl", "hodlApplySeedKeyboardKey", "hodlSetInputValueAtEnd", "hodlBindSeedNumberPad"]) {
+    assert.doesNotMatch(body(name), /\.focus\(/, `${name} must not focus the input`);
+  }
+  assert.match(body("hodlBindKeypadPointer"), /event\.preventDefault\(\);\s*if \(event\.pointerType === "mouse"\) getInput\(\)\?\.focus\(/);
+  assert.match(body("hodlPlaceCaret"), /document\.activeElement === input/);
+  // Every keypad routes pointerdown through the shared binder; no pad focuses the input directly.
+  assert.doesNotMatch(appSource, /pointerdown", \(event\) => \{\s*event\.preventDefault\(\);\s*\w+\.focus\(/);
+  for (const call of ['at.querySelectorAll("[data-d]")', 'at.querySelectorAll("[data-entropy-digit]")', 'at.querySelectorAll("[data-direct-card-rank], #card-undo")', 'pad.querySelectorAll("button")', 'keyboard.querySelectorAll("button")']) {
+    assert.ok(appSource.includes(`hodlBindKeypadPointer(${call}`), `${call} keypad is bound`);
+  }
 });

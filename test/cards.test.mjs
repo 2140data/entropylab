@@ -71,7 +71,7 @@ const hodlCardSelectionState = new Function(
   `${loadSlice("hodlCardSelectionState")}; return hodlCardSelectionState;`,
 )(hodlCardRanks, hodlCardSuits);
 const hodlToggleCardChoice = new Function(`${loadSlice("hodlToggleCardChoice")}; return hodlToggleCardChoice;`)();
-const hodlSetInputValueAtEnd = new Function(`${loadSlice("hodlSetInputValueAtEnd")}; return hodlSetInputValueAtEnd;`)();
+const hodlSetInputValueAtEnd = (input, value, focused) => new Function("document", `${loadSlice("hodlPlaceCaret")}; ${loadSlice("hodlSetInputValueAtEnd")}; return hodlSetInputValueAtEnd;`)({ activeElement: focused ? input : null })(input, value);
 const Ae = Object.freeze(bip39English);
 const hodlBip39WordIndex = new Map(Ae.map((word, index) => [word, index]));
 function hodlTargetLastWords(value, targetWords) {
@@ -223,22 +223,27 @@ test("hashed-card suit and rank selections toggle off when clicked again", () =>
   assert.equal(hodlToggleCardChoice("S", "H"), "H");
 });
 
-test("card undo restores focus and places the caret after the rewritten transcript", () => {
-  const input = {
+test("card undo never focuses the field and only moves the caret when the field already has focus (#123)", () => {
+  const makeInput = () => ({
     value: "A284 37A2",
     focused: false,
     selection: null,
-    focus(options) {
-      this.focused = options?.preventScroll === true;
+    focus() {
+      this.focused = true;
     },
     setSelectionRange(start, end) {
       this.selection = [start, end];
     },
-  };
-  hodlSetInputValueAtEnd(input, "A284 37A");
-  assert.equal(input.value, "A284 37A");
-  assert.equal(input.focused, true);
-  assert.deepEqual(input.selection, [8, 8]);
+  });
+  const blurred = makeInput();
+  hodlSetInputValueAtEnd(blurred, "A284 37A", false);
+  assert.equal(blurred.value, "A284 37A");
+  assert.equal(blurred.focused, false);
+  assert.equal(blurred.selection, null);
+  const focused = makeInput();
+  hodlSetInputValueAtEnd(focused, "A284 37A", true);
+  assert.equal(focused.focused, false);
+  assert.deepEqual(focused.selection, [8, 8]);
 });
 
 test("hashed-card controls disable exhausted suits and ranks", () => {
