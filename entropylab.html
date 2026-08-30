@@ -5244,12 +5244,16 @@ const hodlLifeHash = (() => {
         item.setAttribute("aria-selected", String(option.value === select.value));
         item.disabled = option.disabled;
         item.textContent = option.textContent;
-        item.onclick = () => {
+        item.onclick = (event) => {
+          event.preventDefault();
+          event.stopPropagation();
           select.value = option.value;
-          select.dispatchEvent(new Event("change", { bubbles: true }));
           sync();
           close(root);
-          button.focus();
+          button.focus({ preventScroll: true });
+          setTimeout(() => {
+            if (select.isConnected) select.dispatchEvent(new Event("change", { bubbles: true }));
+          }, 0);
         };
         return item;
       }));
