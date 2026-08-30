@@ -467,19 +467,27 @@ ec.innerHTML = `
          is online and possibly connected to the internet. Do not enter wallet
          secrets here; disconnect from all networks (Wi-Fi and Ethernet) and use
          this file on an air-gapped computer." -->
-    <section class="card">
-      <div class="kicker">Run Offline \xB7 Bring your own entropy</div>
-      <h1>Hold or receive bitcoin without a signing device.</h1>
-      <ul class="pitch-list muted">
-        <li>Save this air-gapped bitcoin calculator to a removable drive and open it on a computer that never goes online.</li>
-        <li>Turn dice rolls or a seed you already have into receive addresses.</li>
-        <li>Export an xpub and load into Bitcoin Core or any watch-only wallet, and get paid.</li>
-        <li>Keep your private keys offline.</li>
-      </ul>
-    </section>
-    <div class="row no-print segmented-control" id="workspace" role="group" aria-label="Workspace"></div>
+    <div class="workspace-shell">
+      <button class="workspace-menu-toggle no-print" id="workspace-menu-toggle" type="button" aria-controls="workspace-nav" aria-expanded="false"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>Tools</span><span class="workspace-menu-current" id="workspace-menu-current">Key Derivation</span></button>
+      <div class="workspace-backdrop no-print" id="workspace-backdrop" hidden></div>
+      <nav class="workspace-nav no-print" id="workspace-nav" aria-label="Tools">
+        <div class="workspace-nav-head"><span class="workspace-nav-title">Tools</span><button class="workspace-menu-close" id="workspace-menu-close" type="button" aria-label="Close tools menu"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+        <div id="workspace" role="group" aria-label="Tool"></div>
+      </nav>
+      <div class="workspace-content">
+        <section class="workspace-intro">
+          <div class="kicker">Run Offline \xB7 Bring your own entropy</div>
+          <h1>Hold or receive bitcoin without a signing device.</h1>
+          <ul class="pitch-list muted">
+            <li>Save this air-gapped bitcoin calculator to a removable drive and open it on a computer that never goes online.</li>
+            <li>Turn dice rolls or a seed you already have into receive addresses.</li>
+            <li>Export an xpub and load into Bitcoin Core or any watch-only wallet, and get paid.</li>
+            <li>Keep your private keys offline.</li>
+          </ul>
+        </section>
+        <div class="workspace-tools">
+    <div class="workspace-tool-heading no-print" data-workspace-heading="calc"><h2>Key Derivation</h2></div>
     <section class="key-manager no-print" id="key-manager">
-      <div class="key-manager-head"><h2>Keys</h2></div>
       <div class="key-tab-strip"><div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div><div class="add-item-control"><button class="add-key" id="add-key" type="button" aria-label="Add key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Add another key</span></div></div>
     </section>
     <section class="card no-print" id="calc-card" role="tabpanel" hidden>
@@ -579,6 +587,7 @@ ec.innerHTML = `
       </div>
       <p class="err" id="error"></p>
     </section>
+    <div class="workspace-tool-heading no-print" data-workspace-heading="bip85" hidden><h2>BIP-85</h2></div>
     <section class="card no-print" id="bip85-card" role="tabpanel" hidden>
       <div class="kicker">One seed. Many children.</div>
       <h2>Derive BIP-85 child entropy</h2>
@@ -633,8 +642,8 @@ ec.innerHTML = `
       <div id="bip85-out" aria-live="polite"></div>
       <p class="muted">Derived children remain in this page only. Anyone with the parent seed, passphrase, application, and index can reproduce them. Memory clearing is best-effort; close the page before reconnecting the computer.</p>
     </section>
+    <div class="workspace-tool-heading no-print" data-workspace-heading="msig" hidden><h2>Multi Signature</h2></div>
     <section class="key-manager no-print" id="msig-manager" hidden>
-      <div class="key-manager-head"><h2>Multisigs</h2></div>
       <div class="key-tab-strip"><div class="key-tabs" id="msig-tabs" role="tablist" aria-label="Multisigs"></div><div class="add-item-control"><button class="add-key" id="add-msig" type="button" aria-label="Add multisig" aria-describedby="add-msig-tooltip">+</button><span class="add-item-tooltip" id="add-msig-tooltip" role="tooltip">Add another multisig</span></div></div>
     </section>
     <section class="card no-print" id="msig-card" role="tabpanel" hidden>
@@ -728,11 +737,11 @@ ec.innerHTML = `
       </div>
       <p class="err" id="msig-error"></p>
     </section>
+    <div class="workspace-tool-heading no-print" data-workspace-heading="sp" hidden><h2>Silent Payments</h2></div>
     <section class="card no-print" id="sp-card" role="tabpanel" hidden>
       <div class="kicker">BIP-352 · reusable address, unique outputs</div>
-      <h2>Silent Payments</h2>
       <p class="muted psbt-intro">A calculator, not a chain scanner. Derive a reusable <code>sp1q…</code> address from your seed, compute the unique taproot output a sender must pay, or check pasted outputs against your scan key. Nothing here talks to the network.</p>
-      <div class="row no-print segmented-control" id="sp-modes">
+      <div class="row no-print segmented-control" id="sp-modes" role="group" aria-label="Silent payment mode">
         <button class="tab active" type="button" data-sp-mode="receive" aria-pressed="true">Receive</button>
         <button class="tab" type="button" data-sp-mode="send" aria-pressed="false">Send</button>
         <button class="tab" type="button" data-sp-mode="verify" aria-pressed="false">Verify</button>
@@ -798,6 +807,7 @@ ec.innerHTML = `
       <div id="sp-out" aria-live="polite"></div>
       <p class="muted">Session keys remain in this page only and are never intentionally stored or sent. Memory clearing is best-effort because browsers may retain internal copies; close the page before reconnecting the computer.</p>
     </section>
+    <div class="workspace-tool-heading no-print" data-workspace-heading="psbt" hidden><h2>PSBT / Nonce</h2></div>
     <section class="card no-print" id="psbt-card" role="tabpanel" hidden>
       <div class="kicker">Inspect first. Sign elsewhere.</div>
       <h2>Read a PSBT or a signed transaction.</h2>
@@ -832,8 +842,9 @@ ec.innerHTML = `
       <div id="psbt-out" aria-live="polite"></div>
       <p class="muted">Session keys remain in this page only and are never intentionally stored or sent. Memory clearing is best-effort because browsers may retain internal copies; close the page before reconnecting the computer.</p>
     </section>
-    <div id="out"></div>
-    <section class="card muted sources">
+          <div id="out"></div>
+        </div>
+        <section class="card muted sources">
       <h3 class="sources-heading">Sources</h3>
       <p>Ian Coleman BIP39: <a href="https://github.com/iancoleman/bip39" target="_blank" rel="noopener noreferrer">github.com/iancoleman/bip39</a> \u2014 pull <code>bip39-standalone.html</code> from Releases, or <code>src/js/index.js</code>, <code>entropy.js</code>, <code>jsbip39.js</code>, <code>wordlist_english.js</code>.</p>
       <p>Electrum Seed Version System: <a href="https://docs.electrum.org/en/latest/seedphrase.html" target="_blank" rel="noopener noreferrer">docs.electrum.org/en/latest/seedphrase.html</a> \u2014 HMAC-SHA512 \u201CSeed version\u201D prefix and PBKDF2 salt \u201Celectrum\u201D, not BIP39.</p>
@@ -841,10 +852,12 @@ ec.innerHTML = `
       <p>BitBox02 diceware: <a href="https://blog.bitbox.swiss/en/roll-the-dice-generate-your-own-seed/" target="_blank" rel="noopener noreferrer">roll-the-dice-generate-your-own-seed</a> \u2014 lookup table is the BIP39 English list in order.</p>
       <p>D++ D8 &amp; D16 method: <a href="https://thesimplestbitcoinbook.net/wp-content/uploads/2023/09/Roll-Your-Own-Seed-Phrase-PDF.pdf" target="_blank" rel="noopener noreferrer">Roll Your Own Bitcoin Seed Phrase</a> \u2014 the published 24-word workflow uses one D8 labeled 1\u20138 and two hexadecimal D16 dice labeled 0\u2013F per word, then a final D8.</p>
       <p>Jade anti-exfil (sign-to-contract): <a href="https://blog.blockstream.com/anti-exfil-stopping-key-exfiltration/" target="_blank" rel="noopener noreferrer">Anti-Exfil: Stopping Key Exfiltration</a> \u2014 secp256k1-zkp <code>ecdsa_s2c</code> / <code>anti_exfil_host_verify</code>.</p>
-      <p>BIP-85 deterministic entropy: <a href="https://github.com/bitcoin/bips/blob/master/bip-0085.mediawiki" target="_blank" rel="noopener noreferrer">bip-0085.mediawiki</a> — HMAC-SHA512 of a fully hardened child; English BIP-39 / WIF / XPRV / HEX / password applications match COLDCARD.</p>
-      <p>BIP-352 Silent Payments: <a href="https://github.com/bitcoin/bips/blob/master/bip-0352.mediawiki" target="_blank" rel="noopener noreferrer">bips/bip-0352</a> — reusable <code>sp1q…</code> addresses and unique taproot outputs. Descriptors: <a href="https://github.com/bitcoin/bips/blob/master/bip-0392.mediawiki" target="_blank" rel="noopener noreferrer">BIP-392</a>.</p>
-      <p>Inscription envelopes: <a href="https://docs.ordinals.com/inscriptions.html" target="_blank" rel="noopener noreferrer">docs.ordinals.com/inscriptions</a> — <code>OP_FALSE OP_IF "ord"</code> parser only. This tool does not create inscriptions or number sats.</p>
-    </section>
+      <p>BIP-85 deterministic entropy: <a href="https://github.com/bitcoin/bips/blob/master/bip-0085.mediawiki" target="_blank" rel="noopener noreferrer">bip-0085.mediawiki</a> \u2014 HMAC-SHA512 of a fully hardened child; English BIP-39 / WIF / XPRV / HEX / password applications match COLDCARD.</p>
+      <p>BIP-352 Silent Payments: <a href="https://github.com/bitcoin/bips/blob/master/bip-0352.mediawiki" target="_blank" rel="noopener noreferrer">bips/bip-0352</a> \u2014 reusable <code>sp1q\u2026</code> addresses and unique taproot outputs. Descriptors: <a href="https://github.com/bitcoin/bips/blob/master/bip-0392.mediawiki" target="_blank" rel="noopener noreferrer">BIP-392</a>.</p>
+      <p>Inscription envelopes: <a href="https://docs.ordinals.com/inscriptions.html" target="_blank" rel="noopener noreferrer">docs.ordinals.com/inscriptions</a> \u2014 <code>OP_FALSE OP_IF "ord"</code> parser only. This tool does not create inscriptions or number sats.</p>
+        </section>
+      </div>
+    </div>
   </div>
 `;
 if (/^(www\.)?entropylab\.online$/i.test(location.hostname)) document.getElementById("online-warning")?.removeAttribute("hidden");
@@ -9523,7 +9536,36 @@ function hodlDeleteActiveMsig() {
   hodlRestoreMsig();
   (hodlActiveMsig >= 0 ? W("#msig-tabs").children[hodlActiveMsig] : W("#add-msig"))?.focus();
 }
+function hodlSetWorkspaceMenu(open, restoreFocus = false) {
+  let shell = document.querySelector(".workspace-shell"), toggle = W("#workspace-menu-toggle"), backdrop = W("#workspace-backdrop");
+  if (!shell || !toggle || !backdrop) return;
+  let isOpen = Boolean(open && matchMedia("(max-width: 899px)").matches);
+  shell.classList.toggle("is-menu-open", isOpen);
+  document.documentElement.classList.toggle("workspace-menu-open", isOpen);
+  document.body.classList.toggle("workspace-menu-open", isOpen);
+  toggle.setAttribute("aria-expanded", String(isOpen));
+  backdrop.hidden = !isOpen;
+  if (isOpen) requestAnimationFrame(() => W("#workspace").querySelector('.tab[aria-pressed="true"]')?.focus({ preventScroll: true }));
+  else if (restoreFocus && toggle.offsetParent !== null) toggle.focus({ preventScroll: true });
+}
+function hodlCloseWorkspaceMenu(restoreFocus = false) {
+  hodlSetWorkspaceMenu(false, restoreFocus);
+}
+function hodlInitWorkspaceMenu() {
+  let toggle = W("#workspace-menu-toggle"), close = W("#workspace-menu-close"), backdrop = W("#workspace-backdrop");
+  toggle.onclick = () => hodlSetWorkspaceMenu(toggle.getAttribute("aria-expanded") !== "true");
+  close.onclick = () => hodlCloseWorkspaceMenu(true);
+  backdrop.onclick = () => hodlCloseWorkspaceMenu(true);
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || toggle.getAttribute("aria-expanded") !== "true") return;
+    event.preventDefault();
+    hodlCloseWorkspaceMenu(true);
+  });
+  matchMedia("(max-width: 899px)").addEventListener?.("change", () => hodlCloseWorkspaceMenu());
+}
 function hodlShowWorkspace(id) {
+  let activeButton = W("#workspace").querySelector(`[data-workspace="${id}"]`), current = W("#workspace-menu-current");
+  if (current && activeButton) current.textContent = activeButton.textContent;
   if (id === hodlWorkspace) return;
   let preservedTop = window.scrollY, preservedLeft = window.scrollX;
   if (hodlWorkspace === "calc") hodlCaptureKey();
@@ -9533,6 +9575,9 @@ function hodlShowWorkspace(id) {
     let active = button.dataset.workspace === id;
     button.classList.toggle("active", active);
     button.setAttribute("aria-pressed", String(active));
+  });
+  document.querySelectorAll("[data-workspace-heading]").forEach((heading) => {
+    heading.hidden = heading.dataset.workspaceHeading !== id;
   });
   document.getElementById("key-manager").hidden = id !== "calc";
   document.getElementById("msig-manager").hidden = id !== "msig";
@@ -9642,9 +9687,13 @@ function hodlInitWorkspace() {
     button.dataset.workspace = id;
     button.setAttribute("aria-pressed", String(active));
     button.textContent = label;
-    button.onclick = () => hodlShowWorkspace(id);
+    button.onclick = () => {
+      hodlShowWorkspace(id);
+      hodlCloseWorkspaceMenu(true);
+    };
     box.appendChild(button);
   });
+  hodlInitWorkspaceMenu();
   hodlInitMsig();
   hodlInitPsbt();
   hodlInitBip85();
@@ -9686,16 +9735,52 @@ function hodlInitClearActionState() {
   hodlSyncMsigClearButton();
   hodlSyncDeriveButton();
 }
-var hodlSegmentedControlFrame = 0, hodlSegmentedResizeObserver = null, hodlSegmentedControlWidths = /* @__PURE__ */ new WeakMap();
+var hodlSegmentedControlFrame = 0, hodlSegmentedResizeObserver = null, hodlSegmentedControlWidths = /* @__PURE__ */ new WeakMap(), hodlSegmentedSelects = /* @__PURE__ */ new WeakMap();
+function hodlSegmentedControlButtons(group) {
+  return [...group.children].filter((child) => child.matches(".tab"));
+}
+function hodlSyncSegmentedControlSelect(group) {
+  let select = hodlSegmentedSelects.get(group);
+  if (!select) return;
+  let buttons = hodlSegmentedControlButtons(group);
+  if (select.options.length !== buttons.length) {
+    select.replaceChildren(...buttons.map((button, index) => new Option(button.textContent.trim(), String(index))));
+  }
+  buttons.forEach((button, index) => {
+    select.options[index].textContent = button.textContent.trim();
+    select.options[index].disabled = button.disabled;
+  });
+  let activeIndex = buttons.findIndex((button) => button.getAttribute("aria-pressed") === "true" || button.classList.contains("active"));
+  select.value = String(Math.max(0, activeIndex));
+  select.dispatchEvent(new Event("entropylab:sync-select"));
+}
+function hodlEnsureSegmentedControlSelect(group) {
+  let existing = hodlSegmentedSelects.get(group);
+  if (existing) return existing;
+  let select = document.createElement("select");
+  select.className = "segmented-control-select";
+  select.setAttribute("aria-label", group.getAttribute("aria-label") || "Selection");
+  select.onchange = () => {
+    hodlSegmentedControlButtons(group)[Number(select.value)]?.click();
+    hodlSyncSegmentedControlSelect(group);
+  };
+  group.after(select);
+  hodlSegmentedSelects.set(group, select);
+  new MutationObserver(() => hodlSyncSegmentedControlSelect(group)).observe(group, { subtree: true, attributes: true, attributeFilter: ["aria-pressed"] });
+  hodlSyncSegmentedControlSelect(group);
+  return select;
+}
 function hodlSyncSegmentedControls() {
   hodlSegmentedControlFrame = 0;
   document.querySelectorAll(".segmented-control").forEach((group) => {
+    hodlEnsureSegmentedControlSelect(group);
+    group.classList.remove("is-collapsed");
     if (!group.getClientRects().length) return;
-    let buttons = [...group.children].filter((child) => child.matches(".tab"));
-    group.classList.remove("is-stacked");
+    let buttons = hodlSegmentedControlButtons(group);
     if (buttons.length < 2) return;
     let firstTop = buttons[0].offsetTop, wrapped = buttons.some((button) => Math.abs(button.offsetTop - firstTop) > 1);
-    group.classList.toggle("is-stacked", wrapped);
+    group.classList.toggle("is-collapsed", wrapped);
+    hodlSyncSegmentedControlSelect(group);
   });
 }
 function hodlQueueSegmentedControlSync() {
@@ -9704,6 +9789,7 @@ function hodlQueueSegmentedControlSync() {
 }
 function hodlInitSegmentedControls() {
   let groups = [...document.querySelectorAll(".segmented-control")];
+  groups.forEach(hodlEnsureSegmentedControlSelect);
   if ("ResizeObserver" in window) {
     hodlSegmentedResizeObserver = new ResizeObserver((entries) => {
       let changed = false;
@@ -9716,7 +9802,7 @@ function hodlInitSegmentedControls() {
       });
       if (changed) hodlQueueSegmentedControlSync();
     });
-    groups.forEach((group) => hodlSegmentedResizeObserver.observe(group));
+    [...new Set(groups.map((group) => group.parentElement).filter(Boolean))].forEach((parent) => hodlSegmentedResizeObserver.observe(parent));
   }
   window.addEventListener("resize", hodlQueueSegmentedControlSync, { passive: true });
   hodlQueueSegmentedControlSync();
