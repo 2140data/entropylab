@@ -1104,6 +1104,9 @@
   });
 
   await test("Legacy key derivation exports BIP87 and can derive a 1-of-1 Legacy BIP87 wallet", async () => {
+    const legacyTab = [...document.querySelectorAll("#acct-tabs button")].find((button) => button.textContent.includes("Legacy"));
+    assert(legacyTab, "Legacy account tab is missing");
+    legacyTab.click();
     const exportRow = [...document.querySelectorAll("#acct p")].find((row) =>
       row.textContent.includes("Legacy · BIP87 · Account 0")
     );
