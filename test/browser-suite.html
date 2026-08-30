@@ -997,6 +997,10 @@
     scriptType.value = "bip84";
     scriptType.dispatchEvent(new Event("change", { bubbles: true }));
     equal(purpose.value, "84", "Native SegWit did not restore its standard purpose");
+    assert(document.getElementById("purpose-harden").checked, "Purpose did not default to hardened");
+    assert(document.getElementById("network-harden").checked, "Coin type did not default to hardened");
+    assert(document.getElementById("account-harden").checked, "Account did not default to hardened");
+    assert(!document.getElementById("address-start-harden").checked, "Starting address index did not default to unhardened");
     input(purpose, "2147483648");
     assert(document.getElementById("go").disabled && purpose.classList.contains("bad"), "An out-of-range purpose did not block derivation");
     input(purpose, "69420");
@@ -1006,7 +1010,10 @@
     assert(document.getElementById("go").disabled && network.classList.contains("bad"), "An out-of-range coin type did not block derivation");
     input(network, "69420");
     assert(document.getElementById("network-help").textContent.includes("Custom · Mainnet addresses"), "A custom coin type did not explain its address network");
-    assert(document.querySelector('[data-path="account"]').textContent.includes("/69420h/"), "The custom coin type did not reach the derivation path preview");
+    assert(document.querySelector('[data-path="account"]').textContent.includes("/69420'/"), "The hardened custom coin type did not reach the derivation path preview");
+    document.getElementById("network-harden").click();
+    assert(document.querySelector('[data-path="account"]').textContent.includes("/69420/"), "Turning off Harden did not remove the coin type prime");
+    document.getElementById("network-harden").click();
     network.value = "1";
     network.dispatchEvent(new Event("input", { bubbles: true }));
     const addressStart = document.getElementById("address-start");
@@ -1032,11 +1039,30 @@
     equal(receiveLead?.querySelector("p.mono:not(.muted)")?.textContent.trim(), "tb1qq88mz59zeavyc2nvncjmr5fnyhy9wfgg7spmjf", "The custom-purpose Native SegWit address did not match the independent BIP32 vector");
     assert(receiveLead?.querySelector(".muted.mono")?.textContent.includes("m/69420h/1h/0h/0/7"), "The custom purpose was not used in the displayed address path");
     assert(document.querySelector("#acct .kicker")?.textContent.includes("Purpose 69420h"), "The result mislabeled the custom purpose as a standard BIP");
-    assert(document.querySelector("#acct .account-watch-section")?.textContent.includes("/69420h/1h/0h]"), "The custom purpose was not used in the descriptor origin");
+    const watchText = document.querySelector("#acct .account-watch-section")?.textContent || "";
+    assert(watchText.includes("/69420h/1h/0h]"), `The custom purpose was not used in the descriptor origin: ${watchText.slice(0, 600)}`);
     const receiveRows = document.querySelectorAll('#acct [data-address-table="hd-receive"] tbody tr');
     equal(receiveRows.length, 5, "The requested receive address range was not rendered");
     equal(receiveRows[0].querySelector("th")?.textContent.trim(), "7", "The receive table did not start at the requested index");
     equal(receiveRows[4].querySelector("th")?.textContent.trim(), "11", "The receive table did not end at the requested index");
+
+    const addressHarden = document.getElementById("address-start-harden");
+    addressHarden.click();
+    input(addressRange, "1");
+    assert(document.getElementById("address-start-help").textContent.includes("Hardened"), "Address help did not reflect hardened derivation");
+    assert(document.querySelector('[data-path="receive"]').textContent.includes("/0/7'"), "The receive preview did not show a hardened address index");
+    derive.click();
+    await until(
+      () => document.querySelector("#acct .account-address-lead .muted.mono")?.textContent.includes("/7h"),
+      "hardened address result",
+    );
+    addressHarden.click();
+    input(addressRange, "5");
+    derive.click();
+    await until(
+      () => document.querySelectorAll('#acct [data-address-table="hd-receive"] tbody tr').length === 5,
+      "restored unhardened wallet result",
+    );
   });
 
   await test("large address ranges scroll continuously with a bounded number of rendered rows", async () => {
