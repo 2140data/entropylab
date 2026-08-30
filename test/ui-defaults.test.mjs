@@ -58,16 +58,17 @@ test("wallet coin type indexes enable and default to mainnet", () => {
     assert.match(markup, /id="network-help">Coin type index (?:·|\\xB7) Mainnet (?:·|\\xB7) Hardened (?:·|\\xB7) 0 to 2,147,483,647/);
     assert.match(markup, /id="msig-network-help">Coin type index (?:·|\\xB7) Mainnet (?:·|\\xB7) Hardened (?:·|\\xB7) 0 to 2,147,483,647/);
     assert.match(markup, /<select id="psbt-network"><option value="mainnet" selected(?:="selected")?>Bitcoin mainnet<\/option>/);
+    assert.match(markup, /<select id="sp-network"><option value="mainnet" selected(?:="selected")?>Bitcoin mainnet<\/option>/);
   }
   assert.match(appSource, /function hodlReadCoinType\(input = document\.getElementById\("network"\), mark = true\)/);
   assert.match(appSource, /function hodlNetworkFromCoinType\(coinType\)/);
   assert.match(appSource, /Number\(coinType\) === 1 \? "testnet" : "mainnet"/);
-  assert.match(app, /coinType:"0",network:"mainnet"/);
+  assert.match(app, /coinType:"0",coinTypeHarden:!0,network:"mainnet"/);
 });
 
 test("single-key network selector is half width on wide screens and full width on narrow screens", () => {
-  assert.match(template, /<label class="field network-field">Network\s*<input id="network"[^>]*>/);
-  assert.match(app, /<label class="field network-field">Network\s*<input id="network"[^>]*>/);
+  assert.match(template, /<div class="field network-field"><label for="network">Network<\/label>[\s\S]*?<input id="network"[^>]*>/);
+  assert.match(app, /<div class="field network-field"><label for="network">Network<\/label>[\s\S]*?<input id="network"[^>]*>/);
   assert.match(css, /\.key-settings\.single-key-mode \.network-field \{ width: 100%; max-width: 50%; \}/);
   assert.match(
     css,
@@ -81,6 +82,10 @@ test("key and multisig derivation use an indexed address window with an estimate
     assert.match(markup, /id="address-range"[^>]*value="5"/);
     assert.match(markup, /id="msig-address-start"[^>]*value="0"/);
     assert.match(markup, /id="msig-address-range"[^>]*value="5"/);
+    assert.match(markup, /id="address-start-help">First receive and change index to derive (?:·|\\xB7) Unhardened (?:·|\\xB7) 0 to 2,147,483,647/);
+    assert.match(markup, /id="address-range-help">Derives 5 receive and 5 change addresses (?:·|\\xB7) Max 10,000/);
+    assert.match(markup, /id="msig-address-start-help">First receive and change index to derive (?:·|\\xB7) Unhardened (?:·|\\xB7) 0 to 2,147,483,647/);
+    assert.match(markup, /id="msig-address-range-help">Derives 5 receive and 5 change addresses (?:·|\\xB7) Max 10,000/);
     assert.match(markup, /id="derive-progress"[^>]*role="progressbar"/);
     assert.match(markup, /id="msig-derive-progress"[^>]*role="progressbar"/);
     assert.doesNotMatch(markup, /id="(?:msig-)?count"/);
@@ -88,6 +93,10 @@ test("key and multisig derivation use an indexed address window with an estimate
     assert.match(markup, /id="msig-address-range"[\s\S]*id="msig-address-estimate"[\s\S]*id="msig-go"/);
   }
   assert.match(appSource, /function hodlReadAddressWindow\(prefix = "", mark = true\)/);
+  assert.match(appSource, /function hodlSyncAddressRangeLimit\(prefix = ""\)/);
+  assert.match(appSource, /Math\.min\(hodlMaxAddressRange, hodlMaxAddressIndex - start \+ 1\)/);
+  assert.match(appSource, /if \(\/\^\\d\+\$\/\.test\(rangeRaw\)[^\n]*range > maximum\) rangeInput\.value = String\(maximum\)/);
+  assert.match(appSource, /Max \$\{maximum\.toLocaleString\(\)\}/);
   assert.match(appSource, /for \(let index = startIndex; index < startIndex \+ o; index\+\+\)/);
   assert.match(appSource, /function hodlInitAddressBenchmark\(\)/);
   assert.match(appSource, /requestIdleCallback\(run, \{ timeout: 750 \}\)/);
@@ -114,6 +123,27 @@ test("key and multisig derivation use an indexed address window with an estimate
   assert.match(appSource, /function hodlStopDerivation\(kind\)/);
   assert.match(appSource, /hodlHandleDerivationButton\("key", hodlCalculateKey\)/);
   assert.match(appSource, /hodlHandleDerivationButton\("msig", hodlBuildMsig\)/);
+});
+
+test("key and multisig derivation select one or two address branches", () => {
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /id="branch-start"[^>]*value="0"/);
+    assert.match(markup, /id="branch-start-harden"[^>]*type="checkbox"/);
+    assert.match(markup, /id="branch-range"[^>]*max="2"[^>]*value="2"/);
+    assert.match(markup, /id="msig-branch-start"[^>]*value="0"/);
+    assert.match(markup, /id="msig-branch-start-harden"[^>]*type="checkbox"/);
+    assert.match(markup, /id="msig-branch-range"[^>]*max="2"[^>]*value="2"/);
+    assert.match(markup, /0 is Receive (?:·|\xB7) 1 is Change/);
+  }
+  assert.match(appSource, /function hodlReadBranchWindow\(prefix = "", mark = true\)/);
+  assert.match(appSource, /function hodlAddressBranchLabel\(branch\)/);
+  assert.match(appSource, /branch: Boolean\(fields\.branchHarden\)/);
+  assert.match(appSource, /hodlPathIndex\(chain, branchHardened\)/);
+  assert.match(appSource, /Hardened address branches cannot be derived from the supplied multisig extended public keys/);
+  assert.match(appSource, /branch === 0 \? "Receive" : branch === 1 \? "Change" : `Custom branch \$\{branch\}`/);
+  assert.match(appSource, /progress\.setTotal\(count \* branchRange\)/);
+  assert.match(appSource, /hodlAddressBranchTables\(branches, hasPrivate, "hd"\)/);
+  assert.match(appSource, /hodlAddressBranchTables\(branches, false, "msig"\)/);
 });
 
 test("a running derivation yields off the main thread, survives hidden tabs, and cancels on edits", () => {
@@ -414,10 +444,29 @@ test("key derivation separates script type from the hardened purpose index", () 
   }
   assert.match(appSource, /function hodlReadPurpose\(mark = true\)/);
   assert.match(appSource, /hodlSetSelectedScriptType\(target\.value, true\)/);
-  assert.match(appSource, /let derivedDefinition = \{ \.\.\.definition, purpose: purposeIndex \}/);
-  assert.match(appSource, /originPath = `\$\{purposeIndex\}h\/\$\{coinType\}h\/\$\{accountIndex\}h`/);
-  assert.match(appSource, /context\.textContent = `\$\{definition\.label\} \\xB7 Purpose \$\{purpose\}h`/);
-  assert.match(appSource, /fields: \{ pass: "", script: "bip84", purpose: "84", coinType: "0", network: "mainnet"/);
+  assert.match(appSource, /let derivedDefinition = \{ \.\.\.definition, purpose: purposeIndex, purposeHardened: hardening\.purpose \}/);
+  assert.match(appSource, /originPath = `\$\{hodlOriginPathIndex\(purposeIndex, hardening\.purpose\)\}\/\$\{hodlOriginPathIndex\(coinType, hardening\.coinType\)\}\/\$\{hodlOriginPathIndex\(accountIndex, hardening\.account\)\}`/);
+  assert.match(appSource, /context\.textContent = `\$\{definition\.label\} \\xB7 Purpose \$\{hodlPathIndex\(purpose, hardening\.purpose\)\}`/);
+  assert.match(appSource, /fields: \{ pass: "", script: "bip84", purpose: "84", purposeHarden: true, coinType: "0", coinTypeHarden: true, network: "mainnet"/);
+});
+
+test("derivation indexes keep adjacent Harden controls with safe defaults", () => {
+  for (const markup of [template, appWhitespace]) {
+    for (const id of ["purpose", "network", "account", "msig-purpose", "msig-network", "msig-account"]) {
+      assert.match(markup, new RegExp(`id="${id}"[\\s\\S]*?id="${id}-harden" type="checkbox" checked`));
+    }
+    for (const id of ["branch-start", "address-start", "msig-branch-start", "msig-address-start"]) {
+      assert.match(markup, new RegExp(`id="${id}"[\\s\\S]*?id="${id}-harden" type="checkbox"(?! checked)`));
+    }
+  }
+  assert.match(css, /\.derivation-index-control \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) auto;[\s\S]*?white-space: nowrap;/);
+  assert.match(css, /\.derivation-index-prime \{[\s\S]*?left: 12px;[\s\S]*?white-space: pre;/);
+  assert.match(css, /\.derivation-index-prime::before \{ content: attr\(data-index-value\); color: transparent; \}/);
+  assert.match(appSource, /function hodlReadHardening\(prefix = ""\)/);
+  assert.match(appSource, /function hodlSyncDerivationPrime\(input\)/);
+  assert.match(appSource, /prime\.dataset\.indexValue = String\(input\.value \?\? ""\)/);
+  assert.match(appSource, /hodlPathIndex\(e\.purpose, hardening\.purpose\)/);
+  assert.match(appSource, /Hardened address indexes cannot be derived from multisig extended public keys/);
 });
 
 test("multisig script type and placeholders follow detected co-signer exports", () => {
@@ -427,12 +476,12 @@ test("multisig script type and placeholders follow detected co-signer exports", 
     assert.match(markup, /id="msig-go"[^>]*aria-describedby="msig-script-warning"/);
   }
   assert.match(template, /placeholder="\[fingerprint\/48h\/0h\/0h\/2h\]Zpub…"/);
-  assert.match(app, /function hodlMultisigKeyPlaceholder\(kind,network,purpose,coinType=Rs\(network\)\)/);
+  assert.match(app, /function hodlMultisigKeyPlaceholder\(kind,network,purpose,coinType=Rs\(network\),hardening=/);
   assert.match(appWhitespace, /kind==="p2sh"&&purpose===45\)return`\[fingerprint\/\$\{purposeStep\}\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
-  assert.match(appWhitespace, /kind==="p2sh"\)return`\[fingerprint\/\$\{purposeStep\}\/\$\{coin\}\/0h\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
+  assert.match(appWhitespace, /kind==="p2sh"\)return`\[fingerprint\/\$\{purposeStep\}\/\$\{coin\}\/\$\{account\}\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
   assert.match(app, /testnet\?"Upub":"Ypub"/);
   assert.match(app, /testnet\?"Vpub":"Zpub"/);
-  assert.match(appWhitespace, /kind==="p2tr"\)return`\[fingerprint\/\$\{purposeStep\}\/\$\{coin\}\/0h\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
+  assert.match(appWhitespace, /kind==="p2tr"\)return`\[fingerprint\/\$\{purposeStep\}\/\$\{coin\}\/\$\{account\}\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
   assert.match(app, /function hodlMultisigPurposeIndex\(origin\)/);
   assert.match(app, /function hodlUpdateMsigPurposeDetection\(\)/);
   assert.doesNotMatch(app, /or BIP48 script 3h/);
@@ -458,13 +507,13 @@ test("key derivation shows the relevant paste-ready multisig co-signer exports",
   assert.match(app, /\$\{ye\(`Account \$\{account\.primaryPublicLabel\}`,account\.primaryPublic\)\}\s*\$\{hodlRenderMultisigCosignerExport\(re\.multisigCosignerExports,account\.def\.id\)\}/);
   assert.doesNotMatch(`${app}\n${css}`, /account-multisig-exports/);
   assert.match(app, /Legacy P2SH requires the depth-1 BIP45 purpose key at m\/45h/);
-  assert.match(app, /receiveSuffix=bip45\?"\/0\/0\/\*":"\/0\/\*"/);
+  assert.match(app, /suffix=bip45\?`\/0\/\$\{branch\}\/\*`:`\/\$\{branch\}\/\*`/);
   assert.match(app, /Legacy BIP45 addresses use co-signer branch 0/);
   assert.match(app, /Legacy P2SH uses the selected BIP87 account paths/);
   assert.match(app, /function hodlMsigInnerDescriptor\(kind,m,inner,sorted\)/);
   assert.match(app, /function hodlMsigPolicyOp\(kind,sorted\)/);
   assert.match(app, /kind==="p2tr"\?sorted\?"sortedmulti_a":"multi_a":sorted\?"sortedmulti":"multi"/);
-  assert.match(app, /hodlMsigAddr\(receivePublicKeys,m,network,kind,sorted\)/);
+  assert.match(app, /hodlMsigAddr\(publicKeys,m,network,kind,sorted\)/);
   assert.match(app, /function hodlTaprootNumsKey\(\)/);
   assert.match(app, /function hodlXOnlyPubkey\(pubkey\)/);
 });
@@ -474,7 +523,7 @@ test("derived wallets offer an address match check", () => {
   assert.match(app, /id="address-match"/);
   assert.match(app, /id="address-match-status"/);
   assert.match(app, /address-match-field">Check an address/);
-  assert.match(app, /Paste a receive or change address shown by another wallet/);
+  assert.match(app, /Paste an address shown by another wallet/);
   assert.match(app, /even if the index is beyond the table above/);
   assert.doesNotMatch(app, /Address from Sparrow/);
   // esbuild's output normalizes numeric literals (1000 -> 1e3) in every
@@ -482,8 +531,8 @@ test("derived wallets offer an address match check", () => {
   assert.match(appSource, /var hodlAddressSearchLimit\s*=\s*1000/);
   assert.match(app, /function hodlMatchHdAddressBeyond\(address,account,start\)/);
   assert.match(app, /function hodlMatchMsigAddressBeyond\(address,start\)/);
-  assert.match(app, /hodlAddressTable\(account\.change,"Change addresses",hasPrivate,"hd-change"\)\}\s*\$\{hodlAddressMatchMarkup\(\)/);
-  assert.match(app, /hodlAddressTable\(re\.change,"Multisig change addresses",!1,"msig-change"\)\}\s*\$\{hodlAddressMatchMarkup\(\)/);
+  assert.match(app, /hodlAddressBranchTables\(branches,hasPrivate,"hd"\)\}\s*\$\{hodlAddressMatchMarkup\(\)/);
+  assert.match(app, /hodlAddressBranchTables\(branches,!1,"msig"\)\}\s*\$\{hodlAddressMatchMarkup\(\)/);
   assert.match(css, /\.address-match-field/);
 });
 
@@ -621,7 +670,7 @@ test("multisig consistently uses derive for its heading and action", () => {
   assert.match(app, /function hodlValidatedMsigInputs\(\)/);
   assert.match(appSource, /hodlValidatedMsigInputs\(\);\s*ready = true/);
   assert.match(app, /button\.disabled=!ready/);
-  assert.match(app, /let\{network,coinType,count,addressStart,n,m,kind,purpose,legacyStandard,nodes,xpubs,keyTokens,accountSummary,accountWarning\}=hodlValidatedMsigInputs\(\)/);
+  assert.match(app, /let\{network,coinType,count,addressStart,branchStart,branchRange,n,m,kind,purpose,hardening,legacyStandard,nodes,xpubs,keyTokens,accountSummary,accountWarning\}=hodlValidatedMsigInputs\(\)/);
 });
 
 test("key and multisig add controls stay pinned to the right of their tab strips", () => {
@@ -1090,7 +1139,7 @@ test("virtual keypads never focus the field on touch so the mobile keyboard stay
 });
 
 test("workspace tabs place BIP-85 between Key Derivation and Multi Signature", () => {
-  assert.match(appSource, /\["calc", "Key Derivation"\], \["bip85", "BIP-85"\], \["msig", "Multi Signature"\], \["psbt", "PSBT \/ Nonce"\]/);
+  assert.match(appSource, /\["calc", "Key Derivation"\], \["bip85", "BIP-85"\], \["msig", "Multi Signature"\], \["sp", "Silent Payments"\], \["psbt", "PSBT \/ Nonce"\]/);
   for (const markup of [template, appSource]) {
     assert.match(markup, /id="bip85-card"/);
     assert.match(markup, /id="bip85-go"/);
@@ -1107,4 +1156,20 @@ test("BIP-85 entry point sits beside Derive Wallet and opens the BIP-85 tab", ()
   assert.match(appSource, /getElementById\("bip85-open"\)/);
   assert.match(appSource, /open\.onclick = \(\) => \{\s*hodlShowWorkspace\("bip85"\)/);
   assert.match(appSource, /open\.onclick[\s\S]*?hodlUseActiveKeyForBip85\(\)/);
+});
+
+test("Silent Payments sits between Multi Signature and PSBT / Nonce", () => {
+  const order = /Key Derivation[\s\S]*Multi Signature[\s\S]*Silent Payments[\s\S]*PSBT \/ Nonce/;
+  assert.match(template, order);
+  assert.match(appSource, /\["calc", "Key Derivation"\], \["bip85", "BIP-85"\], \["msig", "Multi Signature"\], \["sp", "Silent Payments"\], \["psbt", "PSBT \/ Nonce"\]/);
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /id="sp-card"/);
+    assert.match(markup, /id="sp-key"/);
+    assert.match(markup, /id="sp-network"/);
+    assert.match(markup, /id="sp-derive"/);
+    assert.match(markup, /id="sp-send-go"/);
+    assert.match(markup, /id="sp-verify-go"/);
+    assert.match(markup, /BIP-352/);
+  }
+  assert.match(css, /#sp-card\[hidden\]/);
 });

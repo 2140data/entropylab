@@ -20,18 +20,22 @@ Official website: [entropylab.online](https://entropylab.online)
   next to its deterministic [LifeHash](https://lifehash.info) icon so two
   keys can be told apart at a glance.
 - Supports legacy, nested SegWit, native SegWit, and Taproot single-signature
-  address types. Script type and the hardened BIP32 purpose index are separate:
-  choosing a script restores its conventional 44/49/84/86 purpose, while an
-  advanced user can enter any valid hardened purpose index for a custom path.
-- Supports numeric hardened coin-type indexes for single-signature and
-  multisignature derivation. Coin type 0 uses Bitcoin Mainnet, coin type 1 uses
-  Bitcoin Testnet, and custom indexes retain Mainnet address serialization.
+  address types. Script type and the BIP32 purpose index are separate: choosing
+  a script restores its conventional 44/49/84/86 purpose, while an advanced
+  user can enter any valid purpose index and choose whether to harden it.
+- Supports numeric coin-type and account indexes for single-signature and
+  multisignature derivation. Purpose, coin type, and account indexes are
+  hardened by default; the starting address index is unhardened by default.
+  Each can be changed independently. Coin type 0 uses Bitcoin Mainnet, coin
+  type 1 uses Bitcoin Testnet, and custom indexes retain Mainnet address
+  serialization. Hardened address children require private key material and
+  therefore cannot be derived from multisig co-signer xpubs.
   PSBT address rendering separately supports Mainnet and Testnet.
 - Derives watch-only multisignature wallets from extended public keys without
-  requiring private keys. Multisig script type and hardened purpose are
-  separate as well; conventional script choices restore their standard purpose,
-  while pasted co-signer origins auto-detect and must agree with the selected
-  purpose.
+  requiring private keys. Multisig script type and purpose are separate as
+  well; conventional script choices restore their standard purpose, while
+  pasted co-signer origins auto-detect and must agree with the selected path
+  indexes and hardening choices.
 - Inspects PSBT v0 transactions, reports PSBT-provided amounts and fees, checks
   for repeated ECDSA nonces from the same public key — including signatures
   carried by finalized scriptSig/witness fields, which are decoded and analyzed
@@ -48,6 +52,10 @@ Official website: [entropylab.online](https://entropylab.online)
   reproduce the same child — this is a calculator, not a generator. Children
   follow the published BIP-85 vectors and match COLDCARD, including derivation
   from a passphrase-extended root when a BIP-39 passphrase is in effect.
+- Derives BIP-352 Silent Payment addresses (`sp1q…` / `tsp1q…`) from a seed or
+  root xprv, including labeled codes, BIP-392 `spscan` / `spspend` descriptors,
+  sender taproot outputs from pasted vin JSON, and receiver verification of
+  pasted x-only outputs. This is a calculator: it does not scan the chain.
 - Runs a quick barrage of startup sanity checks on the host browser (secure
   context, CSPRNG, BigInt, UTF-8 encoding, and NFKD normalization). If any
   check fails, the page is replaced with a failure report listing the failed
