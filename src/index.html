@@ -44,7 +44,7 @@
         <li>Keep your private keys offline.</li>
       </ul>
     </section>
-    <div class="row no-print segmented-control" id="workspace"><button class="tab active" aria-pressed="true">Key Derivation</button><button class="tab" aria-pressed="false">Multi Signature</button><button class="tab" aria-pressed="false">PSBT / Nonce</button></div>
+    <div class="row no-print segmented-control" id="workspace"><button class="tab active" aria-pressed="true">Key Derivation</button><button class="tab" aria-pressed="false">BIP-85</button><button class="tab" aria-pressed="false">Multi Signature</button><button class="tab" aria-pressed="false">PSBT / Nonce</button></div>
     <section class="key-manager no-print" id="key-manager">
       <div class="key-manager-head"><h2>Keys</h2></div>
       <div class="key-tab-strip"><div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div><div class="add-item-control"><button class="add-key" id="add-key" type="button" aria-label="Add key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Add another key</span></div></div>
@@ -163,9 +163,64 @@ words, pick one of the checksum words.</span></span>
       <div class="row key-action-row current-item-actions">
         <button class="btn primary" id="go" disabled aria-disabled="true">Derive Wallet</button>
         <div class="derive-progress" id="derive-progress" role="progressbar" aria-label="Wallet derivation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0% complete" hidden><span class="derive-progress-track"><span class="derive-progress-bar"></span></span><span class="derive-progress-label">0%</span></div>
+        <button class="btn secondary" id="bip85-open" type="button">Derive BIP-85 child</button>
         <button class="btn clear-current-action" id="wipe" type="button" disabled aria-disabled="true">Clear Current Key</button>
       </div>
       <p class="err" id="error"></p>
+    </section>
+    <section class="card no-print" id="bip85-card" role="tabpanel" hidden>
+      <div class="kicker">One seed. Many children.</div>
+      <h2>Derive BIP-85 child entropy</h2>
+      <p class="muted bip85-intro">Deterministic child seeds, keys, and passwords from the active key's BIP32 root. Same parent, application, and index always reproduce the same child. This does not invent entropy — it is a calculator. English BIP-39 children match COLDCARD.</p>
+      <label class="field">Optional root xprv (leave blank to use the active key)
+        <textarea id="bip85-key" placeholder="xprv… or leave blank to use the active key" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+      </label>
+      <div class="bip85-grid">
+        <label class="field">Application
+          <select id="bip85-app">
+            <option value="bip39" selected="selected">BIP-39 mnemonic (English)</option>
+            <option value="wif">HD-seed WIF</option>
+            <option value="xprv">XPRV (BIP-32)</option>
+            <option value="hex">HEX</option>
+            <option value="pwd-base64">Password · Base64</option>
+            <option value="pwd-base85">Password · Base85</option>
+          </select>
+        </label>
+        <label class="field">Index
+          <input id="bip85-index" type="number" min="0" max="2147483647" step="1" inputmode="numeric" value="0" aria-describedby="bip85-index-help">
+          <span class="field-note" id="bip85-index-help">Hardened child index · 0 to 2,147,483,647. COLDCARD defaults to 0–9,999.</span>
+        </label>
+      </div>
+      <div class="bip85-grid" id="bip85-app-options">
+        <label class="field" id="bip85-words-field">Word count
+          <select id="bip85-words">
+            <option value="12">12 words · 128 bits</option>
+            <option value="15">15 words · 160 bits</option>
+            <option value="18">18 words · 192 bits</option>
+            <option value="21">21 words · 224 bits</option>
+            <option value="24" selected="selected">24 words · 256 bits</option>
+          </select>
+          <span class="field-note">English wordlist only (language 0'). COLDCARD menus offer 12, 18, and 24.</span>
+        </label>
+        <label class="field" id="bip85-bytes-field" hidden>Hex bytes
+          <input id="bip85-bytes" type="number" min="16" max="64" step="1" inputmode="numeric" value="32" aria-describedby="bip85-bytes-help">
+          <span class="field-note" id="bip85-bytes-help">16 to 64 bytes. COLDCARD offers 32 and 64.</span>
+        </label>
+        <label class="field" id="bip85-pwdlen-field" hidden>Password length
+          <input id="bip85-pwdlen" type="number" min="10" max="86" step="1" inputmode="numeric" value="21" aria-describedby="bip85-pwdlen-help">
+          <span class="field-note" id="bip85-pwdlen-help">Base64: 20–86. Base85: 10–80.</span>
+        </label>
+      </div>
+      <p class="muted bip85-path-row">Path <code id="bip85-path">m/83696968'/39'/0'/24'/0'</code></p>
+      <div class="row bip85-actions">
+        <button class="btn primary" id="bip85-go" type="button">Derive child</button>
+        <button class="btn secondary" id="bip85-use-calc" type="button">Use active key</button>
+        <button class="btn secondary" id="bip85-wipe" type="button">Clear derived child</button>
+      </div>
+      <p class="muted" id="bip85-session" aria-live="polite">No parent loaded. Derive a key first, or paste a root xprv.</p>
+      <p class="err" id="bip85-error" role="alert"></p>
+      <div id="bip85-out" aria-live="polite"></div>
+      <p class="muted">Derived children remain in this page only. Anyone with the parent seed, passphrase, application, and index can reproduce them. Memory clearing is best-effort; close the page before reconnecting the computer.</p>
     </section>
     <section class="key-manager no-print" id="msig-manager" hidden="">
       <div class="key-manager-head"><h2>Multisigs</h2></div>
@@ -295,6 +350,7 @@ words, pick one of the checksum words.</span></span>
       <p>D++ D8 &amp; D16 method: <a href="https://thesimplestbitcoinbook.net/wp-content/uploads/2023/09/Roll-Your-Own-Seed-Phrase-PDF.pdf" target="_blank" rel="noopener noreferrer">Roll Your Own Bitcoin Seed Phrase</a> — the published 24-word workflow uses one D8 and two D16 rolls per word, then a final D8.</p>
       <p>Die Distribution / Fairness Analysis (Pearson’s χ²): <a href="https://rpg.stackexchange.com/questions/70802/how-can-i-test-whether-a-die-is-fair" target="_blank" rel="noopener noreferrer">How can I test whether a die is fair?</a> — live check while entering rolls, following the <a href="https://dicefairness.johnellmore.com/" target="_blank" rel="noopener noreferrer">Dice Fairness Tester</a> thresholds.</p>
       <p>Jade anti-exfil (sign-to-contract): <a href="https://blog.blockstream.com/anti-exfil-stopping-key-exfiltration/" target="_blank" rel="noopener noreferrer">Anti-Exfil: Stopping Key Exfiltration</a> — secp256k1-zkp <code>ecdsa_s2c</code> / <code>anti_exfil_host_verify</code>.</p>
+      <p>BIP-85 deterministic entropy: <a href="https://github.com/bitcoin/bips/blob/master/bip-0085.mediawiki" target="_blank" rel="noopener noreferrer">bip-0085.mediawiki</a> — HMAC-SHA512 of a fully hardened child; English BIP-39 / WIF / XPRV / HEX / password applications match COLDCARD.</p>
     </section>
   </div>
 </div><!--/$--><div class="disclaimer-overlay no-print" id="beta-disclaimer" role="alertdialog" aria-modal="true" aria-labelledby="beta-disclaimer-title" aria-describedby="beta-disclaimer-text" hidden>

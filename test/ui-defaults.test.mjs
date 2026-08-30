@@ -1088,3 +1088,23 @@ test("virtual keypads never focus the field on touch so the mobile keyboard stay
     assert.ok(appSource.includes(`hodlBindKeypadPointer(${call}`), `${call} keypad is bound`);
   }
 });
+
+test("workspace tabs place BIP-85 between Key Derivation and Multi Signature", () => {
+  assert.match(appSource, /\["calc", "Key Derivation"\], \["bip85", "BIP-85"\], \["msig", "Multi Signature"\], \["psbt", "PSBT \/ Nonce"\]/);
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /id="bip85-card"/);
+    assert.match(markup, /id="bip85-go"/);
+    assert.match(markup, /Derive child/);
+    assert.match(markup, /This does not invent entropy/);
+  }
+  assert.match(css, /#bip85-card\[hidden\]/);
+});
+
+test("BIP-85 entry point sits beside Derive Wallet and opens the BIP-85 tab", () => {
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /id="go"[^>]*>Derive Wallet<\/button>[\s\S]*?id="bip85-open"[^>]*>Derive BIP-85 child<\/button>[\s\S]*?id="wipe"/);
+  }
+  assert.match(appSource, /getElementById\("bip85-open"\)/);
+  assert.match(appSource, /open\.onclick = \(\) => \{\s*hodlShowWorkspace\("bip85"\)/);
+  assert.match(appSource, /open\.onclick[\s\S]*?hodlUseActiveKeyForBip85\(\)/);
+});
