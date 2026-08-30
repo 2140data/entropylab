@@ -8488,7 +8488,9 @@ function hodlOwnershipWarning(outputs, network, map) {
   return "<p class='psbt-bad'><strong>No output belongs to this session wallet.</strong> If you expected change, do not sign. A destination-swap can replace both the payment and the change.</p>";
 }
 function hodlRenderPsbt(psbt) {
-  let network = hodlSelectedNetwork(document.getElementById("psbt-network")),
+  // psbt-network is a mainnet/testnet select, not a numeric coin-type input,
+  // so hodlSelectedNetwork (which reads coin types) cannot parse it.
+  let network = document.getElementById("psbt-network")?.value === "testnet" ? "testnet" : "mainnet",
     transcript = null,
     transcriptError = "",
     tx = psbt.tx,

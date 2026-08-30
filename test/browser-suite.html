@@ -1020,6 +1020,28 @@
     await until(() => !document.getElementById("calc-card").hidden, "key workspace");
   });
 
+  await test("PSBT inspector renders a BIP-174 vector", async () => {
+    // Regression: the inspector used to hand the mainnet/testnet select to a
+    // coin-type reader, so every parseable PSBT failed with "Coin type must
+    // be a whole number".
+    const vector = "cHNidP8BAKACAAAAAqsJSaCMWvfEm4IS9Bfi8Vqz9cM9zxU4IagTn4d6W3vkAAAAAAD+////qwlJoIxa98SbghL0F+LxWrP1wz3PFTghqBOfh3pbe+QBAAAAAP7///8CYDvqCwAAAAAZdqkUdopAu9dAy+gdmI5x3ipNXHE5ax2IrI4kAAAAAAAAGXapFG9GILVT+glechue4O/p+gOcykWXiKwAAAAAAAEHakcwRAIgR1lmF5fAGwNrJZKJSGhiGDR9iYZLcZ4ff89X0eURZYcCIFMJ6r9Wqk2Ikf/REf3xM286KdqGbX+EhtdVRs7tr5MZASEDXNxh/HupccC1AaZGoqg7ECy0OIEhfKaC3Ibi1z+ogpIAAQEgAOH1BQAAAAAXqRQ1RebjO4MsRwUPJNPuuTycA5SLx4cBBBYAFIXRNTfy4mVAWjTbr6nj3aAfuCMIAAAA";
+    document.querySelector('#workspace [data-workspace="psbt"]').click();
+    const box = await until(() => document.getElementById("psbt-text"), "PSBT input");
+    input(box, vector);
+    document.getElementById("psbt-go").click();
+    await until(() => document.getElementById("psbt-out").textContent.includes("ECDSA nonce check") || document.getElementById("psbt-error").textContent, "inspector report");
+    equal(document.getElementById("psbt-error").textContent, "", "inspector rejected a valid vector");
+    const out = document.getElementById("psbt-out").textContent;
+    assert(out.includes("Where this transaction sends bitcoin"), "outputs section missing");
+    assert(out.includes("1.99900000"), "decoded output amount missing");
+    assert(out.includes("Signature policy: SIGHASH_ALL"), "sighash policy missing");
+    assert(out.includes("r values:"), "finalized signature was not inspected");
+    input(box, "");
+    document.getElementById("psbt-wipe").click();
+    document.querySelector('#workspace [data-workspace="calc"]').click();
+    await until(() => !document.getElementById("calc-card").hidden, "key workspace");
+  });
+
   await test("a known BIP39 wallet can be derived through the UI", async () => {
     document.querySelector('[data-seed-words="12"]').click();
     await chooseMode("Number bases");
