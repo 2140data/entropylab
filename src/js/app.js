@@ -28,7 +28,6 @@ import { entropyToMnemonic as bi, mnemonicToEntropy as Er, mnemonicToSeedSync as
 import { wordlist as bip39English } from "@scure/bip39/wordlists/english.js";
 import { Address as hodlBitcoinAddress, NETWORK as Ie, OutScript as Oe, TEST_NETWORK as mo, p2pkh as ir, p2sh as Jr, p2tr as en, p2wpkh as Tt, utils as bitcoinUtils } from "@scure/btc-signer";
 import { renderSVG as Xs } from "uqr";
-import { detectElectrumSeed, electrumMnemonicToSeed, grindElectrumSeed, entropyBytesToInt, electrumAccountDefinition, ELECTRUM_PREFIXES } from "./electrum.js";
 import { BIP39_LANGUAGE_ENGLISH, BIP85_APPS, bip85Path, deriveApplication, parseHardenedIndex, wipeBip85Result, wipeBytes as hodlWipeBytes } from "./bip85.js";
 const Ae = Object.freeze(bip39English);
 const tr = Z;
@@ -945,7 +944,6 @@ ec.innerHTML = `
         <section class="card muted sources">
       <h3 class="sources-heading">Sources</h3>
       <p>Ian Coleman BIP39: <a href="https://github.com/iancoleman/bip39" target="_blank" rel="noopener noreferrer">github.com/iancoleman/bip39</a> \u2014 pull <code>bip39-standalone.html</code> from Releases, or <code>src/js/index.js</code>, <code>entropy.js</code>, <code>jsbip39.js</code>, <code>wordlist_english.js</code>.</p>
-      <p>Electrum Seed Version System: <a href="https://docs.electrum.org/en/latest/seedphrase.html" target="_blank" rel="noopener noreferrer">docs.electrum.org/en/latest/seedphrase.html</a> \u2014 HMAC-SHA512 \u201CSeed version\u201D prefix and PBKDF2 salt \u201Celectrum\u201D, not BIP39.</p>
       <p>bitaddress.org: <a href="https://github.com/pointbiz/bitaddress.org" target="_blank" rel="noopener noreferrer">github.com/pointbiz/bitaddress.org</a> \u2014 pull <code>bitaddress.org.html</code>, or <code>src/ninja.key.js</code>, <code>ninja.detailwallet.js</code>, <code>ninja.paperwallet.js</code>, <code>bitcoinjs-lib.eckey.js</code>.</p>
       <p>BitBox02 diceware: <a href="https://blog.bitbox.swiss/en/roll-the-dice-generate-your-own-seed/" target="_blank" rel="noopener noreferrer">roll-the-dice-generate-your-own-seed</a> \u2014 lookup table is the BIP39 English list in order.</p>
       <p>D++ D8 &amp; D16 method: <a href="https://thesimplestbitcoinbook.net/wp-content/uploads/2023/09/Roll-Your-Own-Seed-Phrase-PDF.pdf" target="_blank" rel="noopener noreferrer">Roll Your Own Bitcoin Seed Phrase</a> \u2014 the published 24-word workflow uses one D8 labeled 1\u20138 and two hexadecimal D16 dice labeled 0\u2013F per word, then a final D8.</p>
@@ -959,7 +957,7 @@ ec.innerHTML = `
   </div>
 `;
 if (/^(www\.)?entropylab\.online$/i.test(location.hostname)) document.getElementById("online-warning")?.removeAttribute("hidden");
-var hodlKeyModes = ["dice", "cards", "hex", "seed", "key"], hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "\u2660", label: "Spades", red: false }, { code: "H", symbol: "\u2665", label: "Hearts", red: true }, { code: "C", symbol: "\u2663", label: "Clubs", red: false }, { code: "D", symbol: "\u2666", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, hodlCardColemanSymbols = false, hodlElectrumGenerate = false, hodlElectrumType = "100", Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], ft = "", re = null, Ge = false, hodlWalletDatBirthday = "genesis", Zs = W("#modes"), at = W("#form"), dr = W("#out");
+var hodlKeyModes = ["dice", "cards", "hex", "seed", "key"], hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "\u2660", label: "Spades", red: false }, { code: "H", symbol: "\u2665", label: "Hearts", red: true }, { code: "C", symbol: "\u2663", label: "Clubs", red: false }, { code: "D", symbol: "\u2666", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, hodlCardColemanSymbols = false, Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], ft = "", re = null, Ge = false, hodlWalletDatBirthday = "genesis", Zs = W("#modes"), at = W("#form"), dr = W("#out");
 hodlKeyModes.forEach((e) => {
   let t = document.createElement("button"), active = e === Ne;
   t.type = "button";
@@ -1047,7 +1045,7 @@ function lr() {
   } else if (Ne === "seed") {
     at.innerHTML = `
       <p class="label">Your seed phrase</p>
-      <p class="muted">12 or 24 English BIP39 words, or an Electrum 2.0+ native seed (auto-detected). You can also paste an xprv / xpub / zpub here. If you have 23 words from BitBox diceware, paste them and pick the checksum word below.</p>
+      <p class="muted">12 or 24 English BIP39 words. You can also paste an xprv / xpub / zpub here. If you have 23 words from BitBox diceware, paste them and pick the checksum word below.</p>
       <textarea id="seed" placeholder="word1 word2 word3 \u2026"></textarea>
       <p class="muted" id="seed-meta"></p>
       <div id="last-words" class="row" style="margin-top:8px"></div>
@@ -1198,9 +1196,7 @@ uf = function(value) {
   return { xkey: normalized, isPrivate: entry.private, network: entry.network, family: entry.family, scope: entry.scope, prefix: entry.name, version: entry.ver, node, depth, childNumber };
 };
 function hodlAccountExportFamily(definition) {
-  if (definition.slip === "y" || definition.id === "bip49") return "y";
-  if (definition.slip === "z" || definition.id === "bip84") return "z";
-  return "x";
+  return definition.id === "bip49" ? "y" : definition.id === "bip84" ? "z" : "x";
 }
 function hodlSerializeExtendedKey(value, network, family, isPrivate) {
   return value ? le(value, cr[network][family][isPrivate ? "prv" : "pub"]) : null;
@@ -1308,9 +1304,9 @@ function hodlAccountResult(node, definition, network, count, options = {}) {
   let rawPublic = node.publicExtendedKey, rawPrivate = node.privateKey ? node.privateExtendedKey : null, family = hodlAccountExportFamily(definition), primaryConfig = cr[network][family], genericConfig = cr[network].x;
   let genericPublic = hodlSerializeExtendedKey(rawPublic, network, "x", false), genericPrivate = hodlSerializeExtendedKey(rawPrivate, network, "x", true);
   let primaryPublic = hodlSerializeExtendedKey(rawPublic, network, family, false), primaryPrivate = hodlSerializeExtendedKey(rawPrivate, network, family, true);
-  let origin = options.originFingerprint ? options.originPath ? `[${options.originFingerprint}/${options.originPath}]` : `[${options.originFingerprint}]` : "", branchHardened = Boolean(options.branchHardened), addressHardened = Boolean(options.addressHardened), wildcard = addressHardened ? "*'" : "*", branchStart = options.branchStart ?? 0, branchRange = options.branchRange ?? 2;
+  let origin = options.originFingerprint && options.originPath ? `[${options.originFingerprint}/${options.originPath}]` : "", branchHardened = Boolean(options.branchHardened), addressHardened = Boolean(options.addressHardened), wildcard = addressHardened ? "*'" : "*", branchStart = options.branchStart ?? 0, branchRange = options.branchRange ?? 2;
   let addressBranches = Array.from({ length: branchRange }, (_, offset) => {
-    let branch = branchStart + offset, branchStep = hodlPathIndex(branch, branchHardened), branchOrigin = options.originFingerprint ? options.originPath ? `[${options.originFingerprint}/${options.originPath}/${hodlOriginPathIndex(branch, branchHardened)}]` : `[${options.originFingerprint}/${hodlOriginPathIndex(branch, branchHardened)}]` : "", branchNode = branchHardened && node.privateKey ? node.derive(`m/${branchStep}`) : null, branchPublic = branchNode ? hodlSerializeExtendedKey(branchNode.publicExtendedKey, network, "x", false) : null;
+    let branch = branchStart + offset, branchStep = hodlPathIndex(branch, branchHardened), branchOrigin = options.originFingerprint && options.originPath ? `[${options.originFingerprint}/${options.originPath}/${hodlOriginPathIndex(branch, branchHardened)}]` : "", branchNode = branchHardened && node.privateKey ? node.derive(`m/${branchStep}`) : null, branchPublic = branchNode ? hodlSerializeExtendedKey(branchNode.publicExtendedKey, network, "x", false) : null;
     let publicToken = addressHardened ? null : branchHardened ? branchPublic ? `${branchOrigin}${branchPublic}/${wildcard}` : null : `${origin}${genericPublic}/${branchStep}/${wildcard}`, privateToken = genericPrivate ? `${origin}${genericPrivate}/${branchStep}/${wildcard}` : null;
     return {
       branch,
@@ -1470,82 +1466,7 @@ async function hodlMnemonicWalletWithProgress(value, passphrase, network, count,
   if (passphrase.length > 0) warnings.push("A passphrase is in use. The same words without this passphrase are a different wallet. Do not store the passphrase with the words.");
   return hodlRootWalletWithProgress(root, network, count, { mnemonic, passphraseUsed: passphrase.length > 0, entropyHex, seedHex: M.encode(seed), notes: source?.notes ?? [], warnings }, accountIndex, addressStart, tracker, purposeIndex, coinType, hardening, branchStart, branchRange, derivationPlan);
 }
-function hodlClassifyMnemonic(value) {
-  let words = Rn(value).split(" ").filter(Boolean);
-  if (!words.length) return { ok: false, words, unknown: [], error: "Type or paste your seed phrase." };
-  let unknown = words.map((word, index) => ({ index, word })).filter(({ word }) => !Ae.includes(word));
-  if (unknown.length) return { ok: false, words, unknown, error: `Word ${unknown[0].index + 1} (\u201C${unknown[0].word}\u201D) is not on the BIP39 English list.` };
-  let phrase = words.join(" "), electrum = detectElectrumSeed(phrase), bip39 = Pn(phrase, Ae);
-  if (electrum) return { ok: true, words, unknown: [], electrum, bip39, format: "electrum" };
-  if (bip39 && [12, 15, 18, 21, 24].includes(words.length)) return { ok: true, words, unknown: [], electrum: null, bip39: true, format: "bip39" };
-  return {
-    ok: false,
-    words,
-    unknown: [],
-    electrum: null,
-    bip39: false,
-    error: [12, 15, 18, 21, 24].includes(words.length)
-      ? "Not an Electrum seed (HMAC version prefix mismatch) and the BIP39 checksum does not match. One of the words is wrong, or this is not a BIP39 or Electrum phrase."
-      : `A seed phrase is 12, 15, 18, 21, or 24 words. You entered ${words.length}.`
-  };
-}
-var hodlElectrumGrindCache = new Map();
-function hodlGrindElectrumFromEntropy(bytes, prefix) {
-  let key = `${prefix}:${M.encode(bytes)}`, cached = hodlElectrumGrindCache.get(key);
-  if (cached) return cached;
-  let ground = grindElectrumSeed(entropyBytesToInt(bytes), prefix, { wordlist: Ae, skipBip39: true });
-  if (hodlElectrumGrindCache.size >= 8) hodlElectrumGrindCache.clear();
-  hodlElectrumGrindCache.set(key, ground);
-  return ground;
-}
-async function hodlElectrumWalletWithProgress(phrase, passphrase, network, count, source, addressStart, tracker) {
-  let classified = source?.classified ?? hodlClassifyMnemonic(phrase);
-  if (!classified.ok || classified.format !== "electrum") throw new Error(classified.error ?? "Not an Electrum seed.");
-  let detected = classified.electrum, definition = electrumAccountDefinition(detected), seed = electrumMnemonicToSeed(detected.normalized, passphrase), root = Gt.fromMasterSeed(seed);
-  let accountPath = detected.accountPath || "m", originPath = detected.originPath ?? "";
-  let accountNode = accountPath === "m" ? root : root.derive(accountPath);
-  let addressCount = Math.min(Math.max(count, 1), hodlMaxAddressRange), masterFingerprint = Us(root.fingerprint);
-  tracker.setTotal(addressCount * 2);
-  let account = await hodlAccountResultWithProgress(accountNode, definition, network, addressCount, {
-    accountPath,
-    accountIndex: 0,
-    masterFingerprint,
-    originFingerprint: masterFingerprint,
-    originPath,
-    addressStart: addressStart ?? 0
-  }, tracker);
-  let warnings = [...source?.warnings ?? []];
-  warnings.push("This phrase will be rejected or produce a different wallet in BIP39-only software.");
-  if (detected.twoFactor) warnings.push("Electrum 2FA (TrustedCoin) cosigner is missing. Addresses below are the user key alone and will not match the 2FA wallet.");
-  if (classified.bip39) warnings.push("These words also pass a BIP39 checksum. EntropyLab restored them as Electrum, not BIP39.");
-  if (passphrase.length > 0) warnings.push("An Electrum passphrase is in use. The same words without this passphrase are a different wallet. Do not store the passphrase with the words.");
-  let notes = [...source?.notes ?? [], `Format: Electrum Seed Version System \xB7 version ${detected.prefix} (${detected.title}) \xB7 ${detected.wordCount} words.`];
-  if (source?.grindNonce) notes.push(`Ground an Electrum-native ${detected.label} seed in ${source.grindNonce} tries from user entropy. Will NOT restore as BIP39.`);
-  let result = hodlRootWalletResult(root, network, {
-    mnemonic: detected.normalized,
-    passphraseUsed: passphrase.length > 0,
-    entropyHex: source?.entropyHex ?? null,
-    seedHex: M.encode(seed),
-    notes,
-    warnings
-  }, 0, masterFingerprint, [account]);
-  result.seedFormat = "electrum";
-  result.electrum = { prefix: detected.prefix, type: detected.id, title: detected.title, twoFactor: detected.twoFactor, wordCount: detected.wordCount };
-  result.multisigCosignerExports = [];
-  return result;
-}
-async function hodlElectrumWalletFromEntropy(entropy, passphrase, network, count, addressStart, tracker, prefix) {
-  let ground = hodlGrindElectrumFromEntropy(entropy.bytes, prefix);
-  return hodlElectrumWalletWithProgress(ground.phrase, passphrase, network, count, {
-    entropyHex: entropy.hex,
-    notes: entropy.notes,
-    warnings: entropy.warnings,
-    grindNonce: ground.nonce,
-    classified: { ok: true, words: ground.phrase.split(" "), electrum: ground.detected, bip39: false, format: "electrum" }
-  }, addressStart, tracker);
-}
 async function hodlEntropyWalletWithProgress(entropy, passphrase, network, count, accountIndex, addressStart, tracker, purposeIndex, coinType = Rs(network), hardening = hodlDefaultHardening(), branchStart = 0, branchRange = 2, derivationPlan = null) {
-  if (hodlElectrumGenerateEnabled()) return hodlElectrumWalletFromEntropy(entropy, passphrase, network, count, addressStart, tracker, hodlElectrumType);
   return hodlMnemonicWalletWithProgress(_n(entropy.bytes), passphrase, network, count, { entropyHex: entropy.hex, notes: entropy.notes, warnings: entropy.warnings }, accountIndex, addressStart, tracker, purposeIndex, coinType, hardening, branchStart, branchRange, derivationPlan);
 }
 async function hodlImportedWalletWithProgress(value, network, count, accountIndex, addressStart, tracker, purposeIndex, coinType = Rs(network), hardening = hodlDefaultHardening(), branchStart = 0, branchRange = 2, derivationPlan = null) {
@@ -1828,7 +1749,7 @@ function Qs(id) {
   if (!account) return;
   hodlSetSelectedScriptType(id);
   hodlSyncAccountTabs(id);
-  let branches = hodlAccountAddressBranches(account), firstBranch = branches[0], firstAddress = firstBranch?.rows[0], firstIndex = firstAddress?.index ?? 0, firstLabel = firstBranch ? hodlAddressBranchLabel(firstBranch.branch) : "Address", hasPrivate = hodlAccountHasPrivate(account), purposeLabel = account.imported || account.def.purpose == null ? account.def.bip : `Purpose ${hodlOriginPathIndex(account.def.purpose, account.def.purposeHardened !== false)}`;
+  let branches = hodlAccountAddressBranches(account), firstBranch = branches[0], firstAddress = firstBranch?.rows[0], firstIndex = firstAddress?.index ?? 0, firstLabel = firstBranch ? hodlAddressBranchLabel(firstBranch.branch) : "Address", hasPrivate = hodlAccountHasPrivate(account), purposeLabel = account.imported ? account.def.bip : `Purpose ${hodlOriginPathIndex(account.def.purpose, account.def.purposeHardened !== false)}`;
   let privateSection = hasPrivate ? `
     <section class="account-result-section account-private-section" aria-labelledby="account-private-heading">
       <div class="wallet-data-section-head">
@@ -1919,9 +1840,9 @@ function hodlSaveRecoveryControl() {
 }
 function hodlWalletMessages(wallet, idPrefix) {
   let warnings = [...wallet.warnings || []].filter((message) => !wallet.passphraseUsed || !/\bpassphrase\b/i.test(message)), notes = [...wallet.notes || []];
-  if (wallet.passphraseUsed) warnings.unshift(wallet.seedFormat === "electrum" ? "An Electrum passphrase is in use. It creates a different wallet, is not printed in the recovery sheet, and must be preserved separately to recover this wallet." : "A BIP39 passphrase is in use. It creates a different wallet, is not printed in the recovery sheet, and must be preserved separately to recover this wallet.");
+  if (wallet.passphraseUsed) warnings.unshift("A BIP39 passphrase is in use. It creates a different wallet, is not printed in the recovery sheet, and must be preserved separately to recover this wallet.");
   if (!warnings.length && !notes.length) return "";
-  let items = [...warnings.map((message) => `<li class="${/BIP39-only software|TrustedCoin/.test(message) ? "is-danger" : "is-warning"}">${$t(message)}</li>`), ...notes.map((message) => `<li>${$t(message)}</li>`)].join("");
+  let items = [...warnings.map((message) => `<li class="is-warning">${$t(message)}</li>`), ...notes.map((message) => `<li>${$t(message)}</li>`)].join("");
   return `<section class="wallet-result-messages" aria-labelledby="${idPrefix}-safety-heading"><h3 id="${idPrefix}-safety-heading">Safety notes</h3><ul>${items}</ul></section>`;
 }
 function hodlSingleWalletData(wallet) {
@@ -1968,14 +1889,14 @@ function hodlSingleWalletData(wallet) {
 }
 function hodlHdWalletData(wallet) {
   let privateFields = [];
-  if (wallet.mnemonic) privateFields.push(hodlSeedPhraseField(`Your seed phrase \xB7 ${wallet.mnemonic.trim().split(/\s+/).length} words`, wallet.mnemonic), wallet.seedFormat === "electrum" ? "" : hodlSeedQrExport(wallet.mnemonic, { passphraseUsed: wallet.passphraseUsed, entropyHex: wallet.entropyHex }));
-  if (wallet.entropyHex) privateFields.push(Ee(wallet.seedFormat === "electrum" ? "Source entropy hex" : "BIP39 entropy hex", wallet.entropyHex));
-  if (wallet.seedHex) privateFields.push(Ee(wallet.seedFormat === "electrum" ? "Master seed hex (Electrum PBKDF2)" : "Master seed hex", wallet.seedHex));
+  if (wallet.mnemonic) privateFields.push(hodlSeedPhraseField(`Your seed phrase \xB7 ${wallet.mnemonic.trim().split(/\s+/).length} words`, wallet.mnemonic), hodlSeedQrExport(wallet.mnemonic, { passphraseUsed: wallet.passphraseUsed, entropyHex: wallet.entropyHex }));
+  if (wallet.entropyHex) privateFields.push(Ee("BIP39 entropy hex", wallet.entropyHex));
+  if (wallet.seedHex) privateFields.push(Ee("Master seed hex", wallet.seedHex));
   if (wallet.rootXprv) privateFields.push(Ee(`Root ${wallet.rootPrivateLabel || cr[wallet.network].x.prvName}`, wallet.rootXprv));
   if (wallet.importedPrivateKey) privateFields.push(Ee(`Imported ${wallet.importedPrivateLabel || "extended private key"}`, wallet.importedPrivateKey));
   let hasAccountPrivate = wallet.accounts.some(hodlAccountHasPrivate), hasPrivate = privateFields.length > 0 || hasAccountPrivate;
   let privateContent = privateFields.length ? privateFields.join("") : `<p class="muted">Private account material is available in the selected script panel below; no BIP32 root private key was supplied.</p>`;
-  let intro = wallet.mnemonic ? wallet.seedFormat === "electrum" ? "Review the root material derived from this Electrum seed. Private recovery data is grouped first; watch-only data appears below." : "Review the root material derived from this seed. Private recovery data is grouped first; watch-only data appears below." : "Review the material available from this imported extended key. Private data, when present, is grouped first; watch-only data appears below.";
+  let intro = wallet.mnemonic ? "Review the root material derived from this seed. Private recovery data is grouped first; watch-only data appears below." : "Review the material available from this imported extended key. Private data, when present, is grouped first; watch-only data appears below.";
   let source = wallet.mnemonic ? "" : `<p><span class="muted">Source</span><br><span>Imported extended ${hasPrivate ? "private" : "public"} key; no seed phrase was entered.</span></p>`;
   let privateSection = hasPrivate ? `<section class="wallet-data-section wallet-private-section" aria-labelledby="wallet-private-heading">
       <div class="wallet-data-section-head">
@@ -2104,7 +2025,6 @@ function hodlSheetWifRows(lines, label, rows) {
 Oo = function(wallet, revealPrivate) {
   let lines = ["ENTROPYLAB \u2014 RECOVERY SHEET", "This file was computed locally. The calculator never generated wallet entropy.", ""];
   lines.push(`Network: ${wallet.network}`);
-  if (wallet.seedFormat === "electrum") lines.push(`Format: ${wallet.electrum?.title || "Electrum seed"} (version ${wallet.electrum?.prefix || "?"})`);
   if (wallet.passphraseUsed) lines.push("Passphrase: YES (not printed)");
   hodlSheetWarnings(lines, wallet);
   lines.push("");
@@ -2124,8 +2044,8 @@ Oo = function(wallet, revealPrivate) {
       let seedQrDigits = hodlSeedQrDigits(wallet.mnemonic);
       if (seedQrDigits) lines.push("", "SEEDQR DIGITS", seedQrDigits);
     }
-    if (wallet.entropyHex) lines.push("", wallet.seedFormat === "electrum" ? "SOURCE ENTROPY HEX" : "BIP39 ENTROPY HEX", wallet.entropyHex);
-    if (wallet.seedHex) lines.push("", wallet.seedFormat === "electrum" ? "MASTER SEED HEX (ELECTRUM PBKDF2, 512 bits)" : "MASTER SEED HEX (BIP39 PBKDF2, 512 bits)", wallet.seedHex);
+    if (wallet.entropyHex) lines.push("", "BIP39 ENTROPY HEX", wallet.entropyHex);
+    if (wallet.seedHex) lines.push("", "MASTER SEED HEX (BIP39 PBKDF2, 512 bits)", wallet.seedHex);
     if (wallet.rootXprv) lines.push("", `BIP32 ROOT ${(wallet.rootPrivateLabel || cr[wallet.network].x.prvName).toUpperCase()}`, wallet.rootXprv);
     if (wallet.importedPrivateKey) lines.push("", `IMPORTED ${(wallet.importedPrivateLabel || "EXTENDED PRIVATE KEY").toUpperCase()}`, wallet.importedPrivateKey);
     for (let account of wallet.accounts) {
@@ -2153,7 +2073,7 @@ Oo = function(wallet, revealPrivate) {
   }
   if (wallet.importedPublicKey) lines.push(`Imported ${(wallet.importedPublicLabel || "extended public key").toUpperCase()}: ${wallet.importedPublicKey}`);
   for (let account of wallet.accounts) {
-    lines.push("", `=== ${account.def.label} (${account.imported || account.def.purpose == null ? account.def.bip : `Purpose ${hodlOriginPathIndex(account.def.purpose, account.def.purposeHardened !== false)}`}) ===`, account.def.beginner, `Network: ${wallet.network}`, `Account: ${account.imported ? "Imported account key" : account.accountIndex ?? 0}`, `Account path: ${hodlDisplayDerivationPath(account.accountPath)}`);
+    lines.push("", `=== ${account.def.label} (${account.imported ? account.def.bip : `Purpose ${hodlOriginPathIndex(account.def.purpose, account.def.purposeHardened !== false)}`}) ===`, account.def.beginner, `Network: ${wallet.network}`, `Account: ${account.imported ? "Imported account key" : account.accountIndex ?? 0}`, `Account path: ${hodlDisplayDerivationPath(account.accountPath)}`);
     if (account.masterFingerprint || wallet.masterFingerprint) lines.push(`Master fingerprint: ${account.masterFingerprint || wallet.masterFingerprint}`);
     else if (account.parentFingerprint) lines.push(`Encoded parent fingerprint (not a master fingerprint): ${account.parentFingerprint}`);
     if (!account.masterFingerprint && !wallet.masterFingerprint && account.nodeFingerprint) lines.push(`Imported key fingerprint (not a master fingerprint): ${account.nodeFingerprint}`);
@@ -2167,7 +2087,7 @@ Oo = function(wallet, revealPrivate) {
 };
 var hodlMaxPurpose = 2147483647, hodlMaxCoinType = 2147483647, hodlMaxAccount = 2147483647;
 function hodlScriptDefinition(id) {
-  return To.find((definition) => definition.id === id) || Object.values(ELECTRUM_PREFIXES).map(electrumAccountDefinition).find((definition) => definition.id === id) || To.find((definition) => definition.id === "bip84") || To[0];
+  return To.find((definition) => definition.id === id) || To.find((definition) => definition.id === "bip84") || To[0];
 }
 function hodlReadPurpose(mark = true) {
   return hodlReadDerivationIndex(document.getElementById("purpose"), "Purpose", mark);
@@ -2547,78 +2467,13 @@ function hodlImportedExtendedKeyDepth() {
   }
 }
 function hodlUpdateKeyModeControls() {
-  let singleKey = Ne === "key", settings = document.getElementById("key-settings"), electrum = !singleKey && Boolean(hodlElectrumIntent());
+  let singleKey = Ne === "key", settings = document.getElementById("key-settings");
   ["passphrase-field", "master-fingerprint-preview", "derivation-scheme-field", "script-type-field", "purpose-field", "account-field", "address-branch-settings", "address-range-settings", "derivation-path-preview"].forEach((id) => {
     let element = document.getElementById(id);
     if (element) element.hidden = singleKey;
   });
   hodlUpdateDerivationSchemeControls();
-  if (electrum) ["derivation-scheme-field", "script-type-field", "purpose-field", "account-field", "scheme-script-index-field", "custom-derivation-settings"].forEach((id) => {
-    let element = document.getElementById(id);
-    if (element) element.hidden = true;
-  });
   settings?.classList.toggle("single-key-mode", singleKey);
-  hodlSyncElectrumPassphraseLabel();
-}
-function hodlElectrumGenerateAvailable() {
-  if (Ne === "hex") return true;
-  if (Ne === "dice") return ge === "coldcard" || ge === "coleman";
-  if (Ne === "cards") return hodlCardMethod === "hashed";
-  return false;
-}
-function hodlElectrumGenerateEnabled() {
-  return hodlElectrumGenerateAvailable() && hodlElectrumGenerate;
-}
-function hodlElectrumIntent() {
-  if (hodlElectrumGenerateEnabled()) return ELECTRUM_PREFIXES[hodlElectrumType] || ELECTRUM_PREFIXES["100"];
-  if (Ne !== "seed") return null;
-  let selected = hodlSelectedSeedInput(Pt);
-  if (!selected.value || selected.extended) return null;
-  let classified = hodlClassifyMnemonic(selected.value);
-  return classified.format === "electrum" ? classified.electrum : null;
-}
-function hodlSyncElectrumPassphraseLabel() {
-  let label = document.querySelector("#passphrase-field > label[for='pass'], #passphrase-field label[for=pass]");
-  let pass = document.getElementById("pass");
-  let electrum = Boolean(hodlElectrumIntent());
-  if (label) label.textContent = electrum ? "Optional Electrum passphrase" : "Optional BIP39 passphrase";
-  if (pass) pass.placeholder = electrum ? "Enter an Electrum passphrase, or leave blank for none" : "Enter a BIP39 passphrase, or leave blank for none";
-}
-function hodlElectrumGenerateMarkup() {
-  if (!hodlElectrumGenerateAvailable()) return "";
-  let type = ELECTRUM_PREFIXES[hodlElectrumType] || ELECTRUM_PREFIXES["100"];
-  return `<div class="electrum-generate">
-    <label class="seed-autocomplete-toggle electrum-seed-toggle"><input type="checkbox" id="electrum-seed" ${hodlElectrumGenerate ? "checked" : ""} /><span><strong>Electrum seed</strong> <span class="seed-autocomplete-note">(grind a 12-word Electrum-native phrase from this entropy; will NOT restore as BIP39)</span></span></label>
-    <div class="choice-grid electrum-type-grid" ${hodlElectrumGenerate ? "" : "hidden"}>
-      <label class="choice"><input type="radio" name="electrum-type" value="01" ${type.prefix === "01" ? "checked" : ""} /><span><strong>Standard (01)</strong><span class="desc">Legacy compressed P2PKH on m/0 and m/1.</span></span></label>
-      <label class="choice"><input type="radio" name="electrum-type" value="100" ${type.prefix === "100" ? "checked" : ""} /><span><strong>SegWit (100)</strong><span class="desc">Native P2WPKH on m/0h/0 and m/0h/1. Electrum's current default.</span></span></label>
-    </div>
-  </div>`;
-}
-function hodlBindElectrumGenerateControls() {
-  let toggle = document.getElementById("electrum-seed"), typeGrid = document.querySelector(".electrum-type-grid");
-  if (toggle) toggle.onchange = () => {
-    hodlElectrumGenerate = toggle.checked;
-    let state = hodlKeys[hodlActiveKey];
-    if (state) state.electrumGenerate = hodlElectrumGenerate;
-    if (typeGrid) typeGrid.hidden = !hodlElectrumGenerate;
-    hodlInvalidateLiveKeyResult();
-    hodlUpdateSeedLengthControl();
-    hodlUpdateDerivationPathPreview();
-    hodlQueueMasterFingerprintPreview(0);
-  };
-  document.querySelectorAll('input[name="electrum-type"]').forEach((radio) => {
-    radio.onchange = () => {
-      if (!radio.checked) return;
-      hodlElectrumType = radio.value === "01" ? "01" : "100";
-      let state = hodlKeys[hodlActiveKey];
-      if (state) state.electrumType = hodlElectrumType;
-      hodlInvalidateLiveKeyResult();
-      hodlUpdateSeedLengthControl();
-      hodlUpdateDerivationPathPreview();
-      hodlQueueMasterFingerprintPreview(0);
-    };
-  });
 }
 function hodlUpdateDerivationPathPreview() {
   let panel = document.getElementById("derivation-path-preview"), list = panel?.querySelector(".derivation-path-list"), context = document.getElementById("derivation-path-context"), message = document.getElementById("derivation-path-error"), purposeInput = document.getElementById("purpose"), accountInput = document.getElementById("account");
@@ -2695,22 +2550,6 @@ function hodlUpdateDerivationPathPreview() {
     message.hidden = false;
     message.classList.add("is-note");
     message.textContent = "This non-root extended key is reused directly. Purpose and Account cannot select a different hardened sibling.";
-    return;
-  }
-  let electrum = hodlElectrumIntent();
-  if (electrum) {
-    let base = hodlDisplayDerivationPath(electrum.accountPath || "m");
-    context.textContent = `${electrum.title} \xB7 Electrum ${base}`;
-    setPath("account", base);
-    setPath("receive", pathRange(`${base}/0`));
-    setPath("change", pathRange(`${base}/1`));
-    message.hidden = false;
-    message.classList.add("is-note");
-    message.textContent = electrum.twoFactor
-      ? "Native Electrum 2FA seed. TrustedCoin cosigner is missing; paths below are the user key alone."
-      : electrum.prefix === "100"
-        ? "Native Electrum SegWit seed. Receive m/0h/0 and change m/0h/1. This is not BIP84."
-        : "Native Electrum Standard seed. Receive m/0 and change m/1. This is not BIP44.";
     return;
   }
   context.textContent = `${definition.label} \xB7 ${plan.label}`;
@@ -4140,12 +3979,6 @@ function hodlTranslateSeedNumberIndex(value, toZeroIndexed) {
 function hodlSelectedSeedInput(targetWords = Pt) {
   if (hodlSeedMethod === "numbers") {
     let input = document.getElementById("seed-numbers"), parsed = hodlParseSeedNumbers(input?.value ?? "", targetWords, hodlSeedZeroIndexed);
-    if (parsed.complete) return { value: parsed.phrase, extended: false, parsed };
-    let words = parsed.wordSlots.filter(Boolean);
-    if (!parsed.invalidEntries.length && !parsed.extraEntries.length && words.length === parsed.wordSlots.length && words.length >= 12) {
-      let classified = hodlClassifyMnemonic(words.join(" "));
-      if (classified.format === "electrum") return { value: classified.words.join(" "), extended: false, parsed, electrum: classified.electrum };
-    }
     return { value: parsed.phrase, extended: false, parsed };
   }
   let value = document.getElementById("seed")?.value.trim() || "";
@@ -4199,8 +4032,8 @@ function hodlAnalyzeSeedInput(input, targetWords = Pt) {
       invalidWords.push({ index, word: token.word });
     }
   });
-  let checksumInvalid = false, allListed = tokens.length === config.words && tokens.every((token) => hodlBip39WordSet.has(token.word)), finalCanContinue = Boolean(activePrefix && finalContext?.prefix && finalContext.matchingCandidates.some((word) => word !== finalContext.prefix)), listedPhrase = tokens.length && tokens.every((token) => hodlBip39WordSet.has(token.word)) ? tokens.map((token) => token.word).join(" ") : "";
-  if (allListed && !Pn(listedPhrase, Ae) && !detectElectrumSeed(listedPhrase) && !finalCanContinue) {
+  let checksumInvalid = false, allListed = tokens.length === config.words && tokens.every((token) => hodlBip39WordSet.has(token.word)), finalCanContinue = Boolean(activePrefix && finalContext?.prefix && finalContext.matchingCandidates.some((word) => word !== finalContext.prefix));
+  if (allListed && !Pn(tokens.map((token) => token.word).join(" "), Ae) && !finalCanContinue) {
     checksumInvalid = true;
     let final = tokens[tokens.length - 1];
     invalidRanges.push([final.start, final.end]);
@@ -5153,7 +4986,7 @@ function hodlUpdateSeedLengthControl() {
     help.textContent = `${config.words} words require exactly ${format.digits} ${format.unit}.${format.remainderBits ? format.binaryRemainder ? ` Enter ${format.fullDigits} complete ${format.shortLabel} characters followed by ${format.remainderBits} coin flip${format.remainderBits === 1 ? "" : "s"}, using Heads (0) or Tails (1).` : ` The final character contributes ${format.remainderBits} bit${format.remainderBits === 1 ? "" : "s"} and must be one of ${[...format.finalCharacters].join(", ")}.` : ""}`;
     return;
   }
-  help.textContent = Ne === "seed" ? hodlSeedMethod === "numbers" ? `Enter exactly ${config.words} BIP39 word numbers using ${hodlSeedZeroIndexed ? "0 through 2047" : "1 through 2048"}. Electrum 2.0+ seeds are accepted when the numbers form a valid Electrum phrase.` : `Enter English BIP39 words, or an Electrum 2.0+ native seed (auto-detected). Extended keys ignore this selection.` : Ne === "cards" ? hodlCardMethod === "direct" ? `${config.words} words use ${config.partialWords} complete 11-bit rank selections plus ${hodlDirectCardFinalRadices(config.words).length} final rank draw${hodlDirectCardFinalRadices(config.words).length === 1 ? "" : "s"}.` : config.words === 24 ? "24 words need 256 bits. One deck is about 225.6 bits, so deal 52 unique cards, shuffle again, then deal 6 more." : `${config.words} words need ${config.bits} bits. Deal ${hodlCardNeeded(config.words).first} unique cards from one shuffled deck.` : hodlElectrumGenerateEnabled() ? `Electrum-native 12-word seed. ${config.words} words of BIP39 entropy still mix into the hash; the ground phrase is always 12 Electrum words and will NOT restore as BIP39.` : `${config.words} words use ${config.bits} bits of BIP39 entropy.`;
+  help.textContent = Ne === "seed" ? hodlSeedMethod === "numbers" ? `Enter exactly ${config.words} BIP39 word numbers using ${hodlSeedZeroIndexed ? "0 through 2047" : "1 through 2048"}.` : `Enter exactly ${config.words} BIP39 words. Extended keys ignore this selection.` : Ne === "cards" ? hodlCardMethod === "direct" ? `${config.words} words use ${config.partialWords} complete 11-bit rank selections plus ${hodlDirectCardFinalRadices(config.words).length} final rank draw${hodlDirectCardFinalRadices(config.words).length === 1 ? "" : "s"}.` : config.words === 24 ? "24 words need 256 bits. One deck is about 225.6 bits, so deal 52 unique cards, shuffle again, then deal 6 more." : `${config.words} words need ${config.bits} bits. Deal ${hodlCardNeeded(config.words).first} unique cards from one shuffled deck.` : `${config.words} words use ${config.bits} bits of BIP39 entropy.`;
 }
 function hodlInvalidateActiveKeyOutput() {
   re = null;
@@ -5231,7 +5064,6 @@ function hodlRenderKeyForm() {
         <span><strong>D++ / Direct word selection</strong><span class="desc">Roll one D8 labeled 1\u20138 and two hexadecimal D16 dice labeled 0\u2013F for each of the first ${config.partialWords} words, then ${hodlDPlusFinalDescription(config.words)} to select the valid checksum final word.</span></span>
       </label>
       </div>
-      ${hodlElectrumGenerateMarkup()}
       <p class="label" id="dice-label">${diceLabel}</p>
       <p class="muted" id="dice-help">${diceHelp}</p>
       <div class="dice-input-shell"><pre class="dice-input-highlight" id="dice-highlight" aria-hidden="true"></pre><textarea id="dice" placeholder="${dicePlaceholder}" aria-describedby="dice-help dice-meta"></textarea></div>
@@ -5287,7 +5119,6 @@ function hodlRenderKeyForm() {
     });
     hodlBindKeyFields();
     hodlRenderPassphraseKeyboard();
-    hodlBindElectrumGenerateControls();
     return;
   }
   if (Ne === "cards") {
@@ -5302,7 +5133,6 @@ function hodlRenderKeyForm() {
         <label class="choice"><input type="radio" name="card-method" value="hashed" ${direct ? "" : "checked"} /><span><strong>Hashed card transcript</strong><span class="desc">Deal unique rank-and-suit cards without replacement. SHA-256 hashes the complete transcript; ${config.words === 24 ? "58 cards across two shuffles are recommended" : `${needed.first} cards are recommended`}.</span></span></label>
         <label class="choice"><input type="radio" name="card-method" value="direct" ${direct ? "checked" : ""} /><span><strong>Direct word selection</strong><span class="desc">Ignore suits. Reshuffle and draw A\u20138, A\u20138, A\u20138, then A\u20134 for each full word. Finish with the shorter rank sequence shown for the checksum-valid final word.</span></span></label>
       </div>
-      ${hodlElectrumGenerateMarkup()}
       <p class="muted" id="cards-help">${inputHelp}</p>
       ${direct ? "" : `<label class="seed-autocomplete-toggle seed-zero-index-toggle"><input type="checkbox" id="cards-ian-coleman" ${hodlCardColemanSymbols ? "checked" : ""} /><span><strong>Match Ian Coleman method</strong> <span class="seed-autocomplete-note">(show and hash A\u2660 2\u2663 instead of AS 2C)</span></span></label>`}
       <label class="field" id="cards-input-label" for="${inputId}">${inputLabel}</label>
@@ -5380,7 +5210,6 @@ function hodlRenderKeyForm() {
       hodlUpdateCards();
     };
     hodlBindKeyFields();
-    hodlBindElectrumGenerateControls();
     direct ? hodlUpdateDirectCards() : hodlUpdateCards();
     return;
   }
@@ -5396,7 +5225,6 @@ function hodlRenderKeyForm() {
     at.innerHTML = `
       <p class="label">Number base</p>
       <div class="choice-grid entropy-format-grid">${formatChoices}</div>
-      ${hodlElectrumGenerateMarkup()}
       <div class="number-base-sync-row"><label class="seed-autocomplete-toggle number-base-sync-toggle"><input type="checkbox" id="sync-number-bases" ${syncEnabled ? "checked" : ""} /><span><strong>Sync number bases</strong> <span class="seed-autocomplete-note">(fill every format after complete valid entropy is entered)</span></span></label><span class="number-base-sync-status" id="number-base-sync-status" aria-live="polite" hidden>${hodlCopiedIconMarkup()}<span>Synced</span></span></div>
       <p class="label" id="entropy-input-label">${format.label} entropy for a ${config.words}-word seed</p>
       <p class="muted" id="entropy-input-help">Each complete ${format.shortLabel} character contributes ${format.bitsPerDigit} bit${format.bitsPerDigit === 1 ? "" : "s"}${format.binaryRemainder ? "" : " except for a mixed-radix final character when needed"}. Seed-word cards fill as enough bits arrive; the checksum-derived final word appears when all ${format.digits} characters are entered.${format.id === "bin" ? " Spaces are added every 11 bits." : ""}${remainderHelp} No generator \u2014 enter entropy you already created.</p>
@@ -5430,7 +5258,6 @@ function hodlRenderKeyForm() {
       if (!syncToggle.checked) hodlSetNumberBaseSyncStatus(false);
     };
     hodlBindKeyFields();
-    hodlBindElectrumGenerateControls();
     let entropyInput = document.getElementById(inputId);
     if (entropyInput) {
       hodlBindKeypadPointer(at.querySelectorAll("[data-entropy-digit]"), () => entropyInput);
@@ -5481,10 +5308,6 @@ function hodlRenderKeyForm() {
           let invalid = parsed.invalidEntries[0];
           meta.textContent = `${progress} · Word ${invalid.position + 1} number “${invalid.token}” is outside ${parsed.minimum}–${parsed.maximum} · correct to continue`;
           meta.className = "muted err";
-        } else if (parsed.wordSlots.length && parsed.wordSlots.every(Boolean) && detectElectrumSeed(parsed.wordSlots.join(" "))) {
-          let electrum = detectElectrumSeed(parsed.wordSlots.join(" "));
-          meta.textContent = `${parsed.wordSlots.length} words · ${electrum.title} (version ${electrum.prefix}) · ready to derive · not BIP39`;
-          meta.className = "muted ok";
         } else if (parsed.checksumInvalid) {
           meta.textContent = `${progress} · BIP39 checksum invalid · final word number highlighted`;
           meta.className = "muted err";
@@ -5497,7 +5320,6 @@ function hodlRenderKeyForm() {
         }
         hodlUpdateSeedNumberPad(input, parsed);
         hodlQueueMasterFingerprintPreview();
-        hodlUpdateDerivationPathPreview();
         return parsed;
       };
       let zeroToggle = document.getElementById("seed-zero-index");
@@ -5531,7 +5353,7 @@ function hodlRenderKeyForm() {
       update();
       return;
     }
-    at.innerHTML = `${choices}<p class="label">Your ${config.words}-word seed phrase</p><p class="muted" id="seed-help">Enter English BIP39 words, or an Electrum 2.0+ native seed (auto-detected). Standard Electrum restores on m/0 and m/1; SegWit Electrum on m/0h/0 and m/0h/1. You can also paste an extended key here. With ${config.partialWords} compatible diceware words, choose the final BIP39 checksum word below.</p><div class="seed-entry-tools">${hodlSeedKeyboardToggleMarkup()}<label class="seed-autocomplete-toggle"><input type="checkbox" id="seed-autocomplete" ${autocompleteEnabled ? "checked" : ""} /><span>Autocomplete BIP39 words <span class="seed-autocomplete-note">(2+ letters normally; 1+ for a unique checksum word)</span></span></label></div><div class="dice-input-shell seed-input-shell"><pre class="dice-input-highlight" id="seed-highlight" aria-hidden="true"></pre><textarea id="seed" placeholder="Enter BIP39 or Electrum words" aria-describedby="seed-help seed-meta" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div><p class="muted" id="seed-meta" aria-live="polite"></p>${hodlSeedKeyboardMarkup()}<div id="last-words" class="row" style="margin-top:8px"></div>`;
+    at.innerHTML = `${choices}<p class="label">Your ${config.words}-word seed phrase</p><p class="muted" id="seed-help">Enter exactly ${config.words} English BIP39 words. You can also paste an extended key here; the selected phrase length does not apply to extended keys. With ${config.partialWords} compatible diceware words, choose the final checksum word below.</p><div class="seed-entry-tools">${hodlSeedKeyboardToggleMarkup()}<label class="seed-autocomplete-toggle"><input type="checkbox" id="seed-autocomplete" ${autocompleteEnabled ? "checked" : ""} /><span>Autocomplete BIP39 words <span class="seed-autocomplete-note">(2+ letters normally; 1+ for a unique checksum word)</span></span></label></div><div class="dice-input-shell seed-input-shell"><pre class="dice-input-highlight" id="seed-highlight" aria-hidden="true"></pre><textarea id="seed" placeholder="Enter exactly ${config.words} BIP39 words" aria-describedby="seed-help seed-meta" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div><p class="muted" id="seed-meta" aria-live="polite"></p>${hodlSeedKeyboardMarkup()}<div id="last-words" class="row" style="margin-top:8px"></div>`;
     let input = document.getElementById("seed"), update = () => {
       let rawValue = input.value, value = rawValue.trim(), meta = W("#seed-meta"), picker = W("#last-words"), analysis = hodlRenderSeedInputState(input, config.words);
       if (hodlLooksExtendedKey(value)) {
@@ -5539,17 +5361,6 @@ function hodlRenderKeyForm() {
         picker.innerHTML = "";
         meta.textContent = status.message;
         meta.className = "muted " + (status.ok ? "ok" : "err");
-        return;
-      }
-      let classified = analysis.invalidWords.length || analysis.excessCount ? null : hodlClassifyMnemonic(analysis.tokens.map((token) => token.word).join(" "));
-      if (classified?.format === "electrum") {
-        picker.innerHTML = "";
-        let dual = classified.bip39 ? " \xB7 also BIP39-valid \u2014 restoring as Electrum, not BIP39" : "";
-        meta.textContent = `${classified.electrum.wordCount} words \xB7 ${classified.electrum.title} (version ${classified.electrum.prefix}) \xB7 ready to derive${dual}`;
-        meta.className = classified.electrum.twoFactor ? "muted err" : "muted ok";
-        hodlUpdateDerivationPathPreview();
-        hodlQueueMasterFingerprintPreview();
-        hodlQueueDeriveButtonSync();
         return;
       }
       let finalContext = analysis.finalContext, validation = hodlValidateTargetMnemonic(value, config.words), entered = analysis.tokens.length, progress = hodlSeedCountStatus(entered, config.words), remaining = Math.max(0, config.words - entered);
@@ -5975,8 +5786,7 @@ function hodlCanDeriveCurrentKey() {
         if (hodlReadHardening().address && parsed.node.depth > 0 && !parsed.isPrivate) return false;
         return true;
       }
-      if (selected.electrum) return true;
-      return hodlClassifyMnemonic(value).ok;
+      return hodlValidateTargetMnemonic(value, Pt).ok;
     }
     return hodlPrivateKeyInputIsValid();
   } catch {
@@ -6005,11 +5815,6 @@ function hodlSyncDeriveButton() {
 var hodlMasterFingerprintTimer = 0, hodlMasterFingerprintRevision = 0;
 function hodlFingerprintMnemonic() {
   try {
-    let electrumPhrase = (entropy) => {
-      if (!hodlElectrumGenerateEnabled() || !entropy?.ok) return entropy?.ok ? { mnemonic: _n(entropy.bytes), format: "bip39" } : null;
-      let ground = hodlGrindElectrumFromEntropy(entropy.bytes, hodlElectrumType);
-      return { mnemonic: ground.phrase, format: "electrum" };
-    };
     if (Ne === "dice") {
       let input = document.getElementById("dice");
       if (!input) return null;
@@ -6019,7 +5824,7 @@ function hodlFingerprintMnemonic() {
           finalWord = rollsFinalWord ? parsed.finalWord : ft;
         if (!parsed.allRolledValid || parsed.invalidRequiredCount || (rollsFinalWord ? !parsed.complete : parsed.waiting !== "last-word" || !parsed.candidates.includes(finalWord))) return null;
         let validation = hodlValidateTargetMnemonic([...parsed.wordSlots, finalWord].join(" "), Pt);
-        return validation.ok ? { mnemonic: validation.words.join(" "), format: "bip39" } : null;
+        return validation.ok ? validation.words.join(" ") : null;
       }
       if (ge === "bitbox") {
         let parsed = hodlBitBoxRolls(input.value, Pt);
@@ -6027,26 +5832,32 @@ function hodlFingerprintMnemonic() {
         let possible = hodlTargetLastWords(parsed.words.join(" "), Pt);
         if (!possible?.candidates.includes(ft)) return null;
         let validation = hodlValidateTargetMnemonic([...parsed.words, ft].join(" "), Pt);
-        return validation.ok ? { mnemonic: validation.words.join(" "), format: "bip39" } : null;
+        return validation.ok ? validation.words.join(" ") : null;
       }
       if (hodlAnalyzeDiceInput(input.value, ge, Pt).coinDerivedCount) return null;
-      return electrumPhrase(hodlDiceEntropy(input.value, ge, Pt));
+      let entropy = hodlDiceEntropy(input.value, ge, Pt);
+      return entropy.ok ? _n(entropy.bytes) : null;
     }
-    if (Ne === "cards") return electrumPhrase(hodlSelectedCardsEntropy(Pt));
-    if (Ne === "hex") return electrumPhrase(hodlSelectedEntropy());
+    if (Ne === "cards") {
+      let entropy = hodlSelectedCardsEntropy(Pt);
+      return entropy.ok ? _n(entropy.bytes) : null;
+    }
+    if (Ne === "hex") {
+      let entropy = hodlSelectedEntropy();
+      return entropy.ok ? _n(entropy.bytes) : null;
+    }
     if (Ne === "seed") {
       let selected = hodlSelectedSeedInput(Pt), value = selected.value;
       if (!value || selected.extended) return null;
-      let classified = hodlClassifyMnemonic(value);
-      if (!classified.ok) return null;
-      return { mnemonic: classified.words.join(" "), format: classified.format };
+      let validation = hodlValidateTargetMnemonic(value, Pt);
+      return validation.ok ? validation.words.join(" ") : null;
     }
   } catch {
   }
   return null;
 }
-function hodlMasterFingerprint(mnemonic, passphrase = "", format = "bip39") {
-  let seed = format === "electrum" ? electrumMnemonicToSeed(mnemonic, passphrase) : wi(mnemonic, passphrase);
+function hodlMasterFingerprint(mnemonic, passphrase = "") {
+  let seed = wi(mnemonic, passphrase);
   try {
     return Us(Gt.fromMasterSeed(seed).fingerprint);
   } finally {
@@ -6090,20 +5901,20 @@ function hodlRenderMasterFingerprintPreview(revision = hodlMasterFingerprintRevi
     hodlSetMasterFingerprintCard(derivedCard, derived, "", derivedImage);
     arrow.classList.add("is-disabled");
   };
-  let source = hodlFingerprintMnemonic();
-  if (!source?.mnemonic) {
+  let mnemonic = hodlFingerprintMnemonic();
+  if (!mnemonic) {
     clear();
     return;
   }
   try {
-    hodlSetMasterFingerprintCard(baseCard, base, hodlMasterFingerprint(source.mnemonic, "", source.format), baseImage);
+    hodlSetMasterFingerprintCard(baseCard, base, hodlMasterFingerprint(mnemonic), baseImage);
   } catch {
     clear();
     return;
   }
   let value = "";
   if (pass.value.length > 0) try {
-    value = hodlMasterFingerprint(source.mnemonic, pass.value, source.format);
+    value = hodlMasterFingerprint(mnemonic, pass.value);
   } catch {
   }
   let available = hodlSetMasterFingerprintCard(derivedCard, derived, value, derivedImage);
@@ -6226,12 +6037,10 @@ async function hodlCalculateKey(progress) {
       let selected = hodlSelectedSeedInput(Pt), value = selected.value;
       if (selected.extended) re = await hodlImportedWalletWithProgress(value, network, count, account, addressStart, progress, purpose, coinType, hardening, branchStart, branchRange, derivationPlan);
       else {
-        if (hodlSeedMethod === "numbers" && !selected.parsed?.complete && !selected.electrum) throw new Error(selected.parsed?.invalidEntries.length ? `Word numbers must be between ${selected.parsed.minimum} and ${selected.parsed.maximum}.` : selected.parsed?.extraEntries.length ? `Enter exactly ${Pt} BIP39 word numbers.` : selected.parsed?.checksumInvalid ? "The entered word numbers do not have a valid BIP39 checksum." : `Enter exactly ${Pt} BIP39 word numbers before deriving the wallet.`);
-        let classified = hodlClassifyMnemonic(value);
-        if (!classified.ok) throw new Error(classified.error);
-        re = classified.format === "electrum"
-          ? await hodlElectrumWalletWithProgress(classified.words.join(" "), passphrase, network, count, { classified }, addressStart, progress)
-          : await hodlMnemonicWalletWithProgress(classified.words.join(" "), passphrase, network, count, void 0, account, addressStart, progress, purpose, coinType, hardening, branchStart, branchRange, derivationPlan);
+        if (hodlSeedMethod === "numbers" && !selected.parsed?.complete) throw new Error(selected.parsed?.invalidEntries.length ? `Word numbers must be between ${selected.parsed.minimum} and ${selected.parsed.maximum}.` : selected.parsed?.extraEntries.length ? `Enter exactly ${Pt} BIP39 word numbers.` : selected.parsed?.checksumInvalid ? "The entered word numbers do not have a valid BIP39 checksum." : `Enter exactly ${Pt} BIP39 word numbers before deriving the wallet.`);
+        let validation = hodlValidateTargetMnemonic(value, Pt);
+        if (!validation.ok) throw new Error(validation.error);
+        re = await hodlMnemonicWalletWithProgress(validation.words.join(" "), passphrase, network, count, void 0, account, addressStart, progress, purpose, coinType, hardening, branchStart, branchRange, derivationPlan);
       }
     } else {
       let value = document.getElementById("key").value, kind = hodlNormalizePrivateKeyKind(document.querySelector("input[name=kk]:checked")?.value, value);
@@ -6243,8 +6052,7 @@ async function hodlCalculateKey(progress) {
     }
     if (re?.network !== network) throw new Error(`The supplied key is for ${re.network}, but Network is set to ${network}.`);
     Ge = false;
-    if (re?.seedFormat === "electrum") hodlAccountId = re.accounts[0]?.def.id || hodlAccountId;
-    else hodlSetSelectedScriptType(scriptType);
+    hodlSetSelectedScriptType(scriptType);
     tc();
     hodlFocusWalletResult();
     hodlCaptureKey();
@@ -8964,7 +8772,7 @@ function hodlPrivateKeyValues(fields) {
 }
 function hodlNewKeyState(name, keyId, keyNumber) {
   let id = keyId ?? hodlNextKeyId++, number = keyNumber ?? hodlNextKeyNumber++;
-  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: false, passphraseBip39Words: false, brainWalletTrim: false, showCards: false, showDiceFairness: false, electrumGenerate: false, electrumType: "100", targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", derivationScheme: "bip84", purpose: "84", purposeHarden: true, coinType: "0", coinTypeHarden: true, network: "mainnet", account: "0", accountHarden: true, schemeScriptIndex: "2", schemeScriptIndexHarden: true, customDerivationPath: "m/84'/0'/0'", customNetwork: "mainnet", branchStart: "0", branchHarden: false, branchRange: "2", addressStart: "0", addressHarden: false, addressRange: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
+  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: false, passphraseBip39Words: false, brainWalletTrim: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", derivationScheme: "bip84", purpose: "84", purposeHarden: true, coinType: "0", coinTypeHarden: true, network: "mainnet", account: "0", accountHarden: true, schemeScriptIndex: "2", schemeScriptIndexHarden: true, customDerivationPath: "m/84'/0'/0'", customNetwork: "mainnet", branchStart: "0", branchHarden: false, branchRange: "2", addressStart: "0", addressHarden: false, addressRange: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
 }
 function hodlRestoreFormFields(state) {
   if (!state) return;
@@ -9000,8 +8808,6 @@ function hodlSetMode(mode) {
   hodlSeedMethod = hodlNormalizeSeedMethod(state?.seedMethod);
   hodlSeedZeroIndexed = Boolean(state?.seedZeroIndexed);
   hodlEntropyFormat = hodlNormalizeEntropyFormat(state?.entropyFormat);
-  hodlElectrumGenerate = Boolean(state?.electrumGenerate);
-  hodlElectrumType = state?.electrumType === "01" ? "01" : "100";
   [...Zs.children].forEach((button, index) => {
     let active = hodlKeyModes[index] === Ne;
     button.classList.toggle("active", active);
@@ -9016,7 +8822,7 @@ function hodlSetMode(mode) {
 function hodlKeyStateNeedsClear(state) {
   if (!state) return false;
   let fields = state.fields || {}, privateKeys = hodlPrivateKeyValues(fields), hasText = (id) => String(fields[id] ?? "").length > 0;
-  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || Boolean(state.seedAutocomplete) || Boolean(state.passphraseBip39Words) || Boolean(state.brainWalletTrim) || Boolean(state.showCards) || Boolean(state.showDiceFairness) || Boolean(state.electrumGenerate) || String(state.electrumType ?? "100") !== "100" || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.derivationScheme ?? "bip84") !== "bip84" || String(fields.purpose ?? "84") !== "84" || fields.purposeHarden === false || String(fields.coinType ?? (fields.network === "testnet" ? "1" : "0")) !== "0" || fields.coinTypeHarden === false || String(fields.account ?? "0") !== "0" || fields.accountHarden === false || String(fields.schemeScriptIndex ?? "2") !== "2" || fields.schemeScriptIndexHarden === false || String(fields.customDerivationPath ?? "m/84'/0'/0'") !== "m/84'/0'/0'" || String(fields.customNetwork ?? "mainnet") !== "mainnet" || String(fields.branchStart ?? "0") !== "0" || Boolean(fields.branchHarden) || String(fields.branchRange ?? "2") !== "2" || String(fields.addressStart ?? "0") !== "0" || Boolean(fields.addressHarden) || String(fields.addressRange ?? fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
+  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || Boolean(state.seedAutocomplete) || Boolean(state.passphraseBip39Words) || Boolean(state.brainWalletTrim) || Boolean(state.showCards) || Boolean(state.showDiceFairness) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.derivationScheme ?? "bip84") !== "bip84" || String(fields.purpose ?? "84") !== "84" || fields.purposeHarden === false || String(fields.coinType ?? (fields.network === "testnet" ? "1" : "0")) !== "0" || fields.coinTypeHarden === false || String(fields.account ?? "0") !== "0" || fields.accountHarden === false || String(fields.schemeScriptIndex ?? "2") !== "2" || fields.schemeScriptIndexHarden === false || String(fields.customDerivationPath ?? "m/84'/0'/0'") !== "m/84'/0'/0'" || String(fields.customNetwork ?? "mainnet") !== "mainnet" || String(fields.branchStart ?? "0") !== "0" || Boolean(fields.branchHarden) || String(fields.branchRange ?? "2") !== "2" || String(fields.addressStart ?? "0") !== "0" || Boolean(fields.addressHarden) || String(fields.addressRange ?? fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
 }
 function hodlSyncKeyClearButton(capture = false) {
   if (capture) hodlCaptureKey();
@@ -9053,8 +8859,6 @@ function hodlCaptureKey() {
   if (showCards) state.showCards = showCards.checked;
   let fairnessToggle = document.getElementById("dice-fairness-toggle");
   if (fairnessToggle) state.showDiceFairness = fairnessToggle.getAttribute("aria-expanded") === "true";
-  state.electrumGenerate = hodlElectrumGenerate;
-  state.electrumType = hodlElectrumType;
   state.targetWords = Pt;
   state.diceCoinPositions = hodlDiceCoinPositions.slice();
   if (ge === "dplus") state.dplusLastWord = ft;
@@ -9115,8 +8919,6 @@ function hodlRestoreKey() {
     hodlSeedZeroIndexed = false;
     hodlCardColemanSymbols = false;
     hodlEntropyFormat = "bin";
-    hodlElectrumGenerate = false;
-    hodlElectrumType = "100";
     Pt = 24;
     hodlDiceCoinPositions = [];
     ft = "";
@@ -9170,8 +8972,6 @@ function hodlRestoreKey() {
   hodlSeedZeroIndexed = Boolean(state.seedZeroIndexed);
   hodlCardColemanSymbols = Boolean(state.cardColemanSymbols);
   hodlEntropyFormat = hodlNormalizeEntropyFormat(state.entropyFormat);
-  hodlElectrumGenerate = Boolean(state.electrumGenerate);
-  hodlElectrumType = state.electrumType === "01" ? "01" : "100";
   Pt = hodlSeedLengths[Number(state.targetWords)] ? Number(state.targetWords) : 24;
   hodlDiceCoinPositions = hodlNormalizeDiceCoinPositions(state.diceCoinPositions);
   ft = ge === "dplus" ? state.dplusLastWord || "" : ge === "bitbox" ? state.lastWord || "" : "";
