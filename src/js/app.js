@@ -1119,7 +1119,7 @@ function lr() {
       <label class="choice"><input type="radio" name="kk" value="wif" checked /><span><strong>WIF</strong><span class="desc">Bitcoin wallet import format (Base58Check).</span></span></label>
       <label class="choice"><input type="radio" name="kk" value="hex-key" /><span><strong>Private key hex</strong><span class="desc">Raw 32-byte private key as 64 hexadecimal characters.</span></span></label>
       <label class="choice"><input type="radio" name="kk" value="minikey" /><span><strong>Mini key</strong><span class="desc">Casascius-style short key.</span></span></label>
-      <label class="choice"><input type="radio" name="kk" value="brain" /><span><strong>Brain wallet</strong><span class="desc">Unsafe. SHA-256 of your text, as one private key or a 24-word seed.</span></span></label>
+      <label class="choice"><input type="radio" name="kk" value="brain" /><span><strong>Brain wallet</strong><span class="desc">Unsafe. SHA-256 of your text, as a single key pair or a 24-word seed.</span></span></label>
     `;
   hodlBindFields();
 }
@@ -4882,7 +4882,7 @@ function hodlBindBase64Keyboard(input) {
   refresh();
 }
 function hodlRenderPassphraseKeyboard() {
-  let host = document.getElementById("passphrase-keyboard-host"), toggleHost = document.getElementById("passphrase-keyboard-toggle-host"),
+  let host = document.getElementById(Ne === "key" ? "private-keyboard-host" : "passphrase-keyboard-host"), toggleHost = document.getElementById("passphrase-keyboard-toggle-host"),
     keyMode = Ne === "key", hdBrain = hodlBrainHdActive(),
     // The HD brain output needs the passphrase controls, but its keyboard is
     // still the private-key one, which now follows focus into the passphrase.
@@ -6000,13 +6000,13 @@ function hodlRenderKeyForm() {
     <label class="choice"><input type="radio" name="kk" value="wif" checked /><span><strong>WIF</strong><span class="desc">Bitcoin wallet import format (Base58Check).</span></span></label>
     <label class="choice"><input type="radio" name="kk" value="hex-key" /><span><strong>Private key hex</strong><span class="desc">Raw 32-byte private key as 64 hexadecimal characters.</span></span></label>
     <label class="choice"><input type="radio" name="kk" value="minikey" /><span><strong>Mini key</strong><span class="desc">Casascius-style short key.</span></span></label>
-    <label class="choice"><input type="radio" name="kk" value="brain" /><span><strong>Brain wallet</strong><span class="desc">Unsafe. SHA-256 of your text, as one private key or a 24-word seed.</span></span></label>
+    <label class="choice"><input type="radio" name="kk" value="brain" /><span><strong>Brain wallet</strong><span class="desc">Unsafe. SHA-256 of your text, as a single key pair or a 24-word seed.</span></span></label>
     </div>
     ${hodlBrainOutputMarkup(hodlKeys[hodlActiveKey]?.brainWalletOutput || "scalar")}
     <p class="label" id="private-key-input-label">Private key or recovery passphrase</p>
     <p class="muted" id="private-key-input-help">Enter the value matching the selected format. Brain wallets are for recovery only.</p>
     ${hodlPrivateKeyKeyboardToggleMarkup()}
-    <div class="dice-input-shell private-key-input-shell"><pre class="dice-input-highlight" id="private-key-highlight" aria-hidden="true"></pre><textarea id="key" placeholder="5\u2026 / K\u2026 / L\u2026" aria-labelledby="private-key-input-label" aria-describedby="private-key-input-help private-key-meta"></textarea></div><p class="muted" id="private-key-meta" aria-live="polite"></p>`;
+    <div class="dice-input-shell private-key-input-shell"><pre class="dice-input-highlight" id="private-key-highlight" aria-hidden="true"></pre><textarea id="key" placeholder="5\u2026 / K\u2026 / L\u2026" aria-labelledby="private-key-input-label" aria-describedby="private-key-input-help private-key-meta"></textarea></div><p class="muted" id="private-key-meta" aria-live="polite"></p><div class="passphrase-keyboard-host" id="private-keyboard-host" hidden></div>`;
   hodlBindKeyFields();
   hodlRenderPassphraseKeyboard();
 }
