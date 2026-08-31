@@ -1226,7 +1226,12 @@ test("PSBT Editor tab follows PSBT / Nonce and wires the rust-bitcoin editor", (
     assert.match(markup, /id="psbted-out"/);
     assert.match(markup, /id="psbted-error"/);
     assert.match(markup, /rust-bitcoin compiled to WebAssembly/);
+    // The row must carry psbted-actions in both markups, or the flex stretch
+    // pulls the Load/Clear buttons up to the network field's full height.
+    assert.match(markup, /<div class="row psbt-actions psbted-actions">/);
   }
+  assert.match(css, /\.psbted-actions \{ align-items: flex-end; \}/);
+  assert.match(css, /\.psbted-actions \.btn \{ min-height: 0; padding: 6px 10px; \}/);
   assert.match(appSource, /import \{ initPsbtEditor \} from "\.\/psbt-editor\.js"/);
   assert.match(appSource, /initPsbtEditor\(\)/);
   assert.match(css, /#psbted-card\[hidden\]/);

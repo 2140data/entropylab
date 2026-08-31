@@ -967,7 +967,7 @@ ec.innerHTML = `
       <label class="field">PSBT v0 (base64 or hex)
         <textarea id="psbted-text" placeholder="cHNidP8B..." spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
       </label>
-      <div class="row psbt-actions">
+      <div class="row psbt-actions psbted-actions">
         <button class="btn primary" id="psbted-load" type="button">Load PSBT</button>
         <button class="btn secondary" id="psbted-wipe" type="button">Clear editor</button>
         <label class="field psbted-network-field">Address network
