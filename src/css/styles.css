@@ -831,7 +831,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .segmented-control.is-stacked > .tab:first-child { border-radius: 8px 8px 0 0; }
 .segmented-control.is-stacked > .tab:last-child { border-radius: 0 0 8px 8px; }
 .segmented-control.is-stacked > .tab:only-child { border-radius: 8px; }
-#msig-card[hidden], #calc-card[hidden], #psbt-card[hidden], #bip85-card[hidden], #sp-card[hidden] { display: none !important; }
+#msig-card[hidden], #calc-card[hidden], #psbt-card[hidden], #psbted-card[hidden], #bip85-card[hidden], #sp-card[hidden] { display: none !important; }
 #calc-card:not([hidden]), #msig-card:not([hidden]) { margin-top: 0; border-radius: 0 0 20px 20px; position: relative; z-index: 1; }
 .psbt-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 14px; }
 @media (min-width: 720px) {
@@ -843,6 +843,140 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .psbt-ok { color: var(--ok); }
 .psbt-bad { color: var(--danger); }
 .psbt-warn { color: var(--warn); }
+.psbted-network-field { margin-top: 0; min-width: 200px; }
+/* The editor's own action row: the network field's label stacks above its
+   select, and the row's flex stretch would otherwise pull the Load/Clear
+   buttons up to that combined height. Keep the buttons text-sized and
+   aligned with the bottom of the select. (.psbt-actions alone is shared
+   with the other cards' button rows, so scope by the editor's own class.) */
+.psbted-actions { align-items: flex-end; }
+.psbted-actions .btn { min-height: 0; padding: 6px 10px; }
+.psbted-map { margin-top: var(--space-component); }
+.psbted-map > h3 { margin: 0 0 4px; font-size: 15px; }
+.psbted-txhead { display: flex; flex-wrap: wrap; gap: 0 16px; margin-bottom: 4px; }
+.psbted-txhead label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.psbted-pairs { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 13px; table-layout: fixed; }
+.psbted-pairs th, .psbted-pairs td { text-align: left; padding: 4px 8px 4px 0; vertical-align: top; overflow-wrap: anywhere; }
+.psbted-pairs th { font-weight: 600; color: var(--muted); }
+/* The input/output index is a small integer (a transaction can hold at most
+   ~150,000 of either), so keep that column header-sized and leave the room
+   to the txid / value / script columns. */
+.psbted-pairs .psbted-idx { width: 4.5em; }
+.psbted-pairs .psbted-name, .psbted-pairs .psbted-hex { font-family: var(--mono); font-size: 12px; }
+.psbted-pairs input, .psbted-add input, .psbted-add select { margin-top: 0; padding: 6px 8px; border-radius: 6px; font-size: 12px; }
+.psbted-pairs .psbted-num { min-width: 90px; }
+/* Size the tx-table number fields near their real maxima — output values
+   stay under ~2.1e15 sats (16 digits), sequences are 10 digits, prevout
+   indexes ~6 — so "sats" fits on the input's line and the wide columns go
+   to the txid and scriptPubKey fields. */
+.psbted-pairs input[data-txout-val] { width: 19ch; }
+.psbted-pairs input[data-txin-seq] { width: 13ch; }
+.psbted-pairs input[data-txin-vout] { width: 9ch; }
+/* The decoded address under a scriptPubKey (and in a map section's "Pays"
+   line) is one long unbroken bech32 string: wrap it anywhere so it can
+   never overflow the cell or the card. */
+.psbted-addr { display: block; margin-top: 2px; overflow-wrap: anywhere; }
+.psbted-map > p { overflow-wrap: anywhere; }
+.psbted-del { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--danger); cursor: pointer; padding: 4px 10px; font-size: 14px; line-height: 1; }
+.psbted-add { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 2fr) auto; gap: 8px; align-items: center; margin: 4px 0 14px; }
+@media (max-width: 720px) {
+  .psbted-add { grid-template-columns: minmax(0, 1fr); }
+}
+.psbted-note-muted { color: var(--muted); }
+.psbted-note-ok { color: var(--ok); }
+.psbted-note-warn { color: var(--warn); }
+.psbted-note-bad { color: var(--danger); }
+#psbted-result textarea { font-family: var(--mono); font-size: 12px; min-height: 90px; }
+/* Transaction-flow visualizer (mempool.space-style): input boxes on the
+   left, the unsigned transaction in the middle, output boxes on the right,
+   with a bezier connector drawn from every box into the transaction. Every
+   box opens its fields in the panel under the diagram. The connectors live
+   in an SVG layer under the columns; psbt-editor.js draws the paths once
+   the boxes have layout. In the stacked (narrow) layout the SVG layer
+   hides and plain arrows carry the flow cue instead. */
+.psbted-viz { position: relative; margin-top: var(--space-component); }
+.psbted-viz-svg { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.psbted-viz-cols { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); column-gap: 44px; row-gap: 12px; }
+.psbted-viz-line { fill: none; stroke-width: 2; opacity: 0.55; }
+.psbted-viz-line-in { stroke: var(--blue); }
+.psbted-viz-line-out { stroke: var(--ok); }
+.psbted-viz-line.is-open { opacity: 1; stroke-width: 2.5; }
+.psbted-viz-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.psbted-viz-heading { margin: 0; font-size: 13px; font-weight: 600; color: var(--muted); }
+.psbted-viz-hint { margin: -4px 0 0; font-size: 11px; }
+.psbted-viz-mid { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.psbted-viz-arrow { display: none; position: relative; flex: none; width: 30px; height: 2px; background: var(--faint); }
+.psbted-viz-arrow::after {
+  content: ""; position: absolute; right: 0; top: -4px;
+  border-left: 8px solid var(--faint); border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+}
+.psbted-viz-tx {
+  min-height: 0; margin: 0; max-width: 230px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface-2); color: inherit; font-size: 12px; text-align: center;
+}
+.psbted-viz-tx:hover { border-color: var(--muted); }
+.psbted-viz-tx.is-open, .psbted-viz-tx.is-open:hover { border-color: var(--accent); }
+.psbted-viz-tx:focus-visible { outline: 2px solid var(--selection-accent); outline-offset: 2px; }
+.psbted-viz-txline { display: block; margin: 2px 0; overflow-wrap: anywhere; }
+.psbted-viz-feenum { font-family: var(--mono); }
+.psbted-viz-box { border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); padding: 8px 10px; font-size: 12px; }
+.psbted-viz-box:hover { border-color: var(--muted); }
+.psbted-viz-box.is-open, .psbted-viz-box.is-open:hover { border-color: var(--accent); }
+.psbted-viz-open {
+  display: flex; gap: 8px; align-items: baseline; width: 100%; min-height: 0; margin: 0; padding: 0;
+  border: none; border-radius: 4px; background: none; color: inherit; font-size: 12px; text-align: left;
+}
+.psbted-viz-open:focus-visible { outline: 2px solid var(--selection-accent); outline-offset: 2px; }
+.psbted-viz-idx { flex: none; color: var(--muted); font-family: var(--mono); font-size: 11px; }
+.psbted-viz-id { font-family: var(--mono); overflow-wrap: anywhere; }
+.psbted-viz-in { color: var(--blue); }
+.psbted-viz-out { color: var(--ok); }
+.psbted-viz-tag { color: var(--warn); }
+.psbted-viz-kind { color: var(--muted); }
+.psbted-viz-amount { margin: 6px 0 0; font-family: var(--mono); font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+/* Specificity matches the global text-input rule (two classes + element,
+   later in the file) so the in-box field stays compact and inline. */
+.psbted-viz input.psbted-viz-sats { width: 12ch; min-width: 0; min-height: 0; margin-top: 0; padding: 4px 8px; border-radius: 6px; font-size: 13px; font-weight: 600; }
+.psbted-viz-sub { margin: 4px 0 0; font-size: 11px; overflow-wrap: anywhere; }
+.psbted-viz-detail { margin-top: 12px; padding: 6px 14px 12px; border: 1px solid var(--accent); border-radius: 12px; background: var(--surface-2); }
+.psbted-viz-detail-bar { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.psbted-viz-detail-bar p { margin: 6px 0 0; font-size: 12px; }
+.psbted-viz-detail-bar .psbted-del { flex: none; margin-top: 2px; }
+@media (max-width: 720px) {
+  .psbted-viz-cols { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .psbted-viz-svg { display: none; }
+  .psbted-viz-arrow { display: block; transform: rotate(90deg); }
+}
+/* Expandable cells: a truncated field reads as one quiet line of mono text
+   and announces its full length; the whole cell is the click target. */
+.exp-cell {
+  display: block; width: 100%; min-height: 0; margin-top: 0; padding: 6px 8px;
+  border: 1px dashed var(--border); border-radius: 6px; background: none;
+  color: inherit; font-family: var(--mono); font-size: 12px; line-height: 1.55;
+  text-align: left; overflow-wrap: anywhere; cursor: pointer;
+}
+.exp-cell:hover { background: var(--surface-2); border-color: var(--muted); }
+.exp-cell:focus-visible { outline: 2px solid var(--selection-accent); outline-offset: 1px; }
+.exp-len { color: var(--muted); font-size: 11px; white-space: nowrap; }
+/* The overlay mirrors the disclaimer gate: dimmed page, one centered card. */
+.exp-overlay {
+  position: fixed; inset: 0; z-index: 200; display: grid; place-items: center;
+  padding: 24px; box-sizing: border-box; background: rgb(0 0 0 / 55%);
+}
+.exp-overlay[hidden] { display: none; }
+.exp-card {
+  width: min(760px, 100%); padding: 20px; border: 1px solid var(--border);
+  border-radius: 12px; background: var(--surface);
+  box-shadow: 0 16px 36px rgb(0 0 0 / 55%);
+}
+.exp-title { margin: 0; font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+.exp-meta { margin: 4px 0 0; }
+.exp-card textarea {
+  min-height: 240px; max-height: 55vh; margin-top: var(--space-control);
+  font-family: var(--mono); font-size: 12px; overflow-wrap: anywhere;
+}
+.exp-card textarea[readonly] { color: var(--muted); }
+.exp-actions { margin-top: var(--space-component); }
 .sp-result, .sp-output { margin-top: var(--space-component); }
 .sp-qr { width: min(220px, 100%); margin: var(--space-control) 0; }
 .sp-qr svg { width: 100%; height: auto; display: block; background: #fff; border-radius: 8px; }

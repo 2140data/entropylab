@@ -28,6 +28,9 @@ import { base58checkDecode, base58checkEncode } from "./base58.js";
 import { HDKey as Gt } from "./hdkey.js";
 import { entropyToMnemonic as bi, mnemonicToEntropy as Er, mnemonicToSeedSync as wi, validateMnemonic as Pn } from "./bip39.js";
 import { wordlist as bip39English } from "./bip39-english.js";
+// The PSBT editor (its own workspace tab) drives the rust-bitcoin WASM
+// bindings in psbt-wasm.js; heavy lifting lives in psbt-editor.js.
+import { initPsbtEditor } from "./psbt-editor.js";
 import { renderSVG as Xs } from "uqr";
 import { BIP39_LANGUAGE_ENGLISH, BIP85_APPS, bip85Path, deriveApplication, parseHardenedIndex, wipeBip85Result, wipeBytes as hodlWipeBytes } from "./bip85.js";
 const Ae = Object.freeze(bip39English);
@@ -923,6 +926,24 @@ ec.innerHTML = `
       <p class="err" id="psbt-error" role="alert"></p>
       <div id="psbt-out" aria-live="polite"></div>
       <p class="muted">Session keys remain in this page only and are never intentionally stored or sent. Memory clearing is best-effort because browsers may retain internal copies; close the page before reconnecting the computer.</p>
+    </section>
+    <section class="card no-print" id="psbted-card" role="tabpanel" hidden>
+      <div class="kicker">Full-fidelity editor. Sign elsewhere.</div>
+      <h2>Edit a PSBT, field by field.</h2>
+      <p class="muted psbt-intro">A BIP-174 editor in the spirit of bip174.org, backed by rust-bitcoin compiled to WebAssembly. Every key-value pair of the global, per-input and per-output maps is shown with a typed decode (BIP-174 and BIP-371 taproot fields) and stays editable as raw hex, and the unsigned transaction's version, locktime, input prevouts/sequences and output amounts/scripts get structured fields. Adding or removing a pair re-validates the file immediately; Re-serialize validates the pending field edits and produces the new PSBT. PSBT v0 only; unknown and proprietary pairs round-trip untouched. Editing never signs anything.</p>
+      <label class="field">PSBT v0 (base64 or hex)
+        <textarea id="psbted-text" placeholder="cHNidP8B..." spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+      </label>
+      <div class="row psbt-actions">
+        <button class="btn primary" id="psbted-load" type="button">Load PSBT</button>
+        <button class="btn secondary" id="psbted-wipe" type="button">Clear editor</button>
+        <label class="field psbted-network-field">Address network
+          <select id="psbted-network"><option value="mainnet" selected>Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
+        </label>
+      </div>
+      <p class="err" id="psbted-error" role="alert"></p>
+      <div id="psbted-out" aria-live="polite"></div>
+      <p class="muted">Fees and input amounts shown here are unverified PSBT claims; the editor does not check them against previous transactions or the blockchain. Nothing is signed or broadcast.</p>
     </section>
     <div id="out"></div>
     <section class="card muted sources">
@@ -8467,7 +8488,9 @@ function hodlOwnershipWarning(outputs, network, map) {
   return "<p class='psbt-bad'><strong>No output belongs to this session wallet.</strong> If you expected change, do not sign. A destination-swap can replace both the payment and the change.</p>";
 }
 function hodlRenderPsbt(psbt) {
-  let network = hodlSelectedNetwork(document.getElementById("psbt-network")),
+  // psbt-network is a mainnet/testnet select, not a numeric coin-type input,
+  // so hodlSelectedNetwork (which reads coin types) cannot parse it.
+  let network = document.getElementById("psbt-network")?.value === "testnet" ? "testnet" : "mainnet",
     transcript = null,
     transcriptError = "",
     tx = psbt.tx,
@@ -9451,6 +9474,7 @@ function hodlShowWorkspace(id) {
   document.getElementById("calc-card").hidden = true;
   document.getElementById("msig-card").hidden = true;
   document.getElementById("psbt-card").hidden = id !== "psbt";
+  document.getElementById("psbted-card").hidden = id !== "psbted";
   document.getElementById("bip85-card").hidden = id !== "bip85";
   document.getElementById("sp-card").hidden = id !== "sp";
   re = null;
@@ -9544,7 +9568,7 @@ function hodlSeedInitialManagers() {
     hodlActiveMsig = 0;
   }
 }
-var hodlWorkspaceTabs = [["calc", "Key Derivation"], ["bip85", "BIP-85"], ["msig", "Multi Signature"], ["sp", "Silent Payments"], ["psbt", "PSBT / Nonce"]];
+var hodlWorkspaceTabs = [["calc", "Key Derivation"], ["bip85", "BIP-85"], ["msig", "Multi Signature"], ["sp", "Silent Payments"], ["psbt", "PSBT / Nonce"], ["psbted", "PSBT Editor"]];
 // The switcher reads as a videogame settings menu at every width: a
 // hamburger bar that drops the menu down over the tool. The is-open class
 // opens and closes the dropdown.
@@ -9594,6 +9618,7 @@ function hodlInitWorkspace() {
   });
   hodlInitMsig();
   hodlInitPsbt();
+  initPsbtEditor();
   hodlInitBip85();
   hodlInitSp();
 }

@@ -1204,7 +1204,7 @@ test("virtual keypads never focus the field on touch so the mobile keyboard stay
 });
 
 test("workspace tabs place BIP-85 between Key Derivation and Multi Signature", () => {
-  assert.match(appSource, /\["calc", "Key Derivation"\], \["bip85", "BIP-85"\], \["msig", "Multi Signature"\], \["sp", "Silent Payments"\], \["psbt", "PSBT \/ Nonce"\]/);
+  assert.match(appSource, /\["calc", "Key Derivation"\], \["bip85", "BIP-85"\], \["msig", "Multi Signature"\], \["sp", "Silent Payments"\], \["psbt", "PSBT \/ Nonce"\], \["psbted", "PSBT Editor"\]/);
   for (const markup of [template, appSource]) {
     assert.match(markup, /id="bip85-card"/);
     assert.match(markup, /id="bip85-go"/);
@@ -1212,6 +1212,24 @@ test("workspace tabs place BIP-85 between Key Derivation and Multi Signature", (
     assert.match(markup, /This does not invent entropy/);
   }
   assert.match(css, /#bip85-card\[hidden\]/);
+});
+
+test("PSBT Editor tab follows PSBT / Nonce and wires the rust-bitcoin editor", () => {
+  assert.match(appSource, /\["psbt", "PSBT \/ Nonce"\], \["psbted", "PSBT Editor"\]/);
+  assert.match(appSource, /getElementById\("psbted-card"\)\.hidden = id !== "psbted"/);
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /id="psbted-card"/);
+    assert.match(markup, /id="psbted-text"/);
+    assert.match(markup, /id="psbted-load"/);
+    assert.match(markup, /id="psbted-wipe"/);
+    assert.match(markup, /id="psbted-network"/);
+    assert.match(markup, /id="psbted-out"/);
+    assert.match(markup, /id="psbted-error"/);
+    assert.match(markup, /rust-bitcoin compiled to WebAssembly/);
+  }
+  assert.match(appSource, /import \{ initPsbtEditor \} from "\.\/psbt-editor\.js"/);
+  assert.match(appSource, /initPsbtEditor\(\)/);
+  assert.match(css, /#psbted-card\[hidden\]/);
 });
 
 test("BIP-85 entry point sits beside Derive Wallet and opens the BIP-85 tab", () => {
@@ -1226,7 +1244,7 @@ test("BIP-85 entry point sits beside Derive Wallet and opens the BIP-85 tab", ()
 test("Silent Payments sits between Multi Signature and PSBT / Nonce", () => {
   const order = /Key Derivation[\s\S]*Multi Signature[\s\S]*Silent Payments[\s\S]*PSBT \/ Nonce/;
   assert.match(template, order);
-  assert.match(appSource, /\["calc", "Key Derivation"\], \["bip85", "BIP-85"\], \["msig", "Multi Signature"\], \["sp", "Silent Payments"\], \["psbt", "PSBT \/ Nonce"\]/);
+  assert.match(appSource, /\["calc", "Key Derivation"\], \["bip85", "BIP-85"\], \["msig", "Multi Signature"\], \["sp", "Silent Payments"\], \["psbt", "PSBT \/ Nonce"\], \["psbted", "PSBT Editor"\]/);
   for (const markup of [template, appSource]) {
     assert.match(markup, /id="sp-card"/);
     assert.match(markup, /id="sp-key"/);
