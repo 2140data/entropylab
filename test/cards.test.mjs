@@ -50,15 +50,16 @@ const hodlCardNeeded = new Function(
   "hodlCardWithoutReplacementBits",
   `${loadSlice("hodlCardNeeded")}; return hodlCardNeeded;`,
 )(hodlSeedConfig, hodlCardWithoutReplacementBits);
+const hodlCardsHashInput = new Function(`${loadSlice("hodlCardsHashInput")}; return hodlCardsHashInput;`)();
 const hodlParseCards = new Function(
   "hodlCardNeeded",
   "hodlNormalizeCardToken",
   "hodlCardWithoutReplacementBits",
+  "hodlCardsHashInput",
   `${loadSlice("hodlParseCards")}; return hodlParseCards;`,
-)(hodlCardNeeded, hodlNormalizeCardToken, hodlCardWithoutReplacementBits);
+)(hodlCardNeeded, hodlNormalizeCardToken, hodlCardWithoutReplacementBits, hodlCardsHashInput);
 const Z = (input) => new Uint8Array(createHash("sha256").update(input).digest());
 const M = { encode: (bytes) => Buffer.from(bytes).toString("hex") };
-const hodlCardsHashInput = new Function(`${loadSlice("hodlCardsHashInput")}; return hodlCardsHashInput;`)();
 const hodlCardsEntropy = new Function(
   "hodlSeedConfig",
   "hodlParseCards",
@@ -125,15 +126,18 @@ test("card tokens normalize 10 and suit glyphs to ASCII", () => {
 });
 
 test("card transcript input uses uppercase ranks and lowercase suits", () => {
-  assert.equal(hodlFilterCards("4h"), "4h");
-  assert.equal(hodlFilterCards("js"), "Js");
-  assert.equal(hodlFilterCards("td"), "Td");
-  assert.equal(hodlFilterCards("4H"), "4h");
-  assert.equal(hodlFilterCards("as, 10♥;td"), "As 10h Td");
+  assert.equal(hodlFilterCards("4h"), "4h ");
+  assert.equal(hodlFilterCards("js"), "Js ");
+  assert.equal(hodlFilterCards("td"), "Td ");
+  assert.equal(hodlFilterCards("4H"), "4h ");
+  assert.equal(hodlFilterCards("10h"), "Th ");
+  assert.equal(hodlFilterCards("as2ctd"), "As 2c Td ");
+  assert.equal(hodlFilterCards("as, 10♥;td"), "As Th Td ");
   assert.equal(hodlFilterCards("as <img>"), "As IMG");
-  assert.equal(hodlFilterCards("AS 2C TD", true), "A♠ 2♣ T♦");
-  assert.equal(hodlFilterCards("A♠ 2♣ T♦", false), "As 2c Td");
-  assert.equal(hodlFilterCards("AS 10H", true), "A♠ 10♥");
+  assert.equal(hodlFilterCards("AS 2C TD", true), "A♠ 2♣ T♦ ");
+  assert.equal(hodlFilterCards("A♠ 2♣ T♦", false), "As 2c Td ");
+  assert.equal(hodlFilterCards("AS 10H", true), "A♠ T♥ ");
+  assert.equal(hodlFilterCards("as2c td"), hodlFilterCards(hodlFilterCards("as2c td")));
   assert.equal(hodlCardTypedCharactersAllowed("aS 10♥, TD"), true);
   assert.equal(hodlCardTypedCharactersAllowed("B"), false);
 });
@@ -176,15 +180,18 @@ test("24-word extra cards may repeat the first shuffle", () => {
   assert.ok(parsed.bits >= 256);
 });
 
-test("hashed transcript is SHA-256 of canonical ASCII codes", () => {
-  const transcript = "AS 2C TD";
-  const displayedTranscript = "As 2c Td";
+test("hashed transcript is SHA-256 of the displayed ASCII codes", () => {
+  const transcript = "As 2c Td";
   const digest = createHash("sha256").update(transcript, "utf8").digest("hex");
   assert.match(app, /Z\(new TextEncoder\(\)\.encode\(hashInput\)\)/);
-  assert.equal(hodlParseCards(transcript, 12).hashInput, transcript);
-  assert.equal(hodlParseCards(displayedTranscript, 12).hashInput, transcript);
+  assert.equal(hodlParseCards("AS 2C TD", 12).hashInput, transcript);
+  assert.equal(hodlParseCards("as 2c td", 12).hashInput, transcript);
+  assert.equal(hodlFilterCards("as 2c td"), "As 2c Td ");
+  assert.equal(hodlFilterCards("AS 10H TD"), "As Th Td ");
+  assert.equal(hodlParseCards(hodlFilterCards("as2ctd"), 12).hashInput, transcript);
   assert.equal(hodlCardsHashInput(["AS", "2C", "TD"], false), transcript);
-  assert.equal(hodlCardsEntropy(displayedTranscript, 12).hex, hodlCardsEntropy(transcript, 12).hex);
+  assert.equal(hodlCardsEntropy("AS 2C TD", 12).hex, digest.slice(0, 32));
+  assert.equal(hodlCardsEntropy("as 2c td", 12).hex, digest.slice(0, 32));
   assert.equal(digest.length, 64);
 });
 
@@ -234,7 +241,8 @@ test("a complete card transcript keeps deriving the expected deterministic seed"
   assert.equal(entropy.ok, true);
   assert.equal(entropy.warnings.length, 0);
   assert.equal(entropy.bytes.length, 32);
-  const expected = createHash("sha256").update(transcript, "utf8").digest();
+  const canonical = transcript.split(" ").map((card) => card.slice(0, -1) + card.slice(-1).toLowerCase()).join(" ");
+  const expected = createHash("sha256").update(canonical, "utf8").digest();
   assert.deepEqual([...entropy.bytes], [...expected.subarray(0, 32)]);
   const mnemonic = entropyToMnemonic(entropy.bytes, bip39English);
   assert.equal(mnemonic.split(" ").length, 24);

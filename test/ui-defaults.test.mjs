@@ -212,10 +212,10 @@ test("hashed cards can match Ian Coleman's suit-symbol SHA-256 transcript", () =
   assert.match(appSource, /id="cards-ian-coleman"/);
   assert.match(appSource, /Match Ian Coleman method/);
   assert.match(appSource, /show and hash A\\u2660 2\\u2663 instead of As 2c/);
-  assert.match(appSource, /placeholder = direct \? "A284 37A2 \\u2026" : hodlCardColemanSymbols \? "A\\u2660 2\\u2663 10\\u2665 T\\u2666\\u2026" : "As 2c 10h Td\\u2026"/);
+  assert.match(appSource, /placeholder = direct \? "A284 37A2 \\u2026" : hodlCardColemanSymbols \? "A\\u2660 2\\u2663 T\\u2665 T\\u2666\\u2026" : "As 2c Th Td\\u2026"/);
   assert.match(appSource, /autocapitalize="off" aria-labelledby="cards-input-label"/);
   assert.match(appSource, /function hodlCardsHashInput\(cards, coleman = false\)/);
-  assert.match(appSource, /transcript\.replace\(\/C\/g, "\\u2663"\)\.replace\(\/D\/g, "\\u2666"\)\.replace\(\/H\/g, "\\u2665"\)\.replace\(\/S\/g, "\\u2660"\)/);
+  assert.match(appSource, /transcript\.replace\(\/c\/g, "\\u2663"\)\.replace\(\/d\/g, "\\u2666"\)\.replace\(\/h\/g, "\\u2665"\)\.replace\(\/s\/g, "\\u2660"\)/);
   assert.match(appSource, /hodlFilterCards\(value, hodlCardColemanSymbols\)/);
   assert.match(appSource, /input\.value = hodlFilterCards\(input\.value, hodlCardColemanSymbols\)/);
 });
@@ -282,6 +282,7 @@ test("Cards offers isolated hashed and direct word-selection methods", () => {
   assert.match(appSource, /Each four-character group selects one word; spaces separate the groups/);
   assert.match(appSource, /placeholder = direct \? "A284 37A2/);
   assert.match(appSource, /input\.onbeforeinput = direct \? \(event\) => hodlHandleGroupedSeparatorDelete/);
+  assert.match(appSource, /else hodlHandleGroupedSeparatorDelete\(input, event\);/);
   assert.match(appSource, /<aside class="cards-reshuffle" id="cards-reshuffle" hidden><\/aside>\s*<div class="dealt-cards" id="dealt-cards"/);
   assert.match(appSource, /Shuffle \$\{hodlDirectCardSetLabel\(parsed\.expectedMax\)\} \(any suit\) before the \$\{parsed\.entries\.length \? "next" : "first"\} draw\./);
   assert.doesNotMatch(appSource, /Shuffle before the next draw\./);

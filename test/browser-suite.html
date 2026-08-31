@@ -407,7 +407,7 @@
     const emptyHistoryHeight = dealt.getBoundingClientRect().height;
     input(cards, "as");
     await wait(0);
-    equal(cards.value, "As");
+    equal(cards.value, "As ");
     assert(!document.getElementById("go").disabled, "One valid card did not enable derivation");
     assert(document.getElementById("cards-meta").textContent.includes("seed available for testing"), "One-card warning is missing");
     equal([...document.querySelectorAll("#dice-words [data-word]")].filter((word) => word.textContent !== "—").length, 24);
@@ -423,7 +423,7 @@
     assert(document.querySelector("#cards-highlight .dice-roll-invalid")?.textContent === "As", "Repeated card was not highlighted red");
     input(cards, "as, 10♥; td");
     await wait(0);
-    equal(cards.value, "As 10h Td");
+    equal(cards.value, "As Th Td ");
     assert(!document.getElementById("go").disabled, "Normalized valid cards did not enable derivation");
     cards.focus();
     const disallowed = new InputEvent("beforeinput", { bubbles: true, cancelable: true, inputType: "insertText", data: "B" });
