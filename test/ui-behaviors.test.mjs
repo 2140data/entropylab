@@ -1,7 +1,7 @@
 // The two shipped UI IIFEs with no other Node-level coverage: online.js
-// (hosted-preview warning banner, dismissal persistence keyed to the build
-// version, recovery-sheet version stamping) and repeat-inputs.js (the
-// hold-to-repeat state machine behind the on-screen keyboards).
+// (hosted-preview warning banner — always on and never dismissible — and
+// recovery-sheet version stamping) and repeat-inputs.js (the hold-to-repeat
+// state machine behind the on-screen keyboards).
 // Run with `npm test`.
 import { test, mock } from "node:test";
 import assert from "node:assert/strict";
@@ -65,28 +65,24 @@ test("the online warning only appears on the hosted site (or an explicit local p
   assert.ok(preview.calls.some(([name, id]) => name === "removeAttribute" && id === "hidden"), "explicit preview reveals the banner");
 });
 
-test("the hosted banner reveals unless this version was dismissed", () => {
+test("the hosted banner always reveals, is never dismissible, and never touches storage", () => {
   for (const hostname of ["entropylab.online", "www.entropylab.online", "ENTROPYLAB.ONLINE"]) {
     const { calls } = onlineHarness({ hostname });
     assert.ok(calls.some(([name, id]) => name === "removeAttribute" && id === "hidden"), hostname);
+    assert.equal(calls.filter(([name]) => name === "getItem" || name === "setItem").length, 0, `${hostname}: storage is not consulted`);
+    assert.equal(calls.some(([name, id]) => name === "getElementById" && id === "online-warning-dismiss"), false, `${hostname}: no dismiss control is wired`);
   }
-  const dismissed = onlineHarness({ hostname: "entropylab.online", stored: VERSION });
-  assert.equal(dismissed.calls.some(([name]) => name === "removeAttribute"), false, "a dismissed version stays hidden");
-  const older = onlineHarness({ hostname: "entropylab.online", stored: "0.0.0" });
-  assert.ok(older.calls.some(([name]) => name === "removeAttribute"), "a new version warns again");
-  const denied = onlineHarness({ hostname: "entropylab.online", storageThrows: true });
-  assert.ok(denied.calls.some(([name]) => name === "removeAttribute"), "without storage the warning returns (safe direction)");
+  // Prior dismissal state and storage failures are both irrelevant now.
+  for (const variant of [{ stored: VERSION }, { stored: "0.0.0" }, { storageThrows: true }]) {
+    const { calls } = onlineHarness({ hostname: "entropylab.online", ...variant });
+    assert.ok(calls.some(([name, id]) => name === "removeAttribute" && id === "hidden"), JSON.stringify(variant));
+  }
 });
 
-test("dismissing the hosted banner hides it and persists this version", () => {
-  const { calls, banner, dismiss } = onlineHarness({ hostname: "entropylab.online" });
-  assert.equal(typeof dismiss.onclick, "function", "the dismiss control is wired");
-  dismiss.onclick();
-  assert.equal(banner.hidden, true);
-  assert.deepEqual(calls.find(([name]) => name === "setItem"), ["setItem", "entropylab-online-warning-dismissed", VERSION]);
-  const denied = onlineHarness({ hostname: "entropylab.online", storageThrows: true });
-  denied.dismiss.onclick();
-  assert.equal(denied.banner.hidden, true, "a storage failure still hides the banner");
+test("the hosted banner step tolerates a missing banner element", () => {
+  const source = onlineSource.split("{{VERSION}}").join(VERSION);
+  const location = { hostname: "entropylab.online", protocol: "https:", search: "" };
+  assert.doesNotThrow(() => new Function("location", "document", "localStorage", source)(location, { getElementById: () => null }, {}));
 });
 
 test("the recovery sheet is stamped with the build version exactly once", () => {

@@ -138,10 +138,10 @@
     // Parked with the rest of the banners; restore them and this asserts the
     // hosted build lights the warning up again.
     assert(!warning || !warning.hidden, "Online warning was not displayed");
-    // Titled and dismissible like the beta banner above it.
+    // Titled like the beta banner above it, but permanent: no dismiss control.
     const label = warning.querySelector(".online-warning-text strong");
-    const dismiss = document.getElementById("online-warning-dismiss");
-    assert(label && dismiss, "Online warning is missing its label wrapper or dismiss control");
+    assert(label, "Online warning is missing its label wrapper");
+    assert(!document.getElementById("online-warning-dismiss"), "Online warning must not carry a dismiss control");
     const labelStyle = getComputedStyle(label);
     assert(labelStyle.textTransform === "uppercase", "Online warning label is not uppercase");
     assert(labelStyle.display === "block", "Online warning label does not sit on its own line");
@@ -158,21 +158,11 @@
     if (beta) {
       assert(labelStyle.color === getComputedStyle(beta).color, "The two banner labels are different colours");
     }
-    const box = warning.getBoundingClientRect();
-    const button = dismiss.getBoundingClientRect();
-    assert(Math.abs(button.right - box.right) < 12, "Online dismiss control is not at the banner's right edge");
-    assert(button.top < box.top + box.height / 2, "Online dismiss control is not near the banner's top");
-    try {
-      dismiss.click();
-      assert(getComputedStyle(warning).display === "none", "Online warning survived its dismiss control");
-      assert(
-        localStorage.getItem("entropylab-online-warning-dismissed") === currentVersion.replace(/^v/, ""),
-        "Online dismissal was not persisted against this build's version",
-      );
-    } finally {
-      localStorage.removeItem("entropylab-online-warning-dismissed");
-      warning.hidden = false;
-    }
+    // The warning is permanent, so nothing about it may live in storage.
+    assert(
+      localStorage.getItem("entropylab-online-warning-dismissed") === null,
+      "Online warning must not persist anything in storage",
+    );
     assert(logo, "Header logo is missing");
     assert(
       logo.querySelector("svg.site-logo-dark") && logo.querySelector("svg.site-logo-light") && logo.getBoundingClientRect().width > 0,
@@ -309,9 +299,17 @@
     seed.focus();
     seed.setSelectionRange(seed.value.length, seed.value.length);
     const autocomplete = document.getElementById("seed-autocomplete");
-    assert(!autocomplete.checked, "Seed autocomplete unexpectedly started enabled");
+    assert(autocomplete.checked, "Seed autocomplete did not start enabled");
     autocomplete.click();
-    equal(seed.value, "amount ");
+    assert(!autocomplete.checked, "Clicking the autocomplete toggle did not turn it off");
+    equal(seed.value, "amou", "Turning autocomplete off changed the typed input");
+    autocomplete.click();
+    equal(seed.value, "amount");
+    equal(
+      seed.value.slice(seed.selectionStart, seed.selectionEnd),
+      "nt",
+      "The completion was not left selected so that typing replaces it",
+    );
     autocomplete.click();
     input(seed, "");
     const keyboardToggle = document.getElementById("seed-keyboard-toggle");
@@ -982,6 +980,240 @@
     await until(() => !document.getElementById("calc-card").hidden, "key workspace");
   });
 
+  await test("PSBT editor decodes, edits, and re-serializes a BIP-174 vector", async () => {
+    // BIP-174 valid vector 2 (rust-bitcoin's valid_vector_2): two inputs —
+    // a finalized P2PKH scriptSig and a nested P2WPKH — and two outputs.
+    const vector = "cHNidP8BAKACAAAAAqsJSaCMWvfEm4IS9Bfi8Vqz9cM9zxU4IagTn4d6W3vkAAAAAAD+////qwlJoIxa98SbghL0F+LxWrP1wz3PFTghqBOfh3pbe+QBAAAAAP7///8CYDvqCwAAAAAZdqkUdopAu9dAy+gdmI5x3ipNXHE5ax2IrI4kAAAAAAAAGXapFG9GILVT+glechue4O/p+gOcykWXiKwAAAAAAAEHakcwRAIgR1lmF5fAGwNrJZKJSGhiGDR9iYZLcZ4ff89X0eURZYcCIFMJ6r9Wqk2Ikf/REf3xM286KdqGbX+EhtdVRs7tr5MZASEDXNxh/HupccC1AaZGoqg7ECy0OIEhfKaC3Ibi1z+ogpIAAQEgAOH1BQAAAAAXqRQ1RebjO4MsRwUPJNPuuTycA5SLx4cBBBYAFIXRNTfy4mVAWjTbr6nj3aAfuCMIAAAA";
+    document.querySelector('#workspace [data-workspace="psbted"]').click();
+    const box = await until(() => document.getElementById("psbted-text"), "PSBT editor input");
+    input(box, vector);
+    document.getElementById("psbted-load").click();
+    await until(() => document.querySelector("#psbted-out .psbted-pairs"), "editor pair tables");
+    const outText = () => document.getElementById("psbted-out").textContent;
+    assert(outText().includes("PSBT_IN_WITNESS_UTXO"), "typed pair names missing");
+    assert(outText().includes("100000000 sats"), "witness utxo amount missing");
+    assert(outText().includes("parses under rust-bitcoin"), "rust-bitcoin verdict missing");
+    const valueInput = document.querySelector("[data-txout-val='0']");
+    input(valueInput, "199901000");
+    document.getElementById("psbted-build").click();
+    await until(() => (document.getElementById("psbted-result-b64") || {}).value || document.getElementById("psbted-error").textContent, "editor rebuild");
+    equal(document.getElementById("psbted-error").textContent, "", "editor rebuild failed");
+    const edited = document.getElementById("psbted-result-b64").value;
+    assert(edited.startsWith("cHNidP8B") && edited !== vector, "edited PSBT missing or unchanged");
+    assert(outText().includes("199901000"), "edited amount was not re-decoded");
+    input(box, '<img src=x onerror="window.__browserTestInjected=true">');
+    document.getElementById("psbted-load").click();
+    await until(() => document.getElementById("psbted-error").textContent, "editor rejection");
+    assert(!document.querySelector("#psbted-card img") && window.__browserTestInjected !== true, "Editor input executed markup");
+    input(box, "");
+    document.querySelector('#workspace [data-workspace="calc"]').click();
+    await until(() => !document.getElementById("calc-card").hidden, "key workspace");
+  });
+
+  await test("PSBT inspector renders a BIP-174 vector and a BIP143 raw transaction", async () => {
+    // Regression: the inspector used to hand the mainnet/testnet select to a
+    // coin-type reader, so every parseable PSBT and raw transaction failed
+    // with "Coin type must be a whole number".
+    const vector = "cHNidP8BAKACAAAAAqsJSaCMWvfEm4IS9Bfi8Vqz9cM9zxU4IagTn4d6W3vkAAAAAAD+////qwlJoIxa98SbghL0F+LxWrP1wz3PFTghqBOfh3pbe+QBAAAAAP7///8CYDvqCwAAAAAZdqkUdopAu9dAy+gdmI5x3ipNXHE5ax2IrI4kAAAAAAAAGXapFG9GILVT+glechue4O/p+gOcykWXiKwAAAAAAAEHakcwRAIgR1lmF5fAGwNrJZKJSGhiGDR9iYZLcZ4ff89X0eURZYcCIFMJ6r9Wqk2Ikf/REf3xM286KdqGbX+EhtdVRs7tr5MZASEDXNxh/HupccC1AaZGoqg7ECy0OIEhfKaC3Ibi1z+ogpIAAQEgAOH1BQAAAAAXqRQ1RebjO4MsRwUPJNPuuTycA5SLx4cBBBYAFIXRNTfy4mVAWjTbr6nj3aAfuCMIAAAA";
+    document.querySelector('#workspace [data-workspace="psbt"]').click();
+    const box = await until(() => document.getElementById("psbt-text"), "PSBT input");
+    input(box, vector);
+    document.getElementById("psbt-go").click();
+    await until(() => document.getElementById("psbt-out").textContent.includes("ECDSA nonce check") || document.getElementById("psbt-error").textContent, "inspector report");
+    equal(document.getElementById("psbt-error").textContent, "", "inspector rejected a valid vector");
+    const out = document.getElementById("psbt-out").textContent;
+    assert(out.includes("Where this transaction sends bitcoin"), "outputs section missing");
+    assert(out.includes("1.99900000"), "decoded output amount missing");
+    assert(out.includes("Signature policy: SIGHASH_ALL"), "sighash policy missing");
+    assert(out.includes("r values:"), "finalized signature was not inspected");
+    // BIP143 "Native P2WPKH" signed transaction (witness-carrying) — the raw
+    // transaction path reads the same network select.
+    const rawTx =
+      "01000000000102fff7f7881a8099afa6940d42d1e7f6362bec38171ea3edf433541db4e4ad969f0000000049" +
+      "4830450221008b9d1dc26ba6a9cb62127b02742fa9d754cd3bebf337f7a55d114c8e5cdd30be022040529b194ba3f9281a99f2b1c0a19c0489bc22ede944ccf4ecbab4cc618ef3ed01eeffffff" +
+      "ef51e1b804cc89d182d279655c3aa89e815b1b309fe287d9b2b55d57b90ec68a0100000000ffffffff" +
+      "02202cb206000000001976a9148280b37df378db99f66f85c95a783a76ac7a6d5988ac" +
+      "9093510d000000001976a9143bde42dbee7e4dbe6a21b2d50ce2f0167faa815988ac" +
+      "000247304402203609e17b84f6a7d30c80bfa610b5b4542f32a8a0d5447a12fb1366d7f01cc44a0220573a954c4518331561406f90300e8f3358f51928d43c212a8caed02de67eebee01" +
+      "21025476c2e83188368da1ff3e292e7acafcdb3566bb0ad253f62fc70f07aeee635711000000";
+    input(box, rawTx);
+    document.getElementById("psbt-go").click();
+    await until(() => document.getElementById("psbt-out").textContent.includes("ECDSA nonce check") || document.getElementById("psbt-error").textContent, "raw transaction report");
+    equal(document.getElementById("psbt-error").textContent, "", "inspector rejected a valid raw transaction");
+    const rawOut = document.getElementById("psbt-out").textContent;
+    assert(rawOut.includes("Raw Bitcoin transaction."), "raw transaction banner missing");
+    assert(rawOut.includes("Where this transaction sends bitcoin"), "raw transaction outputs section missing");
+    assert(rawOut.includes("1Cu32FVupVCgHkMMRJdYJugxwo2Aprgk7H"), "mainnet output address missing");
+    assert(rawOut.includes("r values:"), "raw transaction signatures were not inspected");
+    // The testnet option must reach the render as well.
+    const network = document.getElementById("psbt-network");
+    input(network, "testnet");
+    document.getElementById("psbt-go").click();
+    await until(() => document.getElementById("psbt-out").textContent.includes("msQzKJatdWdw4rpy8sbv8puHoncseekYCf") || document.getElementById("psbt-error").textContent, "testnet raw transaction report");
+    equal(document.getElementById("psbt-error").textContent, "", "inspector rejected the testnet selection");
+    input(network, "mainnet");
+    input(box, "");
+    document.getElementById("psbt-wipe").click();
+    document.querySelector('#workspace [data-workspace="calc"]').click();
+    await until(() => !document.getElementById("calc-card").hidden, "key workspace");
+  });
+
+  await test("PSBT editor truncates long fields and the overlay edits them", async () => {
+    const vector = "cHNidP8BAKACAAAAAqsJSaCMWvfEm4IS9Bfi8Vqz9cM9zxU4IagTn4d6W3vkAAAAAAD+////qwlJoIxa98SbghL0F+LxWrP1wz3PFTghqBOfh3pbe+QBAAAAAP7///8CYDvqCwAAAAAZdqkUdopAu9dAy+gdmI5x3ipNXHE5ax2IrI4kAAAAAAAAGXapFG9GILVT+glechue4O/p+gOcykWXiKwAAAAAAAEHakcwRAIgR1lmF5fAGwNrJZKJSGhiGDR9iYZLcZ4ff89X0eURZYcCIFMJ6r9Wqk2Ikf/REf3xM286KdqGbX+EhtdVRs7tr5MZASEDXNxh/HupccC1AaZGoqg7ECy0OIEhfKaC3Ibi1z+ogpIAAQEgAOH1BQAAAAAXqRQ1RebjO4MsRwUPJNPuuTycA5SLx4cBBBYAFIXRNTfy4mVAWjTbr6nj3aAfuCMIAAAA";
+    document.querySelector('#workspace [data-workspace="psbted"]').click();
+    const box = await until(() => document.getElementById("psbted-text"), "PSBT editor input");
+    input(box, vector);
+    document.getElementById("psbted-load").click();
+    await until(() => document.querySelector("#psbted-out .psbted-pairs"), "editor pair tables");
+    // The vector's 212-char finalized scriptSig value and the longest decoded
+    // notes collapse; the 50-char witness UTXO value stays a plain input.
+    const cellsBefore = document.querySelectorAll("#psbted-out .exp-cell").length;
+    assert(cellsBefore > 0, "long vector fields were not truncated");
+    assert(document.querySelector('.psbted-value[data-kind="input"][data-map="1"][data-pair="0"]'), "short value field lost its plain input");
+    // Add an output pair with a 300-char value: past the standard limit, so
+    // the value cell collapses to an editable truncated cell.
+    const longValue = "ab".repeat(150);
+    const type = document.querySelector('[data-add-type="output:0"]');
+    const keyInput = document.querySelector('[data-add-key="output:0"]');
+    const valInput = document.querySelector('[data-add-val="output:0"]');
+    type.value = "fc"; // PSBT_OUT_PROPRIETARY
+    input(keyInput, "016d00");
+    input(valInput, longValue);
+    document.querySelector('[data-add="output:0"]').click();
+    const cell = await until(() =>
+      [...document.querySelectorAll("#psbted-out .exp-cell")].find((item) => item.dataset.exp === longValue),
+    "truncated cell for the long value");
+    equal(document.querySelectorAll("#psbted-out .exp-cell").length, cellsBefore + 1, "the long value did not add exactly one truncated cell");
+    assert(cell.dataset.expEdit !== undefined, "long value cell is not editable");
+    assert(cell.textContent.includes("…") && cell.textContent.includes("300 hex chars (150 bytes)"), "cell does not announce its truncation");
+    cell.click();
+    const overlay = document.getElementById("exp-overlay");
+    await until(() => !overlay.hidden, "overlay did not open");
+    equal(document.getElementById("exp-title").textContent, "Value bytes for PSBT_OUT_PROPRIETARY (hex)");
+    const area = document.getElementById("exp-text");
+    equal(area.value, longValue, "overlay does not hold the full value");
+    assert(!area.readOnly && !document.getElementById("exp-apply").hidden, "value cell did not open editable");
+    area.value = longValue.slice(0, -2) + "cd";
+    document.getElementById("exp-apply").click();
+    assert(overlay.hidden, "Apply did not close the overlay");
+    document.getElementById("psbted-build").click();
+    await until(() => (document.getElementById("psbted-result-hex") || {}).value || document.getElementById("psbted-error").textContent, "editor rebuild");
+    equal(document.getElementById("psbted-error").textContent, "", "editor rebuild failed");
+    assert(document.getElementById("psbted-result-hex").value.includes(longValue.slice(0, -2) + "cd"), "overlay edit did not reach the rebuilt PSBT");
+    // A long key truncates read-only and Escape closes the overlay. The table
+    // re-rendered after each structural edit, so the add controls are fresh
+    // elements — re-query them.
+    const longKey = "2a" + "11".repeat(40);
+    const typeAgain = document.querySelector('[data-add-type="output:0"]');
+    typeAgain.value = ""; // Custom type…: the keydata field carries the full key
+    input(document.querySelector('[data-add-key="output:0"]'), longKey);
+    input(document.querySelector('[data-add-val="output:0"]'), "ff");
+    document.querySelector('[data-add="output:0"]').click();
+    const keyCell = await until(() =>
+      [...document.querySelectorAll("#psbted-out .exp-cell")].find((item) => item.dataset.exp === longKey),
+    "truncated cell for the long key");
+    assert(keyCell.dataset.expEdit === undefined, "key cell must not be editable");
+    keyCell.click();
+    await until(() => !overlay.hidden, "overlay did not reopen");
+    equal(document.getElementById("exp-text").value, longKey, "overlay does not hold the full key");
+    assert(document.getElementById("exp-text").readOnly && document.getElementById("exp-apply").hidden, "key cell opened editable");
+    document.getElementById("exp-text").dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    assert(overlay.hidden, "Escape did not close the overlay");
+    input(box, "");
+    document.getElementById("psbted-wipe").click();
+    document.querySelector('#workspace [data-workspace="calc"]').click();
+    await until(() => !document.getElementById("calc-card").hidden, "key workspace");
+  });
+
+  await test("PSBT editor flow diagram opens, edits, and re-decodes a map", async () => {
+    // Same BIP-174 valid vector 2 as the editor cases above.
+    const vector = "cHNidP8BAKACAAAAAqsJSaCMWvfEm4IS9Bfi8Vqz9cM9zxU4IagTn4d6W3vkAAAAAAD+////qwlJoIxa98SbghL0F+LxWrP1wz3PFTghqBOfh3pbe+QBAAAAAP7///8CYDvqCwAAAAAZdqkUdopAu9dAy+gdmI5x3ipNXHE5ax2IrI4kAAAAAAAAGXapFG9GILVT+glechue4O/p+gOcykWXiKwAAAAAAAEHakcwRAIgR1lmF5fAGwNrJZKJSGhiGDR9iYZLcZ4ff89X0eURZYcCIFMJ6r9Wqk2Ikf/REf3xM286KdqGbX+EhtdVRs7tr5MZASEDXNxh/HupccC1AaZGoqg7ECy0OIEhfKaC3Ibi1z+ogpIAAQEgAOH1BQAAAAAXqRQ1RebjO4MsRwUPJNPuuTycA5SLx4cBBBYAFIXRNTfy4mVAWjTbr6nj3aAfuCMIAAAA";
+    document.querySelector('#workspace [data-workspace="psbted"]').click();
+    const box = await until(() => document.getElementById("psbted-text"), "PSBT editor input");
+    input(box, vector);
+    document.getElementById("psbted-load").click();
+    const viz = await until(() => document.querySelector("#psbted-out .psbted-viz"), "flow diagram");
+    const outText = () => document.getElementById("psbted-out").textContent;
+    // One box per input/output, decoded claims, and the transaction summary.
+    for (const target of ["input:0", "input:1", "output:0", "output:1"]) {
+      assert(viz.querySelector(`[data-viz="${target}"]`), `diagram is missing box ${target}`);
+    }
+    // Diagram amounts are digit-grouped (\u202f) for scanning; the field
+    // tables below keep raw digits for editing.
+    assert(viz.textContent.includes("100\u202f000\u202f000 sats"), "witness UTXO claim missing from the diagram");
+    assert(viz.textContent.includes("199\u202f909\u202f358 sats in total"), "outputs total missing from the diagram");
+    assert(outText().includes("no amount claim"), "input without a UTXO pair must say so");
+    assert(outText().includes("finalized"), "finalized input status missing");
+    // One bezier connector per box: two into the transaction, two out.
+    equal(viz.querySelectorAll(".psbted-viz-svg path").length, 4, "connector paths not drawn");
+    equal(viz.querySelectorAll(".psbted-viz-line-in").length, 2, "input connectors not drawn");
+    equal(viz.querySelectorAll(".psbted-viz-line-out").length, 2, "output connectors not drawn");
+    // Geometry: every line runs left to right, from its box's vertical
+    // middle into the transaction box's (mempool.space flow look).
+    const vizRect = viz.getBoundingClientRect();
+    const txRect = viz.querySelector(".psbted-viz-tx").getBoundingClientRect();
+    const nums = (path) => path.getAttribute("d").match(/-?[\d.]+/g).map(Number);
+    for (const [i, path] of [...viz.querySelectorAll(".psbted-viz-line-in")].entries()) {
+      const [x1, y1, , , , , x2, y2] = nums(path);
+      const boxRect = viz.querySelector(`[data-viz="input:${i}"]`).closest(".psbted-viz-box").getBoundingClientRect();
+      assert(x1 < x2, `input ${i} connector does not flow right`);
+      assert(Math.abs(y1 - (boxRect.top - vizRect.top + boxRect.height / 2)) < 1, `input ${i} connector does not start at its box`);
+      assert(Math.abs(y2 - (txRect.top - vizRect.top + txRect.height / 2)) < 1, `input ${i} connector does not end at the transaction`);
+    }
+    for (const [i, path] of [...viz.querySelectorAll(".psbted-viz-line-out")].entries()) {
+      const [x1, , , , , , x2, y2] = nums(path);
+      const boxRect = viz.querySelector(`[data-viz="output:${i}"]`).closest(".psbted-viz-box").getBoundingClientRect();
+      assert(x1 < x2, `output ${i} connector does not flow right`);
+      assert(Math.abs(y2 - (boxRect.top - vizRect.top + boxRect.height / 2)) < 1, `output ${i} connector does not end at its box`);
+    }
+    // Activating a box opens its key-value map in the detail panel (and out
+    // of the sections list below).
+    const openBox = viz.querySelector('[data-viz="input:1"]');
+    equal(openBox.getAttribute("aria-expanded"), "false", "box starts expanded");
+    openBox.click();
+    const panel = await until(() => document.getElementById("psbted-viz-detail"), "detail panel");
+    assert(panel.textContent.includes("PSBT_IN_WITNESS_UTXO"), "panel does not show the input's pairs");
+    equal(outText().match(/Input 1 key-value map/g).length, 1, "the open map renders twice");
+    equal(document.querySelector('[data-viz="input:1"]').getAttribute("aria-expanded"), "true", "open box not marked expanded");
+    // The open box's connector comes to the front, like its accent border.
+    const lit = document.querySelectorAll("#psbted-out .psbted-viz-line.is-open");
+    equal(lit.length, 1, "open box's connector not highlighted");
+    assert(lit[0].classList.contains("psbted-viz-line-in"), "wrong connector highlighted");
+    // Edit the witness UTXO's claimed amount in the panel (3,900,000 sats LE)
+    // and re-serialize: the diagram re-decodes the new claim.
+    const claim = panel.querySelector('.psbted-value[data-kind="input"][data-map="1"][data-pair="0"]');
+    input(claim, "60823b000000000017a9143545e6e33b832c47050f24d3eeb93c9c03948bc787");
+    document.getElementById("psbted-build").click();
+    await until(() => (document.getElementById("psbted-result-b64") || {}).value || document.getElementById("psbted-error").textContent, "editor rebuild");
+    equal(document.getElementById("psbted-error").textContent, "", "editor rebuild failed");
+    assert(document.querySelector("#psbted-out .psbted-viz").textContent.includes("3\u202f900\u202f000 sats"), "edited claim was not re-decoded into the diagram");
+    assert(document.getElementById("psbted-viz-detail"), "panel did not stay open across the rebuild");
+    // The output boxes edit the unsigned transaction inline (WYSIWYG).
+    const sats = document.querySelector('.psbted-viz [data-txout-val="0"]');
+    input(sats, "199902000");
+    document.getElementById("psbted-build").click();
+    await until(() => document.getElementById("psbted-error").textContent === "" && document.querySelector('.psbted-viz [data-txout-val="0"]').value === "199902000" ? true : document.getElementById("psbted-error").textContent, "inline amount rebuild");
+    equal(document.getElementById("psbted-error").textContent, "", "inline amount rebuild failed");
+    // × puts the map back into the sections list.
+    document.querySelector("[data-viz-close]").click();
+    await until(() => !document.getElementById("psbted-viz-detail"), "panel did not close");
+    equal(outText().match(/Input 1 key-value map/g).length, 1, "map did not return to the sections list");
+    // The middle transaction box opens the unsigned-transaction fields the
+    // same way (and they come back on ×).
+    document.querySelector('[data-viz="tx"]').click();
+    const txPanel = await until(() => document.getElementById("psbted-viz-detail"), "tx detail panel");
+    assert(txPanel.querySelector("#psbted-tx-version"), "tx fields did not move into the panel");
+    equal(outText().match(/Unsigned transaction/g).length, 1, "the tx section renders twice");
+    equal(document.querySelector('[data-viz="tx"]').getAttribute("aria-expanded"), "true", "tx box not marked expanded");
+    txPanel.querySelector("[data-viz-close]").click();
+    await until(() => !document.getElementById("psbted-viz-detail"), "tx panel did not close");
+    assert(document.querySelector("#psbted-out #psbted-tx-version"), "tx fields did not return to the sections list");
+    input(box, "");
+    document.getElementById("psbted-wipe").click();
+    document.querySelector('#workspace [data-workspace="calc"]').click();
+    await until(() => !document.getElementById("calc-card").hidden, "key workspace");
+  });
+
   await test("a known BIP39 wallet can be derived through the UI", async () => {
     document.querySelector('[data-seed-words="12"]').click();
     await chooseMode("Number bases");
@@ -1307,12 +1539,12 @@
     input(document.getElementById("msig-n-number"), "2");
     input(document.getElementById("msig-x-0"), bip87Export);
     input(document.getElementById("msig-x-1"), bip48Export);
-    equal(multisigScript.value, "mixed");
-    assert(
-      document.getElementById("msig-script-warning").textContent.includes("different script types"),
-      "Legacy and Native SegWit keys did not show an explicit incompatibility",
-    );
+    equal(multisigScript.value, "p2wsh");
     assert(document.getElementById("msig-purpose-warning").textContent.includes("do not match"), "Mixed co-signer purposes did not show a warning");
+    assert(
+      document.getElementById("msig-go").disabled,
+      "A BIP87 co-signer mixed with a BIP48 export was allowed to derive",
+    );
     input(document.getElementById("msig-x-1"), "");
     input(document.getElementById("msig-n-number"), "1");
     equal(document.getElementById("msig-m").value, "1");
@@ -1373,6 +1605,12 @@
     input(document.getElementById("msig-x-0"), "");
     multisigScript.value = "p2wsh";
     multisigScript.dispatchEvent(new Event("change", { bubbles: true }));
+    // The BIP87 choice is not Legacy-only any more, so it survives a script-type
+    // change; clearing it returns this script type to its own standard.
+    equal(multisigPurpose.value, "87", "The BIP87 choice did not carry across a script-type change");
+    assert(!document.getElementById("msig-legacy-account-toggle").hidden, "BIP87 option stayed hidden for Native SegWit");
+    bip87Toggle.checked = false;
+    bip87Toggle.dispatchEvent(new Event("change", { bubbles: true }));
     equal(multisigPurpose.value, "48", "Native SegWit did not restore its standard multisig purpose");
     input(document.getElementById("msig-x-0"), bip48Export.replace("/48h/", "/69420h/"));
     equal(multisigPurpose.value, "69420", "A custom co-signer purpose was not auto-detected");

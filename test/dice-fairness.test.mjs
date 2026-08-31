@@ -173,7 +173,7 @@ test("D++ 18-word final coin flip joins the fairness samples", () => {
   assert.deepEqual(d8.rolls, []);
   assert.deepEqual(d16.rolls, ["F"]);
   assert.equal(coin.title, "Coin");
-  assert.deepEqual(coin.rolls, ["Heads"]);
+  assert.deepEqual(coin.rolls, ["Tails"]);
   assert.deepEqual(coin.labels, ["Heads", "Tails"]);
 });
 

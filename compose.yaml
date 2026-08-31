@@ -1,0 +1,28 @@
+# Self-contained EntropyLab development environment (see Dockerfile for what
+# the image carries: pinned Node 22, the pinned Rust wasm toolchain + clang,
+# and Firefox + Chrome/Chromium for the browser integration suite — the
+# harness also runs Microsoft Edge automatically if one is installed).
+# The repository is bind-mounted read-write at /workspace.
+#
+#   docker compose up --build            # build the image, drop into a shell
+#   docker compose run --rm dev npm ci
+#   docker compose run --rm dev npm test # full suite incl. the browser engines
+#   docker compose run --rm dev npm run build:wasm   # rebuild the WASM artifact
+#   docker compose down --remove-orphans
+services:
+  dev:
+    build:
+      context: .
+    image: entropylab-dev
+    container_name: entropylab-dev
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      # Container does not grant the setuid sandbox privileges; the suite
+      # runs the browsers unsandboxed (no effect on what the app is checked
+      # for — see Dockerfile).
+      BROWSER_TEST_NO_SANDBOX: "1"
+    stdin_open: true
+    tty: true
+    command: ["bash"]

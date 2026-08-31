@@ -26,7 +26,6 @@
     </noscript>
     <aside class="online-warning no-print" id="online-warning" role="alert" hidden>
       <div class="online-warning-text"><strong>Online version</strong> Do not enter seed phrases, private keys, or other wallet secrets on an internet-connected device. <a href="entropylab.html" download="entropylab.html">Download EntropyLab</a> and run the HTML file offline on a trusted, air-gapped computer.</div>
-      <button type="button" class="online-warning-dismiss" id="online-warning-dismiss" aria-label="Dismiss the online version warning"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </aside>
     <!-- TODO: This copy is being kept for the network-detected modal that will
          replace the banner. Verbatim, with the lead-in as the modal's title:
@@ -283,7 +282,7 @@ words, pick one of the checksum words.</span></span>
       <div class="key-settings msig-output-settings">
         <label class="choice msig-legacy-account-toggle" id="msig-legacy-account-toggle" hidden>
           <input id="msig-legacy-bip87" type="checkbox" aria-describedby="msig-legacy-bip87-help">
-          <span><strong>Use standardized BIP87 accounts</strong><span class="desc" id="msig-legacy-bip87-help">Uses <span class="mono">m/87h/coinh/accounth</span> with this Legacy P2SH descriptor. BIP87 account keys are script-agnostic. Leave unchecked for default BIP45 without accounts.</span></span>
+          <span><strong>Use standardized BIP87 accounts</strong><span class="desc" id="msig-legacy-bip87-help">Uses <span class="mono">m/87h/coinh/accounth</span> with this descriptor. BIP87 account keys are script-agnostic, so one account key serves any script type. Leave unchecked for this script type's own standard: BIP45 for Legacy, BIP48 for SegWit. Taproot multisig always uses BIP87.</span></span>
         </label>
         <div class="key-settings-row">
           <label class="field">Script type
@@ -449,6 +448,24 @@ words, pick one of the checksum words.</span></span>
       <p class="err" id="psbt-error" role="alert"></p>
       <div id="psbt-out" aria-live="polite"></div>
       <p class="muted">Session keys remain in this page only and are never intentionally stored or sent. Memory clearing is best-effort because browsers may retain internal copies; close the page before reconnecting the computer.</p>
+    </section>
+    <section class="card no-print" id="psbted-card" role="tabpanel" hidden>
+      <div class="kicker">Full-fidelity editor. Sign elsewhere.</div>
+      <h2>Edit a PSBT, field by field.</h2>
+      <p class="muted psbt-intro">A BIP-174 editor in the spirit of bip174.org, backed by rust-bitcoin compiled to WebAssembly. A transaction-flow diagram in the manner of mempool.space leads: one box per input and output with its claimed amount, address or script template, and signing status. Activating a box opens that key-value map in a panel under the diagram, output amounts edit directly in their boxes, and every key-value pair of the global, per-input and per-output maps is shown with a typed decode (BIP-174 and BIP-371 taproot fields) and stays editable as raw hex; the unsigned transaction's version, locktime, input prevouts/sequences and output amounts/scripts get structured fields. Adding or removing a pair re-validates the file immediately; Re-serialize validates the pending field edits and produces the new PSBT. PSBT v0 only; unknown and proprietary pairs round-trip untouched. Editing never signs anything.</p>
+      <label class="field">PSBT v0 (base64 or hex)
+        <textarea id="psbted-text" placeholder="cHNidP8B..." spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+      </label>
+      <div class="row psbt-actions psbted-actions">
+        <button class="btn primary" id="psbted-load" type="button">Load PSBT</button>
+        <button class="btn secondary" id="psbted-wipe" type="button">Clear editor</button>
+        <label class="field psbted-network-field">Address network
+          <select id="psbted-network"><option value="mainnet" selected="selected">Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
+        </label>
+      </div>
+      <p class="err" id="psbted-error" role="alert"></p>
+      <div id="psbted-out" aria-live="polite"></div>
+      <p class="muted">Fees and input amounts shown here are unverified PSBT claims; the editor does not check them against previous transactions or the blockchain. Nothing is signed or broadcast.</p>
     </section>
     <div id="out"></div>
     <section class="card muted sources">
