@@ -497,7 +497,7 @@ test("multisig script type and placeholders follow detected co-signer exports", 
   assert.match(template, /placeholder="\[fingerprint\/48h\/0h\/0h\/2h\]Zpub…"/);
   assert.match(app, /function hodlMultisigKeyPlaceholder\(kind,network,purpose,coinType=Rs\(network\),hardening=/);
   assert.match(appWhitespace, /kind==="p2sh"&&purpose===45\)return`\[fingerprint\/\$\{purposeStep\}\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
-  assert.match(appWhitespace, /kind==="p2sh"\)return`\[fingerprint\/\$\{purposeStep\}\/\$\{coin\}\/\$\{account\}\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
+  assert.match(appWhitespace, /kind==="p2sh"\|\|purpose===87\)return`\[fingerprint\/\$\{purposeStep\}\/\$\{coin\}\/\$\{account\}\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
   assert.match(app, /testnet\?"Upub":"Ypub"/);
   assert.match(app, /testnet\?"Vpub":"Zpub"/);
   assert.match(appWhitespace, /kind==="p2tr"\)return`\[fingerprint\/\$\{purposeStep\}\/\$\{coin\}\/\$\{account\}\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
@@ -588,9 +588,11 @@ test("multisig separates script type from purpose and keeps the Legacy BIP87 sho
     assert.match(markup, /m\/87h\/coinh\/accounth/);
   }
   assert.match(css, /\.msig-legacy-account-toggle\[hidden\] \{ display: none !important; \}/);
-  assert.match(app, /legacy=hodlScriptKind\(\)==="p2sh"/);
-  assert.match(appSource, /if \(toggle\) toggle\.hidden = !legacy/);
-  assert.match(app, /hodlSetMsigPurpose\(legacy\.checked\?87:45\)/);
+  assert.match(appSource, /if \(toggle\) toggle\.hidden = kind === "p2tr"/);
+  assert.match(app, /hodlSetMsigPurpose\(hodlStandardMsigPurpose\(\)\)/);
+  assert.match(appSource, /if \(kind === "p2tr"\) return 87;/);
+  assert.match(appSource, /if \(document\.getElementById\("msig-legacy-bip87"\)\?\.checked\) return 87;/);
+  assert.match(appSource, /if \(kind === "p2sh"\) return 45;/);
   assert.match(app, /hodlSetMsigPurpose\(hodlStandardMsigPurpose\(script\.value\)\)/);
   assert.match(app, /legacyBip87:!1/);
   assert.match(app, /purpose:"48"/);

@@ -762,7 +762,7 @@ ec.innerHTML = `
       <div class="key-settings msig-output-settings">
         <label class="choice msig-legacy-account-toggle" id="msig-legacy-account-toggle" hidden>
           <input id="msig-legacy-bip87" type="checkbox" aria-describedby="msig-legacy-bip87-help">
-          <span><strong>Use standardized BIP87 accounts</strong><span class="desc" id="msig-legacy-bip87-help">Uses <span class="mono">m/87h/coinh/accounth</span> with this Legacy P2SH descriptor. BIP87 account keys are script-agnostic. Leave unchecked for default BIP45 without accounts.</span></span>
+          <span><strong>Use standardized BIP87 accounts</strong><span class="desc" id="msig-legacy-bip87-help">Uses <span class="mono">m/87h/coinh/accounth</span> with this descriptor. BIP87 account keys are script-agnostic, so one account key serves any script type. Leave unchecked for this script type's own standard: BIP45 for Legacy, BIP48 for SegWit. Taproot multisig always uses BIP87.</span></span>
         </label>
         <div class="key-settings-row">
           <label class="field">Script type
@@ -6173,18 +6173,21 @@ function hodlSetMsigPurpose(value) {
   return purpose;
 }
 function hodlStandardMsigPurpose(kind = hodlScriptKind()) {
-  if (kind === "p2sh") return document.getElementById("msig-legacy-bip87")?.checked ? 87 : 45;
+  // Taproot has no BIP48 script-type child to select, so it is always BIP87.
+  // Every other script type chooses between BIP87 and its own standard.
   if (kind === "p2tr") return 87;
+  if (document.getElementById("msig-legacy-bip87")?.checked) return 87;
+  if (kind === "p2sh") return 45;
   return 48;
 }
 function hodlOriginScriptError(origin, kind, network, purpose, coinType = Rs(network), hardening = { purpose: true, coinType: true, account: true, address: false }) {
   let steps = hodlNormalizeOriginPath(origin.path).split("/");
   let expectedPurpose = `${purpose}${hardening.purpose ? "h" : ""}`;
   if (steps[0] !== expectedPurpose) return `This key origin uses purpose ${steps[0] || "none"}; the selected Purpose is ${expectedPurpose}.`;
-  if (kind === "p2tr") {
+  if (kind === "p2tr" || purpose === 87) {
     let coin = `${coinType}${hardening.coinType ? "h" : ""}`;
     if (steps[1] !== coin) return `This key origin should use ${coin} as the selected coin type.`;
-    if (steps.length !== 3) return "Taproot origin must contain purpose, coin type, and account.";
+    if (steps.length !== 3) return `${purpose === 87 ? "A BIP87" : "A Taproot"} origin must contain purpose, coin type, and account.`;
     if (!new RegExp(`^\\d+${hardening.account ? "h" : ""}$`).test(steps[2])) return `The account index must be ${hardening.account ? "hardened" : "unhardened"}.`;
     return ""
   }
@@ -6277,20 +6280,20 @@ function hodlSelectedLegacyMultisigStandard() {
   return purpose === 45 ? "bip45" : purpose === 87 ? "bip87" : "custom";
 }
 function hodlUpdateMsigLegacyControls() {
-  let checkbox = document.getElementById("msig-legacy-bip87"), toggle = document.getElementById("msig-legacy-account-toggle"), legacy = hodlScriptKind() === "p2sh", purpose;
+  let checkbox = document.getElementById("msig-legacy-bip87"), toggle = document.getElementById("msig-legacy-account-toggle"), kind = hodlScriptKind(), purpose;
   try {
     purpose = hodlReadMsigPurpose(false);
   } catch {
     purpose = null;
   }
-  if (toggle) toggle.hidden = !legacy;
+  if (toggle) toggle.hidden = kind === "p2tr";
   if (checkbox) checkbox.checked = purpose === 87;
 }
 function hodlMultisigKeyPlaceholder(kind, network, purpose, coinType = Rs(network), hardening = { purpose: true, coinType: true, account: true, address: false }) {
   let testnet = network === "testnet",
     coin = `${coinType}${hardening.coinType ? "h" : ""}`, purposeStep = `${purpose}${hardening.purpose ? "h" : ""}`, account = `0${hardening.account ? "h" : ""}`;
   if (kind === "p2sh" && purpose === 45) return `[fingerprint/${purposeStep}]${testnet?"tpub":"xpub"}\u2026`;
-  if (kind === "p2sh") return `[fingerprint/${purposeStep}/${coin}/${account}]${testnet?"tpub":"xpub"}\u2026`;
+  if (kind === "p2sh" || purpose === 87) return `[fingerprint/${purposeStep}/${coin}/${account}]${testnet?"tpub":"xpub"}\u2026`;
   if (kind === "p2sh-p2wsh") return `[fingerprint/${purposeStep}/${coin}/${account}/1h]${testnet?"Upub":"Ypub"}\u2026`;
   if (kind === "p2wsh") return `[fingerprint/${purposeStep}/${coin}/${account}/2h]${testnet?"Vpub":"Zpub"}\u2026`;
   if (kind === "p2tr") return `[fingerprint/${purposeStep}/${coin}/${account}]${testnet?"tpub":"xpub"}\u2026`;
@@ -6856,16 +6859,16 @@ function hodlFillKeys(values) {
   hodlUpdateMsigAccount();
   hodlUpdateMsigKeyOrderStatus()
 }
-function hodlMultisigPrefixCompatible(parsed, kind) {
-  if (kind === "p2tr") return parsed.family === "x";
+function hodlMultisigPrefixCompatible(parsed, kind, purpose) {
+  if (kind === "p2tr" || purpose === 87) return parsed.family === "x";
   if (parsed.scope === "singlesig") return parsed.family === "x";
   if (kind === "p2sh-p2wsh") return parsed.family === "y";
   if (kind === "p2wsh") return parsed.family === "z";
   return false;
 }
 function hodlMultisigAccountKeyError(parsed, kind, purpose, hardening = { purpose: true, coinType: true, account: true, address: false }) {
-  if (kind === "p2tr") {
-    if (parsed.depth !== 3) return `Taproot requires a depth-3 account key at m/purposeh/coinh/accounth; this key is depth ${parsed.depth}.`;
+  if (kind === "p2tr" || purpose === 87) {
+    if (parsed.depth !== 3) return `${purpose === 87 ? "BIP87" : "Taproot"} requires a depth-3 account key at m/purposeh/coinh/accounth; this key is depth ${parsed.depth}.`;
     if ((parsed.childNumber >= 0x80000000) !== hardening.account) return `The account index must be ${hardening.account ? "hardened" : "unhardened"}.`;
     return ""
   }
@@ -6914,7 +6917,7 @@ function hodlCheckXpub(ta) {
     if (kind === "mixed") throw new Error("These keys do not define one compatible multisig policy. Use one script type.");
     if (parsed.isPrivate) throw new Error("Paste an extended public key, never an extended private key.");
     if (parsed.network !== network) throw new Error(`${parsed.prefix} is for ${parsed.network}; the multisig is set to ${network}.`);
-    if (!hodlMultisigPrefixCompatible(parsed, kind)) throw new Error(parsed.scope === "singlesig" ? "Use a generic xpub/tpub here, or a proper uppercase multisig SLIP-132 export." : `${parsed.prefix} does not match the selected multisig script type.`);
+    if (!hodlMultisigPrefixCompatible(parsed, kind, purpose)) throw new Error(parsed.scope === "singlesig" ? "Use a generic xpub/tpub here, or a proper uppercase multisig SLIP-132 export." : `${parsed.prefix} does not match the selected multisig script type.`);
     let accountError = hodlMultisigAccountKeyError(parsed, kind, purpose, hardening);
     if (accountError) throw new Error(accountError);
     if (!parsed.origin) throw new Error(`Paste ${hodlMultisigKeyPlaceholder(kind, network, purpose, coinType, hardening)} so a signer can recognize this key.`);
@@ -6992,7 +6995,7 @@ function hodlInitMsig() {
     hodlSyncMsigClearButton(true);
   });
   if (legacy) legacy.addEventListener("change", () => {
-    hodlSetMsigPurpose(legacy.checked ? 87 : 45);
+    hodlSetMsigPurpose(hodlStandardMsigPurpose());
     hodlUpdateMsigLegacyControls();
     hodlUpdateMsigKeyPlaceholders();
     hodlInvalidateMsig();
@@ -7101,7 +7104,7 @@ function hodlValidatedMsigInputs() {
     let parsed = hodlParseMultisigCosigner(raw);
     if (parsed.isPrivate) throw new Error("Co-signer " + (index + 1) + " is an extended private key. Paste only an extended public key.");
     if (parsed.network !== network) throw new Error(`Co-signer ${index + 1}'s ${parsed.prefix} is for ${parsed.network}, but this multisig is set to ${network}.`);
-    if (!hodlMultisigPrefixCompatible(parsed, kind)) throw new Error(parsed.scope === "singlesig" ? `Co-signer ${index + 1} uses a singlesig ${parsed.prefix}. Use a generic ${cr[network].x.pubName}, or the proper uppercase multisig export for this script type.` : `Co-signer ${index + 1}'s ${parsed.prefix} does not match the selected multisig script type.`);
+    if (!hodlMultisigPrefixCompatible(parsed, kind, purpose)) throw new Error(parsed.scope === "singlesig" ? `Co-signer ${index + 1} uses a singlesig ${parsed.prefix}. Use a generic ${cr[network].x.pubName}, or the proper uppercase multisig export for this script type.` : `Co-signer ${index + 1}'s ${parsed.prefix} does not match the selected multisig script type.`);
     let accountError = hodlMultisigAccountKeyError(parsed, kind, purpose, hardening);
     if (accountError) throw new Error(`Co-signer ${index + 1}: ${accountError}`);
     if (!parsed.origin) throw new Error(`Co-signer ${index + 1} needs a key origin so a signer can recognize this key. Paste ${hodlMultisigKeyPlaceholder(kind, network, purpose, coinType, hardening)} as exported by the device.`);
