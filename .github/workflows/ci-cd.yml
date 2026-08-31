@@ -81,12 +81,15 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: entropylab-candidate
-          path: entropylab.html
+          path: |
+            entropylab.html
+            service-worker.js
           retention-days: 7
       - name: Prepare static site
         run: |
           mkdir _site
           cp entropylab.html robots.txt sitemap.xml llms.txt _site/
+          cp manifest.webmanifest service-worker.js _site/
           cp entropylab.html _site/index.html
           cp -r assets _site/assets
           touch _site/.nojekyll
