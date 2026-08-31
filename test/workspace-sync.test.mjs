@@ -90,7 +90,7 @@ test("sync reuses Use active key, does not run Derive/Inspect, and stays in RAM"
   assert.match(apply, /hodlUseActiveKeyForPsbt\(\)/);
   assert.doesNotMatch(apply, /hodlRunBip85|hodlRunPsbt|hodlRunSp|hodlCalculateKey|hodlDeriveWithProgress/);
   assert.doesNotMatch(apply, /psbted|PSBT Editor|hodlPsbtEditor/);
-  assert.match(apply, /hodlFillKeys\(values\)/);
+  assert.match(apply, /hodlFillKeys\(msigValues\)/);
   const render = loadSlice("hodlRenderWorkspaceSync");
   assert.match(render, /Sync this key to other workspaces/);
   assert.match(render, /id="workspace-sync-toggle"/);
@@ -104,4 +104,23 @@ test("sync reuses Use active key, does not run Derive/Inspect, and stays in RAM"
   assert.doesNotMatch(loadSlice("hodlApplyWorkspaceSync"), /localStorage/);
   assert.doesNotMatch(loadSlice("hodlRenderWorkspaceSync"), /localStorage/);
   assert.doesNotMatch(loadSlice("hodlWipeWorkspaceConsumers"), /localStorage/);
+});
+
+test("re-sync is idempotent and wipe clears every synced multisig slot", () => {
+  const apply = loadSlice("hodlApplyWorkspaceSync");
+  // The panel re-renders unchecked on reveal/key-tab switches; a second check
+  // must reuse the slot already holding the token, not fill the next empty one.
+  assert.match(apply, /indexOf\(token\)/);
+  assert.match(apply, /if \(synced < 0\)/);
+  assert.match(apply, /hodlWorkspaceSyncMsig\.push\(token\)/);
+  const render = loadSlice("hodlRenderWorkspaceSync");
+  // The checkbox reflects the session that was actually synced, so a re-render
+  // cannot show "not synced" while the consumers still hold the key.
+  assert.match(render, /toggle\.checked = hodlWorkspaceSyncResult === re/);
+  const wipe = loadSlice("hodlWipeWorkspaceConsumers");
+  // Every slot still holding a synced token is cleared — not only the most
+  // recent one — while user-edited values no longer matching a token survive.
+  assert.match(wipe, /hodlWorkspaceSyncMsig\.includes\(values\[index\]\)/);
+  assert.match(wipe, /hodlWorkspaceSyncMsig = \[\]/);
+  assert.match(wipe, /hodlWorkspaceSyncResult = null/);
 });

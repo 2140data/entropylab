@@ -993,7 +993,7 @@ ec.innerHTML = `
   </div>
 `;
 if (/^(www\.)?entropylab\.online$/i.test(location.hostname)) document.getElementById("online-warning")?.removeAttribute("hidden");
-var hodlKeyModes = ["dice", "cards", "hex", "seed", "key"], hodlWorkspaceSyncMsig = null, hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "\u2660", label: "Spades", red: false }, { code: "H", symbol: "\u2665", label: "Hearts", red: true }, { code: "C", symbol: "\u2663", label: "Clubs", red: false }, { code: "D", symbol: "\u2666", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, hodlCardColemanSymbols = false, Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], ft = "", re = null, Ge = false, hodlWalletDatBirthday = "genesis", Zs = W("#modes"), at = W("#form"), dr = W("#out");
+var hodlKeyModes = ["dice", "cards", "hex", "seed", "key"], hodlWorkspaceSyncMsig = [], hodlWorkspaceSyncResult = null, hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "\u2660", label: "Spades", red: false }, { code: "H", symbol: "\u2665", label: "Hearts", red: true }, { code: "C", symbol: "\u2663", label: "Clubs", red: false }, { code: "D", symbol: "\u2666", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, hodlCardColemanSymbols = false, Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], ft = "", re = null, Ge = false, hodlWalletDatBirthday = "genesis", Zs = W("#modes"), at = W("#form"), dr = W("#out");
 hodlKeyModes.forEach((e) => {
   let t = document.createElement("button"), active = e === Ne;
   t.type = "button";
@@ -8884,8 +8884,8 @@ function hodlApplyWorkspaceSync() {
   let state = hodlKeys[hodlActiveKey];
   if (state) state.result = re;
   hodlWorkspaceSyncSetNetwork(re);
-  let slot = hodlFirstEmptyMsigSlot();
-  let targets = hodlWorkspaceSyncTargets(re, { accountId: hodlSelectedScriptType(), msigEmpty: slot >= 0 });
+  let accountId = hodlSelectedScriptType(), token = hodlWorkspaceMsigToken(re, accountId), msigValues = hodlReadMsigXpubs(), synced = token ? msigValues.indexOf(token) : -1, slot = synced >= 0 ? synced : hodlFirstEmptyMsigSlot();
+  let targets = hodlWorkspaceSyncTargets(re, { accountId, msigEmpty: slot >= 0 });
   let enabled = new Set(targets.filter((target) => target.ok).map((target) => target.id));
   if (enabled.has("bip85")) {
     try {
@@ -8925,22 +8925,23 @@ function hodlApplyWorkspaceSync() {
       if (error) error.textContent = exception.message || String(exception);
     }
   }
-  if (enabled.has("msig")) {
-    let token = hodlWorkspaceMsigToken(re, hodlSelectedScriptType());
-    if (slot >= 0 && token) {
-      let values = hodlReadMsigXpubs();
-      values[slot] = token;
-      hodlFillKeys(values);
-      hodlWorkspaceSyncMsig = { slot, token };
+  if (enabled.has("msig") && token && slot >= 0) {
+    // Idempotent: the panel re-renders on reveal/key-tab switches, so a second
+    // check must reuse the slot already holding the token, not fill the next.
+    if (synced < 0) {
+      msigValues[slot] = token;
+      hodlFillKeys(msigValues);
     }
+    if (!hodlWorkspaceSyncMsig.includes(token)) hodlWorkspaceSyncMsig.push(token);
   }
+  hodlWorkspaceSyncResult = re;
 }
 function hodlRenderWorkspaceSync() {
   let existing = document.getElementById("workspace-sync");
   if (existing) existing.remove();
   if (!re || !dr) return;
-  let slot = hodlFirstEmptyMsigSlot();
-  let targets = hodlWorkspaceSyncTargets(re, { accountId: hodlSelectedScriptType(), msigEmpty: slot >= 0 });
+  let accountId = hodlSelectedScriptType(), token = hodlWorkspaceMsigToken(re, accountId), synced = token ? hodlReadMsigXpubs().indexOf(token) : -1, slot = synced >= 0 ? synced : hodlFirstEmptyMsigSlot();
+  let targets = hodlWorkspaceSyncTargets(re, { accountId, msigEmpty: slot >= 0 });
   let list = targets.map((target) => {
     let gray = !target.ok, reason = target.skip === "never" ? "never" : target.skip ? `skipped · ${target.skip}` : "session copy ready";
     return `<li class="workspace-sync-target${gray ? " is-unavailable" : ""}" data-target="${target.id}" ${gray ? 'aria-disabled="true"' : ""}><span class="workspace-sync-name">${$t(target.label)}</span><span class="muted">${$t(reason)}</span></li>`;
@@ -8950,7 +8951,12 @@ function hodlRenderWorkspaceSync() {
   panel.className = "card workspace-sync no-print";
   panel.innerHTML = `<label class="choice"><input type="checkbox" id="workspace-sync-toggle" /><span><strong>Sync this key to other workspaces</strong><span class="desc">Off by default. Copies the active session into BIP-85, Silent Payments, PSBT / Nonce, and the first empty multisig co-signer slot. Does not run Derive or Inspect. Never writes the PSBT editor. Page memory only.</span></span></label><ul class="workspace-sync-targets">${list}</ul>`;
   dr.appendChild(panel);
-  document.getElementById("workspace-sync-toggle").onchange = (event) => {
+  let toggle = document.getElementById("workspace-sync-toggle");
+  // The copied sessions survive the re-renders (reveal toggle, key-tab
+  // switch), so the checkbox must too — otherwise it reads "not synced" while
+  // the consumers still hold the key.
+  toggle.checked = hodlWorkspaceSyncResult === re;
+  toggle.onchange = (event) => {
     if (event.currentTarget.checked) hodlApplyWorkspaceSync();
   };
 }
@@ -8977,14 +8983,21 @@ function hodlWipeWorkspaceConsumers() {
   if (psbtSession) psbtSession.textContent = hodlPsbtNote;
   if (psbtError) psbtError.textContent = "";
   if (psbtOut) psbtOut.innerHTML = "";
-  if (hodlWorkspaceSyncMsig) {
-    let values = hodlReadMsigXpubs(), slot = hodlWorkspaceSyncMsig.slot;
-    if (values[slot] === hodlWorkspaceSyncMsig.token) {
-      values[slot] = "";
-      hodlFillKeys(values);
+  if (hodlWorkspaceSyncMsig.length) {
+    // Clear every slot still holding a synced token, not just the most recent
+    // one — syncing two keys, or re-checking after a re-render, must not orphan
+    // earlier copies. Values the user edited no longer match and are kept.
+    let values = hodlReadMsigXpubs(), changed = false;
+    for (let index = 0; index < values.length; index++) {
+      if (values[index] && hodlWorkspaceSyncMsig.includes(values[index])) {
+        values[index] = "";
+        changed = true;
+      }
     }
-    hodlWorkspaceSyncMsig = null;
+    if (changed) hodlFillKeys(values);
+    hodlWorkspaceSyncMsig = [];
   }
+  hodlWorkspaceSyncResult = null;
 }
 function hodlWipeActiveKey() {
   if (hodlActiveKey < 0 || !hodlKeys[hodlActiveKey]) return;
@@ -9959,7 +9972,8 @@ function hodlInitSecretFieldAutoClear() {
     hodlPsbtWipeMem();
     hodlBip85WipeMem();
     hodlSpWipeMem();
-    hodlWorkspaceSyncMsig = null;
+    hodlWorkspaceSyncMsig = [];
+    hodlWorkspaceSyncResult = null;
     hodlKeys = hodlKeys.map((state) => {
       let fields = state.fields || {}, privateKeys = fields.privateKeys;
       if (privateKeys) Object.keys(privateKeys).forEach((kind) => {
