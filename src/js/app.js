@@ -1004,7 +1004,7 @@ ec.innerHTML = `
   </div>
 `;
 if (/^(www\.)?entropylab\.online$/i.test(location.hostname)) document.getElementById("online-warning")?.removeAttribute("hidden");
-var hodlKeyModes = ["dice", "cards", "hex", "seed", "key", "brain-lab"], hodlBrainLabAck = false, hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "\u2660", label: "Spades", red: false }, { code: "H", symbol: "\u2665", label: "Hearts", red: true }, { code: "C", symbol: "\u2663", label: "Clubs", red: false }, { code: "D", symbol: "\u2666", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, hodlCardColemanSymbols = false, Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], ft = "", re = null, Ge = false, hodlWalletDatBirthday = "genesis", Zs = W("#modes"), at = W("#form"), dr = W("#out");
+var hodlKeyModes = ["dice", "cards", "hex", "seed", "key", "brain-lab"], hodlBrainLabAck = false, hodlWorkspaceSyncMsig = [], hodlWorkspaceSyncResult = null, hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "♠", label: "Spades", red: false }, { code: "H", symbol: "♥", label: "Hearts", red: true }, { code: "C", symbol: "♣", label: "Clubs", red: false }, { code: "D", symbol: "♦", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, hodlCardColemanSymbols = false, Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], ft = "", re = null, Ge = false, hodlWalletDatBirthday = "genesis", Zs = W("#modes"), at = W("#form"), dr = W("#out");
 hodlKeyModes.forEach((e) => {
   let t = document.createElement("button"), active = e === Ne;
   t.type = "button";
@@ -1202,6 +1202,7 @@ function tc() {
     let t = new Blob([hodlFormatRecoverySheet(Oo(re, Ge))], { type: "text/plain" }), r = document.createElement("a");
     r.href = URL.createObjectURL(t), r.download = "bitcoin-recovery-sheet.txt", r.click();
   });
+  hodlRenderWorkspaceSync();
 }
 To = To.map((definition) => definition.id === "bip86" ? { ...definition, slip: "x" } : definition);
 cr = {
@@ -1383,6 +1384,8 @@ function hodlAccountResult(node, definition, network, count, options = {}) {
     accountPath,
     accountIndex: options.accountIndex ?? null,
     originKnown: Boolean(origin),
+    originFingerprint: options.originFingerprint || null,
+    originPath: options.originPath || null,
     imported: Boolean(options.imported),
     importedFamily: options.importedFamily || null,
     importedValue: options.importedValue || null,
@@ -6231,9 +6234,9 @@ async function hodlCalculateKey(progress) {
     if (re?.network !== network) throw new Error(`The supplied key is for ${re.network}, but Network is set to ${network}.`);
     Ge = false;
     hodlSetSelectedScriptType(scriptType);
+    hodlCaptureKey();
     tc();
     hodlFocusWalletResult();
-    hodlCaptureKey();
     return true;
   } catch (error) {
     if (error instanceof HodlDerivationCancelledError) throw error;
@@ -8977,8 +8980,164 @@ function hodlSyncKeyClearButton(capture = false) {
   button.disabled = !hodlKeyStateNeedsClear(hodlKeys[hodlActiveKey]);
   button.setAttribute("aria-disabled", String(button.disabled));
 }
+function hodlWorkspaceHasHdRoot(result) {
+  return Boolean(result && result.kind === "hd" && (result.mnemonic || result.rootXprv));
+}
+function hodlWorkspaceHasPsbtKey(result) {
+  if (!result) return false;
+  if (result.kind === "single" && result.privHex) return true;
+  return hodlWorkspaceHasHdRoot(result);
+}
+function hodlWorkspaceMsigToken(result, accountId) {
+  if (!result || result.kind !== "hd") return "";
+  let account = (result.accounts || []).find((entry) => entry.def?.id === accountId) || result.accounts?.[0];
+  if (!account?.genericPublic || !account.originFingerprint || !account.originPath) return "";
+  return `[${account.originFingerprint}/${account.originPath}]${account.genericPublic}`;
+}
+function hodlFirstEmptyMsigSlot() {
+  return hodlReadMsigXpubs().findIndex((value) => !String(value).trim());
+}
+function hodlWorkspaceSyncTargets(result, options = {}) {
+  let hd = hodlWorkspaceHasHdRoot(result), psbt = hodlWorkspaceHasPsbtKey(result), token = hodlWorkspaceMsigToken(result, options.accountId), msigEmpty = options.msigEmpty !== false;
+  return [
+    { id: "bip85", label: "BIP-85", ok: hd, skip: hd ? "" : "no HD root" },
+    { id: "sp", label: "Silent Payments", ok: hd, skip: hd ? "" : "no HD root" },
+    { id: "psbt", label: "PSBT / Nonce", ok: psbt, skip: psbt ? "" : "no session key" },
+    { id: "msig", label: "Multisig", ok: Boolean(token) && msigEmpty, skip: token ? (msigEmpty ? "" : "slot filled") : "no account xpub+origin" },
+    { id: "psbted", label: "PSBT editor", ok: false, skip: "never" }
+  ];
+}
+function hodlWorkspaceSyncSetNetwork(result) {
+  let network = result?.network === "testnet" ? "testnet" : "mainnet";
+  let sp = document.getElementById("sp-network");
+  if (sp) sp.value = network;
+  let psbt = document.getElementById("psbt-network");
+  if (psbt) psbt.value = network;
+}
+function hodlApplyWorkspaceSync() {
+  if (!re) return;
+  hodlCaptureKey();
+  let state = hodlKeys[hodlActiveKey];
+  if (state) state.result = re;
+  hodlWorkspaceSyncSetNetwork(re);
+  let accountId = hodlSelectedScriptType(), token = hodlWorkspaceMsigToken(re, accountId), msigValues = hodlReadMsigXpubs(), synced = token ? msigValues.indexOf(token) : -1, slot = synced >= 0 ? synced : hodlFirstEmptyMsigSlot();
+  let targets = hodlWorkspaceSyncTargets(re, { accountId, msigEmpty: slot >= 0 });
+  let enabled = new Set(targets.filter((target) => target.ok).map((target) => target.id));
+  if (enabled.has("bip85")) {
+    try {
+      hodlUseActiveKeyForBip85();
+      let session = document.getElementById("bip85-session");
+      if (session) session.textContent = hodlBip85Note;
+      let error = document.getElementById("bip85-error");
+      if (error) error.textContent = "";
+    } catch (exception) {
+      let error = document.getElementById("bip85-error");
+      if (error) error.textContent = exception.message || String(exception);
+    }
+  }
+  if (enabled.has("sp")) {
+    try {
+      hodlSpUseActiveKey();
+      let key = document.getElementById("sp-key"), pass = document.getElementById("sp-pass"), session = document.getElementById("sp-session"), error = document.getElementById("sp-error");
+      if (key) key.value = "";
+      if (pass) pass.value = "";
+      if (session) session.textContent = hodlSpNote;
+      if (error) error.textContent = "";
+    } catch (exception) {
+      let error = document.getElementById("sp-error");
+      if (error) error.textContent = exception.message || String(exception);
+    }
+  }
+  if (enabled.has("psbt")) {
+    try {
+      hodlUseActiveKeyForPsbt();
+      let key = document.getElementById("psbt-key"), pass = document.getElementById("psbt-pass"), session = document.getElementById("psbt-session"), error = document.getElementById("psbt-error");
+      if (key) key.value = "";
+      if (pass) pass.value = "";
+      if (session) session.textContent = hodlPsbtNote;
+      if (error) error.textContent = "";
+    } catch (exception) {
+      let error = document.getElementById("psbt-error");
+      if (error) error.textContent = exception.message || String(exception);
+    }
+  }
+  if (enabled.has("msig") && token && slot >= 0) {
+    // Idempotent: the panel re-renders on reveal/key-tab switches, so a second
+    // check must reuse the slot already holding the token, not fill the next.
+    if (synced < 0) {
+      msigValues[slot] = token;
+      hodlFillKeys(msigValues);
+    }
+    if (!hodlWorkspaceSyncMsig.includes(token)) hodlWorkspaceSyncMsig.push(token);
+  }
+  hodlWorkspaceSyncResult = re;
+}
+function hodlRenderWorkspaceSync() {
+  let existing = document.getElementById("workspace-sync");
+  if (existing) existing.remove();
+  if (!re || !dr) return;
+  let accountId = hodlSelectedScriptType(), token = hodlWorkspaceMsigToken(re, accountId), synced = token ? hodlReadMsigXpubs().indexOf(token) : -1, slot = synced >= 0 ? synced : hodlFirstEmptyMsigSlot();
+  let targets = hodlWorkspaceSyncTargets(re, { accountId, msigEmpty: slot >= 0 });
+  let list = targets.map((target) => {
+    let gray = !target.ok, reason = target.skip === "never" ? "never" : target.skip ? `skipped · ${target.skip}` : "session copy ready";
+    return `<li class="workspace-sync-target${gray ? " is-unavailable" : ""}" data-target="${target.id}" ${gray ? 'aria-disabled="true"' : ""}><span class="workspace-sync-name">${$t(target.label)}</span><span class="muted">${$t(reason)}</span></li>`;
+  }).join("");
+  let panel = document.createElement("section");
+  panel.id = "workspace-sync";
+  panel.className = "card workspace-sync no-print";
+  panel.innerHTML = `<label class="choice"><input type="checkbox" id="workspace-sync-toggle" /><span><strong>Sync this key to other workspaces</strong><span class="desc">Off by default. Copies the active session into BIP-85, Silent Payments, PSBT / Nonce, and the first empty multisig co-signer slot. Does not run Derive or Inspect. Never writes the PSBT editor. Page memory only.</span></span></label><ul class="workspace-sync-targets">${list}</ul>`;
+  dr.appendChild(panel);
+  let toggle = document.getElementById("workspace-sync-toggle");
+  // The copied sessions survive the re-renders (reveal toggle, key-tab
+  // switch), so the checkbox must too — otherwise it reads "not synced" while
+  // the consumers still hold the key.
+  toggle.checked = hodlWorkspaceSyncResult === re;
+  toggle.onchange = (event) => {
+    if (event.currentTarget.checked) hodlApplyWorkspaceSync();
+  };
+}
+function hodlWipeWorkspaceConsumers() {
+  hodlBip85WipeMem();
+  hodlSpWipeMem();
+  hodlPsbtWipeMem();
+  let bip85Key = document.getElementById("bip85-key"), bip85Out = document.getElementById("bip85-out"), bip85Error = document.getElementById("bip85-error"), bip85Session = document.getElementById("bip85-session");
+  if (bip85Key) bip85Key.value = "";
+  if (bip85Out) bip85Out.innerHTML = "";
+  if (bip85Error) bip85Error.textContent = "";
+  if (bip85Session) bip85Session.textContent = hodlBip85Note;
+  ["sp-key", "sp-pass"].forEach((id) => {
+    let field = document.getElementById(id);
+    if (field) field.value = "";
+  });
+  let spOut = document.getElementById("sp-out"), spError = document.getElementById("sp-error"), spSession = document.getElementById("sp-session");
+  if (spOut) spOut.innerHTML = "";
+  if (spError) spError.textContent = "";
+  if (spSession) spSession.textContent = hodlSpNote;
+  let psbtKey = document.getElementById("psbt-key"), psbtPass = document.getElementById("psbt-pass"), psbtSession = document.getElementById("psbt-session"), psbtError = document.getElementById("psbt-error"), psbtOut = document.getElementById("psbt-out");
+  if (psbtKey) psbtKey.value = "";
+  if (psbtPass) psbtPass.value = "";
+  if (psbtSession) psbtSession.textContent = hodlPsbtNote;
+  if (psbtError) psbtError.textContent = "";
+  if (psbtOut) psbtOut.innerHTML = "";
+  if (hodlWorkspaceSyncMsig.length) {
+    // Clear every slot still holding a synced token, not just the most recent
+    // one — syncing two keys, or re-checking after a re-render, must not orphan
+    // earlier copies. Values the user edited no longer match and are kept.
+    let values = hodlReadMsigXpubs(), changed = false;
+    for (let index = 0; index < values.length; index++) {
+      if (values[index] && hodlWorkspaceSyncMsig.includes(values[index])) {
+        values[index] = "";
+        changed = true;
+      }
+    }
+    if (changed) hodlFillKeys(values);
+    hodlWorkspaceSyncMsig = [];
+  }
+  hodlWorkspaceSyncResult = null;
+}
 function hodlWipeActiveKey() {
   if (hodlActiveKey < 0 || !hodlKeys[hodlActiveKey]) return;
+  hodlWipeWorkspaceConsumers();
   let state = hodlKeys[hodlActiveKey];
   hodlKeys[hodlActiveKey] = hodlNewKeyState(state.name, state.id, state.number);
   hodlRestoreKey();
@@ -9951,6 +10110,8 @@ function hodlInitSecretFieldAutoClear() {
     hodlPsbtWipeMem();
     hodlBip85WipeMem();
     hodlSpWipeMem();
+    hodlWorkspaceSyncMsig = [];
+    hodlWorkspaceSyncResult = null;
     hodlKeys = hodlKeys.map((state) => {
       let fields = state.fields || {}, privateKeys = fields.privateKeys;
       if (privateKeys) Object.keys(privateKeys).forEach((kind) => {

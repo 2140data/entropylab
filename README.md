@@ -108,6 +108,14 @@ Official website: [entropylab.online](https://entropylab.online)
   wallet looks empty, repair it with `rescanblockchain 0` in Bitcoin Core.
   Generated database files match Bitcoin Core's own record layout
   byte-for-byte (verified against Bitcoin Core v28.3.0).
+- After a successful Derive Wallet, an optional **Sync this key to other
+  workspaces** checkbox (off by default) copies the active session into BIP-85,
+  Silent Payments, PSBT / Nonce, and the first empty multisig co-signer slot as
+  `[fingerprint/path]xpub` only. It skips BIP-85 and Silent Payments when there
+  is no HD root, skips a filled multisig slot, and never writes the PSBT editor
+  or private keys into multisig. It does not run Derive or Inspect. Wipe
+  clears those consumers. Secrets stay in page memory — no localStorage,
+  IndexedDB, or browser-tab secret sync.
 - SLIP-132 extended-key display is a prefix swap only (same payload, new
   version bytes and checksum). Import/derive shows the key as pasted, the
   Bitcoin Core xprv/xpub or tprv/tpub, and the descriptor (script in the
