@@ -9,7 +9,8 @@
 // Run with `npm test`.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -54,9 +55,12 @@ function ciCoverageProblems(testCiScript, testBrowserScript, workflowText, files
   return problems;
 }
 
-const filesOnDisk = readdirSync(join(root, "test"))
-  .filter((name) => name.endsWith(".test.mjs"))
-  .map((name) => `test/${name}`)
+// CI checks out the tracked tree, so the guard compares the wiring against
+// the tracked suites: an untracked work-in-progress suite on a developer
+// machine is not CI's concern until it is added to the index.
+const filesOnDisk = execFileSync("git", ["ls-files", "test/*.test.mjs"], { cwd: root, encoding: "utf8" })
+  .split("\n")
+  .filter(Boolean)
   .sort();
 
 test("every test suite is wired into CI", () => {
