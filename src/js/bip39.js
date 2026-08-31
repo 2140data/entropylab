@@ -25,6 +25,16 @@ const nfkd = (value) => {
   return value.normalize("NFKD");
 };
 
+// @scure/bip39 split the NFKD phrase on a single ASCII space and required
+// 12/15/18/21/24 words; rust-bip39 splits on any run of whitespace, so it
+// would accept double spaces, tabs, newlines, and surrounding blanks. Those
+// phrases are not a drop-in equivalent: mnemonicToSeedSync hashes the phrase
+// as typed, so accepting one here would report "valid" for a phrase whose
+// seed no other wallet derives. Reject them the way the previous
+// implementation did, before the crate ever sees the text.
+const WORD_COUNTS = [12, 15, 18, 21, 24];
+const canonicalWords = (phrase) => WORD_COUNTS.includes(phrase.split(" ").length);
+
 const entropyToMnemonic = (entropy, wordlist = bip39English) => {
   if (!(entropy instanceof Uint8Array) || ![16, 20, 24, 28, 32].includes(entropy.length)) {
     throw new RangeError("invalid entropy length");
@@ -37,7 +47,9 @@ const entropyToMnemonic = (entropy, wordlist = bip39English) => {
 
 const mnemonicToEntropy = (mnemonic, wordlist = bip39English) => {
   if (wordlist !== bip39English) throw new Error("Only the BIP39 English wordlist is supported.");
-  const phrase = textEncoder.encode(nfkd(mnemonic));
+  const text = nfkd(mnemonic);
+  if (!canonicalWords(text)) throw new Error("Invalid mnemonic");
+  const phrase = textEncoder.encode(text);
   const out = withInput(phrase, (p) => withOutput(ENTROPY_CAP, (o) => wasm().el_bip39_mnemonic_to_entropy(p, phrase.length, o, ENTROPY_CAP)));
   if (!out) throw new Error("Invalid mnemonic");
   return out;
@@ -46,7 +58,9 @@ const mnemonicToEntropy = (mnemonic, wordlist = bip39English) => {
 const validateMnemonic = (mnemonic, wordlist = bip39English) => {
   if (wordlist !== bip39English) return false;
   try {
-    const phrase = textEncoder.encode(nfkd(mnemonic));
+    const text = nfkd(mnemonic);
+    if (!canonicalWords(text)) return false;
+    const phrase = textEncoder.encode(text);
     return withInput(phrase, (p) => wasm().el_bip39_validate(p, phrase.length)) === 1;
   } catch {
     return false;

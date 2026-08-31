@@ -210,7 +210,13 @@ test("third-party actions are immutable and deployment is test-gated", () => {
   // The WASM gate must rebuild the bindings from the Rust sources, test the
   // fresh build, and block both the artifact commit and the Pages deploy.
   assert.match(workflow, /^\s{2}build-wasm:\n(?:.|\n)*?npm run build:wasm\n/m);
-  assert.match(workflow, /^\s{2}build-wasm:\n(?:.|\n)*?node --test test\/entropylab-wasm\.test\.mjs test\/hashes-wasm\.test\.mjs/m);
+  // Every suite that exercises the WASM boundary must run against the fresh
+  // build, or the gate stops covering the part of the crate it guards.
+  const wasmStep = workflow.match(/^\s{2}build-wasm:\n(?:.|\n)*?node --test ([^\n]+)$/m);
+  assert.ok(wasmStep, "build-wasm runs the WASM suites against the fresh build");
+  for (const suite of readdirSync(join(root, "test")).filter((name) => name.endsWith("-wasm.test.mjs"))) {
+    assert.ok(wasmStep[1].includes(`test/${suite}`), `build-wasm must run test/${suite} against the fresh build`);
+  }
   assert.match(workflow, /^\s{2}deploy:\n(?:.|\n)*?^\s{4}needs: \[build, verify, test-ci, test-browser, build-wasm\]$/m);
 });
 

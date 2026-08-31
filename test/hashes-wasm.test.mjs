@@ -74,7 +74,9 @@ test("PBKDF2-HMAC-SHA-512 matches the published vector and node:crypto", () => {
     bytesToHex(pbkdf2Sha512(utf8("password"), utf8("salt"), 1, 64)),
     "867f70cf1ade02cff3752599a3a53dc4af34c7a669815ae5d513554e1c8cf252c02d470a285a0501bad999bfe943c08f050235d7d68b1da55e63f73b60a57fce"
   );
-  for (const [c, dkLen] of [[1, 64], [2, 64], [97, 32], [2048, 64]]) {
+  // dkLen over 64 exercises the crate's multi-block loop (the app only ever
+  // asks for one block, so nothing else covers the block counter).
+  for (const [c, dkLen] of [[1, 64], [2, 64], [97, 32], [2048, 64], [3, 65], [3, 128], [5, 200]]) {
     assert.equal(
       bytesToHex(pbkdf2Sha512(utf8("password"), utf8("NaCl"), c, dkLen)),
       pbkdf2Sync(utf8("password"), utf8("NaCl"), c, dkLen, "sha512").toString("hex")

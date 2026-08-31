@@ -130,6 +130,27 @@ test("BIP39 differential vs @scure/bip39 (mnemonic, entropy, seed, validate)", (
   assert.throws(() => mnemonicToEntropy(bad));
 });
 
+// Regression guard for #183: rust-bip39 splits on any run of whitespace,
+// where @scure/bip39 split on a single ASCII space. Accepting the loose forms
+// would be unsafe rather than lenient — mnemonicToSeedSync hashes the phrase
+// as typed, so a phrase validated with a stray space derives a seed no other
+// wallet produces.
+test("BIP39 rejects non-canonical whitespace exactly as @scure/bip39 did", () => {
+  const phrase = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+  assert.equal(validateMnemonic(phrase), true);
+  const loose = {
+    "double space": phrase.replace("abandon abandon", "abandon  abandon"),
+    "leading and trailing spaces": `  ${phrase}  `,
+    "newline separators": phrase.replace(/ /g, "\n"),
+    "tab separators": phrase.replace(/ /g, "\t"),
+  };
+  for (const [name, value] of Object.entries(loose)) {
+    assert.equal(scureBip39.validateMnemonic(value, scureEnglish), false, `${name}: scure baseline`);
+    assert.equal(validateMnemonic(value), false, `${name}: accepted a phrase scure rejected`);
+    assert.throws(() => mnemonicToEntropy(value), /Invalid mnemonic/, `${name}: entropy`);
+  }
+});
+
 test("wordlist agreement: JS data file == rust-bip39 English list, word for word", () => {
   assert.equal(bip39English.length, 2048);
   const wasm = wasmExports();

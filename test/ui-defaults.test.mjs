@@ -598,7 +598,17 @@ test("multisig separates script type from purpose and keeps the Legacy BIP87 sho
 });
 
 test("Native SegWit multisig uses the imported Bitcoin address encoder", () => {
-  assert.match(appSource, /import \{ addressFor, addressFromScript, multisigScript, multisigTrScript, p2shP2wpkhScript, p2shScript, p2trKeyScript, p2wshScript \} from "\.\/addresses\.js"/);
+  // Pinning the import list verbatim once let a used-but-unimported helper
+  // ship (p2trLeafScript); assert instead that every name the file calls is
+  // actually imported from the facade.
+  const importMatch = appSource.match(/import \{([^}]*)\} from "\.\/addresses\.js"/);
+  assert.ok(importMatch, "app.js imports from ./addresses.js");
+  const imported = new Set(importMatch[1].split(",").map((name) => name.trim()));
+  const body = appSource.replace(/import \{[^}]*\} from "\.\/addresses\.js";/, "");
+  for (const name of ["addressFor", "addressFromScript", "multisigScript", "multisigTrScript", "p2shScript", "p2trLeafScript", "p2wshScript"]) {
+    assert.match(body, new RegExp(`\\b${name}\\(`), `${name} is called by app.js`);
+    assert.ok(imported.has(name), `${name} must be imported from ./addresses.js`);
+  }
   assert.match(appSource, /addressFromScript\(p2wshScript\(ms\), network\)/);
   assert.doesNotMatch(appSource, /\bor\(net\)\.encode/);
 });
