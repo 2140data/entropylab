@@ -158,14 +158,6 @@ function Pr(e, t, r = () => {
   return e;
 }
 var sr = { encode: base58checkEncode, decode: base58checkDecode }, ff = BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"), To = [{ id: "bip44", bip: "BIP44", label: "Legacy", short: "Legacy 1\u2026", beginner: "Addresses that start with 1. Oldest type. Bitcoin Core can import these with importprivkey.", script: "p2pkh", purpose: 44, slip: "x" }, { id: "bip49", bip: "BIP49", label: "Nested SegWit", short: "Nested 3\u2026", beginner: "Addresses that start with 3. A SegWit script wrapped so older wallets can still send to it.", script: "p2sh-p2wpkh", purpose: 49, slip: "y" }, { id: "bip84", bip: "BIP84", label: "Native SegWit", short: "SegWit bc1q\u2026", beginner: "Addresses that start with bc1q. The default in Bitcoin Core, Sparrow, and Electrum today.", script: "p2wpkh", purpose: 84, slip: "z" }, { id: "bip86", bip: "BIP86", label: "Taproot", short: "Taproot bc1p\u2026", beginner: "Addresses that start with bc1p. Newest type. Use this if your wallet speaks Taproot.", script: "p2tr", purpose: 86, slip: "v" }], cr = { mainnet: { x: { pub: 76067358, prv: 76066276, pubName: "xpub", prvName: "xprv" }, y: { pub: 77429938, prv: 77428856, pubName: "ypub", prvName: "yprv" }, z: { pub: 78792518, prv: 78791436, pubName: "zpub", prvName: "zprv" }, v: { pub: 73342198, prv: 73341116, pubName: "vpub", prvName: "vprv" } }, testnet: { x: { pub: 70617039, prv: 70615956, pubName: "tpub", prvName: "tprv" }, y: { pub: 71979618, prv: 71978536, pubName: "upub", prvName: "uprv" }, z: { pub: 73342198, prv: 73341116, pubName: "vpub", prvName: "vprv" }, v: { pub: 39277699, prv: 39276616, pubName: "npub", prvName: "nprv" } } };
-var hodlDerivationSchemes = {
-  bip44: { id: "bip44", label: "BIP44", purpose: 44, script: "bip44" },
-  bip49: { id: "bip49", label: "BIP49", purpose: 49, script: "bip49" },
-  bip84: { id: "bip84", label: "BIP84", purpose: 84, script: "bip84" },
-  bip86: { id: "bip86", label: "BIP86", purpose: 86, script: "bip86" },
-  bip48: { id: "bip48", label: "BIP48", purpose: 48, scriptIndex: 2 },
-  custom: { id: "custom", label: "Custom path" }
-};
 function df(e) {
   return e === "mainnet" ? 128 : 239;
 }
@@ -188,7 +180,7 @@ function hodlReadHardening(prefix = "") {
     purpose: read("purpose") ?? defaults.purpose,
     coinType: read("network") ?? defaults.coinType,
     account: read("account") ?? defaults.account,
-    script: read("scheme-script-index") ?? defaults.script,
+    script: defaults.script,
     branch: read("branch-start") ?? defaults.branch,
     address: read("address-start") ?? defaults.address
   };
@@ -198,7 +190,7 @@ function hodlHardeningFromFields(fields = {}) {
     purpose: fields.purposeHarden !== false,
     coinType: fields.coinTypeHarden !== false,
     account: fields.accountHarden !== false,
-    script: fields.schemeScriptIndexHarden !== false,
+    script: true,
     branch: Boolean(fields.branchHarden),
     address: Boolean(fields.addressHarden)
   };
@@ -211,24 +203,24 @@ function hodlSyncDerivationPrimes(root = document) {
   root.querySelectorAll(".derivation-index-value > input").forEach(hodlSyncDerivationPrime);
 }
 function hodlSetHardeningControls(prefix = "", hardening = hodlDefaultHardening()) {
-  [["purpose", "purpose"], ["network", "coinType"], ["account", "account"], ["scheme-script-index", "script"], ["branch-start", "branch"], ["address-start", "address"]].forEach(([id, key]) => {
+  [["purpose", "purpose"], ["network", "coinType"], ["account", "account"], ["branch-start", "branch"], ["address-start", "address"]].forEach(([id, key]) => {
     let input = document.getElementById(`${prefix}${id}-harden`);
-    if (input) input.checked = Boolean(hardening[key]);
+    if (input) {
+      input.checked = Boolean(hardening[key]);
+      if (!prefix) {
+        let valueInput = document.getElementById(id), parsed = hodlParseDerivationIndexText(valueInput?.value);
+        if (valueInput && parsed) valueInput.value = `${parsed.value}${input.checked ? "'" : ""}`;
+      }
+    }
   });
   hodlSyncDerivationPrimes();
 }
-function hodlNormalizeDerivationScheme(value) {
-  return hodlDerivationSchemes[value]?.id || "bip84";
-}
-function hodlSelectedDerivationScheme() {
-  return hodlNormalizeDerivationScheme(document.getElementById("derivation-scheme")?.value || hodlKeys[hodlActiveKey]?.fields?.derivationScheme);
-}
 function hodlParseCustomDerivationPath(value) {
   let raw = String(value ?? "").trim();
-  if (!/^m(?:\/[^/]+)*$/.test(raw)) throw new Error("Custom path must start with m and contain slash-separated BIP32 indexes.");
+  if (!/^m(?:\/[^/]+)*$/.test(raw)) throw new Error("Derivation path must start with m and contain slash-separated BIP32 indexes.");
   let components = raw === "m" ? [] : raw.slice(2).split("/").map((part) => {
     let match = /^(\d+)([hH']?)$/.exec(part), index = Number(match?.[1]);
-    if (!match || !Number.isSafeInteger(index) || index < 0 || index > 2147483647) throw new Error("Each custom path index must be a whole number from 0 to 2,147,483,647, optionally followed by h or '.");
+    if (!match || !Number.isSafeInteger(index) || index < 0 || index > 2147483647) throw new Error("Each derivation path index must be a whole number from 0 to 2,147,483,647, optionally followed by h or '.");
     return { index, hardened: Boolean(match[2]) };
   });
   return {
@@ -238,44 +230,82 @@ function hodlParseCustomDerivationPath(value) {
     hasHardened: components.some((entry) => entry.hardened)
   };
 }
+function hodlParseDerivationIndexText(value) {
+  let match = /^(\d+)([hH']?)$/.exec(String(value ?? "").trim()), index = Number(match?.[1]);
+  if (!match || !Number.isSafeInteger(index) || index < 0 || index > 2147483647) return null;
+  return { value: index, hardened: Boolean(match[2]) };
+}
+function hodlSanitizeDerivationIndexDraft(value) {
+  let result = "", hardened = false;
+  for (let character of String(value ?? "")) {
+    if (/\d/.test(character) && !hardened) result += character;
+    else if ((character === "'" || character === "h" || character === "H") && !hardened) {
+      result += "'";
+      hardened = true;
+    }
+  }
+  return result;
+}
+function hodlDefaultAdvancedDerivationIndex(id) {
+  if (id === "purpose") return `${hodlScriptDefinition(hodlSelectedScriptType()).purpose}'`;
+  if (id === "network" || id === "account") return "0'";
+  return "0";
+}
+function hodlRestoreAdvancedDerivationIndex(input) {
+  let draft = hodlSanitizeDerivationIndexDraft(input?.value);
+  if (!input || draft !== "" && draft !== "'") return false;
+  input.value = draft === "'" ? "0'" : hodlDefaultAdvancedDerivationIndex(input.id);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  return true;
+}
 function hodlReadDerivationIndex(input, label, mark = true) {
-  let raw = String(input?.value ?? "").trim(), value = Number(raw), valid = /^\d+$/.test(raw) && Number.isSafeInteger(value) && value >= 0 && value <= 2147483647;
+  let parsed = hodlParseDerivationIndexText(input?.value), valid = Boolean(parsed);
   if (mark) {
     input?.classList.toggle("bad", !valid);
     input?.setAttribute("aria-invalid", String(!valid));
   }
   if (!valid) throw new Error(`${label} must be a whole number from 0 to 2,147,483,647.`);
-  return value;
+  return parsed.value;
+}
+function hodlDerivationPathDisplay(accountPath, branchWindow, addressWindow, hardening = hodlDefaultHardening()) {
+  if (branchWindow.range > 1) return accountPath;
+  let branchPath = `${accountPath}/${hodlPathIndex(branchWindow.start, hardening.branch)}`;
+  if (addressWindow.range > 1) return branchPath;
+  return `${branchPath}/${hodlPathIndex(addressWindow.start, hardening.address)}`;
+}
+function hodlDerivationPathRangeMessage(branchWindow, addressWindow) {
+  if (branchWindow.range > 1 && addressWindow.range > 1) return "Multiple address branches and indexes selected · path shown through the account level.";
+  if (branchWindow.range > 1) return "Multiple address branches selected · path shown through the account level.";
+  if (addressWindow.range > 1) return "Multiple address indexes selected · path shown through the address branch.";
+  return "Exact BIP32 address path · edit directly to use a custom path";
+}
+function hodlReadVisibleDerivationPath(mark = true) {
+  let input = document.getElementById("derivation-path"), parsed;
+  try {
+    parsed = hodlParseCustomDerivationPath(input?.value);
+    let branchWindow = hodlReadBranchWindow("", false), addressWindow = hodlReadAddressWindow("", false), suffixCount = branchWindow.range > 1 ? 0 : addressWindow.range > 1 ? 1 : 2;
+    if (parsed.components.length < 3 + suffixCount) throw new Error("Derivation path must include purpose, network, and account plus every address component shown.");
+    let accountComponents = suffixCount ? parsed.components.slice(0, -suffixCount) : parsed.components.slice(), branch = suffixCount >= 1 ? parsed.components.at(-suffixCount) : null, address = suffixCount === 2 ? parsed.components.at(-1) : null;
+    if (accountComponents.length < 3) throw new Error("Derivation path must include purpose, network, and account indexes.");
+    if (mark) {
+      input?.classList.remove("bad");
+      input?.setAttribute("aria-invalid", "false");
+    }
+    return { parsed, accountComponents, branch, address, branchWindow, addressWindow };
+  } catch (error) {
+    if (mark) {
+      input?.classList.add("bad");
+      input?.setAttribute("aria-invalid", "true");
+    }
+    throw error;
+  }
 }
 function hodlReadDerivationPlan(mark = true) {
-  let scheme = hodlSelectedDerivationScheme(), hardening = hodlReadHardening();
-  if (scheme === "custom") {
-    let input = document.getElementById("custom-derivation-path"), parsed;
-    try {
-      parsed = hodlParseCustomDerivationPath(input?.value);
-      if (mark) {
-        input?.classList.remove("bad");
-        input?.setAttribute("aria-invalid", "false");
-      }
-    } catch (error) {
-      if (mark) {
-        input?.classList.add("bad");
-        input?.setAttribute("aria-invalid", "true");
-      }
-      throw error;
-    }
-    let network = document.getElementById("custom-network")?.value === "testnet" ? "testnet" : "mainnet";
-    return { scheme, label: "Custom path", network, coinType: network === "testnet" ? 1 : 0, accountIndex: null, purpose: parsed.components[0]?.index ?? 0, accountPath: parsed.path, originPath: parsed.originPath, hasHardenedPrefix: parsed.hasHardened, hardening };
-  }
-  let purpose = hodlReadPurpose(mark), coinType = hodlReadCoinType(document.getElementById("network"), mark), accountIndex = hodlReadAccount(mark), parts = [
-    { index: purpose, hardened: hardening.purpose },
-    { index: coinType, hardened: hardening.coinType },
-    { index: accountIndex, hardened: hardening.account }
-  ];
-  if (scheme === "bip48") parts.push({ index: hodlReadDerivationIndex(document.getElementById("scheme-script-index"), "Script type", mark), hardened: hardening.script });
+  [["purpose", "Purpose"], ["network", "Coin type"], ["account", "Account"]].forEach(([id, label]) => {
+    hodlReadDerivationIndex(document.getElementById(id), label, mark);
+  });
+  let visible = hodlReadVisibleDerivationPath(mark), parts = visible.accountComponents, purpose = parts[0].index, coinType = parts[1].index, accountIndex = parts[2].index, hardening = { ...hodlReadHardening(), purpose: parts[0].hardened, coinType: parts[1].hardened, account: parts[2].hardened, branch: visible.branch?.hardened ?? hodlReadHardening().branch, address: visible.address?.hardened ?? hodlReadHardening().address };
   return {
-    scheme,
-    label: hodlDerivationSchemes[scheme].label,
     network: hodlNetworkFromCoinType(coinType),
     coinType,
     accountIndex,
@@ -618,73 +648,56 @@ ec.innerHTML = `
       <div class="passphrase-keyboard-host" id="passphrase-keyboard-host" hidden></div>
       <div class="key-settings" id="key-settings">
         <div class="key-settings-row">
-          <label class="field" id="derivation-scheme-field">Derivation scheme
-            <select id="derivation-scheme"><option value="bip44">BIP44 · Legacy</option><option value="bip49">BIP49 · Nested SegWit</option><option value="bip84" selected>BIP84 · Native SegWit</option><option value="bip86">BIP86 · Taproot</option><option value="bip48">BIP48 · Multisig</option><option value="custom">Custom path</option></select>
-          </label>
           <label class="field" id="script-type-field">Script type
             <select id="script-type"><option value="bip44">Legacy</option><option value="bip49">Nested SegWit</option><option value="bip84" selected>Native SegWit</option><option value="bip86">Taproot</option></select>
           </label>
-        </div>
-        <div class="key-settings-row" id="purpose-network-settings">
-          <div class="field" id="purpose-field"><label for="purpose">Purpose</label>
-            <div class="derivation-index-control"><span class="derivation-index-value"><input id="purpose" type="text" inputmode="numeric" value="84" aria-describedby="purpose-help"><span class="derivation-index-prime" aria-hidden="true">'</span></span><label class="derivation-harden"><input id="purpose-harden" type="checkbox" checked><span>Harden</span></label></div>
-            <span class="field-note" id="purpose-help">Purpose index \xB7 Hardened \xB7 0 to 2,147,483,647</span>
-          </div>
-          <div class="field network-field"><label for="network">Network</label>
-            <div class="derivation-index-control"><span class="derivation-index-value"><input id="network" type="text" inputmode="numeric" value="0" aria-describedby="network-help"><span class="derivation-index-prime" aria-hidden="true">'</span></span><label class="derivation-harden"><input id="network-harden" type="checkbox" checked><span>Harden</span></label></div>
-            <span class="field-note" id="network-help">Coin type index \xB7 Mainnet \xB7 Hardened \xB7 0 to 2,147,483,647</span>
-          </div>
-        </div>
-        <div class="key-settings-row" id="account-address-settings">
-          <div class="field" id="account-field"><label for="account">Account</label>
-            <div class="derivation-index-control"><span class="derivation-index-value"><input id="account" type="text" inputmode="numeric" value="0" aria-describedby="account-help"><span class="derivation-index-prime" aria-hidden="true">'</span></span><label class="derivation-harden"><input id="account-harden" type="checkbox" checked><span>Harden</span></label></div>
-            <span class="field-note" id="account-help">Account index \xB7 Hardened \xB7 0 to 2,147,483,647</span>
-          </div>
-          <div class="field" id="scheme-script-index-field" hidden><label for="scheme-script-index">Script type</label>
-            <div class="derivation-index-control"><span class="derivation-index-value"><input id="scheme-script-index" type="text" inputmode="numeric" value="2" aria-describedby="scheme-script-index-help"><span class="derivation-index-prime" aria-hidden="true">'</span></span><label class="derivation-harden"><input id="scheme-script-index-harden" type="checkbox" checked><span>Harden</span></label></div>
-            <span class="field-note" id="scheme-script-index-help">BIP48 script type index \xB7 1 is Nested SegWit \xB7 2 is Native SegWit \xB7 Hardened</span>
-          </div>
-        </div>
-        <div class="key-settings-row custom-derivation-settings" id="custom-derivation-settings" hidden>
-          <label class="field">Custom account path
-            <input id="custom-derivation-path" type="text" value="m/84'/0'/0'" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="custom-derivation-path-help">
-            <span class="field-note" id="custom-derivation-path-help">Arbitrary BIP32 path through the account node \xB7 address branch and index are appended below</span>
-          </label>
-          <label class="field">Bitcoin network
-            <select id="custom-network"><option value="mainnet" selected>Mainnet</option><option value="testnet">Testnet</option></select>
-            <span class="field-note">Controls address encoding only \xB7 the custom path is used exactly as entered</span>
+          <label class="field derivation-path-field" id="derivation-path-field">Derivation path
+            <input id="derivation-path" type="text" value="m/84'/0'/0'/0/0" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="derivation-path-help">
+            <span class="field-note" id="derivation-path-help">Exact BIP32 address path · edit directly to use a custom path</span>
           </label>
         </div>
-        <div class="key-settings-row address-branch-settings" id="address-branch-settings">
-          <div class="field"><label for="branch-start" id="branch-start-label">Starting change / branch index</label>
-            <div class="derivation-index-control"><span class="derivation-index-value"><input id="branch-start" type="text" inputmode="numeric" value="0" aria-describedby="branch-start-help"><span class="derivation-index-prime" aria-hidden="true">'</span></span><label class="derivation-harden"><input id="branch-start-harden" type="checkbox"><span>Harden</span></label></div>
-            <span class="field-note" id="branch-start-help">First address branch to derive · 0 is Receive · 1 is Change · Unhardened · 0 to 2,147,483,647</span>
+        <details class="derivation-advanced" id="derivation-advanced">
+          <summary>Advanced entry</summary>
+          <div class="derivation-advanced-fields">
+            <div class="key-settings-row" id="purpose-network-settings">
+              <div class="field" id="purpose-field"><label for="purpose">Purpose</label>
+                <div class="derivation-index-control"><span class="derivation-index-value"><input id="purpose" type="text" inputmode="numeric" value="84'" aria-describedby="purpose-help"></span><label class="derivation-harden"><input id="purpose-harden" type="checkbox" checked><span>Harden</span></label></div>
+                <span class="field-note" id="purpose-help">Purpose index \xB7 Hardened \xB7 0 to 2,147,483,647</span>
+              </div>
+              <div class="field network-field"><label for="network">Network</label>
+                <div class="derivation-index-control"><span class="derivation-index-value"><input id="network" type="text" inputmode="numeric" value="0'" aria-describedby="network-help"></span><label class="derivation-harden"><input id="network-harden" type="checkbox" checked><span>Harden</span></label></div>
+                <span class="field-note" id="network-help">Coin type index \xB7 Mainnet \xB7 Hardened \xB7 0 to 2,147,483,647</span>
+              </div>
+            </div>
+            <div class="key-settings-row" id="account-address-settings">
+              <div class="field" id="account-field"><label for="account">Account</label>
+                <div class="derivation-index-control"><span class="derivation-index-value"><input id="account" type="text" inputmode="numeric" value="0'" aria-describedby="account-help"></span><label class="derivation-harden"><input id="account-harden" type="checkbox" checked><span>Harden</span></label></div>
+                <span class="field-note" id="account-help">Account index \xB7 Hardened \xB7 0 to 2,147,483,647</span>
+              </div>
+            </div>
+            <div class="key-settings-row address-branch-settings" id="address-branch-settings">
+              <div class="field"><label for="branch-start" id="branch-start-label">Starting address branch</label>
+                <div class="derivation-index-control"><span class="derivation-index-value"><input id="branch-start" type="text" inputmode="numeric" value="0" aria-describedby="branch-start-help"></span><label class="derivation-harden"><input id="branch-start-harden" type="checkbox"><span>Harden</span></label></div>
+                <span class="field-note" id="branch-start-help">First address branch to derive \xB7 0 is Receive \xB7 1 is Change \xB7 Unhardened \xB7 0 to 2,147,483,647</span>
+              </div>
+              <label class="field">Address branch range
+                <input id="branch-range" type="number" min="1" max="2" step="1" inputmode="numeric" value="1" aria-describedby="branch-range-help">
+                <span class="field-note" id="branch-range-help">Derives Receive branch \xB7 Max 2</span>
+              </label>
+            </div>
+            <div class="key-settings-row address-range-settings" id="address-range-settings">
+              <div class="field"><label for="address-start" id="address-start-label">Starting address index</label>
+                <div class="derivation-index-control"><span class="derivation-index-value"><input id="address-start" type="text" inputmode="numeric" value="0" aria-describedby="address-start-help"></span><label class="derivation-harden"><input id="address-start-harden" type="checkbox"><span>Harden</span></label></div>
+                <span class="field-note" id="address-start-help">First receive index to derive \xB7 Unhardened \xB7 0 to 2,147,483,647</span>
+              </div>
+              <label class="field">Address range
+                <input id="address-range" type="number" min="1" max="10000" step="1" inputmode="numeric" value="1" aria-describedby="address-range-help">
+                <span class="field-note" id="address-range-help">Derives 1 receive address \xB7 Max 10,000</span>
+              </label>
+            </div>
           </div>
-          <label class="field">Address branch range
-            <input id="branch-range" type="number" min="1" max="2" step="1" inputmode="numeric" value="2" aria-describedby="branch-range-help">
-            <span class="field-note" id="branch-range-help">Derives Receive and Change branches · Max 2</span>
-          </label>
-        </div>
-        <div class="key-settings-row address-range-settings" id="address-range-settings">
-          <div class="field"><label for="address-start" id="address-start-label">Starting address index</label>
-            <div class="derivation-index-control"><span class="derivation-index-value"><input id="address-start" type="text" inputmode="numeric" value="0" aria-describedby="address-start-help"><span class="derivation-index-prime" aria-hidden="true">'</span></span><label class="derivation-harden"><input id="address-start-harden" type="checkbox"><span>Harden</span></label></div>
-            <span class="field-note" id="address-start-help">First receive and change index to derive \xB7 Unhardened \xB7 0 to 2,147,483,647</span>
-          </div>
-          <label class="field">Address range
-            <input id="address-range" type="number" min="1" max="10000" step="1" inputmode="numeric" value="5" aria-describedby="address-range-help">
-            <span class="field-note" id="address-range-help">Derives 5 receive and 5 change addresses · Max 10,000</span>
-          </label>
-        </div>
+        </details>
       </div>
-      <section class="derivation-path-preview" id="derivation-path-preview" aria-labelledby="derivation-path-heading" aria-live="polite">
-        <div class="derivation-path-head"><p class="label" id="derivation-path-heading">Derivation paths</p><span class="derivation-path-context" id="derivation-path-context"></span></div>
-        <dl class="derivation-path-list">
-          <div class="derivation-path-row"><dt id="derivation-base-label">Account</dt><dd><code data-path="account"></code></dd></div>
-          <div class="derivation-path-row" data-branch-path-row="0"><dt data-branch-path-label="0">Receive</dt><dd><code data-path="receive"></code></dd></div>
-          <div class="derivation-path-row" data-branch-path-row="1"><dt data-branch-path-label="1">Change</dt><dd><code data-path="change"></code></dd></div>
-        </dl>
-        <p class="derivation-path-error" id="derivation-path-error" hidden></p>
-      </section>
       <p class="field-note address-estimate derivation-estimate" id="address-estimate" role="status">Measuring this device\u2026</p>
       <div class="row key-action-row current-item-actions">
         <button class="btn primary" id="go" disabled aria-disabled="true">Derive Wallet</button>
@@ -2145,11 +2158,14 @@ function hodlSetPurpose(value) {
   let purpose = Number(value), input = document.getElementById("purpose");
   if (!Number.isSafeInteger(purpose) || purpose < 0 || purpose > hodlMaxPurpose) purpose = 84;
   if (input) {
-    input.value = String(purpose);
+    input.value = `${purpose}${document.getElementById("purpose-harden")?.checked === false ? "" : "'"}`;
     hodlSyncDerivationPrime(input);
   }
   let state = hodlKeys[hodlActiveKey];
-  if (state) state.fields.purpose = String(purpose);
+  if (state) {
+    state.fields.purpose = input?.value || String(purpose);
+    state.fields.purposeHarden = document.getElementById("purpose-harden")?.checked !== false;
+  }
   return purpose;
 }
 function hodlReadCoinType(input = document.getElementById("network"), mark = true) {
@@ -2172,12 +2188,11 @@ function hodlUpdateCoinTypeHelp(input = document.getElementById("network"), help
   help.textContent = `Coin type index · ${label} · ${hardened ? "Hardened" : "Unhardened"} · 0 to 2,147,483,647`;
 }
 function hodlUpdateHardeningHelp(prefix = "") {
-  let hardening = hodlReadHardening(prefix), purpose = document.getElementById(`${prefix}purpose-help`), account = document.getElementById(`${prefix}account-help`), script = document.getElementById(`${prefix}scheme-script-index-help`), branch = document.getElementById(`${prefix}branch-start-help`), start = document.getElementById(`${prefix}address-start-help`), custom = !prefix && hodlSelectedDerivationScheme() === "custom";
+  let hardening = hodlReadHardening(prefix), purpose = document.getElementById(`${prefix}purpose-help`), account = document.getElementById(`${prefix}account-help`), branch = document.getElementById(`${prefix}branch-start-help`), start = document.getElementById(`${prefix}address-start-help`);
   if (purpose) purpose.textContent = `Purpose index · ${hardening.purpose ? "Hardened" : "Unhardened"} · 0 to 2,147,483,647`;
   if (account && !(prefix && document.getElementById(`${prefix}account`)?.dataset.state === "not-applicable")) account.textContent = prefix ? `Account index · ${hardening.account ? "Hardened" : "Unhardened"} · Derived from co-signer key origins.` : `Account index · ${hardening.account ? "Hardened" : "Unhardened"} · 0 to 2,147,483,647`;
-  if (script) script.textContent = `BIP48 script type index · 1 is Nested SegWit · 2 is Native SegWit · ${hardening.script ? "Hardened" : "Unhardened"}`;
-  if (branch) branch.textContent = `${custom ? "First child branch" : "First address branch"} to derive · 0 is Receive · 1 is Change · ${hardening.branch ? "Hardened" : "Unhardened"} · 0 to 2,147,483,647`;
-  if (start) start.textContent = `${custom ? "First child address" : "First receive and change"} index to derive · ${hardening.address ? "Hardened" : "Unhardened"} · 0 to 2,147,483,647`;
+  if (branch) branch.textContent = `First address branch to derive · 0 is Receive · 1 is Change · ${hardening.branch ? "Hardened" : "Unhardened"} · 0 to 2,147,483,647`;
+  if (start) start.textContent = `First address index to derive · ${hardening.address ? "Hardened" : "Unhardened"} · 0 to 2,147,483,647`;
   hodlUpdateCoinTypeHelp(document.getElementById(`${prefix}network`), document.getElementById(`${prefix}network-help`));
 }
 function hodlSelectedScriptType() {
@@ -2188,7 +2203,12 @@ function hodlSetSelectedScriptType(value, resetPurpose = false) {
   let definition = hodlScriptDefinition(value), id = definition.id;
   hodlAccountId = id;
   hodlSyncSelect(document.getElementById("script-type"), id);
-  if (resetPurpose) hodlSetPurpose(definition.purpose);
+  if (resetPurpose) {
+    let purposeHarden = document.getElementById("purpose-harden");
+    if (purposeHarden) purposeHarden.checked = true;
+    hodlSetPurpose(definition.purpose);
+    hodlUpdateVisibleDerivationPathFromAdvanced();
+  }
   let state = hodlKeys[hodlActiveKey];
   if (state) {
     state.accountId = id;
@@ -2197,40 +2217,56 @@ function hodlSetSelectedScriptType(value, resetPurpose = false) {
   hodlUpdateDerivationPathPreview();
   return id;
 }
-function hodlUpdateDerivationSchemeControls() {
-  let scheme = hodlSelectedDerivationScheme(), custom = scheme === "custom", bip48 = scheme === "bip48", singleKey = Ne === "key";
-  let purposeNetwork = document.getElementById("purpose-network-settings"), accountSettings = document.getElementById("account-address-settings"), scriptIndex = document.getElementById("scheme-script-index-field"), customSettings = document.getElementById("custom-derivation-settings"), branchLabel = document.getElementById("branch-start-label"), addressLabel = document.getElementById("address-start-label"), baseLabel = document.getElementById("derivation-base-label");
-  if (purposeNetwork) purposeNetwork.hidden = custom && !singleKey;
-  if (accountSettings) accountSettings.hidden = custom || singleKey;
-  if (scriptIndex) scriptIndex.hidden = !bip48 || singleKey;
-  if (customSettings) customSettings.hidden = !custom || singleKey;
-  if (branchLabel) branchLabel.textContent = custom ? "Starting child branch index" : "Starting change / branch index";
-  if (addressLabel) addressLabel.textContent = custom ? "Starting child address index" : "Starting address index";
-  if (baseLabel) baseLabel.textContent = custom ? "Custom base" : bip48 ? "Script account" : "Account";
-  hodlSyncDerivationPrimes();
+function hodlSetAdvancedDerivationIndex(id, component) {
+  if (!component) return;
+  let input = document.getElementById(id), checkbox = document.getElementById(`${id}-harden`);
+  if (input) input.value = `${component.index}${component.hardened ? "'" : ""}`;
+  if (checkbox) checkbox.checked = component.hardened;
 }
-function hodlSetDerivationScheme(value, resetValues = false) {
-  let scheme = hodlNormalizeDerivationScheme(value), definition = hodlDerivationSchemes[scheme], select = document.getElementById("derivation-scheme");
-  hodlSyncSelect(select, scheme);
-  if (resetValues && scheme !== "custom") {
-    hodlSetPurpose(definition.purpose);
-    let purposeHarden = document.getElementById("purpose-harden");
-    if (purposeHarden) purposeHarden.checked = true;
-    if (scheme === "bip48") {
-      hodlSetSelectedScriptType("bip84");
-      let scriptIndex = document.getElementById("scheme-script-index"), scriptHarden = document.getElementById("scheme-script-index-harden");
-      if (scriptIndex) scriptIndex.value = String(definition.scriptIndex);
-      if (scriptHarden) scriptHarden.checked = true;
-    } else {
-      hodlSetSelectedScriptType(definition.script);
-    }
-  }
+function hodlApplyVisibleDerivationPath() {
+  let visible = hodlReadVisibleDerivationPath(), input = document.getElementById("derivation-path"), accountPath = `m${visible.accountComponents.map((entry) => `/${hodlPathIndex(entry.index, entry.hardened)}`).join("")}`;
+  if (input) input.dataset.accountPath = accountPath;
+  hodlSetAdvancedDerivationIndex("purpose", visible.accountComponents[0]);
+  hodlSetAdvancedDerivationIndex("network", visible.accountComponents[1]);
+  hodlSetAdvancedDerivationIndex("account", visible.accountComponents[2]);
+  if (visible.branch) hodlSetAdvancedDerivationIndex("branch-start", visible.branch);
+  if (visible.address) hodlSetAdvancedDerivationIndex("address-start", visible.address);
   let state = hodlKeys[hodlActiveKey];
-  if (state) state.fields.derivationScheme = scheme;
-  hodlUpdateDerivationSchemeControls();
+  if (state) state.fields.derivationAccountPath = accountPath;
   hodlUpdateHardeningHelp();
-  hodlUpdateDerivationPathPreview();
-  return scheme;
+  hodlUpdateAddressEstimate();
+  return visible;
+}
+function hodlUpdateVisibleDerivationPathFromAdvanced() {
+  let input = document.getElementById("derivation-path");
+  if (!input) return;
+  try {
+    let existing;
+    try {
+      existing = hodlParseCustomDerivationPath(input.dataset.accountPath || "m/84'/0'/0'").components;
+    } catch {
+      existing = [];
+    }
+    let purpose = hodlParseDerivationIndexText(document.getElementById("purpose")?.value), network = hodlParseDerivationIndexText(document.getElementById("network")?.value), account = hodlParseDerivationIndexText(document.getElementById("account")?.value);
+    if (!purpose || !network || !account) throw new Error("Complete the purpose, network, and account indexes.");
+    let accountComponents = [{ index: purpose.value, hardened: purpose.hardened }, { index: network.value, hardened: network.hardened }, { index: account.value, hardened: account.hardened }, ...existing.slice(3)], accountPath = `m${accountComponents.map((entry) => `/${hodlPathIndex(entry.index, entry.hardened)}`).join("")}`, branchWindow = hodlReadBranchWindow("", false), addressWindow = hodlReadAddressWindow("", false), hardening = hodlReadHardening();
+    input.dataset.accountPath = accountPath;
+    input.value = hodlDerivationPathDisplay(accountPath, branchWindow, addressWindow, hardening);
+    input.classList.remove("bad");
+    input.setAttribute("aria-invalid", "false");
+    let help = document.getElementById("derivation-path-help");
+    if (help) help.textContent = hodlDerivationPathRangeMessage(branchWindow, addressWindow);
+    let state = hodlKeys[hodlActiveKey];
+    if (state) {
+      state.fields.derivationPath = input.value;
+      state.fields.derivationAccountPath = accountPath;
+    }
+  } catch (error) {
+    input.classList.add("bad");
+    input.setAttribute("aria-invalid", "true");
+    let help = document.getElementById("derivation-path-help");
+    if (help) help.textContent = error.message || "Enter a valid BIP32 derivation path.";
+  }
 }
 function hodlSyncAccountTabs(id) {
   let box = document.getElementById("acct-tabs"), panel = document.getElementById("acct");
@@ -2267,7 +2303,7 @@ var hodlMaxAddressIndex = 2147483647, hodlMaxAddressRange = 10000, hodlAddressBe
 function hodlSyncBranchRangeLimit(prefix = "") {
   let startInput = document.getElementById(`${prefix}branch-start`), rangeInput = document.getElementById(`${prefix}branch-range`);
   if (!rangeInput) return 2;
-  let startRaw = String(startInput?.value ?? "").trim(), start = Number(startRaw), startValid = /^\d+$/.test(startRaw) && Number.isSafeInteger(start) && start >= 0 && start <= hodlMaxAddressIndex;
+  let startRaw = String(startInput?.value ?? "").trim(), parsed = hodlParseDerivationIndexText(startRaw), start = parsed?.value, startValid = Boolean(parsed);
   let maximum = startValid ? Math.min(2, hodlMaxAddressIndex - start + 1) : 2;
   rangeInput.max = String(maximum);
   let rangeRaw = String(rangeInput.value ?? "").trim(), range = Number(rangeRaw);
@@ -2276,7 +2312,7 @@ function hodlSyncBranchRangeLimit(prefix = "") {
 }
 function hodlReadBranchWindow(prefix = "", mark = true) {
   let startInput = document.getElementById(`${prefix}branch-start`), rangeInput = document.getElementById(`${prefix}branch-range`), startRaw = String(startInput?.value ?? "").trim(), rangeRaw = String(rangeInput?.value ?? "").trim();
-  let start = Number(startRaw), range = Number(rangeRaw), startValid = /^\d+$/.test(startRaw) && Number.isSafeInteger(start) && start >= 0 && start <= hodlMaxAddressIndex;
+  let parsed = hodlParseDerivationIndexText(startRaw), start = parsed?.value, range = Number(rangeRaw), startValid = Boolean(parsed);
   let maximum = startValid ? Math.min(2, hodlMaxAddressIndex - start + 1) : 2;
   let rangeValid = /^\d+$/.test(rangeRaw) && Number.isSafeInteger(range) && range >= 1 && range <= maximum, endValid = startValid && rangeValid && start + range - 1 <= hodlMaxAddressIndex;
   if (mark) {
@@ -2296,7 +2332,7 @@ function hodlAddressBranchSummary(branches) {
 function hodlSyncAddressRangeLimit(prefix = "") {
   let startInput = document.getElementById(`${prefix}address-start`), rangeInput = document.getElementById(`${prefix}address-range`);
   if (!rangeInput) return hodlMaxAddressRange;
-  let startRaw = String(startInput?.value ?? "").trim(), start = Number(startRaw), startValid = /^\d+$/.test(startRaw) && Number.isSafeInteger(start) && start >= 0 && start <= hodlMaxAddressIndex;
+  let startRaw = String(startInput?.value ?? "").trim(), parsed = hodlParseDerivationIndexText(startRaw), start = parsed?.value, startValid = Boolean(parsed);
   let maximum = startValid ? Math.min(hodlMaxAddressRange, hodlMaxAddressIndex - start + 1) : hodlMaxAddressRange;
   rangeInput.max = String(maximum);
   let rangeRaw = String(rangeInput.value ?? "").trim(), range = Number(rangeRaw);
@@ -2305,7 +2341,7 @@ function hodlSyncAddressRangeLimit(prefix = "") {
 }
 function hodlReadAddressWindow(prefix = "", mark = true) {
   let startInput = document.getElementById(`${prefix}address-start`), rangeInput = document.getElementById(`${prefix}address-range`), startRaw = String(startInput?.value ?? "").trim(), rangeRaw = String(rangeInput?.value ?? "").trim();
-  let start = Number(startRaw), range = Number(rangeRaw), startValid = /^\d+$/.test(startRaw) && Number.isSafeInteger(start) && start >= 0 && start <= hodlMaxAddressIndex;
+  let parsed = hodlParseDerivationIndexText(startRaw), start = parsed?.value, range = Number(rangeRaw), startValid = Boolean(parsed);
   let maximum = startValid ? Math.min(hodlMaxAddressRange, hodlMaxAddressIndex - start + 1) : hodlMaxAddressRange;
   let rangeValid = /^\d+$/.test(rangeRaw) && Number.isSafeInteger(range) && range >= 1 && range <= maximum;
   let endValid = startValid && rangeValid && start + range - 1 <= hodlMaxAddressIndex;
@@ -2517,135 +2553,78 @@ function hodlImportedExtendedKeyDepth() {
 }
 function hodlUpdateKeyModeControls() {
   let singleKey = Ne === "key", settings = document.getElementById("key-settings");
-  ["passphrase-field", "master-fingerprint-preview", "derivation-scheme-field", "script-type-field", "purpose-field", "account-field", "address-branch-settings", "address-range-settings", "derivation-path-preview"].forEach((id) => {
+  ["passphrase-field", "master-fingerprint-preview", "script-type-field", "derivation-path-field", "derivation-advanced"].forEach((id) => {
     let element = document.getElementById(id);
     if (element) element.hidden = singleKey;
   });
-  hodlUpdateDerivationSchemeControls();
   settings?.classList.toggle("single-key-mode", singleKey);
 }
 function hodlUpdateDerivationPathPreview() {
-  let panel = document.getElementById("derivation-path-preview"), list = panel?.querySelector(".derivation-path-list"), context = document.getElementById("derivation-path-context"), message = document.getElementById("derivation-path-error"), purposeInput = document.getElementById("purpose"), accountInput = document.getElementById("account");
-  if (!panel || !list || !context || !message) return;
   hodlUpdateKeyModeControls();
-  let setPath = (name, value) => {
-    let node = panel.querySelector(`[data-path="${name}"]`);
-    if (node) node.textContent = value;
-  };
-  let showMessage = (text, isError = false) => {
-    list.hidden = true;
-    message.hidden = false;
-    message.textContent = text;
-    message.classList.toggle("is-note", !isError);
-    panel.classList.toggle("is-invalid", isError);
-  };
-  let clearMessage = () => {
-    list.hidden = false;
-    message.hidden = true;
-    message.textContent = "";
-    message.classList.remove("is-note");
-    panel.classList.remove("is-invalid");
-  };
-  let definition = hodlScriptDefinition(hodlSelectedScriptType());
-  if (Ne === "key") {
-    purposeInput?.classList.remove("bad");
-    purposeInput?.setAttribute("aria-invalid", "false");
-    accountInput?.classList.remove("bad");
-    accountInput?.setAttribute("aria-invalid", "false");
-    context.textContent = "";
-    message.textContent = "";
-    panel.classList.remove("is-invalid");
-    return;
-  }
-  let plan;
+  let input = document.getElementById("derivation-path"), help = document.getElementById("derivation-path-help");
+  if (!input || Ne === "key") return;
   try {
-    plan = hodlReadDerivationPlan();
+    let visible = hodlReadVisibleDerivationPath();
+    input.dataset.accountPath = `m${visible.accountComponents.map((entry) => `/${hodlPathIndex(entry.index, entry.hardened)}`).join("")}`;
+    if (help) help.textContent = hodlDerivationPathRangeMessage(visible.branchWindow, visible.addressWindow);
   } catch (error) {
-    context.textContent = "Invalid derivation path";
-    showMessage(error.message || "Invalid derivation path.", true);
-    return;
+    if (help) help.textContent = error.message || "Enter a valid BIP32 derivation path.";
   }
-  let addressWindow, branchWindow;
-  try {
-    addressWindow = hodlReadAddressWindow("", false);
-  } catch (error) {
-    context.textContent = "Invalid address range";
-    showMessage(error.message || "Invalid address range.", true);
-    return;
-  }
-  try {
-    branchWindow = hodlReadBranchWindow("", false);
-  } catch (error) {
-    context.textContent = "Invalid address branch range";
-    showMessage(error.message || "Invalid address branch range.", true);
-    return;
-  }
-  let hardening = plan.hardening, first = addressWindow.start, last = addressWindow.end, pathRange = (base) => first === last ? `${base}/${hodlPathIndex(first, hardening.address)}` : `${base}/${hodlPathIndex(first, hardening.address)} \u2192 ${base}/${hodlPathIndex(last, hardening.address)}`;
-  branchWindow.branches.forEach((branch, slot) => {
-    let row = panel.querySelector(`[data-branch-path-row="${slot}"]`), label = panel.querySelector(`[data-branch-path-label="${slot}"]`), path = panel.querySelector(`[data-path="${slot === 0 ? "receive" : "change"}"]`);
-    if (row) row.hidden = false;
-    if (label) label.textContent = hodlAddressBranchLabel(branch);
-    if (path) path.dataset.branch = String(branch);
-  });
-  for (let slot = branchWindow.branches.length; slot < 2; slot++) {
-    let row = panel.querySelector(`[data-branch-path-row="${slot}"]`);
-    if (row) row.hidden = true;
-  }
-  clearMessage();
-  if ((hodlImportedExtendedKeyDepth() ?? 0) > 0) {
-    context.textContent = `${definition.label} \xB7 Imported key base`;
-    setPath("account", "Imported key base");
-    branchWindow.branches.forEach((branch, slot) => setPath(slot === 0 ? "receive" : "change", pathRange(`imported-key/${hodlPathIndex(branch, hardening.branch)}`)));
-    message.hidden = false;
-    message.classList.add("is-note");
-    message.textContent = "This non-root extended key is reused directly. Purpose and Account cannot select a different hardened sibling.";
-    return;
-  }
-  context.textContent = `${definition.label} \xB7 ${plan.label}`;
-  let base = plan.accountPath;
-  setPath("account", base);
-  branchWindow.branches.forEach((branch, slot) => setPath(slot === 0 ? "receive" : "change", pathRange(`${base}/${hodlPathIndex(branch, hardening.branch)}`)));
 }
-function hodlConsumeDerivationHardeningSuffix(input) {
-  let match = /^(\d+)([hH'])$/.exec(String(input?.value ?? "").trim());
-  if (!match) return false;
-  input.value = match[1];
+function hodlSyncAdvancedDerivationHardening(input) {
+  if (input) input.value = hodlSanitizeDerivationIndexDraft(input.value);
+  let parsed = hodlParseDerivationIndexText(input?.value);
+  input?.classList.toggle("bad", !parsed);
+  input?.setAttribute("aria-invalid", String(!parsed));
+  if (!parsed) return false;
+  input.value = `${parsed.value}${parsed.hardened ? "'" : ""}`;
   let checkbox = document.getElementById(`${input.id}-harden`);
-  if (checkbox && !checkbox.checked) {
-    checkbox.checked = true;
-    checkbox.dispatchEvent(new Event("input", { bubbles: true }));
-  }
-  hodlSyncDerivationPrime(input);
+  if (checkbox) checkbox.checked = parsed.hardened;
   return true;
 }
 function hodlInitDerivationControls() {
   let panel = document.getElementById("calc-card");
   if (!panel) return;
-  document.addEventListener("input", (event) => {
-    if (event.target instanceof Element && event.target.matches(".derivation-index-value > input")) hodlSyncDerivationPrime(event.target);
-  });
   hodlSyncDerivationPrimes();
-  let purposeInput = document.getElementById("purpose"), coinTypeInput = document.getElementById("network"), accountInput = document.getElementById("account"), scriptIndexInput = document.getElementById("scheme-script-index"), branchInput = document.getElementById("branch-start"), addressInput = document.getElementById("address-start");
-  [purposeInput, coinTypeInput, accountInput, scriptIndexInput, branchInput, addressInput].forEach((input) => {
-    input?.addEventListener("input", () => hodlConsumeDerivationHardeningSuffix(input));
+  let advancedIds = ["purpose", "network", "account", "branch-start", "address-start"], advancedInputs = advancedIds.map((id) => document.getElementById(id));
+  advancedInputs.forEach((input) => {
+    input?.addEventListener("input", () => hodlSyncAdvancedDerivationHardening(input));
+    input?.addEventListener("blur", () => hodlRestoreAdvancedDerivationIndex(input));
     input?.addEventListener("keydown", (event) => {
       if (["e", "E", "+", "-", "."].includes(event.key)) event.preventDefault();
     });
     input?.addEventListener("paste", (event) => {
-      if (!/^\d+[hH']?$/.test((event.clipboardData?.getData("text") ?? "").trim())) event.preventDefault();
+      if (!/^(?:\d+)?[hH']?$/.test((event.clipboardData?.getData("text") ?? "").trim())) event.preventDefault();
     });
   });
   panel.addEventListener("input", (event) => {
     let target = event.target;
     if (!(target instanceof Element)) return;
-    if (["purpose", "network", "account", "scheme-script-index", "branch-start", "branch-range", "address-start", "address-range", "purpose-harden", "network-harden", "account-harden", "scheme-script-index-harden", "branch-start-harden", "address-start-harden"].includes(target.id)) {
+    if (target.id === "derivation-path") {
+      let state = hodlKeys[hodlActiveKey];
+      if (state) state.fields.derivationPath = target.value;
+      try {
+        hodlApplyVisibleDerivationPath();
+      } catch {
+        hodlUpdateDerivationPathPreview();
+      }
+      hodlInvalidateLiveKeyResult();
+      hodlSyncKeyClearButton();
+      hodlSyncDeriveButton();
+      return;
+    }
+    if ([...advancedIds, "branch-range", "address-range", "purpose-harden", "network-harden", "account-harden", "branch-start-harden", "address-start-harden"].includes(target.id)) {
+      if (target.id.endsWith("-harden")) {
+        let input = document.getElementById(target.id.slice(0, -7)), parsed = hodlParseDerivationIndexText(input?.value);
+        if (input && parsed) input.value = `${parsed.value}${target.checked ? "'" : ""}`;
+      } else if (advancedIds.includes(target.id)) hodlSyncAdvancedDerivationHardening(target);
       if (target.id === "branch-start" || target.id === "branch-range") hodlSyncBranchRangeLimit();
       if (target.id === "address-start" || target.id === "address-range") hodlSyncAddressRangeLimit();
       let state = hodlKeys[hodlActiveKey];
       if (state) {
-        let hardeningField = { "purpose-harden": "purposeHarden", "network-harden": "coinTypeHarden", "account-harden": "accountHarden", "scheme-script-index-harden": "schemeScriptIndexHarden", "branch-start-harden": "branchHarden", "address-start-harden": "addressHarden" }[target.id];
+        let hardeningField = { "purpose-harden": "purposeHarden", "network-harden": "coinTypeHarden", "account-harden": "accountHarden", "branch-start-harden": "branchHarden", "address-start-harden": "addressHarden" }[target.id];
         if (hardeningField) state.fields[hardeningField] = target.checked;
-        else state.fields[target.id === "network" ? "coinType" : target.id === "scheme-script-index" ? "schemeScriptIndex" : target.id === "branch-start" ? "branchStart" : target.id === "branch-range" ? "branchRange" : target.id === "address-start" ? "addressStart" : target.id === "address-range" ? "addressRange" : target.id] = target.value;
+        else state.fields[target.id === "network" ? "coinType" : target.id === "branch-start" ? "branchStart" : target.id === "branch-range" ? "branchRange" : target.id === "address-start" ? "addressStart" : target.id === "address-range" ? "addressRange" : target.id] = target.value;
       }
       if (target.id.endsWith("-harden")) hodlUpdateHardeningHelp();
       if (target.id === "network") {
@@ -2658,7 +2637,8 @@ function hodlInitDerivationControls() {
       hodlInvalidateLiveKeyResult();
       let error = document.getElementById("error");
       if (error) error.textContent = "";
-      hodlUpdateDerivationPathPreview();
+      hodlUpdateVisibleDerivationPathFromAdvanced();
+      hodlUpdateAddressEstimate();
       if (target.id === "network") {
         let seed = document.getElementById("seed"), key = document.getElementById("key");
         if (seed) seed.dispatchEvent(new Event("input"));
@@ -2668,27 +2648,13 @@ function hodlInitDerivationControls() {
       hodlSyncDeriveButton();
       return;
     }
-    if (["seed", "custom-derivation-path"].includes(target.id)) {
-      if (target.id === "custom-derivation-path") {
-        let state = hodlKeys[hodlActiveKey];
-        if (state) state.fields.customDerivationPath = target.value;
-        hodlInvalidateLiveKeyResult();
-        hodlSyncKeyClearButton();
-        hodlSyncDeriveButton();
-      }
-      hodlUpdateDerivationPathPreview();
-    }
+    if (target.id === "seed") hodlUpdateDerivationPathPreview();
   });
   panel.addEventListener("change", (event) => {
     let target = event.target;
     if (!(target instanceof Element)) return;
     if (target.id === "script-type") {
-      let scheme = hodlSelectedDerivationScheme(), id = hodlSetSelectedScriptType(target.value, !["bip48", "custom"].includes(scheme));
-      if (!["bip48", "custom"].includes(scheme)) hodlSetDerivationScheme(id);
-      if (scheme === "bip48" && ["bip49", "bip84"].includes(id)) {
-        let scriptIndex = document.getElementById("scheme-script-index");
-        if (scriptIndex) scriptIndex.value = id === "bip49" ? "1" : "2";
-      }
+      let id = hodlSetSelectedScriptType(target.value, true);
       let purpose = hodlReadPurpose(false);
       if (re?.kind === "hd") {
         if (re.accounts.some((account) => account.def.id === id && account.def.purpose === purpose)) Qs(id);
@@ -2698,26 +2664,12 @@ function hodlInitDerivationControls() {
       if (seed) seed.dispatchEvent(new Event("input"));
       return;
     }
-    if (target.id === "derivation-scheme") {
-      hodlSetDerivationScheme(target.value, true);
-      hodlInvalidateLiveKeyResult();
-      document.getElementById("seed")?.dispatchEvent(new Event("input"));
-      hodlSyncKeyClearButton();
-      hodlSyncDeriveButton();
-      return;
-    }
-    if (target.id === "custom-network") {
-      let state = hodlKeys[hodlActiveKey];
-      if (state) state.fields.customNetwork = target.value;
-      hodlInvalidateLiveKeyResult();
-      document.getElementById("seed")?.dispatchEvent(new Event("input"));
-      hodlUpdateDerivationPathPreview();
-      hodlSyncKeyClearButton();
-      hodlSyncDeriveButton();
-    }
   });
-  hodlUpdateDerivationSchemeControls();
-  hodlUpdateDerivationPathPreview();
+  try {
+    hodlApplyVisibleDerivationPath();
+  } catch {
+    hodlUpdateDerivationPathPreview();
+  }
 }
 function hodlSeedPhraseTokens(value, mask = false) {
   return String(value ?? "").trim().split(/\s+/).filter(Boolean).map((word) => `<span class="seed-phrase-word">${mask ? "\u2022".repeat(Array.from(word).length) : $t(word)}</span>`).join(" ");
@@ -4102,6 +4054,11 @@ function hodlPassphraseBip39Enabled() {
   if (toggle) return toggle.checked;
   return Boolean(hodlKeys[hodlActiveKey]?.passphraseBip39Words);
 }
+function hodlPassphraseAutocompleteEnabled() {
+  let toggle = document.getElementById("passphrase-autocomplete");
+  if (toggle) return toggle.checked;
+  return hodlKeys[hodlActiveKey]?.passphraseAutocomplete !== false;
+}
 function hodlAnalyzeBip39Passphrase(value, activeCaret = null) {
   value = String(value ?? "");
   let tokens = [...value.matchAll(/\S+/g)].map((match) => ({
@@ -4169,11 +4126,9 @@ function hodlApplyFilteredInput(input, filter) {
   input.setSelectionRange(filter(value.slice(0, start)).length, filter(value.slice(0, end)).length, direction);
   return true;
 }
-function hodlAutocompleteSeedInput(input, event, completeExisting = false, wholeWordlist = false) {
-  // The checkbox lives in the seed section, but the setting follows the key, so
-  // boxes in other modes (the passphrase) still obey it.
+function hodlAutocompleteSeedInput(input, event, completeExisting = false, wholeWordlist = false, enabledOverride = null) {
   let toggle = document.getElementById("seed-autocomplete"),
-    enabled = toggle ? toggle.checked : Boolean(hodlKeys[hodlActiveKey]?.seedAutocomplete);
+    enabled = enabledOverride ?? (toggle ? toggle.checked : Boolean(hodlKeys[hodlActiveKey]?.seedAutocomplete));
   if (!enabled || !completeExisting && (event?.inputType !== "insertText" || event.isComposing) || input.selectionStart !== input.selectionEnd) return false;
   let caret = input.selectionStart ?? input.value.length, suffix = input.value.slice(caret);
   if (suffix && !/^\s/.test(suffix)) return false;
@@ -4187,6 +4142,9 @@ function hodlAutocompleteSeedInput(input, event, completeExisting = false, whole
   input.setRangeText(replacement, start, caret, "end");
   return true;
 }
+function hodlAutocompletePassphraseInput(input, event, completeExisting = false) {
+  return hodlPassphraseBip39Enabled() && hodlAutocompleteSeedInput(input, event, completeExisting, true, hodlPassphraseAutocompleteEnabled());
+}
 function hodlKeyboardToggleMarkup(id, label, controls = "seed-keyboard") {
   return `<button type="button" class="seed-keyboard-toggle" id="${id}" data-on-screen-keyboard-toggle aria-label="${hodlOnScreenKeyboardOpen ? `Hide ${label}` : `Show ${label}`}" aria-controls="${controls}" aria-expanded="${hodlOnScreenKeyboardOpen}"><svg viewBox="0 0 64 44" aria-hidden="true" focusable="false"><rect class="seed-keyboard-icon-case" x="3" y="6" width="58" height="32" rx="4"/><g class="seed-keyboard-icon-keys"><rect x="9" y="10" width="4" height="5" rx=".5"/><rect x="15" y="10" width="4" height="5" rx=".5"/><rect x="21" y="10" width="4" height="5" rx=".5"/><rect x="27" y="10" width="4" height="5" rx=".5"/><rect x="33" y="10" width="4" height="5" rx=".5"/><rect x="39" y="10" width="4" height="5" rx=".5"/><rect x="45" y="10" width="4" height="5" rx=".5"/><rect x="51" y="10" width="4" height="5" rx=".5"/><rect x="12" y="18" width="4" height="5" rx=".5"/><rect x="18" y="18" width="4" height="5" rx=".5"/><rect x="24" y="18" width="4" height="5" rx=".5"/><rect x="30" y="18" width="4" height="5" rx=".5"/><rect x="36" y="18" width="4" height="5" rx=".5"/><rect x="42" y="18" width="4" height="5" rx=".5"/><rect x="48" y="18" width="4" height="5" rx=".5"/><rect x="17" y="28" width="30" height="5" rx=".75"/></g></svg></button>`;
 }
@@ -4197,7 +4155,8 @@ function hodlPassphraseKeyboardToggleMarkup() {
   return hodlKeyboardToggleMarkup("passphrase-keyboard-toggle", "on-screen passphrase keyboard", "passphrase-keyboard");
 }
 function hodlPassphraseBip39ToggleMarkup(checked = hodlPassphraseBip39Enabled()) {
-  return `<label class="seed-autocomplete-toggle passphrase-bip39-toggle"><input type="checkbox" id="passphrase-bip39-words" ${checked ? "checked" : ""} /><span><strong>Build passphrase from BIP39 words</strong> <span class="seed-autocomplete-note">(lowercase words separated by single spaces)</span></span></label>`;
+  let autocomplete = hodlPassphraseAutocompleteEnabled();
+  return `<div class="passphrase-bip39-options"><label class="seed-autocomplete-toggle passphrase-bip39-toggle"><input type="checkbox" id="passphrase-bip39-words" ${checked ? "checked" : ""} /><span><strong>Build passphrase from BIP39 words</strong> <span class="seed-autocomplete-note">(lowercase words separated by single spaces)</span></span></label><label class="seed-autocomplete-toggle passphrase-autocomplete-toggle" id="passphrase-autocomplete-control"${checked ? "" : " hidden"}><input type="checkbox" id="passphrase-autocomplete" ${autocomplete ? "checked" : ""} /><span><strong>Autocomplete BIP39 words</strong> <span class="seed-autocomplete-note">(when the entered prefix identifies one word)</span></span></label></div>`;
 }
 function hodlBrainWalletTrimEnabled() {
   return Boolean(document.getElementById("brain-wallet-trim")?.checked);
@@ -4674,7 +4633,7 @@ function hodlBindSeedKeyboard(input, targetWords = Pt) {
   activate(input);
 }
 function hodlBindPassphraseKeyboard(inputId = "pass", toggleId = "passphrase-keyboard-toggle", inputName = "passphrase", keyboardId = "passphrase-keyboard") {
-  let toggle = document.getElementById(toggleId), keyboard = document.getElementById(keyboardId), input = document.getElementById(inputId), modeButton = keyboard?.querySelector("[data-seed-keyboard-mode]"), bip39Toggle = document.getElementById("passphrase-bip39-words");
+  let toggle = document.getElementById(toggleId), keyboard = document.getElementById(keyboardId), input = document.getElementById(inputId), modeButton = keyboard?.querySelector("[data-seed-keyboard-mode]");
   if (!toggle || !keyboard || !input) return;
   let privateKey = inputId === "key", refresh = () => privateKey ? hodlUpdatePrivateKeyKeyboardKeys(input, keyboardId) : hodlUpdatePassphraseKeyboardKeys(input, keyboardId);
   toggle.onclick = () => {
@@ -4694,18 +4653,36 @@ function hodlBindPassphraseKeyboard(inputId = "pass", toggleId = "passphrase-key
       refresh();
     };
   }
-  if (!privateKey && bip39Toggle) bip39Toggle.onchange = () => {
-    let state = hodlKeys[hodlActiveKey];
-    if (state) state.passphraseBip39Words = bip39Toggle.checked;
-    if (bip39Toggle.checked && modeButton) hodlSetSeedKeyboardLayout(keyboard, modeButton, "lower");
-    refresh();
-    hodlSyncKeyClearButton();
-  };
   ["input", "focus", "blur", "click", "keyup", "select"].forEach((type) => input.addEventListener(type, refresh));
   if (privateKey) {
     document.querySelectorAll('input[name="kk"]').forEach((radio) => radio.addEventListener("change", refresh));
     document.getElementById("network")?.addEventListener("change", refresh);
   }
+  refresh();
+}
+function hodlBindPassphraseOptions(keyboardId = "passphrase-keyboard") {
+  let input = document.getElementById("pass"), bip39Toggle = document.getElementById("passphrase-bip39-words"), autocompleteToggle = document.getElementById("passphrase-autocomplete"), autocompleteControl = document.getElementById("passphrase-autocomplete-control"), keyboard = document.getElementById(keyboardId), modeButton = keyboard?.querySelector("[data-seed-keyboard-mode]");
+  if (!input || !bip39Toggle || !autocompleteToggle || !autocompleteControl) return;
+  let refresh = () => {
+    autocompleteControl.hidden = !bip39Toggle.checked;
+    hodlRenderPassphraseInputState(input, bip39Toggle.checked);
+    hodlUpdatePassphraseKeyboardKeys(input, keyboardId);
+  };
+  bip39Toggle.onchange = () => {
+    let state = hodlKeys[hodlActiveKey];
+    if (state) state.passphraseBip39Words = bip39Toggle.checked;
+    if (bip39Toggle.checked && modeButton) hodlSetSeedKeyboardLayout(keyboard, modeButton, "lower");
+    refresh();
+    hodlSyncKeyClearButton();
+    hodlSyncDeriveButton();
+  };
+  autocompleteToggle.onchange = () => {
+    let state = hodlKeys[hodlActiveKey];
+    if (state) state.passphraseAutocomplete = autocompleteToggle.checked;
+    if (autocompleteToggle.checked && hodlAutocompletePassphraseInput(input, null, true)) input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertReplacementText" }));
+    refresh();
+    hodlSyncKeyClearButton();
+  };
   refresh();
 }
 function hodlBindBase64Keyboard(input) {
@@ -4749,6 +4726,7 @@ function hodlRenderPassphraseKeyboard() {
   host.innerHTML = enabled ? privateKey ? hodlPrivateKeyKeyboardMarkup() : hodlPassphraseKeyboardMarkup() : "";
   if (enabled) hodlBindPassphraseKeyboard(privateKey ? "key" : "pass", privateKey ? "private-keyboard-toggle" : "passphrase-keyboard-toggle", privateKey ? "private key" : "passphrase", privateKey ? "private-keyboard" : "passphrase-keyboard");
   else hodlRenderPassphraseInputState(document.getElementById("pass"));
+  if (passphrase) hodlBindPassphraseOptions(shared ? "seed-keyboard" : "passphrase-keyboard");
 }
 function hodlReplaceSeedFinalWord(input, context, word) {
   if (!input || !context) return;
@@ -6014,7 +5992,7 @@ function hodlInitMasterFingerprintPreview() {
     if (!["pass", "dice", "hex", "bin", "base4", "base8", "base32", "base64", "seed", "seed-numbers", "cards", "direct-cards"].includes(id)) return;
     if (id === "pass") {
       let state = hodlKeys[hodlActiveKey];
-      if (hodlPassphraseBip39Enabled()) hodlAutocompleteSeedInput(pass, event, false, true);
+      hodlAutocompletePassphraseInput(pass, event);
       if (state) state.fields.pass = pass.value;
       hodlRenderPassphraseInputState(pass);
     }
@@ -8796,7 +8774,7 @@ function hodlPrivateKeyValues(fields) {
 }
 function hodlNewKeyState(name, keyId, keyNumber) {
   let id = keyId ?? hodlNextKeyId++, number = keyNumber ?? hodlNextKeyNumber++;
-  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: true, passphraseBip39Words: false, brainWalletTrim: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", derivationScheme: "bip84", purpose: "84", purposeHarden: true, coinType: "0", coinTypeHarden: true, network: "mainnet", account: "0", accountHarden: true, schemeScriptIndex: "2", schemeScriptIndexHarden: true, customDerivationPath: "m/84'/0'/0'", customNetwork: "mainnet", branchStart: "0", branchHarden: false, branchRange: "2", addressStart: "0", addressHarden: false, addressRange: "5", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
+  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: true, passphraseBip39Words: false, passphraseAutocomplete: true, brainWalletTrim: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", derivationPath: "m/84'/0'/0'/0/0", derivationAccountPath: "m/84'/0'/0'", purpose: "84'", purposeHarden: true, coinType: "0'", coinTypeHarden: true, network: "mainnet", account: "0'", accountHarden: true, branchStart: "0", branchHarden: false, branchRange: "1", addressStart: "0", addressHarden: false, addressRange: "1", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
 }
 function hodlRestoreFormFields(state) {
   if (!state) return;
@@ -8846,7 +8824,7 @@ function hodlSetMode(mode) {
 function hodlKeyStateNeedsClear(state) {
   if (!state) return false;
   let fields = state.fields || {}, privateKeys = hodlPrivateKeyValues(fields), hasText = (id) => String(fields[id] ?? "").length > 0;
-  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || state.seedAutocomplete === false || Boolean(state.passphraseBip39Words) || Boolean(state.brainWalletTrim) || Boolean(state.showCards) || Boolean(state.showDiceFairness) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.derivationScheme ?? "bip84") !== "bip84" || String(fields.purpose ?? "84") !== "84" || fields.purposeHarden === false || String(fields.coinType ?? (fields.network === "testnet" ? "1" : "0")) !== "0" || fields.coinTypeHarden === false || String(fields.account ?? "0") !== "0" || fields.accountHarden === false || String(fields.schemeScriptIndex ?? "2") !== "2" || fields.schemeScriptIndexHarden === false || String(fields.customDerivationPath ?? "m/84'/0'/0'") !== "m/84'/0'/0'" || String(fields.customNetwork ?? "mainnet") !== "mainnet" || String(fields.branchStart ?? "0") !== "0" || Boolean(fields.branchHarden) || String(fields.branchRange ?? "2") !== "2" || String(fields.addressStart ?? "0") !== "0" || Boolean(fields.addressHarden) || String(fields.addressRange ?? fields.count ?? "5") !== "5" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
+  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || state.seedAutocomplete === false || Boolean(state.passphraseBip39Words) || state.passphraseAutocomplete === false || Boolean(state.brainWalletTrim) || Boolean(state.showCards) || Boolean(state.showDiceFairness) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.derivationPath ?? "m/84'/0'/0'/0/0") !== "m/84'/0'/0'/0/0" || String(fields.purpose ?? "84'") !== "84'" || fields.purposeHarden === false || String(fields.coinType ?? (fields.network === "testnet" ? "1'" : "0'")) !== "0'" || fields.coinTypeHarden === false || String(fields.account ?? "0'") !== "0'" || fields.accountHarden === false || String(fields.branchStart ?? "0") !== "0" || Boolean(fields.branchHarden) || String(fields.branchRange ?? "1") !== "1" || String(fields.addressStart ?? "0") !== "0" || Boolean(fields.addressHarden) || String(fields.addressRange ?? fields.count ?? "1") !== "1" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
 }
 function hodlSyncKeyClearButton(capture = false) {
   if (capture) hodlCaptureKey();
@@ -8877,6 +8855,8 @@ function hodlCaptureKey() {
   if (seedAutocomplete) state.seedAutocomplete = seedAutocomplete.checked;
   let passphraseBip39Words = document.getElementById("passphrase-bip39-words");
   if (passphraseBip39Words) state.passphraseBip39Words = passphraseBip39Words.checked;
+  let passphraseAutocomplete = document.getElementById("passphrase-autocomplete");
+  if (passphraseAutocomplete) state.passphraseAutocomplete = passphraseAutocomplete.checked;
   let brainWalletTrim = document.getElementById("brain-wallet-trim");
   if (brainWalletTrim) state.brainWalletTrim = brainWalletTrim.checked;
   let showCards = document.getElementById("show-cards");
@@ -8892,22 +8872,20 @@ function hodlCaptureKey() {
   state.accountId = hodlSelectedScriptType();
   state.fields.script = state.accountId;
   state.error = document.getElementById("error")?.textContent || "";
-  ["pass", "purpose", "account", "scheme-script-index", "custom-derivation-path", "branch-start", "branch-range", "address-start", "address-range", "hex", "bin", "base4", "base8", "base32", "base64", "seed", "cards"].forEach((id) => {
+  ["pass", "derivation-path", "purpose", "account", "branch-start", "branch-range", "address-start", "address-range", "hex", "bin", "base4", "base8", "base32", "base64", "seed", "cards"].forEach((id) => {
     let el = document.getElementById(id);
-    if (el) state.fields[id === "scheme-script-index" ? "schemeScriptIndex" : id === "custom-derivation-path" ? "customDerivationPath" : id === "branch-start" ? "branchStart" : id === "branch-range" ? "branchRange" : id === "address-start" ? "addressStart" : id === "address-range" ? "addressRange" : id] = el.value;
+    if (el) state.fields[id === "derivation-path" ? "derivationPath" : id === "branch-start" ? "branchStart" : id === "branch-range" ? "branchRange" : id === "address-start" ? "addressStart" : id === "address-range" ? "addressRange" : id] = el.value;
   });
   let directCards = document.getElementById("direct-cards");
   if (directCards) state.fields.directCards = directCards.value;
   let seedNumbers = document.getElementById("seed-numbers");
   if (seedNumbers) state.fields.seedNumbers = seedNumbers.value;
   state.fields.coinType = document.getElementById("network")?.value || "0";
-  state.fields.derivationScheme = hodlSelectedDerivationScheme();
-  state.fields.customNetwork = document.getElementById("custom-network")?.value || "mainnet";
+  state.fields.derivationAccountPath = document.getElementById("derivation-path")?.dataset.accountPath || state.fields.derivationAccountPath || "m/84'/0'/0'";
   let hardening = hodlReadHardening();
   state.fields.purposeHarden = hardening.purpose;
   state.fields.coinTypeHarden = hardening.coinType;
   state.fields.accountHarden = hardening.account;
-  state.fields.schemeScriptIndexHarden = hardening.script;
   state.fields.branchHarden = hardening.branch;
   state.fields.addressHarden = hardening.address;
   try {
@@ -8930,7 +8908,6 @@ function hodlSelectedNetwork(select) {
   return hodlNetworkFromCoinType(hodlReadCoinType(select, false));
 }
 function hodlSelectedKeyNetwork() {
-  if (Ne !== "key" && hodlSelectedDerivationScheme() === "custom") return document.getElementById("custom-network")?.value === "testnet" ? "testnet" : "mainnet";
   return hodlSelectedNetwork(document.getElementById("network"));
 }
 function hodlRestoreKey() {
@@ -8961,23 +8938,24 @@ function hodlRestoreKey() {
       hodlRenderPassphraseInputState(pass2, false);
     }
     hodlSyncSelect(document.getElementById("script-type"), "bip84");
-    hodlSetDerivationScheme("bip84");
     hodlSetPurpose(84);
     let network2 = document.getElementById("network");
     if (network2) network2.value = "0";
     hodlUpdateCoinTypeHelp(network2);
     let account2 = document.getElementById("account");
     if (account2) account2.value = "0";
-    let scriptIndex2 = document.getElementById("scheme-script-index"), customPath2 = document.getElementById("custom-derivation-path");
-    if (scriptIndex2) scriptIndex2.value = "2";
-    if (customPath2) customPath2.value = "m/84'/0'/0'";
-    hodlSyncSelect(document.getElementById("custom-network"), "mainnet");
+    let derivationPath2 = document.getElementById("derivation-path");
+    if (derivationPath2) {
+      derivationPath2.value = "m/84'/0'/0'/0/0";
+      derivationPath2.dataset.accountPath = "m/84'/0'/0'";
+    }
     let branchStart2 = document.getElementById("branch-start"), branchRange2 = document.getElementById("branch-range"), addressStart2 = document.getElementById("address-start"), addressRange2 = document.getElementById("address-range");
     if (branchStart2) branchStart2.value = "0";
-    if (branchRange2) branchRange2.value = "2";
+    if (branchRange2) branchRange2.value = "1";
     if (addressStart2) addressStart2.value = "0";
-    if (addressRange2) addressRange2.value = "5";
+    if (addressRange2) addressRange2.value = "1";
     hodlSetHardeningControls();
+    hodlUpdateVisibleDerivationPathFromAdvanced();
     hodlUpdateHardeningHelp();
     hodlUpdateAddressEstimate();
     W("#error").textContent = "";
@@ -9012,24 +8990,26 @@ function hodlRestoreKey() {
   }
   hodlAccountId = state.accountId || state.fields.script || "bip84";
   hodlSyncSelect(document.getElementById("script-type"), hodlAccountId);
-  hodlSetDerivationScheme(state.fields.derivationScheme ?? hodlAccountId);
-  hodlSetPurpose(state.fields.purpose ?? hodlScriptDefinition(hodlAccountId).purpose);
-  state.fields.coinType = String(state.fields.coinType ?? (state.fields.network === "testnet" ? 1 : 0));
+  state.fields.coinType = String(state.fields.coinType ?? (state.fields.network === "testnet" ? "1'" : "0'"));
+  let purpose = document.getElementById("purpose");
+  if (purpose) purpose.value = state.fields.purpose ?? `${hodlScriptDefinition(hodlAccountId).purpose}'`;
   let network = document.getElementById("network");
   if (network) network.value = state.fields.coinType;
   hodlUpdateCoinTypeHelp(network);
   let account = document.getElementById("account");
-  if (account) account.value = state.fields.account ?? "0";
-  let scriptIndex = document.getElementById("scheme-script-index"), customPath = document.getElementById("custom-derivation-path");
-  if (scriptIndex) scriptIndex.value = state.fields.schemeScriptIndex ?? "2";
-  if (customPath) customPath.value = state.fields.customDerivationPath ?? "m/84'/0'/0'";
-  hodlSyncSelect(document.getElementById("custom-network"), state.fields.customNetwork === "testnet" ? "testnet" : "mainnet");
+  if (account) account.value = state.fields.account ?? "0'";
+  let derivationPath = document.getElementById("derivation-path");
+  if (derivationPath) {
+    derivationPath.value = state.fields.derivationPath ?? "m/84'/0'/0'/0/0";
+    derivationPath.dataset.accountPath = state.fields.derivationAccountPath ?? "m/84'/0'/0'";
+  }
   let branchStart = document.getElementById("branch-start"), branchRange = document.getElementById("branch-range"), addressStart = document.getElementById("address-start"), addressRange = document.getElementById("address-range");
   if (branchStart) branchStart.value = state.fields.branchStart ?? "0";
-  if (branchRange) branchRange.value = state.fields.branchRange ?? "2";
+  if (branchRange) branchRange.value = state.fields.branchRange ?? "1";
   if (addressStart) addressStart.value = state.fields.addressStart ?? "0";
-  if (addressRange) addressRange.value = state.fields.addressRange ?? state.fields.count ?? "5";
+  if (addressRange) addressRange.value = state.fields.addressRange ?? state.fields.count ?? "1";
   hodlSetHardeningControls("", hodlHardeningFromFields(state.fields));
+  hodlUpdateVisibleDerivationPathFromAdvanced();
   hodlUpdateHardeningHelp();
   hodlUpdateAddressEstimate();
   hodlRestoreFormFields(state);
