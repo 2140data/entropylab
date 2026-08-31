@@ -49,7 +49,7 @@ test("every enabled button uses orange and black momentary press feedback", () =
 test("wallet coin type indexes enable and default to mainnet", () => {
   for (const id of ["network", "msig-network"]) {
     const mainnetCoinType = new RegExp(
-      `<input id="${id}" type="(?:text|number)"[^>]*inputmode="numeric" value="0"`,
+      `<input id="${id}" type="(?:text|number)"[^>]*inputmode="numeric" value="0${id === "network" ? "'" : ""}"`,
     );
     assert.match(template, mainnetCoinType);
     assert.match(appWhitespace, mainnetCoinType);
@@ -63,33 +63,30 @@ test("wallet coin type indexes enable and default to mainnet", () => {
   assert.match(appSource, /function hodlReadCoinType\(input = document\.getElementById\("network"\), mark = true\)/);
   assert.match(appSource, /function hodlNetworkFromCoinType\(coinType\)/);
   assert.match(appSource, /Number\(coinType\) === 1 \? "testnet" : "mainnet"/);
-  assert.match(app, /coinType:"0",coinTypeHarden:!0,network:"mainnet"/);
+  assert.match(app, /coinType:"0'",coinTypeHardened?:!0,network:"mainnet"|coinType:"0'",coinTypeHarden:!0,network:"mainnet"/);
 });
 
-test("single-key network selector is half width on wide screens and full width on narrow screens", () => {
+test("advanced derivation fields use the shared responsive settings grid", () => {
   assert.match(template, /<div class="field network-field"><label for="network">Network<\/label>[\s\S]*?<input id="network"[^>]*>/);
   assert.match(app, /<div class="field network-field"><label for="network">Network<\/label>[\s\S]*?<input id="network"[^>]*>/);
-  assert.match(css, /\.key-settings\.single-key-mode \.network-field \{ width: 100%; max-width: 50%; \}/);
-  assert.match(
-    css,
-    /@media \(max-width: 520px\) \{[\s\S]*?\.key-settings\.single-key-mode \.network-field \{ max-width: none; \}/,
-  );
+  assert.match(css, /\.derivation-advanced-fields \{ display: grid; gap: var\(--space-component\); \}/);
+  assert.match(css, /@media \(max-width: 520px\) \{[\s\S]*?\.key-settings-row \{ grid-template-columns: minmax\(0, 1fr\); \}/);
 });
 
 test("key and multisig derivation use an indexed address window with an estimate and progress", () => {
   for (const markup of [template, appSource]) {
     assert.match(markup, /id="address-start"[^>]*value="0"/);
-    assert.match(markup, /id="address-range"[^>]*value="5"/);
+    assert.match(markup, /id="address-range"[^>]*value="1"/);
     assert.match(markup, /id="msig-address-start"[^>]*value="0"/);
     assert.match(markup, /id="msig-address-range"[^>]*value="5"/);
-    assert.match(markup, /id="address-start-help">First receive and change index to derive (?:·|\\xB7) Unhardened (?:·|\\xB7) 0 to 2,147,483,647/);
-    assert.match(markup, /id="address-range-help">Derives 5 receive and 5 change addresses (?:·|\\xB7) Max 10,000/);
+    assert.match(markup, /id="address-start-help">First receive index to derive (?:·|\\xB7) Unhardened (?:·|\\xB7) 0 to 2,147,483,647/);
+    assert.match(markup, /id="address-range-help">Derives 1 receive address (?:·|\\xB7) Max 10,000/);
     assert.match(markup, /id="msig-address-start-help">First receive and change index to derive (?:·|\\xB7) Unhardened (?:·|\\xB7) 0 to 2,147,483,647/);
     assert.match(markup, /id="msig-address-range-help">Derives 5 receive and 5 change addresses (?:·|\\xB7) Max 10,000/);
     assert.match(markup, /id="derive-progress"[^>]*role="progressbar"/);
     assert.match(markup, /id="msig-derive-progress"[^>]*role="progressbar"/);
     assert.doesNotMatch(markup, /id="(?:msig-)?count"/);
-    assert.match(markup, /id="derivation-path-preview"[\s\S]*id="address-estimate"[\s\S]*id="go"/);
+    assert.match(markup, /id="derivation-path"[\s\S]*id="address-estimate"[\s\S]*id="go"/);
     assert.match(markup, /id="msig-address-range"[\s\S]*id="msig-address-estimate"[\s\S]*id="msig-go"/);
   }
   assert.match(appSource, /function hodlReadAddressWindow\(prefix = "", mark = true\)/);
@@ -129,7 +126,7 @@ test("key and multisig derivation select one or two address branches", () => {
   for (const markup of [template, appSource]) {
     assert.match(markup, /id="branch-start"[^>]*value="0"/);
     assert.match(markup, /id="branch-start-harden"[^>]*type="checkbox"/);
-    assert.match(markup, /id="branch-range"[^>]*max="2"[^>]*value="2"/);
+    assert.match(markup, /id="branch-range"[^>]*max="2"[^>]*value="1"/);
     assert.match(markup, /id="msig-branch-start"[^>]*value="0"/);
     assert.match(markup, /id="msig-branch-start-harden"[^>]*type="checkbox"/);
     assert.match(markup, /id="msig-branch-range"[^>]*max="2"[^>]*value="2"/);
@@ -396,7 +393,10 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(appWhitespace, /setTimeout\(\(\)=>\{holdTimer=null;repeated=true;remove\(\);if\(!button\.disabled\)repeatTimer=setInterval\(remove,69\)\},420\)/);
   assert.match(app, /\["pointerup","pointercancel","pointerleave","lostpointercapture"\]/);
   assert.match(appWhitespace, /if\(repeated\)\{event\.preventDefault\(\);repeated=false;return\}/);
-  assert.match(app, /function hodlAutocompleteSeedInput\(input,event,completeExisting=!1,wholeWordlist=!1\)/);
+  assert.match(app, /function hodlAutocompleteSeedInput\(input,event,completeExisting=!1,wholeWordlist=!1,enabledOverride=null\)/);
+  assert.match(app, /id="passphrase-autocomplete"[^>]*checked/);
+  assert.match(app, /function hodlAutocompletePassphraseInput\(input,event,completeExisting=!1\)/);
+  assert.match(app, /passphraseAutocomplete:!0/);
   assert.match(app, /toggle\.checked&&hodlAutocompleteSeedInput\(input,null,!0\)/);
   assert.match(app, /inputType:"insertReplacementText"/);
   assert.match(appWhitespace, /toggle\.checked;input\.focus\(\{preventScroll:true\}\)/);
@@ -414,7 +414,8 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(css, /\.passphrase-keyboard-tools \{[^}]*display: flex[^}]*margin-top: var\(--space-control\)/s);
   assert.match(css, /\.passphrase-keyboard-tools \{[^}]*display: flex[^}]*align-items: stretch[^}]*gap: var\(--space-control\)/s);
   assert.match(css, /\.dice-input-shell\.passphrase-input-shell input \{[^}]*position: relative[^}]*margin-top: 0[^}]*background: transparent[^}]*color: transparent/s);
-  assert.match(css, /\.passphrase-bip39-toggle \{[^}]*flex: 1 1 auto[^}]*margin-top: 0/s);
+  assert.match(css, /\.passphrase-bip39-options \{[^}]*flex: 1 1 auto[^}]*gap: var\(--space-control\)/s);
+  assert.match(css, /\.passphrase-bip39-toggle, \.passphrase-autocomplete-toggle \{[^}]*width: 100%[^}]*margin-top: 0/s);
   assert.match(css, /\.passphrase-keyboard-host \.seed-keyboard \{ margin-top: var\(--space-control\); margin-right: auto; margin-left: 0; \}/);
   assert.match(css, /\.seed-keyboard-toggle\s*\{[^}]*width: 44px[^}]*min-height: 44px[^}]*height: auto/s);
   assert.match(css, /\.seed-keyboard-toggle svg \{[^}]*width: 30px[^}]*height: 22px/s);
@@ -450,34 +451,33 @@ test("key derivation separates script type from the hardened purpose index", () 
   for (const markup of [template, appWhitespace]) {
     assert.match(markup, /id="script-type-field">Script type\s*<select id="script-type"><option value="bip44">Legacy<\/option><option value="bip49">Nested SegWit<\/option><option value="bip84" selected(?:="selected")?>Native SegWit<\/option><option value="bip86">Taproot<\/option><\/select>/);
     assert.match(markup, /id="script-type"[\s\S]*id="purpose"[\s\S]*id="network"[\s\S]*id="account"/);
-    assert.match(markup, /id="purpose" type="text" inputmode="numeric" value="84"/);
+    assert.match(markup, /id="purpose" type="text" inputmode="numeric" value="84'"/);
     assert.match(markup, /id="purpose-help">Purpose index (?:·|\\xB7) Hardened (?:·|\\xB7) 0 to 2,147,483,647/);
     assert.match(markup, /id="account-help">Account index (?:·|\\xB7) Hardened (?:·|\\xB7) 0 to 2,147,483,647/);
   }
   assert.match(appSource, /function hodlReadPurpose\(mark = true\)/);
-  assert.match(appSource, /hodlSetSelectedScriptType\(target\.value, !\["bip48", "custom"\]\.includes\(scheme\)\)/);
+  assert.match(appSource, /hodlSetSelectedScriptType\(target\.value, true\)/);
   assert.match(appSource, /let derivedDefinition = \{ \.\.\.definition, purpose: purposeIndex, purposeHardened: hardening\.purpose \}/);
   assert.match(appSource, /originPath = derivationPlan\?\.originPath \?\?/);
-  assert.match(appSource, /context\.textContent = `\$\{definition\.label\} \\xB7 \$\{plan\.label\}`/);
-  assert.match(appSource, /fields: \{ pass: "", script: "bip84", derivationScheme: "bip84", purpose: "84", purposeHarden: true, coinType: "0", coinTypeHarden: true, network: "mainnet"/);
+  assert.match(appSource, /fields: \{ pass: "", script: "bip84", derivationPath: "m\/84'\/0'\/0'\/0\/0", derivationAccountPath: "m\/84'\/0'\/0'", purpose: "84'", purposeHarden: true, coinType: "0'", coinTypeHarden: true, network: "mainnet"/);
 });
 
-test("derivation schemes expose BIP48 and an arbitrary-depth custom account path", () => {
+test("one editable derivation path replaces schemes and accepts arbitrary depth", () => {
   for (const markup of [template, appWhitespace]) {
-    assert.match(markup, /id="derivation-scheme"[\s\S]*?<option value="bip48">BIP48 (?:·|\\xB7) Multisig<\/option>[\s\S]*?<option value="custom">Custom path<\/option>/);
-    assert.match(markup, /id="scheme-script-index" type="text" inputmode="numeric" value="2"/);
-    assert.match(markup, /id="custom-derivation-path" type="text" value="m\/84'\/0'\/0'"/);
-    assert.match(markup, /id="custom-network"[\s\S]*?<option value="mainnet" selected/);
+    assert.match(markup, /id="script-type-field">Script type[\s\S]*?id="derivation-path-field">Derivation path[\s\S]*?id="derivation-path" type="text" value="m\/84'\/0'\/0'\/0\/0"/);
+    assert.match(markup, /<details class="derivation-advanced" id="derivation-advanced">[\s\S]*?<summary>Advanced entry<\/summary>/);
+    assert.doesNotMatch(markup, /id="derivation-scheme"|id="custom-derivation-path"|id="scheme-script-index"/);
   }
   assert.match(appSource, /function hodlParseCustomDerivationPath\(value\)/);
-  assert.match(appSource, /if \(scheme === "bip48"\) parts\.push/);
+  assert.match(appSource, /function hodlReadVisibleDerivationPath\(mark = true\)/);
+  assert.match(appSource, /\.\.\.existing\.slice\(3\)/);
   assert.match(appSource, /accountPath = derivationPlan\?\.accountPath \|\| Ao/);
 });
 
-test("typing h or an apostrophe checks the adjacent Harden control", () => {
-  assert.match(appSource, /function hodlConsumeDerivationHardeningSuffix\(input\)/);
-  assert.match(appSource, /\^\(\\d\+\)\(\[hH'\]\)\$/);
-  assert.match(appSource, /checkbox\.checked = true/);
+test("typing or deleting a hardening suffix syncs the adjacent Harden control", () => {
+  assert.match(appSource, /function hodlSyncAdvancedDerivationHardening\(input\)/);
+  assert.match(appSource, /checkbox\.checked = parsed\.hardened/);
+  assert.match(appSource, /input\.value = `\$\{parsed\.value\}\$\{parsed\.hardened \? "'" : ""\}`/);
   assert.match(appSource, /\^\\d\+\[hH'\]\?\$/);
 });
 

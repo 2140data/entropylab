@@ -216,11 +216,11 @@
     equal(options.map((button) => button.dataset.seedKey).join(""), "5KL");
     assert([...keyboard.querySelectorAll("[data-seed-keyboard-row],.seed-keyboard-space-row")].every((row) => row.hidden), "The full mainnet WIF keypad remained visible");
     const network = document.getElementById("network");
-    network.value = "1";
+    network.value = "1'";
     network.dispatchEvent(new Event("input", { bubbles: true }));
     options = [...initialRow.querySelectorAll("[data-private-key-initial]:not([hidden])")];
     equal(options.map((button) => button.dataset.seedKey).join(""), "9c");
-    network.value = "0";
+    network.value = "0'";
     network.dispatchEvent(new Event("input", { bubbles: true }));
     options = [...initialRow.querySelectorAll("[data-private-key-initial]:not([hidden])")];
     options.find((button) => button.dataset.seedKey === "K").click();
@@ -733,8 +733,11 @@
     const keyboardHost = document.getElementById("passphrase-keyboard-host");
     toggle = document.getElementById("passphrase-keyboard-toggle");
     const bip39Passphrase = document.getElementById("passphrase-bip39-words");
+    const passphraseAutocomplete = document.getElementById("passphrase-autocomplete");
+    const passphraseAutocompleteControl = document.getElementById("passphrase-autocomplete-control");
     let keyboard = keyboardHost?.querySelector("[data-on-screen-keyboard]");
-    assert(toggle?.querySelector("svg") && bip39Passphrase && keyboard, "Dice passphrase keyboard controls are missing");
+    assert(toggle?.querySelector("svg") && bip39Passphrase && passphraseAutocomplete && keyboard, "Dice passphrase keyboard controls are missing");
+    assert(passphraseAutocomplete.checked && passphraseAutocompleteControl.hidden, "Passphrase autocomplete did not default on and hidden until BIP39-word mode");
     assert(
       passphraseTools.contains(toggle)
         && passphraseTools.contains(bip39Passphrase)
@@ -753,8 +756,10 @@
     input(passphrase, "Abandon  zoo");
     bip39Passphrase.click();
     equal(passphrase.value, "Abandon  zoo", "Enabling BIP39-word mode changed an existing passphrase");
+    assert(!passphraseAutocompleteControl.hidden, "BIP39-word mode did not reveal passphrase autocomplete underneath");
     assert(document.getElementById("passphrase-highlight").querySelectorAll(".dice-roll-invalid").length >= 2, "Invalid passphrase capitalization and spacing were not highlighted");
     assert(keyboard.querySelector("[data-seed-keyboard-mode]").disabled, "BIP39-word mode did not lock the keyboard to lowercase letters");
+    passphraseAutocomplete.click();
     input(passphrase, "");
     for (const character of "abandon") {
       const key = keyboard.querySelector(`[data-seed-key="${character}"]`);
@@ -777,6 +782,9 @@
     assert(!passphraseSpace.disabled, "Space was disabled after a complete BIP39 passphrase word");
     passphraseSpace.click();
     assert(passphraseSpace.disabled, "Space remained enabled before the next BIP39 word");
+    input(passphrase, "aban");
+    passphraseAutocomplete.click();
+    equal(passphrase.value, "abandon ", "Enabling passphrase autocomplete did not complete a unique prefix");
     bip39Passphrase.click();
     input(passphrase, "");
     input(dice, "");
@@ -787,6 +795,7 @@
     await chooseMode("Number bases");
     document.querySelector('input[name="entropy-format"][value="hex"]').click();
     toggle = await until(() => document.getElementById("passphrase-keyboard-toggle"), "hex passphrase keyboard toggle");
+    assert(document.getElementById("passphrase-autocomplete")?.checked, "Passphrase autocomplete did not stay synchronized across entropy tabs");
     keyboard = document.querySelector("#passphrase-keyboard-host [data-on-screen-keyboard]");
     const hex = await until(() => document.getElementById("hex"), "hex input");
     assert(toggle.getAttribute("aria-expanded") === "true" && !keyboard.hidden, "Hex keyboard did not retain the shared open state");
@@ -1219,64 +1228,51 @@
     scriptType.value = "bip44";
     scriptType.dispatchEvent(new Event("change", { bubbles: true }));
     const purpose = document.getElementById("purpose");
-    equal(purpose.value, "44", "Legacy did not restore its standard purpose");
+    equal(purpose.value, "44'", "Legacy did not restore its standard hardened purpose");
     scriptType.value = "bip49";
     scriptType.dispatchEvent(new Event("change", { bubbles: true }));
-    equal(purpose.value, "49", "Nested SegWit did not restore its standard purpose");
+    equal(purpose.value, "49'", "Nested SegWit did not restore its standard hardened purpose");
     scriptType.value = "bip86";
     scriptType.dispatchEvent(new Event("change", { bubbles: true }));
-    equal(purpose.value, "86", "Taproot did not restore its standard purpose");
+    equal(purpose.value, "86'", "Taproot did not restore its standard hardened purpose");
     scriptType.value = "bip84";
     scriptType.dispatchEvent(new Event("change", { bubbles: true }));
-    equal(purpose.value, "84", "Native SegWit did not restore its standard purpose");
+    equal(purpose.value, "84'", "Native SegWit did not restore its standard hardened purpose");
     assert(document.getElementById("purpose-harden").checked, "Purpose did not default to hardened");
-    assert(document.getElementById("network-harden").checked, "Coin type did not default to hardened");
+    assert(document.getElementById("network-harden").checked, `Coin type did not default to hardened (value ${document.getElementById("network").value}, path ${document.getElementById("derivation-path").value})`);
     assert(document.getElementById("account-harden").checked, "Account did not default to hardened");
     assert(!document.getElementById("address-start-harden").checked, "Starting address index did not default to unhardened");
-    const scheme = document.getElementById("derivation-scheme");
-    scheme.value = "bip48";
-    scheme.dispatchEvent(new Event("change", { bubbles: true }));
-    equal(purpose.value, "48", "BIP48 did not restore its standard purpose");
-    assert(!document.getElementById("scheme-script-index-field").hidden, "BIP48 did not expose its script type path level");
-    const schemeScriptIndex = document.getElementById("scheme-script-index");
-    document.getElementById("scheme-script-index-harden").checked = false;
-    input(schemeScriptIndex, "1'");
-    equal(schemeScriptIndex.value, "1", "A typed BIP48 hardening suffix was not removed from the numeric value");
-    assert(document.getElementById("scheme-script-index-harden").checked, "A typed apostrophe did not harden the BIP48 script type level");
-    assert(document.querySelector('[data-path="account"]').textContent.includes("/48'/0'/0'/1'"), "The BIP48 script type level did not reach the path preview");
-    scheme.value = "custom";
-    scheme.dispatchEvent(new Event("change", { bubbles: true }));
-    assert(!document.getElementById("custom-derivation-settings").hidden, "Custom mode did not expose its arbitrary path input");
-    assert(document.getElementById("purpose-network-settings").hidden, "Custom mode retained the preset semantic fields");
-    input(document.getElementById("custom-derivation-path"), "m/7h/8/9'/10");
-    assert(document.querySelector('[data-path="account"]').textContent.includes("m/7'/8/9'/10"), "The arbitrary-depth custom path was not normalized in the preview");
-    scheme.value = "bip84";
-    scheme.dispatchEvent(new Event("change", { bubbles: true }));
+    const derivationPath = document.getElementById("derivation-path");
+    assert(derivationPath && document.getElementById("derivation-advanced"), "The editable path and Advanced entry controls are missing");
+    assert(!document.getElementById("derivation-scheme"), "The obsolete derivation scheme selector remains");
+    input(derivationPath, "m/7h/8/9'/10/11");
+    equal(derivationPath.value, "m/7h/8/9'/10/11", "The arbitrary-depth custom path was changed unexpectedly");
+    equal(purpose.value, "7'", "The custom path purpose did not synchronize into Advanced entry");
+    equal(document.getElementById("network").value, "8", "The custom path network did not synchronize into Advanced entry");
+    equal(document.getElementById("account").value, "9'", "The custom path account did not synchronize into Advanced entry");
+    input(derivationPath, "m/84'/0'/0'/0/0");
     document.getElementById("purpose-harden").checked = false;
     input(purpose, "84h");
-    equal(purpose.value, "84", "A typed purpose hardening suffix was not removed from the numeric value");
+    equal(purpose.value, "84'", "A typed purpose h suffix was not normalized to an apostrophe");
     assert(document.getElementById("purpose-harden").checked, "A typed h did not check the purpose Harden control");
+    input(purpose, "84");
+    assert(!document.getElementById("purpose-harden").checked, "Deleting the purpose apostrophe did not clear Harden");
+    input(purpose, "84'");
     input(purpose, "2147483648");
     assert(document.getElementById("go").disabled && purpose.classList.contains("bad"), "An out-of-range purpose did not block derivation");
-    input(purpose, "69420");
-    const purposePrime = purpose.nextElementSibling;
-    equal(purposePrime.dataset.indexValue, "69420", "The purpose prime mirror did not follow the edited number");
-    const purposeStyle = getComputedStyle(purpose);
-    const measure = document.createElement("canvas").getContext("2d");
-    measure.font = `${purposeStyle.fontStyle} ${purposeStyle.fontWeight} ${purposeStyle.fontSize} ${purposeStyle.fontFamily}`;
-    const expectedPrimeRight = purpose.getBoundingClientRect().left + parseFloat(purposeStyle.paddingLeft) + measure.measureText("69420'").width;
-    assert(Math.abs(purposePrime.getBoundingClientRect().right - expectedPrimeRight) < 2, "The purpose prime was not positioned directly after its number");
+    input(purpose, "69420'");
+    assert(document.getElementById("derivation-path").value.startsWith("m/69420'/"), "The custom purpose did not reach the editable derivation path");
     const network = document.getElementById("network");
     assert(network?.matches('input[type="text"][inputmode="numeric"]'), "Coin type index input is missing");
     input(network, "2147483648");
     assert(document.getElementById("go").disabled && network.classList.contains("bad"), "An out-of-range coin type did not block derivation");
-    input(network, "69420");
+    input(network, "69420'");
     assert(document.getElementById("network-help").textContent.includes("Custom · Mainnet addresses"), "A custom coin type did not explain its address network");
-    assert(document.querySelector('[data-path="account"]').textContent.includes("/69420'/"), "The hardened custom coin type did not reach the derivation path preview");
+    assert(document.getElementById("derivation-path").value.includes("/69420'/"), "The hardened custom coin type did not reach the derivation path");
     document.getElementById("network-harden").click();
-    assert(document.querySelector('[data-path="account"]').textContent.includes("/69420/"), "Turning off Harden did not remove the coin type prime");
+    assert(document.getElementById("derivation-path").value.includes("/69420/"), "Turning off Harden did not remove the coin type prime");
     document.getElementById("network-harden").click();
-    network.value = "1";
+    network.value = "1'";
     network.dispatchEvent(new Event("input", { bubbles: true }));
     const addressStart = document.getElementById("address-start");
     const addressRange = document.getElementById("address-range");
@@ -1284,18 +1280,18 @@
     const branchRange = document.getElementById("branch-range");
     const branchHarden = document.getElementById("branch-start-harden");
     equal(branchStart.value, "0", "Address branches did not start at Receive by default");
-    equal(branchRange.value, "2", "Address branches did not include Receive and Change by default");
+    equal(branchRange.value, "1", "Address branch range did not default to one");
     assert(!branchHarden.checked, "Starting address branch did not default to unhardened");
-    equal(document.getElementById("branch-range-help").textContent, "Derives Receive and Change branches · Max 2");
+    equal(document.getElementById("branch-range-help").textContent, "Derives Receive branch · Max 2");
     input(addressRange, "10001");
     equal(addressRange.value, "10000", "An oversized singlesig address range was not clamped immediately");
     assert(!addressStart.classList.contains("bad") && !addressRange.classList.contains("bad"), "Clamping an oversized singlesig range left an invalid field state");
-    assert(document.getElementById("derivation-path-error").hidden, "Clamping an oversized singlesig range left a derivation warning");
+    assert(!document.getElementById("derivation-path").classList.contains("bad"), "Clamping an oversized singlesig range left an invalid path");
     input(addressRange, "5");
     input(addressStart, "2147483646");
     equal(addressRange.max, "2", "A near-limit starting index did not lower the singlesig range maximum");
     equal(addressRange.value, "2", "A singlesig range beyond the last address index was not clamped");
-    equal(document.getElementById("address-range-help").textContent, "Derives 2 receive and 2 change addresses · Max 2");
+    equal(document.getElementById("address-range-help").textContent, "Derives 2 receive addresses · Max 2");
     input(addressStart, "7");
     input(addressRange, "5");
     equal(addressRange.max, "10000", "Moving away from the address-index limit did not restore the normal range maximum");
@@ -1324,7 +1320,7 @@
     addressHarden.click();
     input(addressRange, "1");
     assert(document.getElementById("address-start-help").textContent.includes("Hardened"), "Address help did not reflect hardened derivation");
-    assert(document.querySelector('[data-path="receive"]').textContent.includes("/0/7'"), "The receive preview did not show a hardened address index");
+    assert(document.getElementById("derivation-path").value.endsWith("/0/7'"), "The path did not show a hardened address index");
     derive.click();
     await until(
       () => document.querySelector("#acct .account-address-lead .muted.mono")?.textContent.includes("/7h"),
@@ -1340,28 +1336,18 @@
   });
 
   await test("a custom arbitrary-depth account path drives the derived addresses and descriptors", async () => {
-    const scheme = document.getElementById("derivation-scheme");
-    scheme.value = "custom";
-    scheme.dispatchEvent(new Event("change", { bubbles: true }));
-    input(document.getElementById("custom-derivation-path"), "m/84h/1h/0h/777");
-    const customNetwork = document.getElementById("custom-network");
-    customNetwork.value = "testnet";
-    customNetwork.dispatchEvent(new Event("change", { bubbles: true }));
-    input(document.getElementById("branch-start"), "0");
     input(document.getElementById("branch-range"), "1");
-    input(document.getElementById("address-start"), "7");
     input(document.getElementById("address-range"), "1");
+    input(document.getElementById("derivation-path"), "m/84h/1h/0h/777/0/7");
     const derive = await until(() => !document.getElementById("go").disabled && document.getElementById("go"), "custom-path derive button");
     derive.click();
     await until(() => document.querySelector("#acct .account-address-lead .muted.mono")?.textContent.includes("m/84h/1h/0h/777/0/7"), "custom derived path");
     const watchText = document.querySelector("#acct .account-watch-section")?.textContent || "";
     assert(watchText.includes("/84h/1h/0h/777]"), "The custom path did not reach the descriptor key origin");
-    assert(document.querySelector("#acct .account-address-lead p.mono:not(.muted)")?.textContent.trim().startsWith("tb1"), "The explicit custom testnet selection did not control address encoding");
+    assert(document.querySelector("#acct .account-address-lead p.mono:not(.muted)")?.textContent.trim().startsWith("tb1"), "The custom coin type did not control address encoding");
 
-    scheme.value = "bip84";
-    scheme.dispatchEvent(new Event("change", { bubbles: true }));
-    input(document.getElementById("purpose"), "69420");
-    input(document.getElementById("network"), "1");
+    input(document.getElementById("purpose"), "69420'");
+    input(document.getElementById("network"), "1'");
     input(document.getElementById("branch-range"), "2");
     input(document.getElementById("address-range"), "5");
   });
@@ -1375,9 +1361,8 @@
     input(addressRange, "1");
     input(branchStart, "2");
     input(branchRange, "1");
-    equal(document.querySelector('[data-branch-path-label="0"]').textContent, "Custom branch 2");
-    assert(document.querySelector('[data-branch-path-row="1"]').hidden, "The unused second branch preview remained visible");
-    assert(document.querySelector('[data-path="receive"]').textContent.includes("/2/7"), "The custom branch did not reach the derivation preview");
+    assert(document.getElementById("branch-range-help").textContent.includes("Custom branch 2"), "The custom branch label was not explained");
+    assert(document.getElementById("derivation-path").value.endsWith("/2/7"), "The custom branch did not reach the derivation path");
     derive.click();
     await until(() => document.querySelector('#acct [data-address-table="hd-branch-2"]'), "custom branch 2 result");
     assert(!document.querySelector('#acct [data-address-table="hd-receive"]'), "An unselected Receive table was rendered");
@@ -1387,7 +1372,7 @@
 
     branchHarden.click();
     assert(document.getElementById("branch-start-help").textContent.includes("Hardened"), "Address branch help did not reflect hardened derivation");
-    assert(document.querySelector('[data-path="receive"]').textContent.includes("/2'/7"), "The custom branch preview did not show a hardened branch index");
+    assert(document.getElementById("derivation-path").value.endsWith("/2'/7"), "The path did not show a hardened branch index");
     derive.click();
     await until(() => document.querySelector('#acct .account-address-lead .muted.mono')?.textContent.includes("/2h/7"), "hardened address branch result");
     const hardenedWatchText = document.querySelector("#acct .account-watch-section")?.textContent || "";
@@ -1395,6 +1380,7 @@
     branchHarden.click();
 
     input(branchRange, "2");
+    assert(document.getElementById("derivation-path-help").textContent.includes("Multiple address branches selected"), "The truncated path did not explain its branch range");
     derive.click();
     await until(() => document.querySelector('#acct [data-address-table="hd-branch-3"]'), "custom branch 3 result");
     assert(document.querySelector('#acct [data-address-table="hd-branch-2"]'), "The first selected custom branch table was missing");

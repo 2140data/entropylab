@@ -120,73 +120,56 @@ words, pick one of the checksum words.</span></span>
       <div class="passphrase-keyboard-host" id="passphrase-keyboard-host" hidden></div>
       <div class="key-settings" id="key-settings">
         <div class="key-settings-row">
-          <label class="field" id="derivation-scheme-field">Derivation scheme
-            <select id="derivation-scheme"><option value="bip44">BIP44 · Legacy</option><option value="bip49">BIP49 · Nested SegWit</option><option value="bip84" selected="selected">BIP84 · Native SegWit</option><option value="bip86">BIP86 · Taproot</option><option value="bip48">BIP48 · Multisig</option><option value="custom">Custom path</option></select>
-          </label>
           <label class="field" id="script-type-field">Script type
             <select id="script-type"><option value="bip44">Legacy</option><option value="bip49">Nested SegWit</option><option value="bip84" selected="selected">Native SegWit</option><option value="bip86">Taproot</option></select>
           </label>
-        </div>
-        <div class="key-settings-row" id="purpose-network-settings">
-          <div class="field" id="purpose-field"><label for="purpose">Purpose</label>
-            <div class="derivation-index-control"><span class="derivation-index-value"><input id="purpose" type="text" inputmode="numeric" value="84" aria-describedby="purpose-help"><span class="derivation-index-prime" aria-hidden="true">'</span></span><label class="derivation-harden"><input id="purpose-harden" type="checkbox" checked><span>Harden</span></label></div>
-            <span class="field-note" id="purpose-help">Purpose index · Hardened · 0 to 2,147,483,647</span>
-          </div>
-          <div class="field network-field"><label for="network">Network</label>
-            <div class="derivation-index-control"><span class="derivation-index-value"><input id="network" type="text" inputmode="numeric" value="0" aria-describedby="network-help"><span class="derivation-index-prime" aria-hidden="true">'</span></span><label class="derivation-harden"><input id="network-harden" type="checkbox" checked><span>Harden</span></label></div>
-            <span class="field-note" id="network-help">Coin type index · Mainnet · Hardened · 0 to 2,147,483,647</span>
-          </div>
-        </div>
-        <div class="key-settings-row" id="account-address-settings">
-          <div class="field" id="account-field"><label for="account">Account</label>
-            <div class="derivation-index-control"><span class="derivation-index-value"><input id="account" type="text" inputmode="numeric" value="0" aria-describedby="account-help"><span class="derivation-index-prime" aria-hidden="true">'</span></span><label class="derivation-harden"><input id="account-harden" type="checkbox" checked><span>Harden</span></label></div>
-            <span class="field-note" id="account-help">Account index · Hardened · 0 to 2,147,483,647</span>
-          </div>
-          <div class="field" id="scheme-script-index-field" hidden><label for="scheme-script-index">Script type</label>
-            <div class="derivation-index-control"><span class="derivation-index-value"><input id="scheme-script-index" type="text" inputmode="numeric" value="2" aria-describedby="scheme-script-index-help"><span class="derivation-index-prime" aria-hidden="true">'</span></span><label class="derivation-harden"><input id="scheme-script-index-harden" type="checkbox" checked><span>Harden</span></label></div>
-            <span class="field-note" id="scheme-script-index-help">BIP48 script type index · 1 is Nested SegWit · 2 is Native SegWit · Hardened</span>
-          </div>
-        </div>
-        <div class="key-settings-row custom-derivation-settings" id="custom-derivation-settings" hidden>
-          <label class="field">Custom account path
-            <input id="custom-derivation-path" type="text" value="m/84'/0'/0'" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="custom-derivation-path-help">
-            <span class="field-note" id="custom-derivation-path-help">Arbitrary BIP32 path through the account node · address branch and index are appended below</span>
-          </label>
-          <label class="field">Bitcoin network
-            <select id="custom-network"><option value="mainnet" selected="selected">Mainnet</option><option value="testnet">Testnet</option></select>
-            <span class="field-note">Controls address encoding only · the custom path is used exactly as entered</span>
+          <label class="field derivation-path-field" id="derivation-path-field">Derivation path
+            <input id="derivation-path" type="text" value="m/84'/0'/0'/0/0" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="derivation-path-help">
+            <span class="field-note" id="derivation-path-help">Exact BIP32 address path · edit directly to use a custom path</span>
           </label>
         </div>
-        <div class="key-settings-row address-branch-settings" id="address-branch-settings">
-          <div class="field"><label for="branch-start" id="branch-start-label">Starting change / branch index</label>
-            <div class="derivation-index-control"><span class="derivation-index-value"><input id="branch-start" type="text" inputmode="numeric" value="0" aria-describedby="branch-start-help"><span class="derivation-index-prime" aria-hidden="true">'</span></span><label class="derivation-harden"><input id="branch-start-harden" type="checkbox"><span>Harden</span></label></div>
-            <span class="field-note" id="branch-start-help">First address branch to derive · 0 is Receive · 1 is Change · Unhardened · 0 to 2,147,483,647</span>
+        <details class="derivation-advanced" id="derivation-advanced">
+          <summary>Advanced entry</summary>
+          <div class="derivation-advanced-fields">
+            <div class="key-settings-row" id="purpose-network-settings">
+              <div class="field" id="purpose-field"><label for="purpose">Purpose</label>
+                <div class="derivation-index-control"><span class="derivation-index-value"><input id="purpose" type="text" inputmode="numeric" value="84'" aria-describedby="purpose-help"></span><label class="derivation-harden"><input id="purpose-harden" type="checkbox" checked><span>Harden</span></label></div>
+                <span class="field-note" id="purpose-help">Purpose index · Hardened · 0 to 2,147,483,647</span>
+              </div>
+              <div class="field network-field"><label for="network">Network</label>
+                <div class="derivation-index-control"><span class="derivation-index-value"><input id="network" type="text" inputmode="numeric" value="0'" aria-describedby="network-help"></span><label class="derivation-harden"><input id="network-harden" type="checkbox" checked><span>Harden</span></label></div>
+                <span class="field-note" id="network-help">Coin type index · Mainnet · Hardened · 0 to 2,147,483,647</span>
+              </div>
+            </div>
+            <div class="key-settings-row" id="account-address-settings">
+              <div class="field" id="account-field"><label for="account">Account</label>
+                <div class="derivation-index-control"><span class="derivation-index-value"><input id="account" type="text" inputmode="numeric" value="0'" aria-describedby="account-help"></span><label class="derivation-harden"><input id="account-harden" type="checkbox" checked><span>Harden</span></label></div>
+                <span class="field-note" id="account-help">Account index · Hardened · 0 to 2,147,483,647</span>
+              </div>
+            </div>
+            <div class="key-settings-row address-branch-settings" id="address-branch-settings">
+              <div class="field"><label for="branch-start" id="branch-start-label">Starting address branch</label>
+                <div class="derivation-index-control"><span class="derivation-index-value"><input id="branch-start" type="text" inputmode="numeric" value="0" aria-describedby="branch-start-help"></span><label class="derivation-harden"><input id="branch-start-harden" type="checkbox"><span>Harden</span></label></div>
+                <span class="field-note" id="branch-start-help">First address branch to derive · 0 is Receive · 1 is Change · Unhardened · 0 to 2,147,483,647</span>
+              </div>
+              <label class="field">Address branch range
+                <input id="branch-range" type="number" min="1" max="2" step="1" inputmode="numeric" value="1" aria-describedby="branch-range-help">
+                <span class="field-note" id="branch-range-help">Derives Receive branch · Max 2</span>
+              </label>
+            </div>
+            <div class="key-settings-row address-range-settings" id="address-range-settings">
+              <div class="field"><label for="address-start" id="address-start-label">Starting address index</label>
+                <div class="derivation-index-control"><span class="derivation-index-value"><input id="address-start" type="text" inputmode="numeric" value="0" aria-describedby="address-start-help"></span><label class="derivation-harden"><input id="address-start-harden" type="checkbox"><span>Harden</span></label></div>
+                <span class="field-note" id="address-start-help">First receive index to derive · Unhardened · 0 to 2,147,483,647</span>
+              </div>
+              <label class="field">Address range
+                <input id="address-range" type="number" min="1" max="10000" step="1" inputmode="numeric" value="1" aria-describedby="address-range-help">
+                <span class="field-note" id="address-range-help">Derives 1 receive address · Max 10,000</span>
+              </label>
+            </div>
           </div>
-          <label class="field">Address branch range
-            <input id="branch-range" type="number" min="1" max="2" step="1" inputmode="numeric" value="2" aria-describedby="branch-range-help">
-            <span class="field-note" id="branch-range-help">Derives Receive and Change branches · Max 2</span>
-          </label>
-        </div>
-        <div class="key-settings-row address-range-settings" id="address-range-settings">
-          <div class="field"><label for="address-start" id="address-start-label">Starting address index</label>
-            <div class="derivation-index-control"><span class="derivation-index-value"><input id="address-start" type="text" inputmode="numeric" value="0" aria-describedby="address-start-help"><span class="derivation-index-prime" aria-hidden="true">'</span></span><label class="derivation-harden"><input id="address-start-harden" type="checkbox"><span>Harden</span></label></div>
-            <span class="field-note" id="address-start-help">First receive and change index to derive · Unhardened · 0 to 2,147,483,647</span>
-          </div>
-          <label class="field">Address range
-            <input id="address-range" type="number" min="1" max="10000" step="1" inputmode="numeric" value="5" aria-describedby="address-range-help">
-            <span class="field-note" id="address-range-help">Derives 5 receive and 5 change addresses · Max 10,000</span>
-          </label>
-        </div>
+        </details>
       </div>
-      <section class="derivation-path-preview" id="derivation-path-preview" aria-labelledby="derivation-path-heading" aria-live="polite">
-        <div class="derivation-path-head"><p class="label" id="derivation-path-heading">Derivation paths</p><span class="derivation-path-context" id="derivation-path-context"></span></div>
-        <dl class="derivation-path-list">
-          <div class="derivation-path-row"><dt id="derivation-base-label">Account</dt><dd><code data-path="account"></code></dd></div>
-          <div class="derivation-path-row" data-branch-path-row="0"><dt data-branch-path-label="0">Receive</dt><dd><code data-path="receive"></code></dd></div>
-          <div class="derivation-path-row" data-branch-path-row="1"><dt data-branch-path-label="1">Change</dt><dd><code data-path="change"></code></dd></div>
-        </dl>
-        <p class="derivation-path-error" id="derivation-path-error" hidden></p>
-      </section>
       <p class="field-note address-estimate derivation-estimate" id="address-estimate" role="status">Measuring this device…</p>
       <div class="row key-action-row current-item-actions">
         <button class="btn primary" id="go" disabled aria-disabled="true">Derive Wallet</button>

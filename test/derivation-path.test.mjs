@@ -25,7 +25,7 @@ function loadSlice(name) {
 
 const api = new Function(
   `
-  ${["hodlPathIndex", "hodlOriginPathIndex", "hodlParseCustomDerivationPath", "hodlReadDerivationIndex"].map(loadSlice).join("\n")}
+  ${["hodlPathIndex", "hodlOriginPathIndex", "hodlParseCustomDerivationPath", "hodlParseDerivationIndexText", "hodlReadDerivationIndex"].map(loadSlice).join("\n")}
   return { hodlPathIndex, hodlOriginPathIndex, hodlParseCustomDerivationPath, hodlReadDerivationIndex };
   `,
 )();
