@@ -32,6 +32,15 @@ test("PSBT key and passphrase fields are explicitly cleared", () => {
   assert.match(lifecycle, /psbtPass\.value\s*=\s*""/);
 });
 
+test("PSBT text and anti-exfil transcript fields are explicitly cleared", () => {
+  // #psbt-text can carry xprvs in proprietary fields; #psbt-ax-transcript
+  // holds the anti-exfil host nonce.
+  assert.match(lifecycle, /getElementById\("psbt-text"\)/);
+  assert.match(lifecycle, /getElementById\("psbt-ax-transcript"\)/);
+  assert.match(lifecycle, /psbtText\.value\s*=\s*""/);
+  assert.match(lifecycle, /psbtAxTranscript\.value\s*=\s*""/);
+});
+
 test("BIP-85 parent and derived-child fields are explicitly cleared", () => {
   assert.match(lifecycle, /getElementById\("bip85-key"\)/);
   assert.match(lifecycle, /bip85Key\.value\s*=\s*""/);
@@ -54,4 +63,29 @@ test("Silent Payments private-bearing inputs and revealed output are cleared", (
   assert.match(lifecycle, /spOut\.innerHTML\s*=\s*""/);
   assert.match(lifecycle, /spError\.textContent\s*=\s*""/);
   assert.match(lifecycle, /spSession\.textContent\s*=\s*hodlSpNote/);
+});
+
+test("Silent Payments recipient, verify, and label fields are explicitly cleared", () => {
+  assert.match(lifecycle, /getElementById\("sp-recipients"\)/);
+  assert.match(lifecycle, /spRecipients\.value\s*=\s*""/);
+  assert.match(lifecycle, /getElementById\("sp-verify-vins"\)/);
+  assert.match(lifecycle, /spVerifyVins\.value\s*=\s*""/);
+  assert.match(lifecycle, /getElementById\("sp-verify-outputs"\)/);
+  assert.match(lifecycle, /spVerifyOutputs\.value\s*=\s*""/);
+  assert.match(lifecycle, /getElementById\("sp-label"\)/);
+  assert.match(lifecycle, /spLabel\.value\s*=\s*""/);
+});
+
+test("highlight mirrors, copy-button phrases, the last-word cache, and the PSBT editor are cleared", () => {
+  // The .dice-input-highlight <pre> behind each input holds a second live
+  // copy of the typed secret; copy buttons keep the phrase in data-phrase;
+  // hodlLastWordCache retains partial mnemonics; the editor holds the loaded
+  // PSBT (which can carry xprvs in proprietary fields).
+  assert.match(lifecycle, /querySelectorAll\("\.dice-input-highlight"\)/);
+  assert.match(lifecycle, /highlight\.textContent\s*=\s*""/);
+  assert.match(lifecycle, /querySelectorAll\("\[data-phrase\]"\)/);
+  assert.match(lifecycle, /removeAttribute\("data-phrase"\)/);
+  assert.match(lifecycle, /hodlLastWordCache\.clear\(\)/);
+  assert.match(lifecycle, /getElementById\("psbted-wipe"\)/);
+  assert.match(lifecycle, /psbtEditorWipe\.click\(\)/);
 });

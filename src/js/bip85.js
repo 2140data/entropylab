@@ -83,7 +83,8 @@ export function deriveBip85Entropy(root, path) {
     if (!key) throw new Error("BIP-85 needs a BIP32 root private key. Watch-only keys cannot derive children.");
     return hmacSha512(HMAC_KEY_BYTES, key);
   } finally {
-    wipeBytes(key);
+    wipeBytes(key); // the getter copy
+    child.wipePrivateData(); // the node itself (derive already wiped the intermediates)
   }
 }
 
@@ -99,7 +100,11 @@ export function encodeWifCompressed(priv, testnet = false) {
   payload[0] = testnet ? 239 : 128;
   payload.set(priv, 1);
   payload[33] = 1;
-  return base58checkEncode(payload);
+  try {
+    return base58checkEncode(payload);
+  } finally {
+    wipeBytes(payload);
+  }
 }
 
 export function encodeXprv(chainCode, privateKey, testnet = false) {
@@ -107,14 +112,19 @@ export function encodeXprv(chainCode, privateKey, testnet = false) {
   assertValidSecp256k1Secret(privateKey);
   // BIP-85 reverses BIP32's HMAC split: first 32 bytes are chain code, last 32
   // are the private key. Depth, fingerprint, and child number are forced to 0.
-  return new HDKey({
+  const node = new HDKey({
     versions: testnet ? XPRV_VERSIONS.testnet : XPRV_VERSIONS.mainnet,
     depth: 0,
     index: 0,
     parentFingerprint: 0,
     chainCode,
     privateKey
-  }).privateExtendedKey;
+  });
+  try {
+    return node.privateExtendedKey;
+  } finally {
+    node.wipePrivateData();
+  }
 }
 
 export function encodeRfc1924Base85(bytes) {
@@ -151,28 +161,38 @@ export function deriveBip39(root, { words = 24, index = 0, language = BIP39_LANG
   if (!bytes) throw new Error("BIP-85 BIP39 children are 12, 15, 18, 21, or 24 English words.");
   if (language !== BIP39_LANGUAGE_ENGLISH) throw new Error("This version derives English BIP-39 children only (language code 0').");
   let path = bip85Path(BIP85_APPS.BIP39, language, wordCount, parseHardenedIndex(index));
-  let entropy = truncateEntropy(deriveBip85Entropy(root, path), bytes);
-  return result({
-    app: "bip39",
-    path,
-    entropy,
-    secret: entropyToMnemonic(entropy, bip39English),
-    secretLabel: `BIP-39 mnemonic · ${wordCount} English words`,
-    notes: [`English wordlist (0'). Path ${path}.`]
-  });
+  let digest = deriveBip85Entropy(root, path);
+  try {
+    let entropy = truncateEntropy(digest, bytes);
+    return result({
+      app: "bip39",
+      path,
+      entropy,
+      secret: entropyToMnemonic(entropy, bip39English),
+      secretLabel: `BIP-39 mnemonic · ${wordCount} English words`,
+      notes: [`English wordlist (0'). Path ${path}.`]
+    });
+  } finally {
+    wipeBytes(digest); // the 64-byte HMAC outlives its truncated slice
+  }
 }
 
 export function deriveWif(root, { index = 0, testnet = false } = {}) {
   let path = bip85Path(BIP85_APPS.WIF, parseHardenedIndex(index));
-  let entropy = truncateEntropy(deriveBip85Entropy(root, path), 32);
-  return result({
-    app: "wif",
-    path,
-    entropy,
-    secret: encodeWifCompressed(entropy, testnet),
-    secretLabel: testnet ? "Compressed WIF · testnet" : "Compressed WIF · mainnet",
-    notes: ["Most-significant 256 bits as a compressed WIF hdseed (Bitcoin Core)."]
-  });
+  let digest = deriveBip85Entropy(root, path);
+  try {
+    let entropy = truncateEntropy(digest, 32);
+    return result({
+      app: "wif",
+      path,
+      entropy,
+      secret: encodeWifCompressed(entropy, testnet),
+      secretLabel: testnet ? "Compressed WIF · testnet" : "Compressed WIF · mainnet",
+      notes: ["Most-significant 256 bits as a compressed WIF hdseed (Bitcoin Core)."]
+    });
+  } finally {
+    wipeBytes(digest);
+  }
 }
 
 export function deriveXprv(root, { index = 0, testnet = false } = {}) {
@@ -202,15 +222,20 @@ export function deriveHex(root, { numBytes = 32, index = 0 } = {}) {
   let size = Number(numBytes);
   if (!Number.isInteger(size) || size < HEX_BYTES_MIN || size > HEX_BYTES_MAX) throw new Error(`HEX children are ${HEX_BYTES_MIN} to ${HEX_BYTES_MAX} bytes.`);
   let path = bip85Path(BIP85_APPS.HEX, size, parseHardenedIndex(index));
-  let entropy = truncateEntropy(deriveBip85Entropy(root, path), size);
-  return result({
-    app: "hex",
-    path,
-    entropy,
-    secret: hexCoder.encode(entropy),
-    secretLabel: `Hex entropy · ${size} bytes`,
-    notes: [`Leftmost ${size} bytes of the HMAC (trailing bytes discarded).`]
-  });
+  let digest = deriveBip85Entropy(root, path);
+  try {
+    let entropy = truncateEntropy(digest, size);
+    return result({
+      app: "hex",
+      path,
+      entropy,
+      secret: hexCoder.encode(entropy),
+      secretLabel: `Hex entropy · ${size} bytes`,
+      notes: [`Leftmost ${size} bytes of the HMAC (trailing bytes discarded).`]
+    });
+  } finally {
+    wipeBytes(digest);
+  }
 }
 
 export function derivePwdBase64(root, { length = 21, index = 0 } = {}) {

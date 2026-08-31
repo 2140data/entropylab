@@ -364,7 +364,10 @@ function hodlDerivedAddressRow(node, accountPath, script, network, role, index, 
   let chain = Number.isSafeInteger(role) ? role : role === "receive" ? 0 : 1, branchStep = hodlPathIndex(chain, branchHardened), indexStep = hodlPathIndex(index, addressHardened), child = node.derive(`m/${branchStep}/${indexStep}`), publicKey = child.publicKey;
   if (!publicKey) throw new Error("Missing public key");
   let privateKey = child.privateKey;
-  return { index, role: hodlAddressBranchRole(chain), branch: chain, branchHardened, path: `${accountPath}/${branchStep}/${indexStep}`, address: pf(script, publicKey, network), wif: privateKey ? rn(privateKey, true, network) : null, pubkey: M.encode(publicKey), privHex: privateKey ? M.encode(privateKey) : null };
+  let row = { index, role: hodlAddressBranchRole(chain), branch: chain, branchHardened, path: `${accountPath}/${branchStep}/${indexStep}`, address: pf(script, publicKey, network), wif: privateKey ? rn(privateKey, true, network) : null, pubkey: M.encode(publicKey), privHex: privateKey ? M.encode(privateKey) : null };
+  child.wipePrivateData();
+  if (privateKey) privateKey.fill(0); // the getter copy; the row keeps its strings
+  return row;
 }
 function nn(e, t, r, n, o, i, startIndex = 0, addressHardened = false, branchHardened = false) {
   let rows = [];
@@ -427,24 +430,40 @@ function Hs(e, t, r, n, o = 0, addressStart = 0) {
 }
 function on(e, t, r, n, o = 0, addressStart = 0) {
   let i = _n(e.bytes);
-  return ar(i, t, r, n, { entropyHex: e.hex, notes: e.notes, warnings: e.warnings }, o, addressStart);
+  try {
+    return ar(i, t, r, n, { entropyHex: e.hex, notes: e.notes, warnings: e.warnings }, o, addressStart);
+  } finally {
+    e.bytes.fill(0); // the entropy bytes are dead once the mnemonic exists
+  }
 }
 function ar(e, t, r, n, o, p = 0, addressStart = 0) {
   let i = Mt(e);
   if (!i.ok) throw new Error(i.error ?? "Invalid seed phrase");
-  let s = i.words.join(" "), c = wi(s, t), a = Gt.fromMasterSeed(c), f = o?.entropyHex ?? null;
-  f || (f = M.encode(Er(s, Ae)));
-  let d = [...o?.warnings ?? []];
-  return t.length > 0 && d.push("A passphrase is in use. The same words without this passphrase are a different wallet. Do not store the passphrase with the words."), Hs(a, r, n, { mnemonic: s, passphraseUsed: t.length > 0, entropyHex: f, seedHex: M.encode(c), notes: o?.notes ?? [], warnings: d }, p, addressStart);
+  let s = i.words.join(" "), c = wi(s, t);
+  try {
+    let a = Gt.fromMasterSeed(c), f = o?.entropyHex ?? null;
+    f || (f = M.encode(Er(s, Ae)));
+    let d = [...o?.warnings ?? []];
+    t.length > 0 && d.push("A passphrase is in use. The same words without this passphrase are a different wallet. Do not store the passphrase with the words.");
+    let wallet = Hs(a, r, n, { mnemonic: s, passphraseUsed: t.length > 0, entropyHex: f, seedHex: M.encode(c), notes: o?.notes ?? [], warnings: d }, p, addressStart);
+    a.wipePrivateData();
+    return wallet;
+  } finally {
+    c.fill(0); // the 64-byte seed is dead once the root node exists
+  }
 }
 function Po(e, t, r, q = 0) {
   let n = e.trim(), { xkey: o, isPrivate: i } = uf(n), s = Gt.fromExtendedKey(o), c = [i ? "Imported an extended private key. Addresses and WIF keys are derived from it." : "Imported an extended public key. This is watch-only: addresses can be generated, spending keys cannot."];
-  if (s.depth === 0) return Hs(s, t, r, { mnemonic: null, passphraseUsed: false, entropyHex: null, seedHex: null, notes: c, warnings: i ? [] : ["Watch-only. Private keys are not in this key."] }, q);
-  let a = Us(s.parentFingerprint || s.fingerprint), f = Math.min(Math.max(r, 1), 50), d = To.map((h) => {
-    let l = s.publicExtendedKey, u = i ? s.privateExtendedKey : null, p = cr[t], b = `imported/${h.id}`, w = `[${a}]${l}/0/*`, E = `[${a}]${l}/1/*`, A = u ? `[${a}]${u}/0/*` : null, C = u ? `[${a}]${u}/1/*` : null;
-    return { def: h, accountPath: b, xprv: u, xpub: l, ypub: le(l, p.y.pub), yprv: u ? le(u, p.y.prv) : null, zpub: le(l, p.z.pub), zprv: u ? le(u, p.z.prv) : null, vpub: le(l, p.v.pub), vprv: u ? le(u, p.v.prv) : null, receiveDescriptor: Le(Ye(h.script, w)), changeDescriptor: Le(Ye(h.script, E)), receiveDescriptorPriv: A ? Le(Ye(h.script, A)) : null, changeDescriptorPriv: C ? Le(Ye(h.script, C)) : null, receive: nn(s, b, h.script, t, f, "receive"), change: nn(s, b, h.script, t, f, "change") };
-  });
-  return { kind: "hd", network: t, mnemonic: null, passphraseUsed: false, entropyHex: null, seedHex: null, rootXprv: i && s.depth === 0 ? s.privateExtendedKey ?? null : null, rootXpub: (s.depth === 0, s.publicExtendedKey), masterFingerprint: a, notes: c, warnings: [...i ? [] : ["Watch-only. Private keys are not in this key."], `This extended key is not the BIP32 root. The imported node is reused directly; Account ${q} cannot select a different hardened sibling.`], accounts: d };
+  try {
+    if (s.depth === 0) return Hs(s, t, r, { mnemonic: null, passphraseUsed: false, entropyHex: null, seedHex: null, notes: c, warnings: i ? [] : ["Watch-only. Private keys are not in this key."] }, q);
+    let a = Us(s.parentFingerprint || s.fingerprint), f = Math.min(Math.max(r, 1), 50), d = To.map((h) => {
+      let l = s.publicExtendedKey, u = i ? s.privateExtendedKey : null, p = cr[t], b = `imported/${h.id}`, w = `[${a}]${l}/0/*`, E = `[${a}]${l}/1/*`, A = u ? `[${a}]${u}/0/*` : null, C = u ? `[${a}]${u}/1/*` : null;
+      return { def: h, accountPath: b, xprv: u, xpub: l, ypub: le(l, p.y.pub), yprv: u ? le(u, p.y.prv) : null, zpub: le(l, p.z.pub), zprv: u ? le(u, p.z.prv) : null, vpub: le(l, p.v.pub), vprv: u ? le(u, p.v.prv) : null, receiveDescriptor: Le(Ye(h.script, w)), changeDescriptor: Le(Ye(h.script, E)), receiveDescriptorPriv: A ? Le(Ye(h.script, A)) : null, changeDescriptorPriv: C ? Le(Ye(h.script, C)) : null, receive: nn(s, b, h.script, t, f, "receive"), change: nn(s, b, h.script, t, f, "change") };
+    });
+    return { kind: "hd", network: t, mnemonic: null, passphraseUsed: false, entropyHex: null, seedHex: null, rootXprv: i && s.depth === 0 ? s.privateExtendedKey ?? null : null, rootXpub: (s.depth === 0, s.publicExtendedKey), masterFingerprint: a, notes: c, warnings: [...i ? [] : ["Watch-only. Private keys are not in this key."], `This extended key is not the BIP32 root. The imported node is reused directly; Account ${q} cannot select a different hardened sibling.`], accounts: d };
+  } finally {
+    s.wipePrivateData(); // the imported node is dead once the result strings exist
+  }
 }
 function $o(e) {
   let t = e.trim();
@@ -477,7 +496,9 @@ function Io(e, t, r, trimBrainWallet = false) {
   }
   hf(i);
   let f = Yr(i, true), d = Yr(i, false), l = addressFor("p2pkh", d, c), u = addressFor("p2pkh", f, c), p = addressFor("p2sh-p2wpkh", f, c), b = addressFor("p2wpkh", f, c), w = addressFor("p2tr", f, c);
-  return { kind: "single", network: c, warnings: o, notes: n, privHex: M.encode(i), wifCompressed: rn(i, true, c), wifUncompressed: rn(i, false, c), pubkeyCompressed: M.encode(f), pubkeyUncompressed: M.encode(d), p2pkhUncompressed: l, p2pkhCompressed: u, p2shP2wpkh: p, p2wpkh: b, p2tr: w, minikey: s };
+  let wallet = { kind: "single", network: c, warnings: o, notes: n, privHex: M.encode(i), wifCompressed: rn(i, true, c), wifUncompressed: rn(i, false, c), pubkeyCompressed: M.encode(f), pubkeyUncompressed: M.encode(d), p2pkhUncompressed: l, p2pkhCompressed: u, p2shP2wpkh: p, p2wpkh: b, p2tr: w, minikey: s };
+  i.fill(0); // the decoded private key bytes; the result keeps its hex/WIF strings
+  return wallet;
 }
 function Oo(e, t) {
   let r = [];
@@ -1311,7 +1332,7 @@ function hodlAccountResult(node, definition, network, count, options = {}) {
   let addressBranches = Array.from({ length: branchRange }, (_, offset) => {
     let branch = branchStart + offset, branchStep = hodlPathIndex(branch, branchHardened), branchOrigin = options.originFingerprint && options.originPath ? `[${options.originFingerprint}/${options.originPath}/${hodlOriginPathIndex(branch, branchHardened)}]` : "", branchNode = branchHardened && node.privateKey ? node.derive(`m/${branchStep}`) : null, branchPublic = branchNode ? hodlSerializeExtendedKey(branchNode.publicExtendedKey, network, "x", false) : null;
     let publicToken = addressHardened ? null : branchHardened ? branchPublic ? `${branchOrigin}${branchPublic}/${wildcard}` : null : `${origin}${genericPublic}/${branchStep}/${wildcard}`, privateToken = genericPrivate ? `${origin}${genericPrivate}/${branchStep}/${wildcard}` : null;
-    return {
+    let result = {
       branch,
       branchHardened,
       role: hodlAddressBranchRole(branch),
@@ -1320,6 +1341,8 @@ function hodlAccountResult(node, definition, network, count, options = {}) {
       privateDescriptor: privateToken ? Le(Ye(definition.script, privateToken)) : null,
       rows: options.addressBranches?.find((entry) => entry.branch === branch)?.rows ?? nn(node, options.accountPath ?? "Imported account key", definition.script, network, count, branch, options.addressStart ?? 0, addressHardened, branchHardened)
     };
+    if (branchNode) branchNode.wipePrivateData(); // only its xpub string is kept
+    return result;
   });
   let receiveBranch = addressBranches.find((entry) => entry.branch === 0), changeBranch = addressBranches.find((entry) => entry.branch === 1);
   let accountPath = options.accountPath ?? "Imported account key";
@@ -1369,7 +1392,9 @@ function hodlAccountResult(node, definition, network, count, options = {}) {
 }
 mf = function(root, definition, network, count, masterFingerprint, accountIndex = 0, addressStart = 0, coinType = Rs(network)) {
   let accountPath = Ao(definition, coinType, accountIndex), node = root.derive(accountPath), originPath = `${definition.purpose}h/${coinType}h/${accountIndex}h`;
-  return hodlAccountResult(node, definition, network, count, { accountPath, accountIndex, masterFingerprint, originFingerprint: masterFingerprint, originPath, addressStart });
+  let account = hodlAccountResult(node, definition, network, count, { accountPath, accountIndex, masterFingerprint, originFingerprint: masterFingerprint, originPath, addressStart });
+  node.wipePrivateData(); // the account keeps its extended-key strings, not the node
+  return account;
 };
 function hodlRootWalletResult(root, network, source, accountIndex, masterFingerprint, accounts, coinType = Rs(network)) {
   return {
@@ -1458,19 +1483,36 @@ async function hodlRootWalletWithProgress(root, network, count, source, accountI
   tracker.setTotal(addressCount * To.length * branchRange);
   for (let definition of To) {
     let derivedDefinition = { ...definition, purpose: purposeIndex, purposeHardened: hardening.purpose }, accountPath = derivationPlan?.accountPath || Ao(derivedDefinition, coinType, accountIndex, hardening), node = root.derive(accountPath), originPath = derivationPlan?.originPath ?? `${hodlOriginPathIndex(purposeIndex, hardening.purpose)}/${hodlOriginPathIndex(coinType, hardening.coinType)}/${hodlOriginPathIndex(accountIndex, hardening.account)}`;
-    accounts.push(await hodlAccountResultWithProgress(node, derivedDefinition, network, addressCount, { accountPath, accountIndex, masterFingerprint, originFingerprint: masterFingerprint, originPath, addressStart, branchHardened: hardening.branch, addressHardened: hardening.address, branchStart, branchRange }, tracker));
+    let account = await hodlAccountResultWithProgress(node, derivedDefinition, network, addressCount, { accountPath, accountIndex, masterFingerprint, originFingerprint: masterFingerprint, originPath, addressStart, branchHardened: hardening.branch, addressHardened: hardening.address, branchStart, branchRange }, tracker);
+    node.wipePrivateData(); // the account keeps its extended-key strings, not the node
+    accounts.push(account);
   }
   return hodlRootWalletResult(root, network, source, accountIndex, masterFingerprint, accounts, coinType);
 }
 async function hodlMnemonicWalletWithProgress(value, passphrase, network, count, source, accountIndex, addressStart, tracker, purposeIndex, coinType = Rs(network), hardening = hodlDefaultHardening(), branchStart = 0, branchRange = 2, derivationPlan = null) {
   let validation = Mt(value);
   if (!validation.ok) throw new Error(validation.error ?? "Invalid seed phrase");
-  let mnemonic = validation.words.join(" "), seed = wi(mnemonic, passphrase), root = Gt.fromMasterSeed(seed), entropyHex = source?.entropyHex ?? M.encode(Er(mnemonic, Ae)), warnings = [...source?.warnings ?? []];
+  let mnemonic = validation.words.join(" "), seed = wi(mnemonic, passphrase), root, seedHex;
+  try {
+    root = Gt.fromMasterSeed(seed);
+    seedHex = M.encode(seed);
+  } finally {
+    seed.fill(0); // the 64-byte seed is dead once the root node exists
+  }
+  let entropyHex = source?.entropyHex ?? M.encode(Er(mnemonic, Ae)), warnings = [...source?.warnings ?? []];
   if (passphrase.length > 0) warnings.push("A passphrase is in use. The same words without this passphrase are a different wallet. Do not store the passphrase with the words.");
-  return hodlRootWalletWithProgress(root, network, count, { mnemonic, passphraseUsed: passphrase.length > 0, entropyHex, seedHex: M.encode(seed), notes: source?.notes ?? [], warnings }, accountIndex, addressStart, tracker, purposeIndex, coinType, hardening, branchStart, branchRange, derivationPlan);
+  try {
+    return await hodlRootWalletWithProgress(root, network, count, { mnemonic, passphraseUsed: passphrase.length > 0, entropyHex, seedHex, notes: source?.notes ?? [], warnings }, accountIndex, addressStart, tracker, purposeIndex, coinType, hardening, branchStart, branchRange, derivationPlan);
+  } finally {
+    root.wipePrivateData(); // the result keeps its extended-key strings, not the root
+  }
 }
 async function hodlEntropyWalletWithProgress(entropy, passphrase, network, count, accountIndex, addressStart, tracker, purposeIndex, coinType = Rs(network), hardening = hodlDefaultHardening(), branchStart = 0, branchRange = 2, derivationPlan = null) {
-  return hodlMnemonicWalletWithProgress(_n(entropy.bytes), passphrase, network, count, { entropyHex: entropy.hex, notes: entropy.notes, warnings: entropy.warnings }, accountIndex, addressStart, tracker, purposeIndex, coinType, hardening, branchStart, branchRange, derivationPlan);
+  try {
+    return await hodlMnemonicWalletWithProgress(_n(entropy.bytes), passphrase, network, count, { entropyHex: entropy.hex, notes: entropy.notes, warnings: entropy.warnings }, accountIndex, addressStart, tracker, purposeIndex, coinType, hardening, branchStart, branchRange, derivationPlan);
+  } finally {
+    entropy.bytes.fill(0); // the entropy bytes are dead once the mnemonic exists
+  }
 }
 async function hodlImportedWalletWithProgress(value, network, count, accountIndex, addressStart, tracker, purposeIndex, coinType = Rs(network), hardening = hodlDefaultHardening(), branchStart = 0, branchRange = 2, derivationPlan = null) {
   let importedValue = String(value ?? "").trim(), parsed = uf(importedValue);
@@ -1480,13 +1522,18 @@ async function hodlImportedWalletWithProgress(value, network, count, accountInde
   if (node.depth === 0) {
     if (!parsed.isPrivate && (derivationPlan ? derivationPlan.hasHardenedPrefix || hardening.branch || hardening.address : Object.values(hardening).some(Boolean))) throw new Error("A root extended public key cannot derive the selected hardened path. Turn every Harden option off, import an account-level public key, or use the root xprv/tprv offline.");
     if (parsed.family !== "x") throw new Error("A BIP32 root private key must use the generic xprv/tprv prefix.");
-    return hodlRootWalletWithProgress(node, network, count, { mnemonic: null, passphraseUsed: false, entropyHex: null, seedHex: null, notes, warnings: [] }, accountIndex, addressStart, tracker, purposeIndex, coinType, hardening, branchStart, branchRange, derivationPlan);
+    try {
+      return await hodlRootWalletWithProgress(node, network, count, { mnemonic: null, passphraseUsed: false, entropyHex: null, seedHex: null, notes, warnings: [] }, accountIndex, addressStart, tracker, purposeIndex, coinType, hardening, branchStart, branchRange, derivationPlan);
+    } finally {
+      node.wipePrivateData(); // the imported root is dead once the result strings exist
+    }
   }
   if (node.depth !== 3) throw new Error(`This extended key is depth ${node.depth}. Key Derivation accepts a BIP32 root private key (depth 0) or an account-level extended key (depth 3).`);
   if ((hardening.branch || hardening.address) && !parsed.isPrivate) throw new Error(`Hardened ${hardening.branch ? "address branches" : "address indexes"} cannot be derived from an account extended public key. Turn off Harden or import the matching extended private key offline.`);
   let definition = hodlImportedScriptDefinition(parsed), addressCount = Math.min(Math.max(count, 1), hodlMaxAddressRange), parentFingerprint = Us(node.parentFingerprint), nodeFingerprint = Us(node.fingerprint);
   tracker.setTotal(addressCount * branchRange);
   let account = await hodlAccountResultWithProgress(node, definition, network, addressCount, { accountPath: "Imported account key", accountIndex: null, imported: true, parentFingerprint, nodeFingerprint, addressStart, branchHardened: hardening.branch, addressHardened: hardening.address, branchStart, branchRange }, tracker);
+  node.wipePrivateData(); // the account result keeps its strings, not the imported node
   return {
     kind: "hd",
     network,
@@ -7680,8 +7727,17 @@ function hodlPrivFromPath(entries, pubkey) {
     if (M.encode(derivation.fingerprint) !== rootFingerprint) continue;
     try {
       let node = hodlPsbtHd;
-      for (let index of derivation.path) node = node.deriveChild(index);
-      if (node.publicKey && hodlEq(node.publicKey, pubkey)) return node.privateKey;
+      for (let index of derivation.path) {
+        let next = node.deriveChild(index);
+        if (node !== hodlPsbtHd) node.wipePrivateData(); // dead intermediate
+        node = next;
+      }
+      if (node.publicKey && hodlEq(node.publicKey, pubkey)) {
+        let privateKey = node.privateKey; // a copy; the caller signs with it
+        if (node !== hodlPsbtHd) node.wipePrivateData();
+        return privateKey;
+      }
+      if (node !== hodlPsbtHd) node.wipePrivateData();
     } catch {
     }
   }
@@ -7694,8 +7750,7 @@ function hodlPsbtWipeMem() {
   }
   hodlPsbtPriv = null;
   if (hodlPsbtHd) try {
-    let privateKey = hodlPsbtHd.privateKey;
-    if (privateKey) privateKey.fill(0);
+    hodlPsbtHd.wipePrivateData();
   } catch {
   }
   hodlPsbtHd = null;
@@ -7803,7 +7858,7 @@ function hodlBip85WipeMem() {
   hodlBip85Result = null;
   hodlBip85Reveal = false;
   if (hodlBip85Root) try {
-    hodlWipeBytes(hodlBip85Root.privateKey);
+    hodlBip85Root.wipePrivateData();
   } catch {
   }
   hodlBip85Root = null;
@@ -8045,7 +8100,7 @@ function hodlSpWipeKeys() {
   }
   hodlSpKeys = null;
   if (hodlSpHd) {
-    try { hodlSpHd.privateKey && hodlSpHd.privateKey.fill(0); } catch {}
+    try { hodlSpHd.wipePrivateData(); } catch {}
   }
   hodlSpHd = null;
   hodlSpNote = "No session key. Receive and verify need a seed or root xprv.";
@@ -8132,6 +8187,9 @@ function hodlSpDeriveSessionKeys() {
     spendPub: xe.getPublicKey(spendNode.privateKey, true),
     fingerprint: Us(root.fingerprint),
   };
+  // The session owns the slices above; the derivation nodes are dead copies.
+  scanNode.wipePrivateData();
+  spendNode.wipePrivateData();
 }
 function hodlSpParseVins(text) {
   let raw = String(text || "").trim();
@@ -9793,6 +9851,9 @@ function hodlInitSecretFieldAutoClear() {
     let psbtKey = document.getElementById("psbt-key"), psbtPass = document.getElementById("psbt-pass");
     if (psbtKey) psbtKey.value = "";
     if (psbtPass) psbtPass.value = "";
+    let psbtText = document.getElementById("psbt-text"), psbtAxTranscript = document.getElementById("psbt-ax-transcript");
+    if (psbtText) psbtText.value = "";
+    if (psbtAxTranscript) psbtAxTranscript.value = "";
     let bip85Key = document.getElementById("bip85-key"), bip85Out = document.getElementById("bip85-out"), bip85Error = document.getElementById("bip85-error"), bip85Session = document.getElementById("bip85-session");
     if (bip85Key) bip85Key.value = "";
     if (bip85Out) bip85Out.innerHTML = "";
@@ -9807,10 +9868,27 @@ function hodlInitSecretFieldAutoClear() {
     if (spOut) spOut.innerHTML = "";
     if (spError) spError.textContent = "";
     if (spSession) spSession.textContent = hodlSpNote;
+    let spRecipients = document.getElementById("sp-recipients"), spVerifyVins = document.getElementById("sp-verify-vins"), spVerifyOutputs = document.getElementById("sp-verify-outputs"), spLabel = document.getElementById("sp-label");
+    if (spRecipients) spRecipients.value = "";
+    if (spVerifyVins) spVerifyVins.value = "";
+    if (spVerifyOutputs) spVerifyOutputs.value = "";
+    if (spLabel) spLabel.value = "";
+    // The <pre> mirrors behind each input hold a second live copy of whatever
+    // was typed (dice rolls, seed words, passphrase, private key).
+    document.querySelectorAll(".dice-input-highlight").forEach((highlight) => {
+      highlight.textContent = "";
+    });
+    // Copy buttons keep the phrase/child secret in a data attribute.
+    document.querySelectorAll("[data-phrase]").forEach((button) => button.removeAttribute("data-phrase"));
+    hodlLastWordCache.clear(); // cached partial mnemonic phrases
     let out = document.getElementById("out");
     if (out) out.innerHTML = "";
     let error = document.getElementById("error");
     if (error) error.textContent = "";
+    // The PSBT editor holds the loaded document in module state; its own wipe
+    // button drops it. Last, so a failure there cannot skip the clears above.
+    let psbtEditorWipe = document.getElementById("psbted-wipe");
+    if (psbtEditorWipe) try { psbtEditorWipe.click(); } catch {}
   };
   addEventListener("pagehide", clearSecretFields);
   addEventListener("pageshow", (event) => {

@@ -63,6 +63,7 @@ const requiredFiles = [
   "test/browser-check.test.mjs",
   "test/psbt-metadata.test.mjs",
   "test/secret-clear.test.mjs",
+  "test/wasm-wipe.test.mjs",
   ".github/workflows/ci-cd.yml",
 ];
 

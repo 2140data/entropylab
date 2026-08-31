@@ -67,7 +67,23 @@ pub extern "C" fn psbt_alloc(len: usize) -> *mut u8 {
 /// `ptr`/`len` must come from `psbt_alloc`.
 #[no_mangle]
 pub unsafe extern "C" fn psbt_free(ptr: *mut u8, len: usize) {
+    // Zero the buffer before deallocation. The boundary is watch-only by
+    // design, but a pasted PSBT can carry xprvs in proprietary fields; freed
+    // linear memory must not retain it for a later allocation to expose.
+    wipe(ptr, len);
     drop(Vec::from_raw_parts(ptr, 0, len));
+}
+
+/// Overwrites `len` bytes at `ptr` with zeroes. Volatile stores plus a
+/// compiler fence, so the wipe cannot be elided as a dead store ahead of
+/// deallocation.
+unsafe fn wipe(ptr: *mut u8, len: usize) {
+    if !ptr.is_null() {
+        for i in 0..len {
+            std::ptr::write_volatile(ptr.add(i), 0u8);
+        }
+    }
+    std::sync::atomic::compiler_fence(std::sync::atomic::Ordering::SeqCst);
 }
 
 /// Copies the last error message into `out` (two-call convention: null `out`

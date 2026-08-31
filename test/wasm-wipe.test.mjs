@@ -1,0 +1,130 @@
+// Secret buffers must not linger after use: the WASM free functions zero the
+// linear-memory buffer they release, secret inputs are gone from linear
+// memory once a call returns, and the JS facades wipe the byte buffers they
+// are done with. Behavioral checks where the memory is observable, source
+// checks (like secret-clear.test.mjs) where it is not.
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { wasmExports, heap } from "../src/js/entropylab-wasm.js";
+import { secp256k1 } from "../src/js/secp256k1.js";
+import { HDKey } from "../src/js/hdkey.js";
+import { PSBT_WASM_B64 } from "../src/js/psbt-wasm-b64.js";
+
+const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const read = (file) => readFileSync(join(root, file), "utf8");
+// Distinctive fixed patterns; nothing here is anyone's key.
+const pattern = (size, seed) => new Uint8Array(size).map((_, i) => (i * seed + seed) & 0xff);
+const wasmMemoryContains = (bytes) => Buffer.from(heap().buffer).indexOf(Buffer.from(bytes)) !== -1;
+
+test("secp_free zeroes the linear-memory buffer before deallocating it", () => {
+  const wasm = wasmExports();
+  const secret = pattern(64, 7);
+  const ptr = wasm.secp_alloc(secret.length);
+  heap().set(secret, ptr);
+  wasm.secp_free(ptr, secret.length);
+  assert.deepEqual([...heap().slice(ptr, ptr + secret.length)], new Array(secret.length).fill(0));
+});
+
+test("psbt_free zeroes the linear-memory buffer before deallocating it", () => {
+  const binary = new Uint8Array(Buffer.from(PSBT_WASM_B64, "base64"));
+  const wasm = new WebAssembly.Instance(new WebAssembly.Module(binary), {}).exports;
+  const psbtHeap = () => new Uint8Array(wasm.memory.buffer);
+  const secret = pattern(96, 13);
+  const ptr = wasm.psbt_alloc(secret.length);
+  psbtHeap().set(secret, ptr);
+  wasm.psbt_free(ptr, secret.length);
+  assert.deepEqual([...psbtHeap().slice(ptr, ptr + secret.length)], new Array(secret.length).fill(0));
+});
+
+test("a private key is absent from linear memory once public-key derivation returns", () => {
+  const priv = pattern(32, 41);
+  assert.equal(secp256k1.getPublicKey(priv, true).length, 33);
+  assert.equal(wasmMemoryContains(priv), false, "the private key survived in WASM linear memory");
+});
+
+test("signing leaves neither the private key nor the extra entropy in linear memory", () => {
+  const priv = pattern(32, 17);
+  const msg = pattern(32, 5);
+  const extra = pattern(32, 29);
+  assert.equal(secp256k1.sign(msg, priv, { prehash: false, extraEntropy: extra }).length, 64);
+  assert.equal(wasmMemoryContains(priv), false, "the signing key survived in WASM linear memory");
+  assert.equal(wasmMemoryContains(extra), false, "the extra entropy survived in WASM linear memory");
+});
+
+test("HDKey.wipePrivateData zeroes and drops the internal private key buffer", () => {
+  const hd = HDKey.fromMasterSeed(pattern(32, 3));
+  const internal = hd._privateKey; // the node owns this exact buffer
+  assert.ok(internal instanceof Uint8Array && internal.some((byte) => byte !== 0));
+  hd.wipePrivateData();
+  assert.equal(hd._privateKey, null);
+  assert.equal(hd.privateKey, null);
+  assert.ok(internal.every((byte) => byte === 0), "the internal key buffer was not zeroed");
+});
+
+test("HDKey.derive wipes the intermediate path nodes but keeps the returned child usable", () => {
+  const hd = HDKey.fromMasterSeed(pattern(32, 19));
+  const seen = [];
+  const original = HDKey.prototype.deriveChild;
+  HDKey.prototype.deriveChild = function (index) {
+    const child = original.call(this, index);
+    seen.push(child);
+    return child;
+  };
+  let leaf;
+  try {
+    leaf = hd.derive("m/44'/0'/0'/0/5");
+  } finally {
+    HDKey.prototype.deriveChild = original;
+  }
+  assert.equal(seen.length, 5);
+  for (const node of seen.slice(0, -1)) {
+    assert.equal(node._privateKey, null, "an intermediate path node kept its private key");
+  }
+  assert.equal(leaf, seen.at(-1));
+  assert.ok(leaf._privateKey instanceof Uint8Array, "the returned child lost its private key");
+  assert.match(leaf.privateExtendedKey, /^xprv/, "the returned child no longer serializes");
+  assert.ok(hd._privateKey instanceof Uint8Array, "derive must not wipe the node it was called on");
+  hd.wipePrivateData();
+  leaf.wipePrivateData();
+});
+
+test("the Rust free functions wipe before deallocating (source guard)", () => {
+  // The behavioral tests above pin the committed artifact; this pins the
+  // source so a future edit cannot quietly drop the wipe.
+  assert.match(
+    read("entropylab-wasm/src/lib.rs"),
+    /fn secp_free\(ptr: \*mut u8, len: usize\) \{\s*(?:\/\/[^\n]*\n\s*(?:\/\/[^\n]*\n\s*)*)?wipe\(ptr, len\);/,
+  );
+  assert.match(
+    read("psbt-wasm/src/lib.rs"),
+    /fn psbt_free\(ptr: \*mut u8, len: usize\) \{\s*(?:\/\/[^\n]*\n\s*(?:\/\/[^\n]*\n\s*)*)?wipe\(ptr, len\);/,
+  );
+});
+
+test("the JS facades wipe their secret byte buffers (source guard)", () => {
+  const bip39 = read("src/js/bip39.js");
+  assert.match(bip39, /phrase\.fill\(0\);\s*salt\.fill\(0\);/, "mnemonicToSeedSync must wipe the encoded phrase and salt");
+  assert.equal((bip39.match(/phrase\.fill\(0\)/g) || []).length, 3, "every encoded phrase buffer must be wiped");
+  const bip85 = read("src/js/bip85.js");
+  assert.match(bip85, /child\.wipePrivateData\(\)/, "deriveBip85Entropy must wipe the derived child node");
+  assert.ok((bip85.match(/wipeBytes\(digest\)/g) || []).length >= 4, "every BIP-85 HMAC digest must be wiped");
+  const hdkey = read("src/js/hdkey.js");
+  assert.match(hdkey, /if \(child !== this\) child\.wipePrivateData\(\);/, "derive must wipe intermediate path nodes");
+  assert.match(hdkey, /input\.fill\(0\)/, "deriveChild must wipe the packed parent node");
+});
+
+test("app derivation paths wipe seeds, roots, and per-address keys (source guard)", () => {
+  const app = read("src/js/app.js");
+  const psbtWipe = app.slice(app.indexOf("function hodlPsbtWipeMem()"), app.indexOf("function hodlLoadPsbtKey"));
+  assert.match(psbtWipe, /hodlPsbtHd\.wipePrivateData\(\)/, "the PSBT session root must be wiped, not a getter copy");
+  const bip85Wipe = app.slice(app.indexOf("function hodlBip85WipeMem()"), app.indexOf("function hodlBip85PrivateValue"));
+  assert.match(bip85Wipe, /hodlBip85Root\.wipePrivateData\(\)/, "the BIP-85 root must be wiped, not a getter copy");
+  const spWipe = app.slice(app.indexOf("function hodlSpWipeKeys()"), app.indexOf("function hodlSpWipeMem"));
+  assert.match(spWipe, /hodlSpHd\.wipePrivateData\(\)/, "the Silent Payments root must be wiped, not a getter copy");
+  const ar = app.slice(app.indexOf("function ar("), app.indexOf("function Po("));
+  assert.match(ar, /c\.fill\(0\)/, "the BIP39 seed must be wiped after master derivation");
+  assert.match(ar, /a\.wipePrivateData\(\)/, "the master root node must be wiped after the wallet is built");
+});

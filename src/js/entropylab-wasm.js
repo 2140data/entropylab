@@ -5,7 +5,8 @@
 // Every facade that talks to the WASM (secp256k1.js, hashes.js, ...) imports
 // the helpers here so the module is decoded and instantiated exactly once.
 // The boundary helpers copy inputs into linear memory for the duration of
-// one call and copy outputs back out; nothing secret is left behind.
+// one call and copy outputs back out; secp_free zeroes each buffer before
+// deallocating it, so nothing secret is left behind in linear memory.
 //
 // Loading: browsers refuse to compile a module this size synchronously on
 // the main thread, so in the browser instantiation is async and app boot

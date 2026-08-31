@@ -15,6 +15,18 @@
 //! library never generates randomness: signing is RFC 6979 with caller-fixed
 //! extra entropy, exactly as before.
 //!
+//! Secret hygiene: every buffer JS allocates through `secp_alloc` is zeroed
+//! by `secp_free` before deallocation, and the secret temporaries below
+//! (private keys, seeds, chain codes, mnemonics, passphrases, tweaks, and the
+//! intermediate HMAC/PBKDF2 blocks) are overwritten in place before they go
+//! out of scope. `SecretKey`/`Scalar` use libsecp256k1's own
+//! `non_secure_erase`; plain arrays, `String`s, and newtype wrappers such as
+//! `ChainCode` go through the volatile `wipe` helpers. What cannot be wiped
+//! without new dependencies: state hidden inside dependency types that expose
+//! no erase (the `HmacEngine` key pads, `bip39::Mnemonic`'s stored phrase,
+//! and the by-value moves inside `bitcoin::bip32`). Those copies are short
+//! lived stack/heap cells, but they are the known residual.
+//!
 //! Curve operations go through the safe `secp256k1` crate (rust-bitcoin's
 //! wrapper over the vendored bitcoin-core C library); hashes go through
 //! `bitcoin_hashes`. One preallocated context is created at first use; it
@@ -46,7 +58,47 @@ pub extern "C" fn secp_alloc(len: usize) -> *mut u8 {
 /// `ptr`/`len` must come from `secp_alloc`.
 #[no_mangle]
 pub unsafe extern "C" fn secp_free(ptr: *mut u8, len: usize) {
+    // Zero the buffer before deallocation: inputs can carry private keys,
+    // seeds, mnemonics, or passphrases, and freed linear memory must not
+    // retain them for a later allocation to expose.
+    wipe(ptr, len);
     drop(Vec::from_raw_parts(ptr, 0, len));
+}
+
+/// Overwrites `len` bytes at `ptr` with zeroes. Volatile stores plus a
+/// compiler fence, so the wipe cannot be elided as a dead store ahead of
+/// deallocation or reordered after the secret's last use. (The `zeroize`
+/// crate does the same; it is not a dependency here, per project policy.)
+unsafe fn wipe(ptr: *mut u8, len: usize) {
+    if !ptr.is_null() {
+        for i in 0..len {
+            std::ptr::write_volatile(ptr.add(i), 0u8);
+        }
+    }
+    std::sync::atomic::compiler_fence(std::sync::atomic::Ordering::SeqCst);
+}
+
+/// Wipes a byte slice (arrays, `Vec`s).
+fn wipe_bytes(bytes: &mut [u8]) {
+    unsafe { wipe(bytes.as_mut_ptr(), bytes.len()) };
+}
+
+/// Wipes any plain-old-data value in place (e.g. `ChainCode`, whose field is
+/// private and which exposes no erase of its own).
+fn wipe_val<T>(value: &mut T) {
+    unsafe { wipe(value as *mut T as *mut u8, std::mem::size_of::<T>()) };
+}
+
+/// Wipes a `String`'s bytes (mnemonic phrases, WIF/xprv encodings).
+fn wipe_string(text: &mut String) {
+    unsafe { wipe(text.as_mut_ptr(), text.len()) };
+}
+
+/// `Xpriv` is `Copy` and has no `Drop`, so its two secret halves are
+/// overwritten explicitly.
+fn wipe_xpriv(node: &mut Xpriv) {
+    node.private_key.non_secure_erase();
+    wipe_val(&mut node.chain_code);
 }
 
 /// # Safety
@@ -63,19 +115,26 @@ unsafe fn read<'a>(ptr: *const u8, len: usize) -> &'a [u8] {
 /// 1 if the 32 bytes at `seckey` are a valid secp256k1 secret key, else 0.
 #[no_mangle]
 pub unsafe extern "C" fn secp_seckey_valid(seckey: *const u8) -> i32 {
-    i32::from(SecretKey::from_slice(read(seckey, 32)).is_ok())
+    let mut sk = match SecretKey::from_slice(read(seckey, 32)) {
+        Ok(sk) => sk,
+        Err(_) => return 0,
+    };
+    sk.non_secure_erase();
+    1
 }
 
 /// Public key for `seckey`, serialized into `out` (which must hold 65 bytes).
 /// Returns 33/65, or -1 if the key is invalid.
 #[no_mangle]
 pub unsafe extern "C" fn secp_pubkey_create(seckey: *const u8, out: *mut u8, compressed: i32) -> i32 {
-    let sk = match SecretKey::from_slice(read(seckey, 32)) {
+    let mut sk = match SecretKey::from_slice(read(seckey, 32)) {
         Ok(sk) => sk,
         Err(_) => return -1,
     };
     let pk = PublicKey::from_secret_key(ctx(), &sk);
-    write_serialized(&pk, out, compressed != 0)
+    let written = write_serialized(&pk, out, compressed != 0);
+    sk.non_secure_erase();
+    written
 }
 
 fn write_serialized(pk: &PublicKey, out: *mut u8, compressed: bool) -> i32 {
@@ -142,14 +201,20 @@ pub unsafe extern "C" fn secp_point_mul(
     };
     let mut bytes = [0u8; 32];
     bytes.copy_from_slice(read(scalar, 32));
-    let tweak = match Scalar::from_be_bytes(bytes) {
+    let mut tweak = match Scalar::from_be_bytes(bytes) {
         Ok(tweak) => tweak,
-        Err(_) => return -1,
+        Err(_) => {
+            wipe_bytes(&mut bytes);
+            return -1;
+        }
     };
-    match pk.mul_tweak(ctx(), &tweak) {
+    let result = match pk.mul_tweak(ctx(), &tweak) {
         Ok(product) => write_serialized(&product, out, compressed != 0),
         Err(_) => -1,
-    }
+    };
+    tweak.non_secure_erase();
+    wipe_bytes(&mut bytes);
+    result
 }
 
 /// RFC 6979 ECDSA over the 32-byte `msg32`, serialized compact (r || s, low-S
@@ -168,7 +233,7 @@ pub unsafe extern "C" fn secp_sign(
         Ok(msg) => msg,
         Err(_) => return -1,
     };
-    let sk = match SecretKey::from_slice(read(seckey, 32)) {
+    let mut sk = match SecretKey::from_slice(read(seckey, 32)) {
         Ok(sk) => sk,
         Err(_) => return -1,
     };
@@ -177,9 +242,12 @@ pub unsafe extern "C" fn secp_sign(
     } else {
         let mut extra = [0u8; 32];
         extra.copy_from_slice(read(extra32, 32));
-        ctx().sign_ecdsa_with_noncedata(&msg, &sk, &extra)
+        let sig = ctx().sign_ecdsa_with_noncedata(&msg, &sk, &extra);
+        wipe_bytes(&mut extra);
+        sig
     };
     std::ptr::copy_nonoverlapping(sig.serialize_compact().as_ptr(), out64, 64);
+    sk.non_secure_erase();
     64
 }
 
@@ -228,24 +296,29 @@ pub unsafe extern "C" fn secp_sig_normalize(sig64: *mut u8) -> i32 {
 /// SHA-256 of the input, written as 32 bytes into `out`. Returns 32.
 #[no_mangle]
 pub unsafe extern "C" fn el_sha256(input: *const u8, input_len: usize, out: *mut u8) -> i32 {
-    let digest = sha256::Hash::hash(read(input, input_len)).to_byte_array();
+    // Digests can themselves be key material (e.g. a brain-wallet SHA-256 is
+    // the private key), so the local copy is wiped after it is written out.
+    let mut digest = sha256::Hash::hash(read(input, input_len)).to_byte_array();
     std::ptr::copy_nonoverlapping(digest.as_ptr(), out, 32);
+    wipe_bytes(&mut digest);
     32
 }
 
 /// SHA-512 of the input, written as 64 bytes into `out`. Returns 64.
 #[no_mangle]
 pub unsafe extern "C" fn el_sha512(input: *const u8, input_len: usize, out: *mut u8) -> i32 {
-    let digest = sha512::Hash::hash(read(input, input_len)).to_byte_array();
+    let mut digest = sha512::Hash::hash(read(input, input_len)).to_byte_array();
     std::ptr::copy_nonoverlapping(digest.as_ptr(), out, 64);
+    wipe_bytes(&mut digest);
     64
 }
 
 /// RIPEMD-160 of the input, written as 20 bytes into `out`. Returns 20.
 #[no_mangle]
 pub unsafe extern "C" fn el_ripemd160(input: *const u8, input_len: usize, out: *mut u8) -> i32 {
-    let digest = ripemd160::Hash::hash(read(input, input_len)).to_byte_array();
+    let mut digest = ripemd160::Hash::hash(read(input, input_len)).to_byte_array();
     std::ptr::copy_nonoverlapping(digest.as_ptr(), out, 20);
+    wipe_bytes(&mut digest);
     20
 }
 
@@ -253,8 +326,9 @@ pub unsafe extern "C" fn el_ripemd160(input: *const u8, input_len: usize, out: *
 /// `out`. Returns 20.
 #[no_mangle]
 pub unsafe extern "C" fn el_hash160(input: *const u8, input_len: usize, out: *mut u8) -> i32 {
-    let digest = hash160::Hash::hash(read(input, input_len)).to_byte_array();
+    let mut digest = hash160::Hash::hash(read(input, input_len)).to_byte_array();
     std::ptr::copy_nonoverlapping(digest.as_ptr(), out, 20);
+    wipe_bytes(&mut digest);
     20
 }
 
@@ -270,8 +344,9 @@ pub unsafe extern "C" fn el_hmac_sha512(
 ) -> i32 {
     let mut engine = HmacEngine::<sha512::Hash>::new(read(key, key_len));
     engine.input(read(input, input_len));
-    let digest = Hmac::<sha512::Hash>::from_engine(engine).to_byte_array();
+    let mut digest = Hmac::<sha512::Hash>::from_engine(engine).to_byte_array();
     std::ptr::copy_nonoverlapping(digest.as_ptr(), out, 64);
+    wipe_bytes(&mut digest);
     64
 }
 
@@ -312,6 +387,10 @@ pub unsafe extern "C" fn el_pbkdf2_hmac_sha512(
         }
         let take = (out_len - written).min(64);
         std::ptr::copy_nonoverlapping(t.as_ptr(), out.add(written), take);
+        // The U/T blocks are the derived key (and its preimage) — for BIP39
+        // that is the seed itself. Wipe each block as soon as it is copied.
+        wipe_bytes(&mut u);
+        wipe_bytes(&mut t);
         written += take;
         block += 1;
     }
@@ -326,13 +405,18 @@ pub unsafe extern "C" fn el_pbkdf2_hmac_sha512(
 /// `cap`). Returns the string length, or -1 if `cap` is too small.
 #[no_mangle]
 pub unsafe extern "C" fn el_b58check_encode(input: *const u8, input_len: usize, out: *mut u8, cap: usize) -> i32 {
-    let encoded = base58ck::encode_check(read(input, input_len));
-    let bytes = encoded.as_bytes();
-    if bytes.len() > cap {
+    // The payload can be a WIF or extended private key; the encoded string is
+    // then secret too, so both the boundary buffer (secp_free) and this
+    // temporary copy are wiped.
+    let mut encoded = base58ck::encode_check(read(input, input_len));
+    let len = encoded.len();
+    if len > cap {
+        wipe_string(&mut encoded);
         return -1;
     }
-    std::ptr::copy_nonoverlapping(bytes.as_ptr(), out, bytes.len());
-    bytes.len() as i32
+    std::ptr::copy_nonoverlapping(encoded.as_ptr(), out, len);
+    wipe_string(&mut encoded);
+    len as i32
 }
 
 /// Base58Check-decodes the UTF-8 string, verifying the checksum, writing the
@@ -344,15 +428,18 @@ pub unsafe extern "C" fn el_b58check_decode(input: *const u8, input_len: usize, 
         Ok(text) => text,
         Err(_) => return -1,
     };
-    let payload = match base58ck::decode_check(text) {
+    let mut payload = match base58ck::decode_check(text) {
         Ok(payload) => payload,
         Err(_) => return -1,
     };
     if payload.len() > cap {
+        wipe_bytes(&mut payload);
         return -1;
     }
     std::ptr::copy_nonoverlapping(payload.as_ptr(), out, payload.len());
-    payload.len() as i32
+    let len = payload.len() as i32;
+    wipe_bytes(&mut payload);
+    len
 }
 
 // ── BIP32 (bitcoin::bip32) ──────────────────────────────────────────────────
@@ -366,7 +453,9 @@ pub unsafe extern "C" fn el_b58check_decode(input: *const u8, input_len: usize, 
 
 use bitcoin::bip32::{ChainCode, ChildNumber, Xpriv, Xpub};
 
-fn write78(node: [u8; 78], out: *mut u8) -> i32 {
+// By reference, so the caller can wipe its single owned copy of the node
+// serialization instead of leaving a moved-from stack copy behind.
+fn write78(node: &[u8; 78], out: *mut u8) -> i32 {
     unsafe { std::ptr::copy_nonoverlapping(node.as_ptr(), out, 78) };
     78
 }
@@ -376,7 +465,13 @@ fn write78(node: [u8; 78], out: *mut u8) -> i32 {
 #[no_mangle]
 pub unsafe extern "C" fn el_hd_master(seed: *const u8, seed_len: usize, out: *mut u8) -> i32 {
     match Xpriv::new_master(bitcoin::Network::Bitcoin, read(seed, seed_len)) {
-        Ok(master) => write78(master.encode(), out),
+        Ok(mut master) => {
+            let mut encoded = master.encode();
+            let written = write78(&encoded, out);
+            wipe_bytes(&mut encoded);
+            wipe_xpriv(&mut master);
+            written
+        }
         Err(_) => -1,
     }
 }
@@ -386,9 +481,16 @@ pub unsafe extern "C" fn el_hd_master(seed: *const u8, seed_len: usize, out: *mu
 /// verdict, or -1 on a malformed parent.
 #[no_mangle]
 pub unsafe extern "C" fn el_hd_ckd_priv(node: *const u8, index: u32, out: *mut u8) -> i32 {
-    let parent = match Xpriv::decode(read(node, 78)) {
+    let mut parent = match Xpriv::decode(read(node, 78)) {
         Ok(parent) => parent,
         Err(_) => return -1,
+    };
+    let depth = match parent.depth.checked_add(1) {
+        Some(depth) => depth,
+        None => {
+            wipe_xpriv(&mut parent);
+            return -1;
+        }
     };
     let i = ChildNumber::from(index);
     let mut engine = HmacEngine::<sha512::Hash>::new(&parent.chain_code[..]);
@@ -399,37 +501,48 @@ pub unsafe extern "C" fn el_hd_ckd_priv(node: *const u8, index: u32, out: *mut u
         engine.input(&PublicKey::from_secret_key(ctx(), &parent.private_key).serialize());
     }
     engine.input(&u32::from(i).to_be_bytes());
-    let hmac = Hmac::<sha512::Hash>::from_engine(engine);
-    let il: &[u8] = &hmac[..32];
-    let child_key = if il.iter().all(|b| *b == 0) {
-        // I_L == 0 leaves the key unchanged (allowed; only an invalid child
-        // below would trigger the retry).
-        parent.private_key
-    } else {
-        let tweak = match SecretKey::from_slice(il) {
-            Ok(tweak) => tweak,
-            Err(_) => return 1, // I_L >= n: retry with the next index
-        };
-        match parent.private_key.add_tweak(&tweak.into()) {
-            Ok(sum) => sum,
-            Err(_) => return 1, // child would be zero: retry
-        }
-    };
-    let depth = match parent.depth.checked_add(1) {
-        Some(depth) => depth,
-        None => return -1,
-    };
+    let mut hmac = Hmac::<sha512::Hash>::from_engine(engine).to_byte_array();
     let mut chain_code = [0u8; 32];
     chain_code.copy_from_slice(&hmac[32..]);
-    let child = Xpriv {
-        network: parent.network,
-        depth,
-        parent_fingerprint: parent.fingerprint(ctx()),
-        child_number: i,
-        private_key: child_key,
-        chain_code: ChainCode::from(chain_code),
+    // Single exit, so every secret temporary is wiped on every path below.
+    let result = 'ckd: {
+        let il: &[u8] = &hmac[..32];
+        let child_key = if il.iter().all(|b| *b == 0) {
+            // I_L == 0 leaves the key unchanged (allowed; only an invalid
+            // child below would trigger the retry).
+            parent.private_key
+        } else {
+            let mut tweak = match SecretKey::from_slice(il) {
+                Ok(tweak) => tweak,
+                Err(_) => break 'ckd 1, // I_L >= n: retry with the next index
+            };
+            let mut scalar = Scalar::from(tweak);
+            let sum = parent.private_key.add_tweak(&scalar);
+            tweak.non_secure_erase();
+            scalar.non_secure_erase();
+            match sum {
+                Ok(sum) => sum,
+                Err(_) => break 'ckd 1, // child would be zero: retry
+            }
+        };
+        let mut child = Xpriv {
+            network: parent.network,
+            depth,
+            parent_fingerprint: parent.fingerprint(ctx()),
+            child_number: i,
+            private_key: child_key,
+            chain_code: ChainCode::from(chain_code),
+        };
+        let mut encoded = child.encode();
+        let written = write78(&encoded, out);
+        wipe_bytes(&mut encoded);
+        wipe_xpriv(&mut child);
+        written
     };
-    write78(child.encode(), out)
+    wipe_xpriv(&mut parent);
+    wipe_bytes(&mut hmac);
+    wipe_bytes(&mut chain_code);
+    result
 }
 
 /// One public CKD step (normal indexes only) from the 78-byte parent xpub.
@@ -477,7 +590,9 @@ pub unsafe extern "C" fn el_hd_ckd_pub(node: *const u8, index: u32, out: *mut u8
         public_key: child_point,
         chain_code: ChainCode::from(chain_code),
     };
-    write78(child.encode(), out)
+    // Public derivation only: everything here is recoverable from the xpub,
+    // so there is no secret temporary to wipe.
+    write78(&child.encode(), out)
 }
 
 /// Classifies a 78-byte node: 1 = valid private node, 2 = valid public node,
@@ -485,7 +600,8 @@ pub unsafe extern "C" fn el_hd_ckd_pub(node: *const u8, index: u32, out: *mut u8
 #[no_mangle]
 pub unsafe extern "C" fn el_hd_validate(node: *const u8) -> i32 {
     let bytes = read(node, 78);
-    if Xpriv::decode(bytes).is_ok() {
+    if let Ok(mut xprv) = Xpriv::decode(bytes) {
+        wipe_xpriv(&mut xprv);
         return 1;
     }
     if Xpub::decode(bytes).is_ok() {
@@ -512,13 +628,15 @@ pub unsafe extern "C" fn el_bip39_entropy_to_mnemonic(entropy: *const u8, len: u
         Ok(mnemonic) => mnemonic,
         Err(_) => return -1,
     };
-    let phrase = mnemonic.words().collect::<Vec<&str>>().join(" ");
-    let bytes = phrase.as_bytes();
-    if bytes.len() > cap {
+    let mut phrase = mnemonic.words().collect::<Vec<&str>>().join(" ");
+    if phrase.len() > cap {
+        wipe_string(&mut phrase);
         return -1;
     }
-    std::ptr::copy_nonoverlapping(bytes.as_ptr(), out, bytes.len());
-    bytes.len() as i32
+    std::ptr::copy_nonoverlapping(phrase.as_ptr(), out, phrase.len());
+    let len = phrase.len() as i32;
+    wipe_string(&mut phrase);
+    len
 }
 
 /// Entropy behind a BIP39 English mnemonic (caller NFKD-normalized), written
@@ -534,11 +652,13 @@ pub unsafe extern "C" fn el_bip39_mnemonic_to_entropy(phrase: *const u8, len: us
         Ok(mnemonic) => mnemonic,
         Err(_) => return -1,
     };
-    let (entropy, entropy_len) = mnemonic.to_entropy_array();
+    let (mut entropy, entropy_len) = mnemonic.to_entropy_array();
     if entropy_len > cap {
+        wipe_bytes(&mut entropy);
         return -1;
     }
     std::ptr::copy_nonoverlapping(entropy.as_ptr(), out, entropy_len);
+    wipe_bytes(&mut entropy);
     entropy_len as i32
 }
 
@@ -806,15 +926,19 @@ pub unsafe extern "C" fn el_bech32m_encode(
             Err(_) => return -1,
         }
     }
-    let encoded = bech32::primitives::encode::Encoder::<_, Bech32m>::new(fes.into_iter(), &hrp)
+    let mut encoded = bech32::primitives::encode::Encoder::<_, Bech32m>::new(fes.into_iter(), &hrp)
         .chars()
         .collect::<String>();
-    let bytes = encoded.as_bytes();
-    if bytes.len() > cap {
+    // BIP352 spscan/spspend strings carry private keys, so the temporary
+    // encoded copy is wiped after it is written out.
+    if encoded.len() > cap {
+        wipe_string(&mut encoded);
         return -1;
     }
-    std::ptr::copy_nonoverlapping(bytes.as_ptr(), out, bytes.len());
-    bytes.len() as i32
+    std::ptr::copy_nonoverlapping(encoded.as_ptr(), out, encoded.len());
+    let len = encoded.len() as i32;
+    wipe_string(&mut encoded);
+    len
 }
 
 /// Decodes a bech32m string: writes the hrp (UTF-8, `hrp_out`/`hrp_cap`) and
