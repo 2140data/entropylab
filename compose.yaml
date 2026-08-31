@@ -11,6 +11,7 @@
 #   docker compose down --remove-orphans
 services:
   dev:
+    platform: linux/amd64
     build:
       context: .
     image: entropylab-dev
