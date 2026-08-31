@@ -180,20 +180,30 @@ possible loss of funds. Follow the private reporting instructions in
 
 ## Building from source
 
-The build imports the cryptographic libraries declared in `package.json`,
-bundles them with the application using esbuild, and inlines the result into a
-single self-contained HTML file. `package-lock.json` pins the complete
-dependency tree and the integrity hash of every downloaded package.
+The build bundles the application with esbuild and inlines the result into a
+single self-contained HTML file. All Bitcoin cryptography is compiled to
+WebAssembly from the pinned Rust crate (below); the only JavaScript package
+bundled into the artifact is `uqr` (QR rendering). `package-lock.json` pins
+the complete dependency tree and the integrity hash of every downloaded
+package; the `@noble`/`@scure` packages remain as dev-only differential test
+oracles, pinned and never bundled.
 
-EntropyLab's own secp256k1 calls — public-key derivation, ECDSA signing and
-verification in PSBT inspection, and curve point math — run on
-libsecp256k1 0.8.0 compiled to WebAssembly from the pinned Rust crate in
-`secp256k1-wasm/` (exact crate versions in `secp256k1-wasm/Cargo.lock`,
-toolchain pinned by `rust-toolchain.toml`) via the facade in
-`src/js/secp256k1.js`. BIP32 extended-key derivation and address/script
-construction still run on `@noble/curves`, brought in by the bundled
-`@scure` libraries. The compiled artifact is committed as
-`src/js/secp256k1-wasm-b64.js`, so building the site needs only Node.js. CI
+EntropyLab's cryptography — secp256k1 curve operations (public-key
+derivation, ECDSA signing and verification in PSBT inspection, curve point
+math), hashes (SHA-256, SHA-512, RIPEMD-160, HMAC-SHA-512,
+PBKDF2-HMAC-SHA-512), BIP32 extended-key derivation, BIP39 mnemonics,
+Base58Check and bech32m encoding, and address/script construction
+(p2pkh/p2sh/p2wpkh/p2tr, bare and taproot multisig) — runs on rust-bitcoin's
+`secp256k1` crate (libsecp256k1 v0.4.1 vendored by secp256k1-sys 0.10.1),
+`bitcoin`, `bitcoin_hashes`, `base58ck`, `bech32`, and `bip39`, compiled to
+WebAssembly from the pinned Rust crate in `entropylab-wasm/` (exact crate
+versions in `entropylab-wasm/Cargo.lock`, toolchain pinned by
+`rust-toolchain.toml`) via the facades in `src/js/secp256k1.js`,
+`src/js/hashes.js`, `src/js/hdkey.js`, `src/js/bip39.js`, `src/js/base58.js`,
+`src/js/addresses.js`, and `src/js/bech32.js`. The only remaining JavaScript
+bundled from npm is `uqr` (QR rendering; no cryptography). The compiled
+artifact is committed as `src/js/entropylab-wasm-b64.js`, so building the
+site needs only Node.js. CI
 rebuilds it from the Rust sources, runs its test suite against the fresh
 build, and commits the runner's copy back to `rock` after each merge (the
 same flow as the site artifact; byte identity across machines is not
@@ -207,7 +217,7 @@ npm ci
 npm run build
 ```
 
-To modify the curve bindings (`secp256k1-wasm/`), Rust (with the
+To modify the Rust bindings (`entropylab-wasm/`), Rust (with the
 `wasm32-unknown-unknown` target, installed automatically by rustup) is also
 required; regenerate the committed artifact with `npm run build:wasm`.
 
@@ -227,9 +237,9 @@ To remove generated files, run `npm run clean`.
 ├── assets/                 Static assets (logo, favicon, social card)
 ├── scripts/
 │   ├── build.mjs           Locked-dependency esbuild and HTML assembly
-│   ├── build-wasm.mjs      libsecp256k1 WASM rebuild (npm run build:wasm)
+│   ├── build-wasm.mjs      crypto WASM rebuild (npm run build:wasm)
 │   └── verify-site.mjs     Site artifact verification (npm run verify)
-├── secp256k1-wasm/         Pinned Rust crate: libsecp256k1 -> WebAssembly bindings
+├── entropylab-wasm/        Pinned Rust crate: libsecp256k1 + bitcoin_hashes -> WebAssembly bindings
 ├── test/
 │   ├── browser-instrumentation.html  In-page browser test hooks
 │   ├── browser-suite.html            In-page browser test suite
@@ -248,7 +258,16 @@ To remove generated files, run `npm run clean`.
 │   └── js/
 │       ├── app.js          Application logic and explicit package imports
 │       ├── secp256k1.js    Curve facade over the WASM module (noble-shaped API)
-│       ├── secp256k1-wasm-b64.js Generated WASM artifact (committed; build:wasm)
+│       ├── entropylab-wasm.js Shared WASM module loader
+│       ├── entropylab-wasm-b64.js Generated WASM artifact (committed; build:wasm)
+│       ├── hashes.js         Hash facade over the WASM module (noble-shaped API)
+│       ├── hdkey.js          BIP32 HDKey facade over the WASM module (scure-shaped API)
+│       ├── bip39.js          BIP39 mnemonic facade over the WASM module (scure-shaped API)
+│       ├── bip39-english.js  Canonical 2048-word English list (UI data)
+│       ├── base58.js         Base58Check facade over the WASM module
+│       ├── addresses.js      Script/address facade over the WASM module
+│       ├── bech32.js         bech32m facade over the WASM module (BIP352)
+│       ├── coders.js         hex/base64 byte coders (no cryptography)
 │       ├── sqlite-writer.js Minimal SQLite database file writer
 │       ├── wallet-export.js Bitcoin Core wallet.dat descriptor export
 │       ├── online.js       Hosted-site behavior and header version label
@@ -271,7 +290,7 @@ npm run test:ci             # the CI subset: network-check, ui-defaults, source 
 npm run test:validate       # validate source and security invariants
 npm run test:browser        # test crypto, sanitization, networking, exports in headless Firefox
 npm run build               # compile src/ into the generated root files
-npm run build:wasm          # rebuild the committed secp256k1 WASM artifact (needs Rust)
+npm run build:wasm          # rebuild the committed crypto WASM artifact (needs Rust)
 npm run verify              # verify the site artifact (entropylab.html, assets)
 npm run ci                  # run the CI test subset, build, and verify in order
 ```

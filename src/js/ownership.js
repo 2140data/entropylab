@@ -1,7 +1,6 @@
 // Match transaction outputs against a session key. Air-gapped: no chain.
-import { sha256 } from "@noble/hashes/sha2.js";
-import { ripemd160 } from "@noble/hashes/legacy.js";
-import { p2pkh, p2sh, p2tr, p2wpkh, NETWORK, TEST_NETWORK } from "@scure/btc-signer";
+// Scripts and addresses come from the rust-bitcoin WASM facade (./addresses.js).
+import { addressFor as addressForType, p2pkhScript, p2shP2wpkhScript, p2trKeyScript, p2wpkhScript } from "./addresses.js";
 
 export const OWNERSHIP_GAP = 50;
 export const OWNERSHIP_ACCOUNTS = 3;
@@ -13,26 +12,8 @@ const SCRIPT_TYPES = [
   { id: "bip86", script: "p2tr", purpose: 86 },
 ];
 
-function netOf(network) {
-  return network === "testnet" ? TEST_NETWORK : NETWORK;
-}
-
 function coinType(network) {
   return network === "testnet" ? 1 : 0;
-}
-
-function hash160(bytes) {
-  return ripemd160(sha256(bytes));
-}
-
-function concatBytes(...parts) {
-  const out = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
-  let offset = 0;
-  for (const part of parts) {
-    out.set(part, offset);
-    offset += part.length;
-  }
-  return out;
 }
 
 function bytesToHex(bytes) {
@@ -51,44 +32,23 @@ function taggedTapTweak(pubkey) {
 
 function scriptFor(script, pubkey, network) {
   const compressed = pubkey.length === 33 ? pubkey : null;
-  const key = compressed || pubkey;
-  if (script === "p2pkh") {
-    const hash = hash160(key);
-    return concatBytes(Uint8Array.of(0x76, 0xa9, 0x14), hash, Uint8Array.of(0x88, 0xac));
-  }
-  if (script === "p2wpkh") {
-    if (!compressed) return null;
-    const hash = hash160(compressed);
-    return concatBytes(Uint8Array.of(0x00, 0x14), hash);
-  }
-  if (script === "p2sh-p2wpkh") {
-    if (!compressed) return null;
-    const hash = hash160(compressed);
-    const redeem = concatBytes(Uint8Array.of(0x00, 0x14), hash);
-    const redeemHash = hash160(redeem);
-    return concatBytes(Uint8Array.of(0xa9, 0x14), redeemHash, Uint8Array.of(0x87));
-  }
-  if (script === "p2tr") {
-    try {
-      const pay = p2tr(taggedTapTweak(compressed || pubkey), undefined, netOf(network));
-      return pay.script ? Uint8Array.from(pay.script) : null;
-    } catch {
-      return null;
-    }
+  try {
+    if (script === "p2pkh") return p2pkhScript(compressed || pubkey);
+    if (script === "p2wpkh") return compressed ? p2wpkhScript(compressed) : null;
+    if (script === "p2sh-p2wpkh") return compressed ? p2shP2wpkhScript(compressed) : null;
+    if (script === "p2tr") return p2trKeyScript(taggedTapTweak(compressed || pubkey));
+  } catch {
+    return null;
   }
   return null;
 }
 
 function addressFor(script, pubkey, network) {
   try {
-    if (script === "p2pkh") return p2pkh(pubkey, netOf(network)).address;
-    if (script === "p2sh-p2wpkh") return p2sh(p2wpkh(pubkey, netOf(network)), netOf(network)).address;
-    if (script === "p2wpkh") return p2wpkh(pubkey, netOf(network)).address;
-    if (script === "p2tr") return p2tr(pubkey.slice(1), undefined, netOf(network)).address;
+    return addressForType(script, pubkey, network);
   } catch {
     return null;
   }
-  return null;
 }
 
 export function normalizeAddress(value) {

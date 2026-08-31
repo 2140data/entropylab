@@ -33,24 +33,22 @@ function loadSlice(name) {
   return app.slice(start, end);
 }
 
-// Execute the app's own decoders in a module scope whose curve and hash
-// globals are the locked vendor packages (never a reimplementation).
+// Execute the app's own decoders in a module scope whose curve, hash, and
+// script/address helpers are the app's real WASM facades (never a
+// reimplementation). hodlBip143 itself now calls rust-bitcoin's SighashCache
+// through the WASM boundary.
 const harnessSource = `
-import { sha256 } from "@noble/hashes/sha2.js";
-import { p2sh as Jr, OutScript as Oe } from "@scure/btc-signer";
-import { secp256k1 as xe } from "@noble/curves/secp256k1.js";
-const Z = sha256, tr = sha256;
+import { secp256k1 as xe } from "../src/js/secp256k1.js";
+import { p2shScript, p2wshScript } from "../src/js/addresses.js";
+import { wasmExports as hodlWasm, withInput as hodlWasmIn, withOutput as hodlWasmOut } from "../src/js/entropylab-wasm.js";
+import { serializeTx } from "../src/js/tx.js";
 ${[
   "hodlPsbtNeed",
   "hodlR32",
   "hodlR64",
   "hodlVarInt",
-  "hodlVarIntBytes",
-  "hodlPushScript",
-  "hodlH256",
   "hodlEq",
   "hodlU32",
-  "hodlU64",
   "Os",
   "hodlBip143",
   "hodlInputScriptCode",

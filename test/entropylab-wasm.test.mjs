@@ -1,4 +1,5 @@
-// Tests for the libsecp256k1 WASM facade (src/js/secp256k1.js).
+// Tests for the libsecp256k1 WASM facade (src/js/secp256k1.js, loaded by
+// src/js/entropylab-wasm.js).
 // Run with `npm test` (part of the default and CI suites).
 //
 // Two layers of assurance:
@@ -33,17 +34,17 @@ test("secp256k1Ready resolves (WASM initialized synchronously under Node)", asyn
 });
 
 test("committed WASM artifact is intact (sha256 in module header matches payload)", () => {
-  const source = readFileSync(join(root, "src/js/secp256k1-wasm-b64.js"), "utf8");
+  const source = readFileSync(join(root, "src/js/entropylab-wasm-b64.js"), "utf8");
   const declared = source.match(/wasm sha256: ([0-9a-f]{64})/);
   assert.ok(declared, "module header carries the wasm sha256");
-  const b64 = source.match(/export const SECP256K1_WASM_B64 =\s*"([A-Za-z0-9+/=]+)";/);
+  const b64 = source.match(/export const ENTROPOLAB_WASM_B64 =\s*"([A-Za-z0-9+/=]+)";/);
   assert.ok(b64, "module exports the base64 payload");
   const actual = createHash("sha256").update(Buffer.from(b64[1], "base64")).digest("hex");
   assert.equal(actual, declared[1]);
 });
 
 test("committed WASM carries no build-host paths (remapped at build time)", () => {
-  const source = readFileSync(join(root, "src/js/secp256k1-wasm-b64.js"), "utf8");
+  const source = readFileSync(join(root, "src/js/entropylab-wasm-b64.js"), "utf8");
   const payload = Buffer.from(source.match(/"([A-Za-z0-9+/=]+)"/)[1], "base64").toString("latin1");
   for (const banned of ["/home/", "/Users/", ".cargo/", ".rustup/"]) {
     assert.equal(payload.includes(banned), false, `build fingerprints the build host: ${banned}`);

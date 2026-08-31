@@ -210,7 +210,7 @@ test("third-party actions are immutable and deployment is test-gated", () => {
   // The WASM gate must rebuild the bindings from the Rust sources, test the
   // fresh build, and block both the artifact commit and the Pages deploy.
   assert.match(workflow, /^\s{2}build-wasm:\n(?:.|\n)*?npm run build:wasm\n/m);
-  assert.match(workflow, /^\s{2}build-wasm:\n(?:.|\n)*?node --test test\/secp256k1-wasm\.test\.mjs/m);
+  assert.match(workflow, /^\s{2}build-wasm:\n(?:.|\n)*?node --test test\/entropylab-wasm\.test\.mjs test\/hashes-wasm\.test\.mjs/m);
   assert.match(workflow, /^\s{2}deploy:\n(?:.|\n)*?^\s{4}needs: \[build, verify, test-ci, test-browser, build-wasm\]$/m);
 });
 

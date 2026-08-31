@@ -33,18 +33,14 @@ const p2wsh = (script) => concat(Uint8Array.of(0, 32), sha256(script));
 const p2sh = (script) => concat(Uint8Array.of(0xa9, 0x14), hash160(script), Uint8Array.of(0x87));
 
 const hodlInputScriptCode = new Function(
-  "hodlFind", "hodlEq", "Jr", "Os", "Oe", "tr",
+  "hodlFind", "hodlEq", "p2shScript", "Os", "p2wshScript",
   `${loadSlice("hodlInputScriptCode")}; return hodlInputScriptCode;`,
 )(
   (entries, type) => entries.filter((entry) => entry.type === type),
   (left, right) => Boolean(left && right && left.length === right.length && left.every((byte, index) => byte === right[index])),
-  ({ script }) => ({ script: p2sh(script) }),
+  (script) => p2sh(script),
   concat,
-  { encode: ({ type, hash }) => {
-    if (type !== "wsh") throw new Error("unexpected script type");
-    return concat(Uint8Array.of(0, 32), hash);
-  } },
-  sha256,
+  (script) => p2wsh(script),
 );
 
 const entry = (type, val) => ({ type, keydata: new Uint8Array(0), val });
