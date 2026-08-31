@@ -1,0 +1,25 @@
+[package]
+name = "psbt-wasm"
+version = "0.1.0"
+edition = "2021"
+publish = false
+license = "Unlicense"
+description = "WebAssembly bindings to rust-bitcoin PSBT for EntropyLab (built by CI, committed as src/js/psbt-wasm-b64.js)"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# Exact versions, lockfile-committed, per CONTRIBUTING.md §2. This crate is
+# the FFI for rust-bitcoin's PSBT (BIP-174) types. "std" keeps consensus and
+# PSBT encode/decode; serde_json is the interchange format across the WASM
+# boundary (the JS side only ever sees PSBT bytes or UTF-8 JSON).
+bitcoin = { version = "=0.32.102", default-features = false, features = ["std"] }
+serde_json = { version = "=1.0.151", default-features = false, features = ["alloc"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

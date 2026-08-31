@@ -177,7 +177,9 @@ test("multisig account summary reports mismatched accounts as mixed", () => {
 
 test("multisig script type is inferred from SLIP-132 prefixes and key origins", () => {
   assert.equal(hodlMultisigOriginScriptKind({ path: "45h" }), "p2sh");
-  assert.equal(hodlMultisigOriginScriptKind({ path: "87h/0h/0h" }), "p2sh");
+  // Purpose 87 is the Taproot default as well, and BIP87 account keys are
+  // script-agnostic, so a bare 87h origin must not select a script type.
+  assert.equal(hodlMultisigOriginScriptKind({ path: "87h/0h/0h" }), null);
   assert.equal(hodlMultisigOriginScriptKind({ path: "48h/0h/0h/1h" }), "p2sh-p2wsh");
   assert.equal(hodlMultisigOriginScriptKind({ path: "48h/0h/0h/2h" }), "p2wsh");
   assert.equal(hodlMultisigOriginScriptKind({ path: "86h/0h/0h" }), "p2tr");
@@ -208,7 +210,7 @@ test("multisig script type is inferred from SLIP-132 prefixes and key origins", 
   );
   assert.deepEqual(
     hodlMultisigScriptEvidence({ scope: "singlesig", family: "x", origin: { path: "87h/0h/0h" } }),
-    { prefixKind: null, originKind: "p2sh" },
+    { prefixKind: null, originKind: null },
   );
 
   assert.deepEqual(hodlSummarizeMultisigScriptKinds(["p2wsh", "p2wsh"]), {

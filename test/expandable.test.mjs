@@ -1,0 +1,62 @@
+// Tests for the pure half of src/js/expandable.js — the standard truncation
+// rule and the cell markup. initExpandable is DOM-bound and covered by the
+// Firefox browser suite (test/browser-suite.html).
+// Run with `npm test` (part of the default and CI suites).
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { truncateText, expandSizeLabel, expandableHtml, EXPAND_LIMIT } from "../src/js/expandable.js";
+
+test("at or under the limit the text passes through untouched", () => {
+  assert.deepEqual(truncateText(""), { truncated: false, preview: "" });
+  assert.deepEqual(truncateText("ab".repeat(EXPAND_LIMIT / 2)), { truncated: false, preview: "ab".repeat(EXPAND_LIMIT / 2) });
+});
+
+test("over the limit the preview is head, ellipsis, tail", () => {
+  const text = "a".repeat(EXPAND_LIMIT + 1);
+  const { truncated, preview } = truncateText(text);
+  assert.equal(truncated, true);
+  assert.equal(preview, `${"a".repeat(32)}…${"a".repeat(16)}`);
+  const hex = `0123456789abcdef`.repeat(8); // 128 chars
+  const cut = truncateText(hex);
+  assert.equal(cut.preview, `${hex.slice(0, 32)}…${hex.slice(-16)}`);
+  assert.ok(cut.preview.length < hex.length);
+});
+
+test("the size label counts bytes for even hex and characters otherwise", () => {
+  assert.equal(expandSizeLabel("ab".repeat(150)), "300 hex chars (150 bytes)");
+  assert.equal(expandSizeLabel("ab".repeat(75)), "150 hex chars (75 bytes)");
+  assert.equal(expandSizeLabel("OP_DUP OP_HASH160 …"), "19 characters");
+  assert.equal(expandSizeLabel(""), "0 characters");
+  assert.equal(expandSizeLabel("abc"), "3 characters"); // odd-length hex is not byte-counted
+});
+
+test("short text renders as escaped plain text, not a button", () => {
+  assert.equal(expandableHtml("00ff"), "00ff");
+  assert.equal(expandableHtml('<script>"x"</script>'), "&lt;script&gt;&quot;x&quot;&lt;/script&gt;");
+  assert.ok(!expandableHtml("00ff").includes("exp-cell"));
+});
+
+test("long text renders a truncated cell carrying the full value", () => {
+  const value = "cd".repeat(150); // 300 hex chars
+  const html = expandableHtml(value, { label: "Value bytes for PSBT_IN_WITNESS_UTXO (hex)" });
+  assert.match(html, /^<button type="button" class="exp-cell" /);
+  assert.ok(html.includes(`data-exp="${value}"`), "full value missing from the cell");
+  assert.ok(html.includes(`data-exp-label="Value bytes for PSBT_IN_WITNESS_UTXO (hex)"`));
+  assert.ok(html.includes(`${"cd".repeat(16)}…${"cd".repeat(8)}`), "preview is not head…tail");
+  assert.ok(html.includes("300 hex chars (150 bytes)"), "size label missing");
+  assert.ok(!html.includes("data-exp-edit"), "cell without edit attributes must not be editable");
+});
+
+test("edit attributes mark the cell editable and pass through", () => {
+  const html = expandableHtml("ef".repeat(100), { label: "Value (hex)", editAttrs: `data-kind="input" data-map="2" data-pair="3"` });
+  assert.ok(html.includes("data-exp-edit"), "editable marker missing");
+  assert.ok(html.includes(`data-kind="input" data-map="2" data-pair="3"`));
+});
+
+test("markup from a hostile value stays inert", () => {
+  const hostile = `"><img src=x onerror=alert(1)>${"aa".repeat(100)}`;
+  const html = expandableHtml(hostile, { label: 'key "quoted"' });
+  assert.ok(!html.includes("<img"), "unescaped markup in cell");
+  assert.ok(html.includes("&lt;img"), "value was not escaped");
+  assert.ok(html.includes("key &quot;quoted&quot;"), "label was not escaped");
+});
