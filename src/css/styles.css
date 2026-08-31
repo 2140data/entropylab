@@ -269,6 +269,12 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
 .choice:has(input:disabled) { cursor: not-allowed; opacity: 0.52; }
 .choice-grid { display: grid; gap: var(--space-control); margin-top: var(--space-control); }
 .choice-grid .choice { margin-top: 0; }
+details.lab-entropy { margin-top: var(--space-section); }
+details.lab-entropy > summary {
+  cursor: pointer; font-weight: 600; color: var(--fg);
+}
+details.lab-entropy .wallet-result-messages { margin-top: var(--space-control); }
+#brain-lab { font-family: var(--mono); letter-spacing: 0; }
 @media (min-width: 720px) {
   .choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .choice-grid.three-up { grid-template-columns: repeat(3, minmax(0, 1fr)); }

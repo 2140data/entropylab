@@ -511,6 +511,17 @@ function hodlBrainWalletPassphrase(value, trimBoundaryWhitespace = false) {
 function hodlBrainWalletPrivateKey(value, trimBoundaryWhitespace = false) {
   return Z(new TextEncoder().encode(hodlBrainWalletPassphrase(value, trimBoundaryWhitespace)));
 }
+function hodlBrainLabEntropy(value) {
+  let text = String(value ?? ""), notes = [], warnings = [];
+  if (!text.length) return { ok: false, error: "Enter the brain-wallet lab text.", notes, warnings };
+  let bytes = Z(new TextEncoder().encode(text)), hex = M.encode(bytes);
+  notes.push("SHA-256 of the exact UTF-8 text is 32 bytes of BIP39 entropy (256 bits → 24 words).");
+  warnings.push("Lab only. Strength is the entropy of this text, not the 24-word count.");
+  warnings.push("SHA-256(text) is unsalted and fast. Anyone who can guess the text recovers the wallet.");
+  warnings.push("This is not a BIP39 passphrase, and it is not a Bitcoin Core hdseed or address-key backup.");
+  warnings.push("A valid mnemonic does not mean it is the same wallet as hashing the text as a Core private key.");
+  return { ok: true, bytes, hex, bits: 256, sourceBits: 256, method: "brain-lab", notes, warnings };
+}
 function Io(e, t, r, trimBrainWallet = false) {
   let n = [], o = [], i, s = null, c = t, a = r === "brain" ? hodlBrainWalletPassphrase(e, trimBrainWallet) : e.trim();
   if (r === "brain") {
@@ -993,13 +1004,13 @@ ec.innerHTML = `
   </div>
 `;
 if (/^(www\.)?entropylab\.online$/i.test(location.hostname)) document.getElementById("online-warning")?.removeAttribute("hidden");
-var hodlKeyModes = ["dice", "cards", "hex", "seed", "key"], hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "\u2660", label: "Spades", red: false }, { code: "H", symbol: "\u2665", label: "Hearts", red: true }, { code: "C", symbol: "\u2663", label: "Clubs", red: false }, { code: "D", symbol: "\u2666", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, hodlCardColemanSymbols = false, Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], ft = "", re = null, Ge = false, hodlWalletDatBirthday = "genesis", Zs = W("#modes"), at = W("#form"), dr = W("#out");
+var hodlKeyModes = ["dice", "cards", "hex", "seed", "key", "brain-lab"], hodlBrainLabAck = false, hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "\u2660", label: "Spades", red: false }, { code: "H", symbol: "\u2665", label: "Hearts", red: true }, { code: "C", symbol: "\u2663", label: "Clubs", red: false }, { code: "D", symbol: "\u2666", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, hodlCardColemanSymbols = false, Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], ft = "", re = null, Ge = false, hodlWalletDatBirthday = "genesis", Zs = W("#modes"), at = W("#form"), dr = W("#out");
 hodlKeyModes.forEach((e) => {
   let t = document.createElement("button"), active = e === Ne;
   t.type = "button";
   t.className = "tab" + (active ? " active" : "");
   t.setAttribute("aria-pressed", String(active));
-  t.textContent = e === "dice" ? "Dice rolls" : e === "cards" ? "Cards" : e === "hex" ? "Number bases" : e === "seed" ? "Seed phrase" : "Private key";
+  t.textContent = e === "dice" ? "Dice rolls" : e === "cards" ? "Cards" : e === "hex" ? "Number bases" : e === "seed" ? "Seed phrase" : e === "brain-lab" ? "Brain wallet — lab" : "Private key";
   t.onclick = () => hodlSetMode(e);
   Zs.appendChild(t);
 });
@@ -2555,7 +2566,7 @@ function hodlUpdateKeyModeControls() {
   let singleKey = Ne === "key", settings = document.getElementById("key-settings");
   ["passphrase-field", "master-fingerprint-preview", "script-type-field", "derivation-path-field", "derivation-advanced"].forEach((id) => {
     let element = document.getElementById(id);
-    if (element) element.hidden = singleKey;
+    if (element) element.hidden = singleKey || (id === "master-fingerprint-preview" && Ne === "brain-lab");
   });
   settings?.classList.toggle("single-key-mode", singleKey);
 }
@@ -5015,7 +5026,7 @@ function hodlUpdateSeedLengthControl() {
   let section = document.getElementById("seed-length");
   if (!section) return;
   let config = hodlSeedConfig();
-  section.hidden = Ne === "key";
+  section.hidden = Ne === "key" || Ne === "brain-lab";
   section.querySelectorAll("[data-seed-words]").forEach((button) => {
     let active = Number(button.dataset.seedWords) === config.words;
     button.classList.toggle("active", active);
@@ -5475,6 +5486,64 @@ function hodlRenderKeyForm() {
     update();
     return;
   }
+  if (Ne === "brain-lab") {
+    let state = hodlKeys[hodlActiveKey], acked = Boolean(hodlBrainLabAck);
+    at.innerHTML = `
+      <details class="lab-entropy" id="brain-lab-details" ${acked ? "" : "open"}>
+        <summary>Brain wallet — lab</summary>
+        <div class="wallet-result-messages" role="alert">
+          <h3>Lab warning — read before first use</h3>
+          <ul>
+            <li class="is-warning">Strength is the entropy of this text, not the 24-word count.</li>
+            <li class="is-warning">SHA-256(text) is unsalted and fast. Guessable phrases are stolen coins.</li>
+            <li class="is-warning">This is not a BIP39 passphrase.</li>
+            <li class="is-warning">This is not a Bitcoin Core hdseed or address-key backup of the same wallet.</li>
+            <li class="is-warning">A valid mnemonic does not mean it is the same Core wallet as hashing the text as a private-key scalar.</li>
+          </ul>
+        </div>
+        <label class="choice"><input type="checkbox" id="brain-lab-ack" ${acked ? "checked" : ""} /><span><strong>I understand</strong><span class="desc">Required once this session, in page memory only. Derive is still required.</span></span></label>
+      </details>
+      <p class="label" id="brain-lab-label">Lab text</p>
+      <p class="muted" id="brain-lab-help">UTF-8 text is hashed with SHA-256. The 32-byte digest is BIP39 entropy for a 24-word seed. Nothing is derived until you press Derive Wallet.</p>
+      <textarea id="brain-lab" placeholder="Exact text. Whitespace is significant." ${acked ? "" : "disabled"} aria-labelledby="brain-lab-label" aria-describedby="brain-lab-help brain-lab-hex"></textarea>
+      <p class="muted" id="brain-lab-hex" aria-live="polite">SHA-256 hex appears here. 24 words appear only after Derive Wallet.</p>`;
+    let ack = document.getElementById("brain-lab-ack"), input = document.getElementById("brain-lab"), hex = document.getElementById("brain-lab-hex");
+    let renderHex = () => {
+      if (!hodlBrainLabAck) {
+        hex.textContent = "Acknowledge the lab warning, then enter text. Derive Wallet is still required.";
+        hex.className = "muted";
+        return;
+      }
+      let value = input.value;
+      if (!value.length) {
+        hex.textContent = "SHA-256 hex appears here. 24 words appear only after Derive Wallet.";
+        hex.className = "muted";
+        return;
+      }
+      let entropy = hodlBrainLabEntropy(value);
+      hex.textContent = entropy.ok ? `SHA-256 (256-bit BIP39 entropy): ${entropy.hex}` : entropy.error;
+      hex.className = "muted " + (entropy.ok ? "ok" : "err");
+    };
+    ack.onchange = () => {
+      hodlBrainLabAck = ack.checked;
+      input.disabled = !hodlBrainLabAck;
+      renderHex();
+      hodlSyncKeyClearButton();
+      hodlSyncDeriveButton();
+    };
+    input.oninput = () => {
+      if (state) state.fields.brainLab = input.value;
+      renderHex();
+      hodlSyncKeyClearButton();
+      hodlSyncDeriveButton();
+    };
+    if (state?.fields.brainLab) input.value = state.fields.brainLab;
+    hodlBindKeyFields();
+    hodlRenderPassphraseKeyboard();
+    renderHex();
+    hodlSyncDeriveButton();
+    return;
+  }
   at.innerHTML = `
     <p class="label">Private key format</p>
     <div class="choice-grid">
@@ -5832,6 +5901,10 @@ function hodlCanDeriveCurrentKey() {
       }
       return hodlValidateTargetMnemonic(value, Pt).ok;
     }
+    if (Ne === "brain-lab") {
+      if (!hodlBrainLabAck) return false;
+      return hodlBrainLabEntropy(document.getElementById("brain-lab")?.value).ok;
+    }
     return hodlPrivateKeyInputIsValid();
   } catch {
     return false;
@@ -5896,6 +5969,7 @@ function hodlFingerprintMnemonic() {
       let validation = hodlValidateTargetMnemonic(value, Pt);
       return validation.ok ? validation.words.join(" ") : null;
     }
+    if (Ne === "brain-lab") return null;
   } catch {
   }
   return null;
@@ -5933,7 +6007,7 @@ function hodlRenderMasterFingerprintPreview(revision = hodlMasterFingerprintRevi
   if (revision !== hodlMasterFingerprintRevision) return;
   let preview = document.getElementById("master-fingerprint-preview"), baseCard = document.getElementById("base-master-fingerprint-card"), base = document.getElementById("base-master-fingerprint"), baseImage = document.getElementById("base-master-fingerprint-lifehash"), arrow = document.getElementById("master-fingerprint-arrow"), derivedCard = document.getElementById("passphrase-master-fingerprint-card"), derived = document.getElementById("passphrase-master-fingerprint"), derivedImage = document.getElementById("passphrase-master-fingerprint-lifehash"), pass = document.getElementById("pass");
   if (!preview || !baseCard || !base || !arrow || !derivedCard || !derived || !pass) return;
-  if (Ne === "key") {
+  if (Ne === "key" || Ne === "brain-lab") {
     preview.hidden = true;
     return;
   }
@@ -6089,6 +6163,11 @@ async function hodlCalculateKey(progress) {
         if (!validation.ok) throw new Error(validation.error);
         re = await hodlMnemonicWalletWithProgress(validation.words.join(" "), passphrase, network, count, void 0, account, addressStart, progress, purpose, coinType, hardening, branchStart, branchRange, derivationPlan);
       }
+    } else if (Ne === "brain-lab") {
+      if (!hodlBrainLabAck) throw new Error("Acknowledge the lab warning before deriving.");
+      let entropy = hodlBrainLabEntropy(document.getElementById("brain-lab")?.value);
+      if (!entropy.ok) throw new Error(entropy.error);
+      re = await hodlEntropyWalletWithProgress(entropy, passphrase, network, count, account, addressStart, progress, purpose, coinType, hardening, branchStart, branchRange, derivationPlan);
     } else {
       let value = document.getElementById("key").value, kind = hodlNormalizePrivateKeyKind(document.querySelector("input[name=kk]:checked")?.value, value);
       let trimBrainWallet = hodlBrainWalletTrimEnabled();
@@ -8782,7 +8861,7 @@ function hodlPrivateKeyValues(fields) {
 }
 function hodlNewKeyState(name, keyId, keyNumber) {
   let id = keyId ?? hodlNextKeyId++, number = keyNumber ?? hodlNextKeyNumber++;
-  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: true, passphraseBip39Words: false, passphraseAutocomplete: true, brainWalletTrim: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", derivationPath: "m/84'/0'/0'/0/0", derivationAccountPath: "m/84'/0'/0'", purpose: "84'", purposeHarden: true, coinType: "0'", coinTypeHarden: true, network: "mainnet", account: "0'", accountHarden: true, branchStart: "0", branchHarden: false, branchRange: "1", addressStart: "0", addressHarden: false, addressRange: "1", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
+  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: true, passphraseBip39Words: false, passphraseAutocomplete: true, brainWalletTrim: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", derivationPath: "m/84'/0'/0'/0/0", derivationAccountPath: "m/84'/0'/0'", purpose: "84'", purposeHarden: true, coinType: "0'", coinTypeHarden: true, network: "mainnet", account: "0'", accountHarden: true, branchStart: "0", branchHarden: false, branchRange: "1", addressStart: "0", addressHarden: false, addressRange: "1", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", brainLab: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
 }
 function hodlRestoreFormFields(state) {
   if (!state) return;
@@ -8795,6 +8874,11 @@ function hodlRestoreFormFields(state) {
   if (syncNumberBases) syncNumberBases.checked = Boolean(state.syncNumberBases);
   let seedAutocomplete = document.getElementById("seed-autocomplete");
   if (seedAutocomplete) seedAutocomplete.checked = Boolean(state.seedAutocomplete);
+  let brainLab = document.getElementById("brain-lab");
+  if (brainLab) {
+    brainLab.value = state.fields.brainLab || "";
+    brainLab.dispatchEvent(new Event("input"));
+  }
   ["dice", "hex", "bin", "base4", "base8", "base32", "base64", "seed", "seed-numbers", "key", "cards", "direct-cards"].forEach(id => {
     let el = document.getElementById(id);
     if (el) {
@@ -8832,7 +8916,7 @@ function hodlSetMode(mode) {
 function hodlKeyStateNeedsClear(state) {
   if (!state) return false;
   let fields = state.fields || {}, privateKeys = hodlPrivateKeyValues(fields), hasText = (id) => String(fields[id] ?? "").length > 0;
-  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || state.seedAutocomplete === false || Boolean(state.passphraseBip39Words) || state.passphraseAutocomplete === false || Boolean(state.brainWalletTrim) || Boolean(state.showCards) || Boolean(state.showDiceFairness) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.derivationPath ?? "m/84'/0'/0'/0/0") !== "m/84'/0'/0'/0/0" || String(fields.purpose ?? "84'") !== "84'" || fields.purposeHarden === false || String(fields.coinType ?? (fields.network === "testnet" ? "1'" : "0'")) !== "0'" || fields.coinTypeHarden === false || String(fields.account ?? "0'") !== "0'" || fields.accountHarden === false || String(fields.branchStart ?? "0") !== "0" || Boolean(fields.branchHarden) || String(fields.branchRange ?? "1") !== "1" || String(fields.addressStart ?? "0") !== "0" || Boolean(fields.addressHarden) || String(fields.addressRange ?? fields.count ?? "1") !== "1" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
+  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || state.seedAutocomplete === false || Boolean(state.passphraseBip39Words) || state.passphraseAutocomplete === false || Boolean(state.brainWalletTrim) || Boolean(state.showCards) || Boolean(state.showDiceFairness) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.derivationPath ?? "m/84'/0'/0'/0/0") !== "m/84'/0'/0'/0/0" || String(fields.purpose ?? "84'") !== "84'" || fields.purposeHarden === false || String(fields.coinType ?? (fields.network === "testnet" ? "1'" : "0'")) !== "0'" || fields.coinTypeHarden === false || String(fields.account ?? "0'") !== "0'" || fields.accountHarden === false || String(fields.branchStart ?? "0") !== "0" || Boolean(fields.branchHarden) || String(fields.branchRange ?? "1") !== "1" || String(fields.addressStart ?? "0") !== "0" || Boolean(fields.addressHarden) || String(fields.addressRange ?? fields.count ?? "1") !== "1" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "brainLab", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
 }
 function hodlSyncKeyClearButton(capture = false) {
   if (capture) hodlCaptureKey();
@@ -8888,6 +8972,8 @@ function hodlCaptureKey() {
   if (directCards) state.fields.directCards = directCards.value;
   let seedNumbers = document.getElementById("seed-numbers");
   if (seedNumbers) state.fields.seedNumbers = seedNumbers.value;
+  let brainLabField = document.getElementById("brain-lab");
+  if (brainLabField) state.fields.brainLab = brainLabField.value;
   state.fields.coinType = document.getElementById("network")?.value || "0";
   state.fields.derivationAccountPath = document.getElementById("derivation-path")?.dataset.accountPath || state.fields.derivationAccountPath || "m/84'/0'/0'";
   let hardening = hodlReadHardening();
