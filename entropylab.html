@@ -853,6 +853,10 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .psbted-pairs { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 13px; table-layout: fixed; }
 .psbted-pairs th, .psbted-pairs td { text-align: left; padding: 4px 8px 4px 0; vertical-align: top; overflow-wrap: anywhere; }
 .psbted-pairs th { font-weight: 600; color: var(--muted); }
+/* The input/output index is a small integer (a transaction can hold at most
+   ~150,000 of either), so keep that column header-sized and leave the room
+   to the txid / value / script columns. */
+.psbted-pairs .psbted-idx { width: 4.5em; }
 .psbted-pairs .psbted-name, .psbted-pairs .psbted-hex { font-family: var(--mono); font-size: 12px; }
 .psbted-pairs input, .psbted-add input, .psbted-add select { margin-top: 0; padding: 6px 8px; border-radius: 6px; font-size: 12px; }
 .psbted-pairs .psbted-num { min-width: 90px; }
@@ -4254,8 +4258,8 @@ zoo`.split(`
           <label>Version <input class="psbted-num" id="psbted-tx-version" value="${hA(String(p.version))}" inputmode="numeric"></label>
           <label>Locktime <input class="psbted-num" id="psbted-tx-locktime" value="${hA(String(p.locktime))}" inputmode="numeric"></label>
         </div>
-        <table class="psbted-pairs"><thead><tr><th>Input</th><th>Previous txid</th><th>vout</th><th>sequence</th></tr></thead><tbody>${w}</tbody></table>
-        <table class="psbted-pairs"><thead><tr><th>Output</th><th>Value</th><th>scriptPubKey</th></tr></thead><tbody>${J}</tbody></table>
+        <table class="psbted-pairs"><thead><tr><th class="psbted-idx">Input</th><th>Previous txid</th><th>vout</th><th>sequence</th></tr></thead><tbody>${w}</tbody></table>
+        <table class="psbted-pairs"><thead><tr><th class="psbted-idx">Output</th><th>Value</th><th>scriptPubKey</th></tr></thead><tbody>${J}</tbody></table>
       </section>`,U=(K,Y)=>o&&o.kind===K&&(K==="tx"||o.index===Y),AA=i.inputs.map((K,Y)=>U("input",Y)?"":b("input",Y)).join(""),nA=i.outputs.map((K,Y)=>U("output",Y)?"":b("output",Y)).join(""),q=o?`<div class="psbted-viz-detail" id="psbted-viz-detail">
           <div class="psbted-viz-detail-bar">
             <p class="muted">Fields of ${o.kind==="tx"?"the unsigned transaction":`${o.kind} ${o.index}`}, moved here from below. Activate its box again (or ×) to put them back.</p>
