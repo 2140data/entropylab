@@ -555,7 +555,9 @@ ec.innerHTML = `
         <li>Keep your private keys offline.</li>
       </ul>
     </section>
-    <div class="row no-print segmented-control" id="workspace" role="group" aria-label="Workspace"></div>
+    <div class="tool-shell">
+    <nav class="workspace no-print" id="workspace"></nav>
+    <div class="tool-content">
     <section class="key-manager no-print" id="key-manager">
       <div class="key-manager-head"><h2>Keys</h2></div>
       <div class="key-tab-strip"><div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div><div class="add-item-control"><button class="add-key" id="add-key" type="button" aria-label="Add key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Add another key</span></div></div>
@@ -930,6 +932,8 @@ ec.innerHTML = `
       <p class="muted">Session keys remain in this page only and are never intentionally stored or sent. Memory clearing is best-effort because browsers may retain internal copies; close the page before reconnecting the computer.</p>
     </section>
     <div id="out"></div>
+    </div>
+    </div>
     <section class="card muted sources">
       <h3 class="sources-heading">Sources</h3>
       <p>Ian Coleman BIP39: <a href="https://github.com/iancoleman/bip39" target="_blank" rel="noopener noreferrer">github.com/iancoleman/bip39</a> \u2014 pull <code>bip39-standalone.html</code> from Releases, or <code>src/js/index.js</code>, <code>entropy.js</code>, <code>jsbip39.js</code>, <code>wordlist_english.js</code>.</p>
@@ -9485,11 +9489,12 @@ function hodlShowWorkspace(id) {
   if (hodlWorkspace === "calc") hodlCaptureKey();
   else if (hodlWorkspace === "msig") hodlCaptureMsig();
   hodlWorkspace = id;
-  [...W("#workspace").children].forEach((button) => {
+  [...W("#workspace-menu").children].forEach((button) => {
     let active = button.dataset.workspace === id;
     button.classList.toggle("active", active);
     button.setAttribute("aria-pressed", String(active));
   });
+  W("#workspace-menu-current").textContent = hodlWorkspaceTabs.find(([tab]) => tab === id)?.[1] ?? "";
   document.getElementById("key-manager").hidden = id !== "calc";
   document.getElementById("msig-manager").hidden = id !== "msig";
   document.getElementById("calc-card").hidden = true;
@@ -9588,19 +9593,56 @@ function hodlSeedInitialManagers() {
     hodlActiveMsig = 0;
   }
 }
+var hodlWorkspaceTabs = [["calc", "Key Derivation"], ["bip85", "BIP-85"], ["msig", "Multi Signature"], ["sp", "Silent Payments"], ["psbt", "PSBT / Nonce"]];
+// The switcher reads as a videogame settings menu: a sticky sidebar beside
+// the tool on wide screens, and a hamburger dropdown above it on narrow
+// ones. The is-open class only matters in the dropdown layout; the sidebar
+// ignores it, and crossing back to the wide layout clears it.
+function hodlSetWorkspaceMenuOpen(open) {
+  W("#workspace").classList.toggle("is-open", open);
+  W("#workspace-menu-toggle").setAttribute("aria-expanded", String(open));
+}
 function hodlInitWorkspace() {
   let box = W("#workspace");
   box.innerHTML = "";
-  [["calc", "Key Derivation"], ["bip85", "BIP-85"], ["msig", "Multi Signature"], ["sp", "Silent Payments"], ["psbt", "PSBT / Nonce"]].forEach(([id, label]) => {
+  let toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "workspace-menu-toggle";
+  toggle.id = "workspace-menu-toggle";
+  toggle.setAttribute("aria-expanded", "false");
+  toggle.setAttribute("aria-controls", "workspace-menu");
+  toggle.innerHTML = `<svg class="workspace-menu-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span class="workspace-menu-current" id="workspace-menu-current"></span><svg class="workspace-menu-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg>`;
+  toggle.onclick = () => hodlSetWorkspaceMenuOpen(!box.classList.contains("is-open"));
+  let menu = document.createElement("div");
+  menu.className = "workspace-menu";
+  menu.id = "workspace-menu";
+  menu.setAttribute("role", "group");
+  menu.setAttribute("aria-label", "Workspace");
+  hodlWorkspaceTabs.forEach(([id, label]) => {
     let button = document.createElement("button"), active = hodlWorkspace === id;
     button.type = "button";
     button.className = "tab" + (active ? " active" : "");
     button.dataset.workspace = id;
     button.setAttribute("aria-pressed", String(active));
     button.textContent = label;
-    button.onclick = () => hodlShowWorkspace(id);
-    box.appendChild(button);
+    button.onclick = () => {
+      hodlShowWorkspace(id);
+      hodlSetWorkspaceMenuOpen(false);
+    };
+    menu.appendChild(button);
   });
+  box.append(toggle, menu);
+  W("#workspace-menu-current").textContent = hodlWorkspaceTabs.find(([id]) => id === hodlWorkspace)?.[1] ?? "";
+  document.addEventListener("click", (event) => {
+    if (box.classList.contains("is-open") && !event.target.closest("#workspace")) hodlSetWorkspaceMenuOpen(false);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && box.classList.contains("is-open")) {
+      hodlSetWorkspaceMenuOpen(false);
+      toggle.focus();
+    }
+  });
+  matchMedia("(min-width: 1024px)").addEventListener("change", () => hodlSetWorkspaceMenuOpen(false));
   hodlInitMsig();
   hodlInitPsbt();
   hodlInitBip85();
