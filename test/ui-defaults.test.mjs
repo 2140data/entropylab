@@ -163,12 +163,31 @@ test("entropy progress messages sit directly below their inputs and above keypad
   assert.match(app, /<textarea id="key"[^>]*><\/textarea><\/div><p class="muted" id="private-key-meta"[^>]*><\/p>/);
 });
 
-test("seed phrase copy controls sit immediately above every numbered word grid", () => {
-  assert.match(appSource, /\$\{dicePad\}\s*\$\{hodlSeedCopyRowMarkup\(hodlDiceFairnessToggleMarkup\([\s\S]*?\)\)\}\s*<aside id="dice-fairness"[\s\S]*?<\/aside>\s*<div id="dice-words"/);
-  assert.match(appSource, /<div class="dealt-cards"[^>]*><\/div>\s*\$\{hodlSeedCopyRowMarkup\(\)\}\s*<div id="dice-words"/);
-  assert.match(appSource, /\$\{entropyPad\}\s*\$\{hodlSeedCopyRowMarkup\(\)\}\s*<div id="entropy-words"/);
+test("seed phrase calculations and copy controls precede every numbered word grid", () => {
+  assert.match(appSource, /\$\{dicePad\}[\s\S]*?manual-calculations-container[\s\S]*?\$\{hodlSeedCopyRowMarkup\(hodlDiceFairnessToggleMarkup\([\s\S]*?\)\)\}[\s\S]*?<div id="dice-words"/);
+  assert.match(appSource, /<div class="dealt-cards"[^>]*><\/div>[\s\S]*?manual-calculations-container[\s\S]*?\$\{hodlSeedCopyRowMarkup\(\)\}\s*<div id="dice-words"/);
+  assert.match(appSource, /\$\{entropyPad\}\s*<div id="number-base-calculations"[^>]*><\/div>\s*\$\{hodlSeedCopyRowMarkup\(\)\}\s*<div id="entropy-words"/);
   assert.match(appSource, /<\/div>\$\{hodlSeedCopyRowMarkup\(\)\}<div id="seed-number-words"/);
   assert.match(appSource, /function hodlSeedMetaRowMarkup\(metaId, live = false\) \{\s*return `<div class="seed-word-meta"><p[^`]+<\/p><\/div>`;\s*\}/);
+});
+
+test("direct dice and card methods expose manual BIP39 calculations before copying", () => {
+  assert.match(appSource, /id="show-manual-calculations"/);
+  assert.match(appSource, /id="dice-manual-calculations" class="manual-calculations-container"/);
+  assert.match(appSource, /id="cards-manual-calculations" class="manual-calculations-container"/);
+  assert.match(appSource, /function hodlManualCalculationMarkup\(method, value, targetWords = Pt\)/);
+  assert.match(appSource, /hodlRenderManualCalculations\("dice-manual-calculations",\s*"dplus"/);
+  assert.match(appSource, /hodlRenderManualCalculations\("dice-manual-calculations",\s*"bitbox"/);
+  assert.match(appSource, /hodlRenderManualCalculations\("cards-manual-calculations",\s*"cards"/);
+  assert.match(appSource, /D8 contributes 8 values and each hexadecimal D16 contributes 16 values/);
+  assert.match(appSource, /Each D4 contributes one base-4 value and the final die contributes the coin bit/);
+  assert.match(appSource, /Ranks are mapped to zero-based values/);
+  assert.match(appSource, /dplus-calculation-stages/);
+  assert.match(appSource, /dplus-calculation-stage.*stage\.face/);
+  assert.match(css, /\.manual-calculation-row \{/);
+  assert.match(css, /\.dplus-calculation-stages \{[^}]*grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.dplus-calculation-stage span \{ grid-column: 1 \/ -1; color: var\(--muted\)/);
+  assert.match(css, /\.dplus-calculation-stage \{/);
 });
 
 test("Seed phrase offers one-based or zero-based BIP39 word-number entry", () => {
@@ -215,11 +234,15 @@ test("Number bases offers exact Base 2, 4, 8, 16, Crockford Base32, and Base64-a
   assert.match(app, /function hodlNumberBasePreviewWords\(value,format,targetWords=Pt\)/);
   assert.match(app, /function hodlNumberBaseValueFromBytes\(bytes,format,targetWords=Pt\)/);
   assert.match(app, /id="sync-number-bases"/);
+  assert.match(app, /id="show-number-base-calculations"/);
+  assert.match(app, /function hodlBinaryCalculationRows\(value,targetWords=Pt\)/);
+  assert.match(app, /id="number-base-calculations" class="number-base-calculations-panel"/);
   assert.match(app, /id="number-base-sync-status"[^>]*hidden>\$\{hodlCopiedIconMarkup\(\)\}<span>Synced<\/span>/);
   assert.match(app, /syncNumberBases:!1/);
   assert.match(app, /entropyFormat:"bin"/);
   assert.ok(app.includes('function hodlNormalizeEntropyFormat(format){return Object.hasOwn(hodlEntropyFormats,String(format??""))?String(format):"bin"}'));
   assert.match(css, /\.number-base-sync-status \{[\s\S]*?color: var\(--ok\)/);
+  assert.match(css, /\.number-base-calculation-list \{/);
   assert.match(app, /fields:\{[^}]*base4:"",base8:"",base32:"",base64:""/);
   assert.match(app, /function hodlBase64KeyboardMarkup\(\)\{return hodlKeyboardMarkup\(!0,"Base64 entropy","base64-keyboard"\)\}/);
   assert.match(app, /function hodlBindBase64Keyboard\(input\)/);
