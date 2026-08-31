@@ -44,6 +44,28 @@ const INVALID_B64 =
 const inspectValid = () => psbtInspectDoc(VALID);
 const rebuild = (doc) => psbtBuildBytes(psbtEditorBuildDoc(doc));
 
+// Minimal raw-transaction builder for the regression tests below: version 2,
+// one dummy input spending 00..00:0xffffffff with an empty scriptSig, the
+// given [sats, scriptBytes] outputs, locktime 0. Returns { hex, txid } with
+// the txid in display order (as the unsigned transaction references it).
+const prevTx = (...outputs) => {
+  const le32 = (n) => [n & 255, (n >>> 8) & 255, (n >>> 16) & 255, (n >>> 24) & 255];
+  const le64 = (value) => {
+    let n = BigInt(value);
+    const bytes = [];
+    for (let i = 0; i < 8; i++) { bytes.push(Number(n & 255n)); n >>= 8n; }
+    return bytes;
+  };
+  const bytes = new Uint8Array([
+    ...le32(2), 1, ...new Uint8Array(32), ...le32(0xffffffff), 0, ...le32(0xffffffff),
+    outputs.length,
+    ...outputs.flatMap(([value, script]) => [...le64(value), script.length, ...script]),
+    ...le32(0),
+  ]);
+  const hash = createHash("sha256").update(createHash("sha256").update(bytes).digest()).digest();
+  return { hex: Buffer.from(bytes).toString("hex"), txid: Buffer.from(hash).reverse().toString("hex") };
+};
+
 test("psbtWasmReady resolves (WASM initialized synchronously under Node)", async () => {
   await psbtWasmReady;
 });
@@ -147,6 +169,79 @@ test("fee computes once every input carries a claimed amount", () => {
   assert.equal(richer.fee.known, true);
   assert.equal(richer.totalIn, 400000000);
   assert.equal(richer.fee.sats, 400000000 - 199909358);
+});
+
+test("inputs spending different outputs of one transaction resolve by index, not txid", () => {
+  // Regression test: both inputs reference the same previous txid, so a
+  // transaction-wide txid search resolves every non-witness utxo to the first
+  // input's vout. The inspector must match each input map to its own
+  // unsigned-transaction input and use that outpoint's vout.
+  const prev = prevTx([1000, [0x51]], [9000, [0x52]]); // vout 0 = OP_TRUE, vout 1 = OP_2
+  const doc = {
+    tx: {
+      version: 2,
+      locktime: 0,
+      inputs: [
+        { txid: prev.txid, vout: 0, scriptSig: "", sequence: 0xffffffff },
+        { txid: prev.txid, vout: 1, scriptSig: "", sequence: 0xffffffff },
+      ],
+      outputs: [{ value: 1500, scriptPubKey: "51" }],
+    },
+    globals: [],
+    inputs: [
+      [{ key: "00", value: prev.hex }],
+      [{ key: "00", value: prev.hex }],
+    ],
+    outputs: [[]],
+  };
+  const inspected = psbtInspectDoc(psbtBuildBytes(doc));
+  assert.equal(inspected.rustBitcoinError, null);
+  // Each input map decodes its own prevout: distinct vout, amount, and script.
+  assert.deepEqual(inspected.inputs[0][0].decoded.prevout, { vout: 0, value: 1000, scriptPubKey: "51" });
+  assert.deepEqual(inspected.inputs[1][0].decoded.prevout, { vout: 1, value: 9000, scriptPubKey: "52" });
+  // Totals and fee use the two distinct outputs, not the first output twice.
+  assert.equal(inspected.totalIn, 10000);
+  assert.deepEqual(inspected.fee, { known: true, sats: 8500 });
+});
+
+test("a non-witness utxo that does not match its input's outpoint is not claimed", () => {
+  // Two inputs spending two different previous transactions. With the maps in
+  // the right order each decodes its prevout; reversed, neither map's utxo
+  // matches its own input's outpoint, so it must not be re-associated with
+  // the other input by txid — the prevout and amount are omitted instead.
+  const a = prevTx([1000, [0x51]]);
+  const b = prevTx([9000, [0x52]]);
+  const build = (first, second) => psbtInspectDoc(psbtBuildBytes({
+    tx: {
+      version: 2,
+      locktime: 0,
+      inputs: [
+        { txid: a.txid, vout: 0, scriptSig: "", sequence: 0xffffffff },
+        { txid: b.txid, vout: 0, scriptSig: "", sequence: 0xffffffff },
+      ],
+      outputs: [{ value: 1500, scriptPubKey: "51" }],
+    },
+    globals: [],
+    inputs: [
+      [{ key: "00", value: first }],
+      [{ key: "00", value: second }],
+    ],
+    outputs: [[]],
+  }));
+
+  const correct = build(a.hex, b.hex);
+  assert.equal(correct.inputs[0][0].decoded.prevout.value, 1000);
+  assert.equal(correct.inputs[1][0].decoded.prevout.value, 9000);
+  assert.equal(correct.totalIn, 10000);
+  assert.deepEqual(correct.fee, { known: true, sats: 8500 });
+
+  // Reversing the maps must not silently associate either utxo with the wrong
+  // input: the txid no longer matches, so the prevout and amount are omitted.
+  const reversed = build(b.hex, a.hex);
+  assert.equal(reversed.inputs[0][0].decoded.prevout, undefined);
+  assert.equal(reversed.inputs[1][0].decoded.prevout, undefined);
+  assert.equal(reversed.totalIn, null);
+  assert.deepEqual(reversed.fee, { known: false });
 });
 
 test("unknown and proprietary pairs round-trip with decodes", () => {

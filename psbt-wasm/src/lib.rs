@@ -397,8 +397,9 @@ fn fingerprint_and_path(value: &[u8]) -> Result<(String, String), String> {
 }
 
 /// Decodes one key-value pair into a display JSON object. `kind` is "global",
-/// "input" or "output". Unknown types decode to null and stay raw.
-fn decode_pair(kind: &str, pair: &RawPair, tx: &Transaction) -> Value {
+/// "input" or "output"; `input_index` is the pair's input-map index when
+/// `kind` is "input". Unknown types decode to null and stay raw.
+fn decode_pair(kind: &str, pair: &RawPair, tx: &Transaction, input_index: Option<usize>) -> Value {
     let type_byte = pair.key[0];
     let keydata = &pair.key[1..];
     let name = match (kind, type_byte) {
@@ -469,11 +470,17 @@ fn decode_pair(kind: &str, pair: &RawPair, tx: &Transaction) -> Value {
                     "outputCount": prev.output.len(),
                 });
                 // Show the prevout this input actually spends, when present.
-                if let Some(input) = tx.input.iter().find(|i| i.previous_output.txid == prev.compute_txid()) {
-                    let vout = input.previous_output.vout as usize;
-                    if let Some(spent) = prev.output.get(vout) {
-                        out["prevout"] = json!({ "vout": vout, "value": spent.value.to_sat(),
-                            "scriptPubKey": hex_encode(spent.script_pubkey.as_bytes()) });
+                // The input map is matched to its unsigned-transaction input
+                // by index, never by a transaction-wide txid search: several
+                // inputs can spend different outputs of one transaction, and
+                // only the indexed input's outpoint identifies which one.
+                if let Some(input) = input_index.and_then(|n| tx.input.get(n)) {
+                    let outpoint = input.previous_output;
+                    if outpoint.txid == prev.compute_txid() {
+                        if let Some(spent) = prev.output.get(outpoint.vout as usize) {
+                            out["prevout"] = json!({ "vout": outpoint.vout, "value": spent.value.to_sat(),
+                                "scriptPubKey": hex_encode(spent.script_pubkey.as_bytes()) });
+                        }
                     }
                 }
                 out
@@ -636,23 +643,29 @@ fn tap_tree_json(value: &[u8]) -> Result<Value, String> {
     Ok(json!({ "leaves": leaves }))
 }
 
-fn pair_json(kind: &str, pair: &RawPair, tx: &Transaction) -> Value {
-    let mut view = decode_pair(kind, pair, tx);
+fn pair_json(kind: &str, pair: &RawPair, tx: &Transaction, input_index: Option<usize>) -> Value {
+    let mut view = decode_pair(kind, pair, tx, input_index);
     view["key"] = json!(hex_encode(&pair.key));
     view["value"] = json!(hex_encode(&pair.value));
     view["type"] = json!(pair.key[0]);
     view
 }
 
-fn input_value(pair: &RawPair, tx: &Transaction) -> Option<u64> {
+fn input_value(pair: &RawPair, tx: &Transaction, input_index: usize) -> Option<u64> {
     match pair.key[0] {
         0x01 if pair.key.len() == 1 && pair.value.len() >= 8 => {
             Some(u64::from_le_bytes(pair.value[..8].try_into().unwrap()))
         }
         0x00 if pair.key.len() == 1 => {
             let prev = Transaction::consensus_decode(&mut &pair.value[..]).ok()?;
-            let input = tx.input.iter().find(|i| i.previous_output.txid == prev.compute_txid())?;
-            prev.output.get(input.previous_output.vout as usize).map(|o| o.value.to_sat())
+            // Match the input map to its unsigned-transaction input by index
+            // (not by txid) and require the non-witness utxo to be that exact
+            // outpoint's transaction before claiming its amount.
+            let outpoint = tx.input.get(input_index)?.previous_output;
+            if outpoint.txid != prev.compute_txid() {
+                return None;
+            }
+            prev.output.get(outpoint.vout as usize).map(|o| o.value.to_sat())
         }
         _ => None,
     }
@@ -680,8 +693,8 @@ fn inspect(bytes: &[u8]) -> Result<String, String> {
 
     let mut known = 0u64;
     let mut known_inputs = 0usize;
-    for pairs in &raw.inputs {
-        if let Some(amount) = pairs.iter().find_map(|p| input_value(p, tx)) {
+    for (index, pairs) in raw.inputs.iter().enumerate() {
+        if let Some(amount) = pairs.iter().find_map(|p| input_value(p, tx, index)) {
             known += amount;
             known_inputs += 1;
         }
@@ -705,9 +718,9 @@ fn inspect(bytes: &[u8]) -> Result<String, String> {
     let doc = json!({
         "psbtVersion": raw.version,
         "tx": tx_json,
-        "globals": raw.globals.iter().map(|p| pair_json("global", p, tx)).collect::<Vec<_>>(),
-        "inputs": raw.inputs.iter().map(|map| map.iter().map(|p| pair_json("input", p, tx)).collect::<Vec<_>>()).collect::<Vec<_>>(),
-        "outputs": raw.outputs.iter().map(|map| map.iter().map(|p| pair_json("output", p, tx)).collect::<Vec<_>>()).collect::<Vec<_>>(),
+        "globals": raw.globals.iter().map(|p| pair_json("global", p, tx, None)).collect::<Vec<_>>(),
+        "inputs": raw.inputs.iter().enumerate().map(|(n, map)| map.iter().map(|p| pair_json("input", p, tx, Some(n))).collect::<Vec<_>>()).collect::<Vec<_>>(),
+        "outputs": raw.outputs.iter().map(|map| map.iter().map(|p| pair_json("output", p, tx, None)).collect::<Vec<_>>()).collect::<Vec<_>>(),
         "totalIn": if known_inputs == tx.input.len() { json!(known) } else { Value::Null },
         "totalOut": out_sum,
         "fee": fee,
