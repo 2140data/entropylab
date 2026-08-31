@@ -4573,7 +4573,10 @@ function hodlBindSeedKeyboardDelete(getInput, button, applyDelete = hodlApplySee
 function hodlBindSeedKeyboard(input, targetWords = Pt) {
   let toggle = document.getElementById("seed-keyboard-toggle"), keyboard = document.getElementById("seed-keyboard"), modeButton = keyboard?.querySelector("[data-seed-keyboard-mode]"), passphrase = document.getElementById("pass");
   if (!toggle || !keyboard || !input) return;
-  let activeInput = input, isPassphrase = () => Boolean(passphrase && activeInput === passphrase), refresh = () => {
+  let activeInput = input, passphraseField = () => document.getElementById("pass") || passphrase, isPassphrase = () => {
+    let field = passphraseField();
+    return Boolean(field && activeInput === field);
+  }, refresh = () => {
     if (isPassphrase()) hodlUpdatePassphraseKeyboardKeys(activeInput, "seed-keyboard");
     else hodlUpdateSeedKeyboardKeys(input, targetWords);
   };
@@ -4603,10 +4606,18 @@ function hodlBindSeedKeyboard(input, targetWords = Pt) {
     refresh();
   };
   input.onfocus = () => activate(input);
-  if (passphrase) passphrase.addEventListener("focus", () => activate(passphrase));
-  [input, ...passphrase ? [passphrase] : []].forEach((field) => {
-    ["input", "click", "keyup", "select"].forEach((type) => field.addEventListener(type, () => activate(field)));
-  });
+  // Delegated so the passphrase field is found whenever it renders, and stored on
+  // the keyboard so re-binding replaces the handler rather than stacking another.
+  // Typing and clicking retarget as well as focus, because a headless browser
+  // does not always deliver focus events to a document that is not foremost.
+  let activityEvents = ["focusin", "input", "click", "keyup", "select"];
+  if (keyboard.hodlKeyboardActivity) activityEvents.forEach((type) => document.removeEventListener(type, keyboard.hodlKeyboardActivity));
+  keyboard.hodlKeyboardActivity = (event) => {
+    let field = passphraseField();
+    if (field && event.target === field) activate(field);
+    else if (event.target === input) activate(input);
+  };
+  activityEvents.forEach((type) => document.addEventListener(type, keyboard.hodlKeyboardActivity));
   activate(input);
 }
 function hodlBindPassphraseKeyboard(inputId = "pass", toggleId = "passphrase-keyboard-toggle", inputName = "passphrase", keyboardId = "passphrase-keyboard") {
@@ -4670,10 +4681,15 @@ function hodlBindBase64Keyboard(input) {
   refresh();
 }
 function hodlRenderPassphraseKeyboard() {
-  let host = document.getElementById("passphrase-keyboard-host"), toggleHost = document.getElementById("passphrase-keyboard-toggle-host"), privateKey = Ne === "key", passphrase = !privateKey, enabled = passphrase || privateKey;
+  let host = document.getElementById("passphrase-keyboard-host"), toggleHost = document.getElementById("passphrase-keyboard-toggle-host"), privateKey = Ne === "key", passphrase = !privateKey;
+  // The seed keyboard already follows focus between the seed box and the
+  // passphrase box, so where it exists it serves both and a second on-screen
+  // keyboard would only stack another copy under the first.
+  let shared = passphrase && Boolean(document.getElementById("seed-keyboard")),
+    enabled = !shared;
   if (toggleHost) {
     toggleHost.hidden = !passphrase;
-    toggleHost.innerHTML = passphrase ? hodlPassphraseKeyboardToggleMarkup() + hodlPassphraseBip39ToggleMarkup() : "";
+    toggleHost.innerHTML = passphrase ? (shared ? "" : hodlPassphraseKeyboardToggleMarkup()) + hodlPassphraseBip39ToggleMarkup() : "";
   }
   if (!host) return;
   host.hidden = !enabled;
