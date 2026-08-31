@@ -1020,7 +1020,7 @@ test("the seam into the tool is wider than the page's other major seams", () => 
   // The pitch-to-tool seam is the page's widest; the closing Sources card keeps
   // the ordinary major one. Both collapse with a neighbouring card's 16px, so
   // the larger value wins rather than the two adding up.
-  assert.match(css, /#workspace \{ margin: var\(--space-lede\) 0 4px; \}/);
+  assert.match(css, /\.workspace \{ position: relative; margin: var\(--space-lede\) 0 4px; \}/);
   assert.match(css, /\.sources \{ margin-top: var\(--space-major\); \}/);
   for (const markup of [template, app]) {
     assert.match(markup, /<section class="card muted sources">/);
@@ -1191,4 +1191,38 @@ test("Silent Payments sits between Multi Signature and PSBT / Nonce", () => {
     assert.match(markup, /BIP-352/);
   }
   assert.match(css, /#sp-card\[hidden\]/);
+});
+
+test("the workspace switcher is a hamburger dropdown menu at every width", () => {
+  // The switcher is a nav holding a hamburger toggle and the menu it
+  // controls; it is no longer one of the segmented controls.
+  assert.match(template, /<nav class="workspace no-print" id="workspace">/);
+  assert.match(appSource, /<nav class="workspace no-print" id="workspace"><\/nav>/);
+  assert.doesNotMatch(template, /segmented-control" id="workspace"/);
+  // The toggle is wired to the menu it opens, and names the current
+  // workspace in the collapsed bar.
+  assert.match(template, /<button type="button" class="workspace-menu-toggle" id="workspace-menu-toggle" aria-expanded="false" aria-controls="workspace-menu">/);
+  assert.match(template, /<span class="workspace-menu-current" id="workspace-menu-current">Key Derivation<\/span>/);
+  assert.match(template, /<div class="workspace-menu" id="workspace-menu" role="group" aria-label="Workspace">/);
+  // The menu hides until toggled. There is no wide-screen sidebar layout:
+  // the same dropdown serves every width and the page keeps its single
+  // 1000px measure.
+  assert.match(css, /\.workspace-menu \{[^}]*position: absolute;[^}]*display: none;/s);
+  assert.match(css, /\.workspace\.is-open \.workspace-menu \{ display: grid; \}/);
+  assert.doesNotMatch(css, /min-width: 1024px|max-width: 1260px|tool-shell|tool-content/);
+  assert.doesNotMatch(appSource, /matchMedia\("\(min-width: 1024px\)"\)/);
+  assert.doesNotMatch(`${template}${appSource}`, /tool-shell|tool-content/);
+  // Menu entries keep the app's orange active state.
+  assert.match(css, /\.workspace-menu \.tab:is\(\.active, \[aria-pressed="true"\]\) \{[^}]*background: var\(--selection-accent\);/s);
+  // Runtime: the toggle flips aria-expanded with the open class, picking an
+  // entry closes the dropdown, and the collapsed bar tracks the workspace.
+  assert.match(appSource, /function hodlSetWorkspaceMenuOpen\(open\) \{/);
+  assert.match(appSource, /W\("#workspace"\)\.classList\.toggle\("is-open", open\);/);
+  assert.match(appSource, /W\("#workspace-menu-toggle"\)\.setAttribute\("aria-expanded", String\(open\)\);/);
+  assert.match(appSource, /hodlShowWorkspace\(id\);\s*hodlSetWorkspaceMenuOpen\(false\);/);
+  assert.match(appSource, /\[\.\.\.W\("#workspace-menu"\)\.children\]\.forEach/);
+  assert.match(appSource, /W\("#workspace-menu-current"\)\.textContent = hodlWorkspaceTabs\.find/);
+  // Clicking outside or pressing Escape closes the dropdown.
+  assert.match(appSource, /!event\.target\.closest\("#workspace"\)\) hodlSetWorkspaceMenuOpen\(false\);/);
+  assert.match(appSource, /event\.key === "Escape" && box\.classList\.contains\("is-open"\)/);
 });
