@@ -655,10 +655,10 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
   border-color: var(--danger); background: color-mix(in oklab, var(--danger) 14%, var(--surface));
 }
 .online-warning a { font-weight: 700; white-space: nowrap; }
-/* Every banner that can be dismissed is a row: the message takes the slack,
-   the control column does not. The noscript notice carries no control and
-   stays a plain block, but its label is wrapped like the others so it takes
-   the same treatment. */
+/* The banners are rows: the message takes the slack, a control column (only
+   the beta banner carries one) does not. The noscript notice carries no
+   control and stays a plain block, but its label is wrapped like the others
+   so it takes the same treatment. */
 #beta-warning, #online-warning { display: flex; align-items: flex-start; gap: 12px; }
 /* The author display wins over the UA [hidden] rule, so restate it. */
 #beta-warning[hidden], #online-warning[hidden] { display: none; }
@@ -674,7 +674,7 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
   display: block; margin-bottom: 4px; line-height: 1; text-transform: uppercase;
   color: var(--danger-bright);
 }
-.beta-warning-dismiss, .online-warning-dismiss {
+.beta-warning-dismiss {
   /* Negative margins pull the control out of the banner padding so it sits
      up in the corner rather than level with the first line of text. */
   flex: none; display: grid; place-items: center; width: 32px; height: 32px;
@@ -684,9 +684,9 @@ td { border-top: 1px solid var(--border); padding: 8px; vertical-align: top; fon
 /* White reads against the dark banner, but the light theme tints the same
    banner pale, so the glyph takes the theme's near-black foreground there.
    Both explicit light and system-light land on this attribute. */
-:root[data-theme="light"] :is(.beta-warning-dismiss, .online-warning-dismiss) { color: var(--fg); }
-.beta-warning-dismiss:hover, .online-warning-dismiss:hover { background: color-mix(in oklab, var(--danger) 20%, transparent); }
-.beta-warning-dismiss:focus-visible, .online-warning-dismiss:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; }
+:root[data-theme="light"] .beta-warning-dismiss { color: var(--fg); }
+.beta-warning-dismiss:hover { background: color-mix(in oklab, var(--danger) 20%, transparent); }
+.beta-warning-dismiss:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; }
 .disclaimer-overlay {
   position: fixed; inset: 0; z-index: 200; display: grid; place-items: center;
   padding: 24px; box-sizing: border-box; background: rgb(0 0 0 / 55%);
