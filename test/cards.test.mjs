@@ -124,12 +124,16 @@ test("card tokens normalize 10 and suit glyphs to ASCII", () => {
   assert.equal(hodlNormalizeCardToken("foo"), "");
 });
 
-test("card transcript input normalizes its limited character set", () => {
-  assert.equal(hodlFilterCards("as, 10♥;td"), "AS 10H TD");
-  assert.equal(hodlFilterCards("as <img>"), "AS IMG");
-  assert.equal(hodlFilterCards("AS 2C TD", true), "A\u2660 2\u2663 T\u2666");
-  assert.equal(hodlFilterCards("A\u2660 2\u2663 T\u2666", false), "AS 2C TD");
-  assert.equal(hodlFilterCards("AS 10H", true), "A\u2660 10\u2665");
+test("card transcript input uses uppercase ranks and lowercase suits", () => {
+  assert.equal(hodlFilterCards("4h"), "4h");
+  assert.equal(hodlFilterCards("js"), "Js");
+  assert.equal(hodlFilterCards("td"), "Td");
+  assert.equal(hodlFilterCards("4H"), "4h");
+  assert.equal(hodlFilterCards("as, 10♥;td"), "As 10h Td");
+  assert.equal(hodlFilterCards("as <img>"), "As IMG");
+  assert.equal(hodlFilterCards("AS 2C TD", true), "A♠ 2♣ T♦");
+  assert.equal(hodlFilterCards("A♠ 2♣ T♦", false), "As 2c Td");
+  assert.equal(hodlFilterCards("AS 10H", true), "A♠ 10♥");
   assert.equal(hodlCardTypedCharactersAllowed("aS 10♥, TD"), true);
   assert.equal(hodlCardTypedCharactersAllowed("B"), false);
 });
@@ -172,12 +176,15 @@ test("24-word extra cards may repeat the first shuffle", () => {
   assert.ok(parsed.bits >= 256);
 });
 
-test("hashed transcript is SHA-256 of ASCII codes", () => {
+test("hashed transcript is SHA-256 of canonical ASCII codes", () => {
   const transcript = "AS 2C TD";
+  const displayedTranscript = "As 2c Td";
   const digest = createHash("sha256").update(transcript, "utf8").digest("hex");
   assert.match(app, /Z\(new TextEncoder\(\)\.encode\(hashInput\)\)/);
   assert.equal(hodlParseCards(transcript, 12).hashInput, transcript);
+  assert.equal(hodlParseCards(displayedTranscript, 12).hashInput, transcript);
   assert.equal(hodlCardsHashInput(["AS", "2C", "TD"], false), transcript);
+  assert.equal(hodlCardsEntropy(displayedTranscript, 12).hex, hodlCardsEntropy(transcript, 12).hex);
   assert.equal(digest.length, 64);
 });
 

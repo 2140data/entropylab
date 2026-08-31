@@ -280,6 +280,12 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
 }
 .workspace-sync-name { font-weight: 600; }
 .workspace-sync-target.is-unavailable { opacity: 0.52; }
+details.lab-entropy { margin-top: var(--space-section); }
+details.lab-entropy > summary {
+  cursor: pointer; font-weight: 600; color: var(--fg);
+}
+details.lab-entropy .wallet-result-messages { margin-top: var(--space-control); }
+#brain-lab { font-family: var(--mono); letter-spacing: 0; }
 @media (min-width: 720px) {
   .choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .choice-grid.three-up { grid-template-columns: repeat(3, minmax(0, 1fr)); }

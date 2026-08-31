@@ -192,7 +192,9 @@ test("Seed phrase offers one-based or zero-based BIP39 word-number entry", () =>
 test("hashed cards can match Ian Coleman's suit-symbol SHA-256 transcript", () => {
   assert.match(appSource, /id="cards-ian-coleman"/);
   assert.match(appSource, /Match Ian Coleman method/);
-  assert.match(appSource, /show and hash A\\u2660 2\\u2663 instead of AS 2C/);
+  assert.match(appSource, /show and hash A\\u2660 2\\u2663 instead of As 2c/);
+  assert.match(appSource, /placeholder = direct \? "A284 37A2 \\u2026" : hodlCardColemanSymbols \? "A\\u2660 2\\u2663 10\\u2665 T\\u2666\\u2026" : "As 2c 10h Td\\u2026"/);
+  assert.match(appSource, /autocapitalize="off" aria-labelledby="cards-input-label"/);
   assert.match(appSource, /function hodlCardsHashInput\(cards, coleman = false\)/);
   assert.match(appSource, /transcript\.replace\(\/C\/g, "\\u2663"\)\.replace\(\/D\/g, "\\u2666"\)\.replace\(\/H\/g, "\\u2665"\)\.replace\(\/S\/g, "\\u2660"\)/);
   assert.match(appSource, /hodlFilterCards\(value, hodlCardColemanSymbols\)/);
@@ -538,7 +540,7 @@ test("key derivation shows the relevant paste-ready multisig co-signer exports",
   assert.match(app, /function hodlRenderMultisigCosignerExport\(exports,accountId\)/);
   assert.match(app, /exports\.filter\(candidate=>candidate\.accountId===accountId\)/);
   assert.match(appWhitespace, /items\.map\(item=>ye\(`Multisig co-signer \$\{item\.prefix\} · \$\{item\.label\}`,item\.value\)\)\.join\(""\)/);
-  assert.match(app, /\$\{ye\(`Account \$\{account\.primaryPublicLabel\}`,account\.primaryPublic\)\}\s*\$\{hodlRenderMultisigCosignerExport\(re\.multisigCosignerExports,account\.def\.id\)\}/);
+  assert.match(app, /\$\{hodlSlip132WatchFields\(account,re\)\}\s*\$\{hodlImportedCoreRecoveryExport\(re,account\)\}\s*\$\{hodlRenderMultisigCosignerExport\(re\.multisigCosignerExports,account\.def\.id\)\}/);
   assert.doesNotMatch(`${app}\n${css}`, /account-multisig-exports/);
   assert.match(app, /Legacy P2SH requires the depth-1 BIP45 purpose key at m\/45h/);
   assert.match(app, /suffix=bip45\?`\/0\/\$\{branch\}\/\*`:`\/\$\{branch\}\/\*`/);

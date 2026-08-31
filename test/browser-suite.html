@@ -407,7 +407,7 @@
     const emptyHistoryHeight = dealt.getBoundingClientRect().height;
     input(cards, "as");
     await wait(0);
-    equal(cards.value, "AS");
+    equal(cards.value, "As");
     assert(!document.getElementById("go").disabled, "One valid card did not enable derivation");
     assert(document.getElementById("cards-meta").textContent.includes("seed available for testing"), "One-card warning is missing");
     equal([...document.querySelectorAll("#dice-words [data-word]")].filter((word) => word.textContent !== "—").length, 24);
@@ -420,10 +420,10 @@
     assert(document.querySelector("#cards-highlight .dice-roll-invalid")?.textContent === "ZZ", "Invalid card was not highlighted red");
     assert(document.getElementById("go").disabled && document.getElementById("cards-meta").classList.contains("err"), "Invalid card did not disable derivation");
     input(cards, "AS AS");
-    assert(document.querySelector("#cards-highlight .dice-roll-invalid")?.textContent === "AS", "Repeated card was not highlighted red");
+    assert(document.querySelector("#cards-highlight .dice-roll-invalid")?.textContent === "As", "Repeated card was not highlighted red");
     input(cards, "as, 10♥; td");
     await wait(0);
-    equal(cards.value, "AS 10H TD");
+    equal(cards.value, "As 10h Td");
     assert(!document.getElementById("go").disabled, "Normalized valid cards did not enable derivation");
     cards.focus();
     const disallowed = new InputEvent("beforeinput", { bubbles: true, cancelable: true, inputType: "insertText", data: "B" });
@@ -1216,6 +1216,31 @@
     document.getElementById("psbted-wipe").click();
     document.querySelector('#workspace [data-workspace="calc"]').click();
     await until(() => !document.getElementById("calc-card").hidden, "key workspace");
+  });
+
+  await test("SLIP-132 import warns on script mismatch and groups the Core recovery export", async () => {
+    await chooseMode("Seed phrase");
+    const seed = await until(() => document.getElementById("seed"), "seed input");
+    const scriptType = document.getElementById("script-type");
+    scriptType.value = "bip44";
+    scriptType.dispatchEvent(new Event("change", { bubbles: true }));
+    const network = document.getElementById("network");
+    input(network, "0'");
+    input(document.getElementById("address-range"), "1");
+    const zpub = "zpub6rFR7y4Q2AijBEqTUquhVz398htDFrtymD9xYYfG1m4wAcvPhXNfE3EfH1r1ADqtfSdVCToUG868RvUUkgDKf31mGDtKsAYz2oz2AGutZYs";
+    input(seed, zpub);
+    const meta = document.getElementById("seed-meta");
+    assert(meta.classList.contains("err") && meta.textContent.includes("zpub indicates Native SegWit") && meta.textContent.includes("selected Legacy"), `SLIP-132 mismatch warning was not prominent: class=${meta.className}; text=${meta.textContent}`);
+    const derive = await until(() => !document.getElementById("go").disabled && document.getElementById("go"), "SLIP-132 derive button");
+    derive.click();
+    const watch = await until(() => document.querySelector("#acct .account-watch-section"), "watch-only section");
+    const watchText = watch.textContent;
+    assert(watchText.includes("As pasted") && watchText.includes(zpub), "As-pasted zpub is missing from the watch-only export");
+    assert(watchText.includes("Bitcoin Core xpub") && watchText.includes("xpub6CatWdiZiodm"), "Core xpub is missing from the watch-only export");
+    const recovery = await until(() => document.querySelector("#acct .imported-core-recovery"), "Bitcoin Core recovery export");
+    const recoveryText = recovery.textContent;
+    assert(recoveryText.includes("Bitcoin Core descriptor") && recoveryText.includes("wpkh(xpub6CatWdiZiodm") && recoveryText.includes("/<0;1>/*)#3r0wrtd9"), "Core descriptor is missing or incorrect");
+    assert(!document.getElementById("error").textContent, "SLIP-132 derivation failed");
   });
 
   await test("a known BIP39 wallet can be derived through the UI", async () => {
