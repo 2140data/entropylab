@@ -512,7 +512,7 @@
     input(preservedBase32, "");
   });
 
-  await test("global entropy sync follows partial direct input and publishes hashed input", async () => {
+  await test("global entropy sync follows partial direct input and excludes hashed input", async () => {
     document.querySelector('[data-seed-words="12"]').click();
     await chooseMode("Number bases");
     document.querySelector('input[name="entropy-format"][value="bin"]').click();
@@ -556,29 +556,27 @@
     input(document.getElementById("key"), uncompressedWif);
     await chooseMode("Number bases");
     document.querySelector('input[name="entropy-format"][value="hex"]').click();
-    equal(document.getElementById("hex").value.length, 32, "A 12-word target did not truncate WIF entropy to 128 synced bits");
+    const wifHex = document.getElementById("hex").value;
+    equal(wifHex.length, 32, "A 12-word target did not truncate WIF entropy to 128 synced bits");
     await chooseMode("Private key");
     equal(document.getElementById("key").value, uncompressedWif, "Global sync replaced the source WIF encoding");
 
     await chooseMode("Dice rolls");
     document.querySelector('input[name="dm"][value="coldcard"]').click();
     const hashedToggle = document.getElementById("global-entropy-sync");
-    if (hashedToggle.checked) hashedToggle.click();
+    assert(hashedToggle.closest("#global-sync-host"), "The global sync control moved away from the method button bar for a hashed input");
+    assert(hashedToggle.disabled && hashedToggle.checked, "A hashed input method did not preserve the enabled non-hashed sync preference while showing it as unavailable");
+    assert(hashedToggle.closest("label").textContent.includes("non-hashed"), "The global sync label did not explain its non-hashed scope");
     const hashedDice = document.getElementById("dice");
-    input(hashedDice, "");
-    assert(document.getElementById("global-entropy-sync").disabled, "An empty hashed method enabled global sync");
     input(hashedDice, "1");
-    assert(!document.getElementById("global-entropy-sync").disabled, "A nonempty hashed method did not enable global sync");
-    document.getElementById("global-entropy-sync").click();
+    assert(document.getElementById("global-entropy-sync").disabled, "Entering hashed input enabled global sync");
     await chooseMode("Number bases");
     document.querySelector('input[name="entropy-format"][value="hex"]').click();
-    equal(document.getElementById("hex").value.length, 32, "The hashed dice digest did not publish 128 bits to direct methods");
-    await chooseMode("Dice rolls");
-    equal(document.getElementById("dice").value, "1", "Global sync reverse-filled or replaced the hashed dice transcript");
-    input(document.getElementById("dice"), "");
+    equal(document.getElementById("hex").value, wifHex, "A hashed input changed the last non-hashed synchronized entropy");
     const cleanupToggle = document.getElementById("global-entropy-sync");
-    assert(!cleanupToggle.disabled, "An enabled hashed sync became impossible to turn off after its input was cleared");
+    assert(!cleanupToggle.disabled && cleanupToggle.checked, "The non-hashed sync preference did not resume after leaving a hashed method");
     if (cleanupToggle.checked) cleanupToggle.click();
+    document.getElementById("wipe").click();
   });
 
   await test("Base64 uses the shared case, number, and symbol keyboard", async () => {

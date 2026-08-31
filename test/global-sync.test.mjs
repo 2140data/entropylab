@@ -52,24 +52,25 @@ test("global sync emits only complete destination symbols", () => {
 
 test("global sync replaces the old workspace and number-base-only sync features", () => {
   assert.match(app, /id="global-sync-host"/);
-  assert.match(app, /id="global-sync-hash-host"[^>]*hidden/);
+  assert.doesNotMatch(app, /global-sync-hash-host/);
   assert.match(app, /id="global-entropy-sync"/);
   assert.match(app, /globalSync: false/);
+  assert.match(app, /Sync non-hashed input methods/);
   assert.match(app, /A destination waits for enough bits to emit its next complete character/);
   assert.doesNotMatch(app, /workspace-sync|WorkspaceSync|Sync this key to other workspaces/);
   assert.doesNotMatch(app, /sync-number-bases|syncNumberBases|numberBaseSync/);
 });
 
-test("hashed methods publish entropy without being reverse-filled", () => {
+test("hashed methods keep the global control visible but cannot publish entropy", () => {
   const classify = loadSlice("hodlGlobalSyncIsHashedMode");
   assert.match(classify, /ge === "coldcard" \|\| ge === "coleman"/);
   assert.match(classify, /hodlCardMethod === "hashed"/);
   assert.match(classify, /kind === "minikey" \|\| kind === "brain"/);
-  const apply = loadSlice("hodlApplyGlobalSync");
-  assert.doesNotMatch(apply, /fields\.dice\s*=/);
-  assert.doesNotMatch(apply, /fields\.cards\s*=/);
-  assert.doesNotMatch(apply, /privateKeys\.minikey\s*=/);
-  assert.doesNotMatch(apply, /privateKeys\.brain\s*=/);
+  assert.match(loadSlice("hodlGlobalSyncCurrentBits"), /if \(hodlGlobalSyncIsHashedMode\(\)\) return null/);
+  assert.match(loadSlice("hodlGlobalSyncFromCurrentInput"), /!state\?\.globalSync \|\| hodlGlobalSyncIsHashedMode\(\)/);
+  const render = loadSlice("hodlRenderGlobalSyncControl");
+  assert.match(render, /document\.getElementById\("global-sync-host"\)/);
+  assert.doesNotMatch(render, /global-sync-hash-host/);
 });
 
 test("BitBox direct input is isolated from hashed dice input", () => {

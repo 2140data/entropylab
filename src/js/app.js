@@ -711,7 +711,6 @@ ec.innerHTML = `
         </details>
       </div>
       <p class="field-note address-estimate derivation-estimate" id="address-estimate" role="status">Measuring this device\u2026</p>
-      <div class="global-sync-host global-sync-hash-host" id="global-sync-hash-host" hidden></div>
       <div class="row key-action-row current-item-actions">
         <button class="btn primary" id="go" disabled aria-disabled="true">Derive Wallet</button>
         <div class="derive-progress" id="derive-progress" role="progressbar" aria-label="Wallet derivation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0% complete" hidden><span class="derive-progress-track"><span class="derive-progress-bar"></span></span><span class="derive-progress-label">0%</span></div>
@@ -5046,14 +5045,11 @@ function hodlGlobalSyncBitBoxBits(value, targetWords = Pt) {
   return bits.slice(0, config.bits);
 }
 function hodlGlobalSyncCurrentBits(targetWords = Pt) {
-  let value = hodlGlobalSyncCurrentValue(), config = hodlSeedConfig(targetWords), hashed = hodlGlobalSyncIsHashedMode();
+  if (hodlGlobalSyncIsHashedMode()) return null;
+  let value = hodlGlobalSyncCurrentValue(), config = hodlSeedConfig(targetWords);
   if (!String(value).length) return "";
   try {
     if (Ne === "dice") {
-      if (hashed) {
-        let entropy = hodlDiceEntropy(value, ge, config.words);
-        return entropy.ok ? hodlBitsFromBytes(entropy.bytes) : null;
-      }
       if (ge === "dplus") {
         let parsed = hodlDPlusRolls(value, config.words);
         if (parsed.complete) return hodlBitsFromBytes(Er([...parsed.wordSlots, parsed.finalWord].join(" "), Ae));
@@ -5067,10 +5063,6 @@ function hodlGlobalSyncCurrentBits(targetWords = Pt) {
       return hodlGlobalSyncBitBoxBits(value, config.words);
     }
     if (Ne === "cards") {
-      if (hodlCardMethod === "hashed") {
-        let entropy = hodlCardsEntropy(value, config.words, hodlCardColemanSymbols);
-        return entropy.ok ? hodlBitsFromBytes(entropy.bytes) : null;
-      }
       let parsed = hodlParseDirectCards(value, config.words);
       if (parsed.complete) return hodlBitsFromBytes(Er([...parsed.wordSlots, parsed.finalWord].join(" "), Ae));
       return hodlGlobalSyncDirectCardBits(value, config.words);
@@ -5094,10 +5086,6 @@ function hodlGlobalSyncCurrentBits(targetWords = Pt) {
       if (mnemonic) return Pn(mnemonic, Ae) ? hodlBitsFromBytes(Er(mnemonic, Ae)) : null;
       return hodlGlobalSyncWordBits(words);
     }
-    if (Ne === "brain-lab") {
-      let entropy = hodlBrainLabEntropy(value);
-      return entropy.ok ? hodlBitsFromBytes(entropy.bytes) : null;
-    }
     let kind = hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value || "wif", value);
     if (kind === "hex-key") {
       let bits = "";
@@ -5108,8 +5096,7 @@ function hodlGlobalSyncCurrentBits(targetWords = Pt) {
       return bits;
     }
     if (kind === "wif") return hodlBitsFromBytes(Ls(value.trim()).priv);
-    if (kind === "minikey") return hodlBitsFromBytes(Ns(value.trim()));
-    return hodlBitsFromBytes(hodlBrainWalletPrivateKey(value, hodlBrainWalletTrimEnabled()));
+    return null;
   } catch {
     return null;
   }
@@ -5219,7 +5206,7 @@ function hodlApplyGlobalSync(bits, sourceId = hodlGlobalSyncSourceId()) {
 }
 function hodlGlobalSyncFromCurrentInput() {
   let state = hodlKeys[hodlActiveKey];
-  if (!state?.globalSync) {
+  if (!state?.globalSync || hodlGlobalSyncIsHashedMode()) {
     hodlRenderGlobalSyncControl();
     return false;
   }
@@ -5233,18 +5220,15 @@ function hodlGlobalSyncFromCurrentInput() {
   hodlRenderGlobalSyncControl();
   return true;
 }
-function hodlGlobalSyncControlMarkup(hashed, disabled, state) {
-  let detail = hashed ? "Uses this method's deterministic hash as the shared entropy once input is present. Hash transcripts are never reverse-filled." : "Updates every direct entropy method live. A destination waits for enough bits to emit its next complete character.";
-  return `<div class="global-sync-row"><label class="seed-autocomplete-toggle global-sync-toggle"><input type="checkbox" id="global-entropy-sync" ${state?.globalSync ? "checked" : ""} ${disabled ? "disabled" : ""} /><span><strong>Sync entropy across methods</strong> <span class="seed-autocomplete-note">(${detail})</span></span></label><span class="global-sync-status" id="global-sync-status" aria-live="polite" ${state?.globalSync && state?.globalSyncBitCount ? "" : "hidden"}>${hodlCopiedIconMarkup()}<span>${state?.globalSyncBitCount || 0} bits synced</span></span></div>`;
+function hodlGlobalSyncControlMarkup(hashed, state) {
+  let detail = hashed ? "Unavailable for hashed input methods." : "Only non-hashed input methods are synchronized. A destination waits for enough bits to emit its next complete character.";
+  return `<div class="global-sync-row"><label class="seed-autocomplete-toggle global-sync-toggle"><input type="checkbox" id="global-entropy-sync" ${state?.globalSync ? "checked" : ""} ${hashed ? "disabled" : ""} /><span><strong>Sync non-hashed input methods</strong> <span class="seed-autocomplete-note">(${detail})</span></span></label><span class="global-sync-status" id="global-sync-status" aria-live="polite" ${!hashed && state?.globalSync && state?.globalSyncBitCount ? "" : "hidden"}>${hodlCopiedIconMarkup()}<span>${state?.globalSyncBitCount || 0} bits synced</span></span></div>`;
 }
 function hodlRenderGlobalSyncControl() {
-  let directHost = document.getElementById("global-sync-host"), hashHost = document.getElementById("global-sync-hash-host"), state = hodlKeys[hodlActiveKey];
-  if (!directHost || !hashHost || !state) return;
-  let hashed = hodlGlobalSyncIsHashedMode(), activeHost = hashed ? hashHost : directHost, inactiveHost = hashed ? directHost : hashHost, disabled = hashed && !state.globalSync && !String(hodlGlobalSyncCurrentValue()).length;
-  inactiveHost.hidden = true;
-  inactiveHost.innerHTML = "";
-  activeHost.hidden = false;
-  activeHost.innerHTML = hodlGlobalSyncControlMarkup(hashed, disabled, state);
+  let host = document.getElementById("global-sync-host"), state = hodlKeys[hodlActiveKey];
+  if (!host || !state) return;
+  let hashed = hodlGlobalSyncIsHashedMode();
+  host.innerHTML = hodlGlobalSyncControlMarkup(hashed, state);
   let toggle = document.getElementById("global-entropy-sync");
   if (toggle) toggle.onchange = () => {
     state.globalSync = toggle.checked;

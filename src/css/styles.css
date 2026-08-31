@@ -165,7 +165,6 @@ textarea { display: block; min-height: 96px; letter-spacing: 0.08em; }
 .seed-entry-tools .seed-autocomplete-toggle { flex: 1 1 auto; margin-top: 0; }
 .global-sync-host { margin-top: var(--space-component); }
 .global-sync-host[hidden] { display: none; }
-.global-sync-hash-host { margin-bottom: var(--space-component); }
 .global-sync-row { display: flex; align-items: stretch; gap: var(--space-control); }
 .global-sync-toggle { flex: 1 1 auto; margin-top: 0; }
 .global-sync-status {

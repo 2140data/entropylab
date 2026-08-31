@@ -237,7 +237,7 @@ test("Number bases offers exact Base 2, 4, 8, 16, Crockford Base32, and Base64-a
   assert.match(app, /function hodlBinaryCalculationRows\(value,targetWords=Pt\)/);
   assert.match(app, /id="number-base-calculations" class="number-base-calculations-panel"/);
   assert.match(appSource, /id="global-sync-host"/);
-  assert.match(appSource, /id="global-sync-hash-host" hidden/);
+  assert.doesNotMatch(appSource, /global-sync-hash-host/);
   assert.match(appSource, /id="global-entropy-sync"/);
   assert.match(app, /globalSync:!1/);
   assert.match(app, /entropyFormat:"bin"/);
