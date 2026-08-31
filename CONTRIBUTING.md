@@ -72,10 +72,37 @@ npm test
 ```
 
 Useful commands (same as CI): `npm run build`, `npm run verify`,
-`npm run test:validate`, `npm run test:browser` (needs local Firefox),
-`npm run ci`. `npm run build:wasm` additionally needs Rust (the pinned
-toolchain installs itself via `entropylab-wasm/rust-toolchain.toml`) and is
-only required when changing the Rust bindings in `entropylab-wasm/`.
+`npm run test:validate`, `npm run test:browser` (runs every installed
+engine: Firefox, Chrome/Chromium, Microsoft Edge — an installed browser
+is required; set `FIREFOX_BINARY` / `CHROME_BINARY` / `EDGE_BINARY` to
+point the harness at a specific one), `npm run ci`. `npm run build:wasm`
+additionally needs Rust (the pinned toolchain installs itself via
+`entropylab-wasm/rust-toolchain.toml`) and is only required when changing
+the Rust bindings in `entropylab-wasm/`.
+
+### The development container (no host prerequisites)
+
+The entire environment — Node 22 (pinned), the pinned Rust 1.95.0 wasm
+toolchain with clang, Firefox ESR (pinned tarball), and Chrome — is
+packaged as a container image (`Dockerfile`, wired up by `compose.yaml`).
+The only host requirement is Docker; the repository is bind-mounted at
+`/workspace`:
+
+```sh
+docker compose up --build        # builds the image, drops into a shell
+npm ci && npm run build && npm test
+# or from the host, without a shell:
+docker compose run --rm dev npm test
+docker compose run --rm dev npm run build:wasm
+```
+
+Inside the image, `npm test` is fully green (the optional SQLite checks
+need Python, which is included) and `npm run test:browser` runs both
+Firefox and Chrome; a locally installed Microsoft Edge is picked up
+automatically when present (it is a Chromium fork sharing Chrome's engine
+and code path, so the image does not ship a second copy). The Rust
+toolchain and crate registry, and the npm cache, are pre-fetched into the
+image, so `npm ci` and `npm run build:wasm` work without further downloads.
 
 ## 5. Working agreements
 

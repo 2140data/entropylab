@@ -14,6 +14,12 @@ Guidelines for AI coding agents.
   `src/js/entropylab-wasm-b64.js` (regenerate the latter with
   `npm run build:wasm`; it needs Rust, toolchain pinned by
   `entropylab-wasm/rust-toolchain.toml`).
+- The whole development environment is also a docker image (`Dockerfile` +
+  `compose.yaml`): pinned Node, the pinned Rust wasm toolchain + clang,
+  Firefox, and Chrome. `docker compose up --build` mounts the repo at
+  `/workspace`; `npm test` and `npm run test:browser` run fully inside it
+  (the browser suite runs every installed engine — Firefox,
+  Chrome/Chromium, Microsoft Edge — and skips the absent ones).
 - Make the smallest change that works. No refactors, reformatting, or new
   dependencies.
 - Don't weaken or skip tests. New behaviour needs a test.
