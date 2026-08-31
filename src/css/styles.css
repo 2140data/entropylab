@@ -214,9 +214,9 @@ textarea { display: block; min-height: 96px; letter-spacing: 0.08em; }
 .manual-calculation-heading { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); }
 .manual-calculation-heading strong { color: var(--fg); }
 .dplus-calculation-row { display: block; }
-.dplus-calculation-stages { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px; margin-top: 10px; }
-.dplus-calculation-stage { display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 4px 7px; min-width: 0; padding: 6px 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--bg); }
-.dplus-calculation-stage span { color: var(--muted); font-family: var(--sans); font-size: 10px; font-weight: 600; }
+.dplus-calculation-stages { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.dplus-calculation-stage { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 4px 7px; min-width: 0; padding: 6px 8px; border: 1px solid var(--border); border-radius: 7px; background: var(--bg); }
+.dplus-calculation-stage span { grid-column: 1 / -1; color: var(--muted); font-family: var(--sans); font-size: 10px; font-weight: 600; }
 .dplus-calculation-stage strong { color: var(--fg); font-size: 13px; }
 .dplus-calculation-stage small { color: var(--muted); white-space: nowrap; }
 .dplus-calculation-stage b { color: var(--accent); font-weight: 700; white-space: nowrap; }

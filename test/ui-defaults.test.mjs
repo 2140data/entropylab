@@ -185,6 +185,8 @@ test("direct dice and card methods expose manual BIP39 calculations before copyi
   assert.match(appSource, /dplus-calculation-stages/);
   assert.match(appSource, /dplus-calculation-stage.*stage\.face/);
   assert.match(css, /\.manual-calculation-row \{/);
+  assert.match(css, /\.dplus-calculation-stages \{[^}]*grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.dplus-calculation-stage span \{ grid-column: 1 \/ -1; color: var\(--muted\)/);
   assert.match(css, /\.dplus-calculation-stage \{/);
 });
 
