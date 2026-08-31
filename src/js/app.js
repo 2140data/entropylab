@@ -1478,7 +1478,7 @@ Po = function(value, network, count, accountIndex = 0, addressStart = 0) {
   }
   if (node.depth !== 3) throw new Error(`This extended key is depth ${node.depth}. Key Derivation accepts a BIP32 root private key (depth 0) or an account-level extended key (depth 3).`);
   let definition = hodlImportedScriptDefinition(parsed), addressCount = Math.min(Math.max(count, 1), 10000), parentFingerprint = Us(node.parentFingerprint), nodeFingerprint = Us(node.fingerprint);
-  let account = hodlAccountResult(node, definition, network, addressCount, { accountPath: "Imported account key", accountIndex: null, imported: true, parentFingerprint, nodeFingerprint, addressStart });
+  let account = hodlAccountResult(node, definition, network, addressCount, { accountPath: "Imported account key", accountIndex: null, imported: true, importedFamily: parsed.family, importedValue, parentFingerprint, nodeFingerprint, addressStart });
   return {
     kind: "hd",
     network,
@@ -1648,7 +1648,7 @@ function hodlImportedCoreRecoveryData(wallet, account) {
 function hodlImportedCoreRecoveryExport(wallet, account) {
   let data = hodlImportedCoreRecoveryData(wallet, account);
   if (!data) return "";
-  return `<div class="wallet-data-fields imported-core-recovery"><h4 class="wallet-data-subtitle">Bitcoin Core recovery export</h4><p class="muted">The SLIP-132 prefix records the script type. The Core key below has the same payload with generic version bytes; the descriptor keeps the script type explicit.</p>${ye(data.importedLabel, data.importedKey)}${ye(data.coreLabel, data.coreKey)}${ye(data.descriptorLabel, data.descriptor)}</div>`;
+  return `<div class="wallet-data-fields imported-core-recovery"><h4 class="wallet-data-subtitle">Bitcoin Core recovery export</h4><p class="muted">The SLIP-132 prefix records the script type. The Core key above is the same payload with generic version bytes; this descriptor keeps the script type explicit and stays on the conventional receive/change branches for Bitcoin Core.</p>${ye(data.descriptorLabel, data.descriptor)}</div>`;
 }
 function hodlRenderMultisigCosignerExport(exports, accountId) {
   let items = Array.isArray(exports) ? exports.filter((candidate) => candidate.accountId === accountId) : [];

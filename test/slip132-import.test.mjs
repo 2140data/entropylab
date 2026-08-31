@@ -121,6 +121,7 @@ test("published BIP84 zpub vector exposes the same Core xpub and descriptor", ()
   assert.equal(p2wpkh(parsed.node.derive("m/0/0").publicKey).address, "bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu");
   const account = hodlAccountResult(parsed.node, To[2], "mainnet", 1, {
     imported: true,
+    importedFamily: parsed.family,
     accountPath: "Imported account key",
     addressBranches: [{ branch: 0, rows: [] }, { branch: 1, rows: [] }],
   });
@@ -151,7 +152,7 @@ test("all single-signature SLIP-132 public prefixes preserve payload and expose 
     assert.equal(parsed.family, family);
     assert.deepEqual([...codec.decode(importedKey).slice(4)], [...codec.decode(parsed.xkey).slice(4)]);
     const definition = To.find((candidate) => candidate.id === scriptId);
-    const account = hodlAccountResult(parsed.node, definition, network, 1, { imported: true, addressBranches: [{ branch: 0, rows: [] }, { branch: 1, rows: [] }] });
+    const account = hodlAccountResult(parsed.node, definition, network, 1, { imported: true, importedFamily: family, addressBranches: [{ branch: 0, rows: [] }, { branch: 1, rows: [] }] });
     assert.ok(account.genericPublic.startsWith(network === "mainnet" ? "xpub" : "tpub"));
     const data = hodlImportedCoreRecoveryData({ importedPublicKey: importedKey, importedPublicLabel: parsed.prefix }, account);
     assert.equal(data.importedKey, importedKey);
@@ -168,6 +169,7 @@ test("Core recovery descriptor stays on conventional receive/change branches", (
   const parsed = uf(ZPUB);
   const account = hodlAccountResult(parsed.node, To[2], "mainnet", 1, {
     imported: true,
+    importedFamily: parsed.family,
     branchStart: 7,
     branchRange: 1,
     addressBranches: [{ branch: 7, rows: [] }],
@@ -194,10 +196,15 @@ test("generic xpub imports do not claim a script type or duplicate a Core export
   }), null);
 });
 
-test("result rendering groups imported key, Core xpub, and descriptor in one safe block", () => {
+test("result rendering shows the prefix-swap fields and groups the Core descriptor in one safe block", () => {
   assert.match(app, /function hodlImportedCoreRecoveryExport\(wallet, account\)/);
   assert.match(app, /Bitcoin Core recovery export/);
+  assert.match(app, /hodlSlip132WatchFields\(account, re\)/);
   assert.match(app, /hodlImportedCoreRecoveryExport\(re, account\)/);
   assert.match(app, /status\.warning \? "err" : "ok"/);
+  // The prefix-swap fields above the block already show the pasted key and its
+  // Core equivalent; the recovery block adds only the conventional descriptor.
+  assert.doesNotMatch(app, /ye\(data\.importedLabel/);
+  assert.doesNotMatch(app, /ye\(data\.coreLabel/);
   assert.doesNotMatch(app, /innerHTML\s*=\s*wallet\.importedPublicKey/);
 });

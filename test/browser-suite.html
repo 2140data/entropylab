@@ -1233,10 +1233,12 @@
     assert(meta.classList.contains("err") && meta.textContent.includes("zpub indicates Native SegWit") && meta.textContent.includes("selected Legacy"), `SLIP-132 mismatch warning was not prominent: class=${meta.className}; text=${meta.textContent}`);
     const derive = await until(() => !document.getElementById("go").disabled && document.getElementById("go"), "SLIP-132 derive button");
     derive.click();
+    const watch = await until(() => document.querySelector("#acct .account-watch-section"), "watch-only section");
+    const watchText = watch.textContent;
+    assert(watchText.includes("As pasted") && watchText.includes(zpub), "As-pasted zpub is missing from the watch-only export");
+    assert(watchText.includes("Bitcoin Core xpub") && watchText.includes("xpub6CatWdiZiodm"), "Core xpub is missing from the watch-only export");
     const recovery = await until(() => document.querySelector("#acct .imported-core-recovery"), "Bitcoin Core recovery export");
     const recoveryText = recovery.textContent;
-    assert(recoveryText.includes("Imported zpub") && recoveryText.includes(zpub), "Imported zpub is missing from the recovery export");
-    assert(recoveryText.includes("Core xpub") && recoveryText.includes("xpub6CatWdiZiodm"), "Core xpub is missing from the recovery export");
     assert(recoveryText.includes("Bitcoin Core descriptor") && recoveryText.includes("wpkh(xpub6CatWdiZiodm") && recoveryText.includes("/<0;1>/*)#3r0wrtd9"), "Core descriptor is missing or incorrect");
     assert(!document.getElementById("error").textContent, "SLIP-132 derivation failed");
   });
