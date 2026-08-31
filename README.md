@@ -102,6 +102,13 @@ Official website: [entropylab.online](https://entropylab.online)
   wallet looks empty, repair it with `rescanblockchain 0` in Bitcoin Core.
   Generated database files match Bitcoin Core's own record layout
   byte-for-byte (verified against Bitcoin Core v28.3.0).
+- SLIP-132 extended-key display is a prefix swap only (same payload, new
+  version bytes and checksum). Import/derive shows the key as pasted, the
+  Bitcoin Core xprv/xpub or tprv/tpub, and the descriptor (script in the
+  descriptor, not the prefix). A generic xprv is re-prefixed only when the
+  path/script match: x = legacy, y = nested BIP49, z = native BIP84,
+  Y = nested BIP48 multisig, Z = native BIP48 native-msig. Testnet uses
+  t / u / v / U / V. There is no Taproot SLIP prefix.
 
 ## Usage
 

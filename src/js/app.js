@@ -1231,8 +1231,16 @@ uf = function(value) {
   if (node.depth !== depth) throw new Error("The extended-key depth does not match its serialized payload.");
   return { xkey: normalized, isPrivate: entry.private, network: entry.network, family: entry.family, scope: entry.scope, prefix: entry.name, version: entry.ver, node, depth, childNumber };
 };
-function hodlAccountExportFamily(definition) {
-  return definition.id === "bip49" ? "y" : definition.id === "bip84" ? "z" : "x";
+function hodlAccountExportFamily(definition, options = {}) {
+  if (definition.id === "bip86") return "x";
+  if (options.imported) {
+    if (options.importedFamily === "y" && definition.id === "bip49") return "y";
+    if (options.importedFamily === "z" && definition.id === "bip84") return "z";
+    return "x";
+  }
+  if (definition.id === "bip49" && definition.purpose === 49) return "y";
+  if (definition.id === "bip84" && definition.purpose === 84) return "z";
+  return "x";
 }
 function hodlSerializeExtendedKey(value, network, family, isPrivate) {
   return value ? le(value, cr[network][family][isPrivate ? "prv" : "pub"]) : null;
@@ -1337,7 +1345,7 @@ function hodlWatchOnlyDescriptorExport(receiveDescriptor, changeDescriptor, addr
   return `${ye("Watch-only wallet descriptor", multipath || "\u2014")}${qr}<details class="wallet-advanced"><summary>Address branch descriptors</summary>${details}</details>`;
 }
 function hodlAccountResult(node, definition, network, count, options = {}) {
-  let rawPublic = node.publicExtendedKey, rawPrivate = node.privateKey ? node.privateExtendedKey : null, family = hodlAccountExportFamily(definition), primaryConfig = cr[network][family], genericConfig = cr[network].x;
+  let rawPublic = node.publicExtendedKey, rawPrivate = node.privateKey ? node.privateExtendedKey : null, family = hodlAccountExportFamily(definition, options), primaryConfig = cr[network][family] || cr[network].x, genericConfig = cr[network].x;
   let genericPublic = hodlSerializeExtendedKey(rawPublic, network, "x", false), genericPrivate = hodlSerializeExtendedKey(rawPrivate, network, "x", true);
   let primaryPublic = hodlSerializeExtendedKey(rawPublic, network, family, false), primaryPrivate = hodlSerializeExtendedKey(rawPrivate, network, family, true);
   let origin = options.originFingerprint && options.originPath ? `[${options.originFingerprint}/${options.originPath}]` : "", branchHardened = Boolean(options.branchHardened), addressHardened = Boolean(options.addressHardened), wildcard = addressHardened ? "*'" : "*", branchStart = options.branchStart ?? 0, branchRange = options.branchRange ?? 2;
@@ -1365,6 +1373,8 @@ function hodlAccountResult(node, definition, network, count, options = {}) {
     accountIndex: options.accountIndex ?? null,
     originKnown: Boolean(origin),
     imported: Boolean(options.imported),
+    importedFamily: options.importedFamily || null,
+    importedValue: options.importedValue || null,
     masterFingerprint: options.masterFingerprint ?? null,
     parentFingerprint: options.parentFingerprint ?? null,
     nodeFingerprint: options.nodeFingerprint ?? null,
@@ -1544,7 +1554,7 @@ async function hodlImportedWalletWithProgress(value, network, count, accountInde
   if ((hardening.branch || hardening.address) && !parsed.isPrivate) throw new Error(`Hardened ${hardening.branch ? "address branches" : "address indexes"} cannot be derived from an account extended public key. Turn off Harden or import the matching extended private key offline.`);
   let definition = hodlImportedScriptDefinition(parsed), addressCount = Math.min(Math.max(count, 1), hodlMaxAddressRange), parentFingerprint = Us(node.parentFingerprint), nodeFingerprint = Us(node.fingerprint);
   tracker.setTotal(addressCount * branchRange);
-  let account = await hodlAccountResultWithProgress(node, definition, network, addressCount, { accountPath: "Imported account key", accountIndex: null, imported: true, parentFingerprint, nodeFingerprint, addressStart, branchHardened: hardening.branch, addressHardened: hardening.address, branchStart, branchRange }, tracker);
+  let account = await hodlAccountResultWithProgress(node, definition, network, addressCount, { accountPath: "Imported account key", accountIndex: null, imported: true, importedFamily: parsed.family, importedValue, parentFingerprint, nodeFingerprint, addressStart, branchHardened: hardening.branch, addressHardened: hardening.address, branchStart, branchRange }, tracker);
   node.wipePrivateData(); // the account result keeps its strings, not the imported node
   return {
     kind: "hd",
@@ -1805,6 +1815,23 @@ function hodlBindAddressVirtualization(configs = []) {
     render();
   });
 }
+function hodlSlip132Fields(account, wallet, isPrivate = false) {
+  let pasted = isPrivate ? (wallet?.importedPrivateKey || "") : (wallet?.importedPublicKey || "");
+  let core = (isPrivate ? account.genericPrivate : account.genericPublic) || "";
+  let coreLabel = isPrivate ? account.genericPrivateLabel : account.genericPublicLabel;
+  let slip = account.hasAlternateExport ? (isPrivate ? account.primaryPrivate : account.primaryPublic) : "";
+  let slipLabel = isPrivate ? account.primaryPrivateLabel : account.primaryPublicLabel;
+  let field = isPrivate ? Ee : ye, parts = [];
+  if (pasted) parts.push(field("As pasted", pasted));
+  if (core && core !== pasted) parts.push(field(`Bitcoin Core ${coreLabel}`, core));
+  if (slip && slip !== pasted && slip !== core) parts.push(field(`SLIP-132 ${slipLabel}`, slip));
+  if (!parts.length && core) parts.push(field(`Account ${coreLabel}`, core));
+  if (!isPrivate) parts.push(`<p class="muted slip132-note">Prefix swap only (same payload, new version bytes and checksum). Script lives in the descriptor, not the prefix. x = legacy, y = nested BIP49, z = native BIP84, Y = nested BIP48 nested-msig, Z = native BIP48 native-msig. Testnet: t / u / v / U / V. No Taproot SLIP prefix.</p>`);
+  return parts.join("");
+}
+function hodlSlip132WatchFields(account, wallet) {
+  return hodlSlip132Fields(account, wallet, false);
+}
 function Qs(id) {
   if (!re || re.kind !== "hd") return;
   let account = re.accounts.find((candidate) => candidate.def.id === id);
@@ -1818,7 +1845,7 @@ function Qs(id) {
         <h3 id="account-private-heading">Private account material</h3>
         <p class="muted">These exports can spend from this account. They are shown only for a seed or extended private-key source.</p>
       </div>
-      ${Ee(`Account ${account.primaryPrivateLabel}`, account.primaryPrivate)}
+      ${hodlSlip132Fields(account, re, true)}
       ${hodlAddressBranchDescriptorFields(branches, true)}
       ${hodlAccountAdvancedExports(account, true)}
       <p class="account-private-warning"><strong>Keep these exports together only in secure offline backups.</strong> An account extended public key combined with any non-hardened descendant private key, including a WIF shown in the address tables below, can reconstruct that account's extended private key.</p>
@@ -1834,7 +1861,7 @@ function Qs(id) {
           <h3 id="account-watch-heading">Watch-only wallet data</h3>
           <p class="watch-only-note"><strong>Cannot spend:</strong> these exports can monitor every address and reveal this account's transaction history and balance. Treat them as privacy-sensitive.</p>
         </div>
-        ${ye(`Account ${account.primaryPublicLabel}`, account.primaryPublic)}
+        ${hodlSlip132WatchFields(account, re)}
         ${hodlRenderMultisigCosignerExport(re.multisigCosignerExports, account.def.id)}
         ${hodlWatchOnlyDescriptorExport(account.receiveDescriptor, account.changeDescriptor, branches)}
         ${hodlAccountAdvancedExports(account, false)}
