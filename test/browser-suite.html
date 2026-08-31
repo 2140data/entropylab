@@ -309,10 +309,19 @@
     seed.focus();
     seed.setSelectionRange(seed.value.length, seed.value.length);
     const autocomplete = document.getElementById("seed-autocomplete");
-    assert(!autocomplete.checked, "Seed autocomplete unexpectedly started enabled");
+    assert(autocomplete.checked, "Seed autocomplete did not start enabled");
     autocomplete.click();
-    equal(seed.value, "amount ");
+    assert(!autocomplete.checked, "Clicking the autocomplete toggle did not turn it off");
+    equal(seed.value, "amou", "Turning autocomplete off changed the typed input");
     autocomplete.click();
+    equal(seed.value, "amount");
+    equal(
+      seed.value.slice(seed.selectionStart, seed.selectionEnd),
+      "nt",
+      "The completion was not left selected so that typing replaces it",
+    );
+    autocomplete.click();
+    seed.setSelectionRange(seed.value.length, seed.value.length);
     input(seed, "");
     const keyboardToggle = document.getElementById("seed-keyboard-toggle");
     const keyboard = document.getElementById("seed-keyboard");
@@ -1307,12 +1316,12 @@
     input(document.getElementById("msig-n-number"), "2");
     input(document.getElementById("msig-x-0"), bip87Export);
     input(document.getElementById("msig-x-1"), bip48Export);
-    equal(multisigScript.value, "mixed");
-    assert(
-      document.getElementById("msig-script-warning").textContent.includes("different script types"),
-      "Legacy and Native SegWit keys did not show an explicit incompatibility",
-    );
+    equal(multisigScript.value, "p2wsh");
     assert(document.getElementById("msig-purpose-warning").textContent.includes("do not match"), "Mixed co-signer purposes did not show a warning");
+    assert(
+      document.getElementById("msig-go").disabled,
+      "A BIP87 co-signer mixed with a BIP48 export was allowed to derive",
+    );
     input(document.getElementById("msig-x-1"), "");
     input(document.getElementById("msig-n-number"), "1");
     equal(document.getElementById("msig-m").value, "1");
