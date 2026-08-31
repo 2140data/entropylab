@@ -358,7 +358,12 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /\^S\(\?:\[1-9A-HJ-NP-Za-km-z\]\{21\}\|\[1-9A-HJ-NP-Za-km-z\]\{29\}\)\$/);
   assert.match(app, /function hodlPassphraseKeyboardMarkup\(\)/);
   assert.match(app, /function hodlPrivateKeyKeyboardMarkup\(\)/);
-  assert.match(app, /function hodlBindPassphraseKeyboard\(inputId="pass",toggleId="passphrase-keyboard-toggle",inputName="passphrase"\)/);
+  assert.match(app, /function hodlBindPassphraseKeyboard\(inputId="pass",toggleId="passphrase-keyboard-toggle",inputName="passphrase",keyboardId="passphrase-keyboard"\)/);
+  // Each on-screen keyboard owns a distinct element id, so two of them can
+  // coexist without one binding stealing the other's keys.
+  assert.match(app, /hodlKeyboardMarkup\(!0,"passphrase","passphrase-keyboard"\)/);
+  assert.match(app, /hodlKeyboardMarkup\(!0,"private key","private-keyboard",!0\)/);
+  assert.doesNotMatch(app, /hodlKeyboardMarkup\(!0\)/);
   assert.match(app, /function hodlRenderPassphraseKeyboard\(\)/);
   assert.match(app, /privateKey=Ne==="key",passphrase=!privateKey,enabled=passphrase\|\|privateKey/);
   assert.match(app, /hodlPassphraseKeyboardToggleMarkup\(\)/);

@@ -4146,7 +4146,7 @@ function hodlSeedKeyboardToggleMarkup() {
   return hodlKeyboardToggleMarkup("seed-keyboard-toggle", "on-screen seed keyboard");
 }
 function hodlPassphraseKeyboardToggleMarkup() {
-  return hodlKeyboardToggleMarkup("passphrase-keyboard-toggle", "on-screen passphrase keyboard");
+  return hodlKeyboardToggleMarkup("passphrase-keyboard-toggle", "on-screen passphrase keyboard", "passphrase-keyboard");
 }
 function hodlPassphraseBip39ToggleMarkup(checked = hodlPassphraseBip39Enabled()) {
   return `<label class="seed-autocomplete-toggle passphrase-bip39-toggle"><input type="checkbox" id="passphrase-bip39-words" ${checked ? "checked" : ""} /><span><strong>Build passphrase from BIP39 words</strong> <span class="seed-autocomplete-note">(lowercase words separated by single spaces)</span></span></label>`;
@@ -4158,7 +4158,7 @@ function hodlBrainWalletTrimToggleMarkup(checked = Boolean(hodlKeys[hodlActiveKe
   return `<label class="seed-autocomplete-toggle brain-wallet-trim-toggle" data-brain-wallet-trim-control hidden><input type="checkbox" id="brain-wallet-trim" ${checked ? "checked" : ""} /><span><strong>Trim leading and trailing whitespace</strong></span></label>`;
 }
 function hodlPrivateKeyKeyboardToggleMarkup() {
-  return `<div class="passphrase-keyboard-tools">${hodlKeyboardToggleMarkup("private-keyboard-toggle", "on-screen private key keyboard")}${hodlBrainWalletTrimToggleMarkup()}</div>`;
+  return `<div class="passphrase-keyboard-tools">${hodlKeyboardToggleMarkup("private-keyboard-toggle", "on-screen private key keyboard", "private-keyboard")}${hodlBrainWalletTrimToggleMarkup()}</div>`;
 }
 function hodlBase64KeyboardToggleMarkup() {
   return hodlKeyboardToggleMarkup("base64-keyboard-toggle", "on-screen Base64 keyboard", "base64-keyboard");
@@ -4177,10 +4177,10 @@ function hodlSeedKeyboardMarkup() {
   return hodlKeyboardMarkup(false);
 }
 function hodlPassphraseKeyboardMarkup() {
-  return hodlKeyboardMarkup(true);
+  return hodlKeyboardMarkup(true, "passphrase", "passphrase-keyboard");
 }
 function hodlPrivateKeyKeyboardMarkup() {
-  return hodlKeyboardMarkup(true, "private key", "seed-keyboard", true);
+  return hodlKeyboardMarkup(true, "private key", "private-keyboard", true);
 }
 function hodlBase64KeyboardMarkup() {
   return hodlKeyboardMarkup(true, "Base64 entropy", "base64-keyboard");
@@ -4275,7 +4275,7 @@ function hodlPassphraseBip39CanEnterSpace(input) {
   return analysis.invalidRanges.length === 0 && analysis.tokens.length > 0 && analysis.completeWords === analysis.tokens.length;
 }
 function hodlUpdatePassphraseKeyboardKeys(input) {
-  let keyboard = document.getElementById("seed-keyboard");
+  let keyboard = document.getElementById("passphrase-keyboard");
   if (!keyboard || !input) return;
   let constrained = hodlPassphraseBip39Enabled(), modeButton = keyboard.querySelector("[data-seed-keyboard-mode]");
   if (constrained && modeButton && keyboard.dataset.seedKeyboardLayout !== "lower") hodlSetSeedKeyboardLayout(keyboard, modeButton, "lower");
@@ -4416,7 +4416,7 @@ function hodlUpdatePrivateKeyInitialKeys(keyboard, input, kind, network) {
   return show;
 }
 function hodlUpdatePrivateKeyKeyboardKeys(input) {
-  let keyboard = document.getElementById("seed-keyboard");
+  let keyboard = document.getElementById("private-keyboard");
   if (!keyboard || !input) return;
   let kind = hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value, input.value), network = hodlSelectedNetwork(document.getElementById("network")), initialOnly = hodlUpdatePrivateKeyInitialKeys(keyboard, input, kind, network);
   let hexKeypad = keyboard.querySelector("[data-private-key-hex-keypad]"), hexOnly = kind === "hex-key";
@@ -4614,8 +4614,8 @@ function hodlBindSeedKeyboard(input, targetWords = Pt) {
   });
   activate(input);
 }
-function hodlBindPassphraseKeyboard(inputId = "pass", toggleId = "passphrase-keyboard-toggle", inputName = "passphrase") {
-  let toggle = document.getElementById(toggleId), keyboard = document.getElementById("seed-keyboard"), input = document.getElementById(inputId), modeButton = keyboard?.querySelector("[data-seed-keyboard-mode]"), bip39Toggle = document.getElementById("passphrase-bip39-words");
+function hodlBindPassphraseKeyboard(inputId = "pass", toggleId = "passphrase-keyboard-toggle", inputName = "passphrase", keyboardId = "passphrase-keyboard") {
+  let toggle = document.getElementById(toggleId), keyboard = document.getElementById(keyboardId), input = document.getElementById(inputId), modeButton = keyboard?.querySelector("[data-seed-keyboard-mode]"), bip39Toggle = document.getElementById("passphrase-bip39-words");
   if (!toggle || !keyboard || !input) return;
   let privateKey = inputId === "key", refresh = () => privateKey ? hodlUpdatePrivateKeyKeyboardKeys(input) : hodlUpdatePassphraseKeyboardKeys(input);
   toggle.onclick = () => {
@@ -4683,7 +4683,7 @@ function hodlRenderPassphraseKeyboard() {
   if (!host) return;
   host.hidden = !enabled;
   host.innerHTML = enabled ? privateKey ? hodlPrivateKeyKeyboardMarkup() : hodlPassphraseKeyboardMarkup() : "";
-  if (enabled) hodlBindPassphraseKeyboard(privateKey ? "key" : "pass", privateKey ? "private-keyboard-toggle" : "passphrase-keyboard-toggle", privateKey ? "private key" : "passphrase");
+  if (enabled) hodlBindPassphraseKeyboard(privateKey ? "key" : "pass", privateKey ? "private-keyboard-toggle" : "passphrase-keyboard-toggle", privateKey ? "private key" : "passphrase", privateKey ? "private-keyboard" : "passphrase-keyboard");
   else hodlRenderPassphraseInputState(document.getElementById("pass"));
 }
 function hodlReplaceSeedFinalWord(input, context, word) {
