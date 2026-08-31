@@ -1242,8 +1242,16 @@ uf = function(value) {
   if (node.depth !== depth) throw new Error("The extended-key depth does not match its serialized payload.");
   return { xkey: normalized, isPrivate: entry.private, network: entry.network, family: entry.family, scope: entry.scope, prefix: entry.name, version: entry.ver, node, depth, childNumber };
 };
-function hodlAccountExportFamily(definition) {
-  return definition.id === "bip49" ? "y" : definition.id === "bip84" ? "z" : "x";
+function hodlAccountExportFamily(definition, options = {}) {
+  if (definition.id === "bip86") return "x";
+  if (options.imported) {
+    if (options.importedFamily === "y" && definition.id === "bip49") return "y";
+    if (options.importedFamily === "z" && definition.id === "bip84") return "z";
+    return "x";
+  }
+  if (definition.id === "bip49" && definition.purpose === 49) return "y";
+  if (definition.id === "bip84" && definition.purpose === 84) return "z";
+  return "x";
 }
 function hodlSerializeExtendedKey(value, network, family, isPrivate) {
   return value ? le(value, cr[network][family][isPrivate ? "prv" : "pub"]) : null;
@@ -1348,7 +1356,7 @@ function hodlWatchOnlyDescriptorExport(receiveDescriptor, changeDescriptor, addr
   return `${ye("Watch-only wallet descriptor", multipath || "\u2014")}${qr}<details class="wallet-advanced"><summary>Address branch descriptors</summary>${details}</details>`;
 }
 function hodlAccountResult(node, definition, network, count, options = {}) {
-  let rawPublic = node.publicExtendedKey, rawPrivate = node.privateKey ? node.privateExtendedKey : null, family = hodlAccountExportFamily(definition), primaryConfig = cr[network][family], genericConfig = cr[network].x;
+  let rawPublic = node.publicExtendedKey, rawPrivate = node.privateKey ? node.privateExtendedKey : null, family = hodlAccountExportFamily(definition, options), primaryConfig = cr[network][family] || cr[network].x, genericConfig = cr[network].x;
   let genericPublic = hodlSerializeExtendedKey(rawPublic, network, "x", false), genericPrivate = hodlSerializeExtendedKey(rawPrivate, network, "x", true);
   let primaryPublic = hodlSerializeExtendedKey(rawPublic, network, family, false), primaryPrivate = hodlSerializeExtendedKey(rawPrivate, network, family, true);
   let origin = options.originFingerprint && options.originPath ? `[${options.originFingerprint}/${options.originPath}]` : "", branchHardened = Boolean(options.branchHardened), addressHardened = Boolean(options.addressHardened), wildcard = addressHardened ? "*'" : "*", branchStart = options.branchStart ?? 0, branchRange = options.branchRange ?? 2;
@@ -1376,6 +1384,8 @@ function hodlAccountResult(node, definition, network, count, options = {}) {
     accountIndex: options.accountIndex ?? null,
     originKnown: Boolean(origin),
     imported: Boolean(options.imported),
+    importedFamily: options.importedFamily || null,
+    importedValue: options.importedValue || null,
     masterFingerprint: options.masterFingerprint ?? null,
     parentFingerprint: options.parentFingerprint ?? null,
     nodeFingerprint: options.nodeFingerprint ?? null,
@@ -1449,11 +1459,18 @@ function hodlImportedScriptDefinition(parsed) {
   if (parsed.family === "z") return To.find((definition) => definition.id === "bip84");
   return hodlScriptDefinition(hodlSelectedScriptType());
 }
+function hodlSinglesigScriptMismatch(parsed, selectedScriptId) {
+  let expectedId = parsed?.family === "y" ? "bip49" : parsed?.family === "z" ? "bip84" : "";
+  if (!expectedId || expectedId === selectedScriptId) return "";
+  let expected = To.find((definition) => definition.id === expectedId), selected = To.find((definition) => definition.id === selectedScriptId);
+  if (!expected || !selected) return "";
+  return `${parsed.prefix} indicates ${expected.label} (${expected.bip}), but you selected ${selected.label} (${selected.bip}). EntropyLab will derive ${expected.label} from the ${parsed.prefix} prefix. Change Script type to ${expected.label} to make the settings agree.`;
+}
 Po = function(value, network, count, accountIndex = 0, addressStart = 0) {
   let importedValue = String(value ?? "").trim(), parsed = uf(importedValue);
   if (parsed.scope !== "singlesig") throw new Error(`${parsed.prefix} is a multisig extended key. Use it in Multi Signature, not Key Derivation.`);
   if (parsed.network !== network) throw new Error(`This ${parsed.prefix} belongs to Bitcoin ${parsed.network}. Change Network to ${parsed.network} before deriving it.`);
-  let node = parsed.node, notes = [parsed.isPrivate ? "Imported an extended private key. Addresses and WIF keys are derived from it." : "Imported an extended public key. This is watch-only: it can derive addresses but cannot spend."];
+  let node = parsed.node, mismatch = hodlSinglesigScriptMismatch(parsed, hodlSelectedScriptType()), notes = [parsed.isPrivate ? "Imported an extended private key. Addresses and WIF keys are derived from it." : "Imported an extended public key. This is watch-only: it can derive addresses but cannot spend."];
   if (node.depth === 0) {
     if (!parsed.isPrivate) throw new Error("A root extended public key cannot derive the hardened BIP44/49/84/86 account paths. Import an account-level extended public key, or use the root xprv/tprv offline.");
     if (parsed.family !== "x") throw new Error("A BIP32 root private key must use the generic xprv/tprv prefix.");
@@ -1461,7 +1478,7 @@ Po = function(value, network, count, accountIndex = 0, addressStart = 0) {
   }
   if (node.depth !== 3) throw new Error(`This extended key is depth ${node.depth}. Key Derivation accepts a BIP32 root private key (depth 0) or an account-level extended key (depth 3).`);
   let definition = hodlImportedScriptDefinition(parsed), addressCount = Math.min(Math.max(count, 1), 10000), parentFingerprint = Us(node.parentFingerprint), nodeFingerprint = Us(node.fingerprint);
-  let account = hodlAccountResult(node, definition, network, addressCount, { accountPath: "Imported account key", accountIndex: null, imported: true, parentFingerprint, nodeFingerprint, addressStart });
+  let account = hodlAccountResult(node, definition, network, addressCount, { accountPath: "Imported account key", accountIndex: null, imported: true, importedFamily: parsed.family, importedValue, parentFingerprint, nodeFingerprint, addressStart });
   return {
     kind: "hd",
     network,
@@ -1480,7 +1497,7 @@ Po = function(value, network, count, accountIndex = 0, addressStart = 0) {
     nodeFingerprint,
     imported: true,
     notes,
-    warnings: [...parsed.isPrivate ? [] : ["Watch-only. This key contains no private key material."], "The imported account key did not include a master fingerprint or origin path, so descriptors intentionally omit a fabricated key origin."],
+    warnings: [...parsed.isPrivate ? [] : ["Watch-only. This key contains no private key material."], ...(mismatch ? [mismatch] : []), "The imported account key did not include a master fingerprint or origin path, so descriptors intentionally omit a fabricated key origin."],
     accounts: [account]
   };
 };
@@ -1541,7 +1558,7 @@ async function hodlImportedWalletWithProgress(value, network, count, accountInde
   let importedValue = String(value ?? "").trim(), parsed = uf(importedValue);
   if (parsed.scope !== "singlesig") throw new Error(`${parsed.prefix} is a multisig extended key. Use it in Multi Signature, not Key Derivation.`);
   if (parsed.network !== network) throw new Error(`This ${parsed.prefix} belongs to Bitcoin ${parsed.network}. Change Network to ${parsed.network} before deriving it.`);
-  let node = parsed.node, notes = [parsed.isPrivate ? "Imported an extended private key. Addresses and WIF keys are derived from it." : "Imported an extended public key. This is watch-only: it can derive addresses but cannot spend."];
+  let node = parsed.node, mismatch = hodlSinglesigScriptMismatch(parsed, hodlSelectedScriptType()), notes = [parsed.isPrivate ? "Imported an extended private key. Addresses and WIF keys are derived from it." : "Imported an extended public key. This is watch-only: it can derive addresses but cannot spend."];
   if (node.depth === 0) {
     if (!parsed.isPrivate && (derivationPlan ? derivationPlan.hasHardenedPrefix || hardening.branch || hardening.address : Object.values(hardening).some(Boolean))) throw new Error("A root extended public key cannot derive the selected hardened path. Turn every Harden option off, import an account-level public key, or use the root xprv/tprv offline.");
     if (parsed.family !== "x") throw new Error("A BIP32 root private key must use the generic xprv/tprv prefix.");
@@ -1555,7 +1572,7 @@ async function hodlImportedWalletWithProgress(value, network, count, accountInde
   if ((hardening.branch || hardening.address) && !parsed.isPrivate) throw new Error(`Hardened ${hardening.branch ? "address branches" : "address indexes"} cannot be derived from an account extended public key. Turn off Harden or import the matching extended private key offline.`);
   let definition = hodlImportedScriptDefinition(parsed), addressCount = Math.min(Math.max(count, 1), hodlMaxAddressRange), parentFingerprint = Us(node.parentFingerprint), nodeFingerprint = Us(node.fingerprint);
   tracker.setTotal(addressCount * branchRange);
-  let account = await hodlAccountResultWithProgress(node, definition, network, addressCount, { accountPath: "Imported account key", accountIndex: null, imported: true, parentFingerprint, nodeFingerprint, addressStart, branchHardened: hardening.branch, addressHardened: hardening.address, branchStart, branchRange }, tracker);
+  let account = await hodlAccountResultWithProgress(node, definition, network, addressCount, { accountPath: "Imported account key", accountIndex: null, imported: true, importedFamily: parsed.family, importedValue, parentFingerprint, nodeFingerprint, addressStart, branchHardened: hardening.branch, addressHardened: hardening.address, branchStart, branchRange }, tracker);
   node.wipePrivateData(); // the account result keeps its strings, not the imported node
   return {
     kind: "hd",
@@ -1575,7 +1592,7 @@ async function hodlImportedWalletWithProgress(value, network, count, accountInde
     nodeFingerprint,
     imported: true,
     notes,
-    warnings: [...parsed.isPrivate ? [] : ["Watch-only. This key contains no private key material."], "The imported account key did not include a master fingerprint or origin path, so descriptors intentionally omit a fabricated key origin."],
+    warnings: [...parsed.isPrivate ? [] : ["Watch-only. This key contains no private key material."], ...(mismatch ? [mismatch] : []), "The imported account key did not include a master fingerprint or origin path, so descriptors intentionally omit a fabricated key origin."],
     accounts: [account]
   };
 }
@@ -1616,6 +1633,22 @@ function hodlAccountAdvancedExports(account, includePrivate = false) {
   if (!privateExport && !publicExport) return "";
   if (includePrivate) return `<div class="wallet-advanced">${privateExport}</div>`;
   return `<details class="wallet-advanced"><summary>Advanced watch-only export</summary>${publicExport}</details>`;
+}
+function hodlImportedCoreRecoveryData(wallet, account) {
+  if (!wallet?.importedPublicKey || !account?.imported || !["y", "z"].includes(account.primaryFamily) || !account.genericPublic || !account.def?.script) return null;
+  return {
+    importedLabel: `Imported ${wallet.importedPublicLabel || "extended public key"}`,
+    importedKey: wallet.importedPublicKey,
+    coreLabel: `Core ${account.genericPublicLabel}`,
+    coreKey: account.genericPublic,
+    descriptorLabel: "Bitcoin Core descriptor",
+    descriptor: Le(Ye(account.def.script, `${account.genericPublic}/<0;1>/*`))
+  };
+}
+function hodlImportedCoreRecoveryExport(wallet, account) {
+  let data = hodlImportedCoreRecoveryData(wallet, account);
+  if (!data) return "";
+  return `<div class="wallet-data-fields imported-core-recovery"><h4 class="wallet-data-subtitle">Bitcoin Core recovery export</h4><p class="muted">The SLIP-132 prefix records the script type. The Core key above is the same payload with generic version bytes; this descriptor keeps the script type explicit and stays on the conventional receive/change branches for Bitcoin Core.</p>${ye(data.descriptorLabel, data.descriptor)}</div>`;
 }
 function hodlRenderMultisigCosignerExport(exports, accountId) {
   let items = Array.isArray(exports) ? exports.filter((candidate) => candidate.accountId === accountId) : [];
@@ -1816,6 +1849,23 @@ function hodlBindAddressVirtualization(configs = []) {
     render();
   });
 }
+function hodlSlip132Fields(account, wallet, isPrivate = false) {
+  let pasted = isPrivate ? (wallet?.importedPrivateKey || "") : (wallet?.importedPublicKey || "");
+  let core = (isPrivate ? account.genericPrivate : account.genericPublic) || "";
+  let coreLabel = isPrivate ? account.genericPrivateLabel : account.genericPublicLabel;
+  let slip = account.hasAlternateExport ? (isPrivate ? account.primaryPrivate : account.primaryPublic) : "";
+  let slipLabel = isPrivate ? account.primaryPrivateLabel : account.primaryPublicLabel;
+  let field = isPrivate ? Ee : ye, parts = [];
+  if (pasted) parts.push(field("As pasted", pasted));
+  if (core && core !== pasted) parts.push(field(`Bitcoin Core ${coreLabel}`, core));
+  if (slip && slip !== pasted && slip !== core) parts.push(field(`SLIP-132 ${slipLabel}`, slip));
+  if (!parts.length && core) parts.push(field(`Account ${coreLabel}`, core));
+  if (!isPrivate) parts.push(`<p class="muted slip132-note">Prefix swap only (same payload, new version bytes and checksum). Script lives in the descriptor, not the prefix. x = legacy, y = nested BIP49, z = native BIP84, Y = nested BIP48 nested-msig, Z = native BIP48 native-msig. Testnet: t / u / v / U / V. No Taproot SLIP prefix.</p>`);
+  return parts.join("");
+}
+function hodlSlip132WatchFields(account, wallet) {
+  return hodlSlip132Fields(account, wallet, false);
+}
 function Qs(id) {
   if (!re || re.kind !== "hd") return;
   let account = re.accounts.find((candidate) => candidate.def.id === id);
@@ -1829,7 +1879,7 @@ function Qs(id) {
         <h3 id="account-private-heading">Private account material</h3>
         <p class="muted">These exports can spend from this account. They are shown only for a seed or extended private-key source.</p>
       </div>
-      ${Ee(`Account ${account.primaryPrivateLabel}`, account.primaryPrivate)}
+      ${hodlSlip132Fields(account, re, true)}
       ${hodlAddressBranchDescriptorFields(branches, true)}
       ${hodlAccountAdvancedExports(account, true)}
       <p class="account-private-warning"><strong>Keep these exports together only in secure offline backups.</strong> An account extended public key combined with any non-hardened descendant private key, including a WIF shown in the address tables below, can reconstruct that account's extended private key.</p>
@@ -1845,7 +1895,8 @@ function Qs(id) {
           <h3 id="account-watch-heading">Watch-only wallet data</h3>
           <p class="watch-only-note"><strong>Cannot spend:</strong> these exports can monitor every address and reveal this account's transaction history and balance. Treat them as privacy-sensitive.</p>
         </div>
-        ${ye(`Account ${account.primaryPublicLabel}`, account.primaryPublic)}
+        ${hodlSlip132WatchFields(account, re)}
+        ${hodlImportedCoreRecoveryExport(re, account)}
         ${hodlRenderMultisigCosignerExport(re.multisigCosignerExports, account.def.id)}
         ${hodlWatchOnlyDescriptorExport(account.receiveDescriptor, account.changeDescriptor, branches)}
         ${hodlAccountAdvancedExports(account, false)}
@@ -2760,8 +2811,8 @@ function hodlSinglesigImportStatus(value, network) {
     if (depth === 0 && parsed.family !== "x") return { ok: false, message: "A root private key must use an xprv/tprv prefix" };
     if (depth !== 0 && depth !== 3) return { ok: false, message: `Depth ${depth} extended key \xB7 use a root private key or depth-3 account key` };
     if (depth === 3 && !parsed.isPrivate && (hardening.branch || hardening.address)) return { ok: false, message: `Account extended public keys cannot derive hardened ${hardening.branch ? "address branches" : "address indexes"} \xB7 turn off the corresponding Harden option` };
-    let definition = depth === 3 ? hodlImportedScriptDefinition(parsed) : null, detail = definition ? ` \xB7 ${definition.label} ${definition.bip}` : "";
-    return { ok: true, message: `${parsed.prefix} ${parsed.isPrivate ? "private" : "watch-only"} key detected \xB7 ${network}${detail} \xB7 ready to derive` };
+    let definition = depth === 3 ? hodlImportedScriptDefinition(parsed) : null, detail = definition ? ` \xB7 ${definition.label} ${definition.bip}` : "", mismatch = hodlSinglesigScriptMismatch(parsed, hodlSelectedScriptType());
+    return { ok: true, warning: Boolean(mismatch), message: mismatch ? `\u26A0\uFE0F ${mismatch}` : `${parsed.prefix} ${parsed.isPrivate ? "private" : "watch-only"} key detected \xB7 ${network}${detail} \xB7 ready to derive` };
   } catch (error) {
     return { ok: false, message: error.message || "Invalid extended key" };
   }
@@ -5415,7 +5466,7 @@ function hodlRenderKeyForm() {
         let status = hodlSinglesigImportStatus(value, hodlSelectedKeyNetwork());
         picker.innerHTML = "";
         meta.textContent = status.message;
-        meta.className = "muted " + (status.ok ? "ok" : "err");
+        meta.className = "muted " + (status.ok ? status.warning ? "err" : "ok" : "err");
         return;
       }
       let finalContext = analysis.finalContext, validation = hodlValidateTargetMnemonic(value, config.words), entered = analysis.tokens.length, progress = hodlSeedCountStatus(entered, config.words), remaining = Math.max(0, config.words - entered);
