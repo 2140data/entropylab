@@ -19,9 +19,9 @@ function extract(startNeedle, endNeedle) {
 const path = join(root, "test", `.address-match-slice-${Math.random().toString(16).slice(2)}.mjs`);
 writeFileSync(
   path,
-  `${extract("function hodlNormalizeAddressCheck", "function hodlAddressCheckRows")}\nexport { hodlNormalizeAddressCheck, hodlMatchDerivedAddress };\n`,
+  `${extract("function hodlNormalizeAddressCheck", "function hodlAddressCheckRows")}\nexport { hodlNormalizeAddressCheck, hodlMatchDerivedAddress, hodlMatchAddressBranches };\n`,
 );
-const { hodlNormalizeAddressCheck, hodlMatchDerivedAddress } = await import(pathToFileURL(path).href);
+const { hodlNormalizeAddressCheck, hodlMatchDerivedAddress, hodlMatchAddressBranches } = await import(pathToFileURL(path).href);
 unlinkSync(path);
 
 const receive = [
@@ -65,4 +65,33 @@ test("normalize strips bitcoin URIs and lowercases bech32", () => {
     "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
   );
   assert.equal(hodlNormalizeAddressCheck("  3J98t1WpEZ73CNmYviecrnyiWrnqRhWNLy  "), "3J98t1WpEZ73CNmYviecrnyiWrnqRhWNLy");
+});
+
+const branches = [
+  { role: "receive", branch: 0, rows: receive },
+  { role: "change", branch: 1, rows: change },
+];
+
+test("branch matching reports the role, branch, and index of the hit", () => {
+  assert.equal(hodlMatchAddressBranches(" ", branches).state, "empty");
+  const hit = hodlMatchAddressBranches("bitcoin:BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4", branches);
+  assert.deepEqual(hit, {
+    state: "match",
+    chain: "receive",
+    branch: 0,
+    index: 1,
+    path: "0/1",
+    address: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
+  });
+  const changeHit = hodlMatchAddressBranches(change[0].address, branches);
+  assert.equal(changeHit.chain, "change");
+  assert.equal(changeHit.branch, 1);
+});
+
+test("a branch miss reports the largest shown row count", () => {
+  const miss = hodlMatchAddressBranches("bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh", branches);
+  assert.deepEqual(miss, { state: "miss", shownCount: 2 }, "receive has the most rows");
+  assert.deepEqual(hodlMatchAddressBranches("bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh", []), { state: "miss", shownCount: 0 });
+  const sparse = hodlMatchAddressBranches("bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh", [{ role: "receive", branch: 0, rows: [] }, { role: "change", branch: 1, rows: change }]);
+  assert.equal(sparse.shownCount, 1);
 });
