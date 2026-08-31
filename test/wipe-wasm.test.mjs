@@ -18,6 +18,9 @@ const read = (file) => readFileSync(join(root, file), "utf8");
 // Distinctive fixed patterns; nothing here is anyone's key.
 const pattern = (size, seed) => new Uint8Array(size).map((_, i) => (i * seed + seed) & 0xff);
 const wasmMemoryContains = (bytes) => Buffer.from(heap().buffer).indexOf(Buffer.from(bytes)) !== -1;
+const psbtBinary = new Uint8Array(Buffer.from(PSBT_WASM_B64, "base64"));
+const psbtWasm = new WebAssembly.Instance(new WebAssembly.Module(psbtBinary), {}).exports;
+const psbtHeap = () => new Uint8Array(psbtWasm.memory.buffer);
 
 test("secp_free zeroes the linear-memory buffer before deallocating it", () => {
   const wasm = wasmExports();
@@ -29,14 +32,30 @@ test("secp_free zeroes the linear-memory buffer before deallocating it", () => {
 });
 
 test("psbt_free zeroes the linear-memory buffer before deallocating it", () => {
-  const binary = new Uint8Array(Buffer.from(PSBT_WASM_B64, "base64"));
-  const wasm = new WebAssembly.Instance(new WebAssembly.Module(binary), {}).exports;
-  const psbtHeap = () => new Uint8Array(wasm.memory.buffer);
   const secret = pattern(96, 13);
-  const ptr = wasm.psbt_alloc(secret.length);
+  const ptr = psbtWasm.psbt_alloc(secret.length);
   psbtHeap().set(secret, ptr);
-  wasm.psbt_free(ptr, secret.length);
+  psbtWasm.psbt_free(ptr, secret.length);
   assert.deepEqual([...psbtHeap().slice(ptr, ptr + secret.length)], new Array(secret.length).fill(0));
+});
+
+test("both WASM allocators support exact-size repeated and zero-length lifecycles", () => {
+  const allocators = [
+    { alloc: wasmExports().secp_alloc, free: wasmExports().secp_free, memory: heap },
+    { alloc: psbtWasm.psbt_alloc, free: psbtWasm.psbt_free, memory: psbtHeap },
+  ];
+  for (const { alloc, free, memory } of allocators) {
+    for (const size of [0, 1, 2, 15, 16, 31, 32, 255, 256, 4096]) {
+      for (let cycle = 0; cycle < 8; cycle++) {
+        const ptr = alloc(size);
+        assert.ok(Number.isInteger(ptr) && ptr >= 0);
+        const marker = pattern(size, cycle + 3);
+        memory().set(marker, ptr);
+        free(ptr, size);
+        assert.deepEqual(memory().slice(ptr, ptr + size), new Uint8Array(size));
+      }
+    }
+  }
 });
 
 test("a private key is absent from linear memory once public-key derivation returns", () => {
@@ -102,6 +121,16 @@ test("the Rust free functions wipe before deallocating (source guard)", () => {
     read("psbt-wasm/src/lib.rs"),
     /fn psbt_free\(ptr: \*mut u8, len: usize\) \{\s*(?:\/\/[^\n]*\n\s*(?:\/\/[^\n]*\n\s*)*)?wipe\(ptr, len\);/,
   );
+});
+
+test("the Rust allocators reconstruct the exact boxed-slice layout", () => {
+  for (const file of ["entropylab-wasm/src/lib.rs", "psbt-wasm/src/lib.rs"]) {
+    const source = read(file);
+    assert.match(source, /vec!\[0u8; len\]\.into_boxed_slice\(\)/);
+    assert.match(source, /slice_from_raw_parts_mut\(ptr, len\)/);
+    assert.doesNotMatch(source, /Vec::<u8>::with_capacity\(len\)/);
+    assert.doesNotMatch(source, /Vec::from_raw_parts\(ptr, 0, len\)/);
+  }
 });
 
 test("the JS facades wipe their secret byte buffers (source guard)", () => {
