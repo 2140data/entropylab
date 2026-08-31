@@ -313,8 +313,8 @@ export const initPsbtEditor = () => {
           <label>Version <input class="psbted-num" id="psbted-tx-version" value="${escapeHtml(String(tx.version))}" inputmode="numeric"></label>
           <label>Locktime <input class="psbted-num" id="psbted-tx-locktime" value="${escapeHtml(String(tx.locktime))}" inputmode="numeric"></label>
         </div>
-        <table class="psbted-pairs"><thead><tr><th>Input</th><th>Previous txid</th><th>vout</th><th>sequence</th></tr></thead><tbody>${inputRows}</tbody></table>
-        <table class="psbted-pairs"><thead><tr><th>Output</th><th>Value</th><th>scriptPubKey</th></tr></thead><tbody>${outputRows}</tbody></table>
+        <table class="psbted-pairs"><thead><tr><th class="psbted-idx">Input</th><th>Previous txid</th><th>vout</th><th>sequence</th></tr></thead><tbody>${inputRows}</tbody></table>
+        <table class="psbted-pairs"><thead><tr><th class="psbted-idx">Output</th><th>Value</th><th>scriptPubKey</th></tr></thead><tbody>${outputRows}</tbody></table>
       </section>`;
     const isSelected = (kind, index) => selected && selected.kind === kind && (kind === "tx" || selected.index === index);
     const inputSections = doc.inputs.map((_, index) => (isSelected("input", index) ? "" : mapSection("input", index))).join("");
