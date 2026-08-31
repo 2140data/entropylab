@@ -48,10 +48,7 @@ fn ctx() -> &'static Secp256k1<secp256k1::All> {
 /// `secp_free`.
 #[no_mangle]
 pub extern "C" fn secp_alloc(len: usize) -> *mut u8 {
-    let mut buf = Vec::<u8>::with_capacity(len);
-    let ptr = buf.as_mut_ptr();
-    std::mem::forget(buf);
-    ptr
+    Box::into_raw(vec![0u8; len].into_boxed_slice()) as *mut u8
 }
 
 /// # Safety
@@ -62,7 +59,8 @@ pub unsafe extern "C" fn secp_free(ptr: *mut u8, len: usize) {
     // seeds, mnemonics, or passphrases, and freed linear memory must not
     // retain them for a later allocation to expose.
     wipe(ptr, len);
-    drop(Vec::from_raw_parts(ptr, 0, len));
+    let slice = std::ptr::slice_from_raw_parts_mut(ptr, len);
+    drop(Box::from_raw(slice));
 }
 
 /// Overwrites `len` bytes at `ptr` with zeroes. Volatile stores plus a
@@ -1092,4 +1090,3 @@ pub unsafe extern "C" fn el_sighash_segwit_v0(
     std::ptr::copy_nonoverlapping(digest.as_ptr(), out, 32);
     32
 }
-

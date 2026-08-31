@@ -57,10 +57,7 @@ fn clear_error() {
 /// `psbt_free`.
 #[no_mangle]
 pub extern "C" fn psbt_alloc(len: usize) -> *mut u8 {
-    let mut buf = Vec::<u8>::with_capacity(len);
-    let ptr = buf.as_mut_ptr();
-    std::mem::forget(buf);
-    ptr
+    Box::into_raw(vec![0u8; len].into_boxed_slice()) as *mut u8
 }
 
 /// # Safety
@@ -71,7 +68,8 @@ pub unsafe extern "C" fn psbt_free(ptr: *mut u8, len: usize) {
     // design, but a pasted PSBT can carry xprvs in proprietary fields; freed
     // linear memory must not retain it for a later allocation to expose.
     wipe(ptr, len);
-    drop(Vec::from_raw_parts(ptr, 0, len));
+    let slice = std::ptr::slice_from_raw_parts_mut(ptr, len);
+    drop(Box::from_raw(slice));
 }
 
 /// Overwrites `len` bytes at `ptr` with zeroes. Volatile stores plus a
