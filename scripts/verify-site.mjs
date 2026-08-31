@@ -27,7 +27,7 @@ if (!/^\d+(?:\.\d+)*$/.test(version)) {
 }
 const appFile = "entropylab.html";
 
-for (const name of [appFile, "assets/favicon.png", "assets/entropylab_dark.png"]) {
+for (const name of [appFile, "assets/favicon.png", "assets/entropylab-darkmode.png"]) {
   const path = join(repoDir, name);
   if (!existsSync(path) || statSync(path).size === 0) {
     fail(`Site artifact is missing or empty: ${name}\nRun 'npm run build' first.`);
