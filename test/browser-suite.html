@@ -579,6 +579,34 @@
     document.getElementById("wipe").click();
   });
 
+  await test("global entropy sync follows dice-pad clicks and direct-card undo", async () => {
+    // The dice pad and the card undo button mutate their textarea without a
+    // bubbling input event; the delegated click handler must re-run the sync.
+    await chooseMode("Dice rolls");
+    document.querySelector('input[name="dm"][value="dplus"]').click();
+    const diceToggle = document.getElementById("global-entropy-sync");
+    assert(diceToggle && !diceToggle.disabled && !diceToggle.checked, "A direct dice method did not offer an enabled, unchecked global sync toggle");
+    diceToggle.click();
+    for (const face of ["1", "0", "0"]) document.querySelector(`[data-d="${face}"]`).click();
+    assert(document.getElementById("global-sync-status").textContent.includes("11 bits synced"), "Dice pad clicks did not re-run the sync");
+    await chooseMode("Seed phrase");
+    equal(document.getElementById("seed").value, "abandon", "Eleven pad-entered bits did not fill the first BIP39 word");
+
+    await chooseMode("Cards");
+    document.querySelector('input[name="card-method"][value="direct"]').click();
+    const directCards = await until(() => document.getElementById("direct-cards"), "direct cards input");
+    equal(directCards.value, "AAAA", "Eleven synced bits did not emit four direct-card draws");
+    document.getElementById("card-undo").click();
+    equal(document.getElementById("direct-cards").value, "AAA", "Card undo did not trim the synced transcript");
+    await chooseMode("Seed phrase");
+    equal(document.getElementById("seed").value, "", "Undoing a synced draw did not withdraw the first word");
+
+    await chooseMode("Cards");
+    const cardCleanup = document.getElementById("global-entropy-sync");
+    if (cardCleanup.checked) cardCleanup.click();
+    document.getElementById("wipe").click();
+  });
+
   await test("Base64 uses the shared case, number, and symbol keyboard", async () => {
     document.querySelector('[data-seed-words="24"]').click();
     await chooseMode("Number bases");

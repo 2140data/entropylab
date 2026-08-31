@@ -78,3 +78,12 @@ test("BitBox direct input is isolated from hashed dice input", () => {
   assert.match(app, /previousMethod === "bitbox" \? "bitboxDice" : "dice"/);
   assert.match(app, /ge === "bitbox" \? state\.fields\.bitboxDice/);
 });
+
+test("pads and pickers that skip bubbling input events still trigger the sync", () => {
+  // [data-d] writes the dice textarea without dispatching a bubbling "input"
+  // event, #card-undo trims the card transcript the same way, and [data-lw]
+  // only picks a word — the delegated click handler must re-run the sync for
+  // all of them. Seed-length buttons stay excluded: they never edit input,
+  // and re-syncing from an empty active method there would wipe destinations.
+  assert.match(app, /target\.matches\("\[data-lw\], \[data-d\], #card-undo"\)\) hodlGlobalSyncFromCurrentInput\(\)/);
+});

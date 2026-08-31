@@ -6482,7 +6482,13 @@ function hodlInitMasterFingerprintPreview() {
   panel.addEventListener("click", event => {
     let target = event.target instanceof Element ? event.target.closest("#modes button, [data-seed-words], [data-d], [data-lw], [data-card-suit], [data-card-rank], [data-direct-card-rank], #card-undo") : null;
     if (!target) return;
-    if (target.matches("[data-lw]")) hodlGlobalSyncFromCurrentInput();
+    // Pads and pickers that mutate an input without a bubbling "input" event
+    // still re-run the sync: [data-d] writes the dice textarea directly,
+    // #card-undo trims the card transcript, and [data-lw] picks the checksum
+    // word. Seed-length buttons are excluded on purpose: they only change the
+    // bit width, and re-syncing there could clear every destination when the
+    // active method (e.g. an empty direct transcript) has nothing to publish.
+    if (target.matches("[data-lw], [data-d], #card-undo")) hodlGlobalSyncFromCurrentInput();
     hodlInvalidateLiveKeyResult();
     hodlQueueMasterFingerprintPreview();
   });
