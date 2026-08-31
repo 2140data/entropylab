@@ -1005,14 +1005,14 @@ ec.innerHTML = `
   </div>
 `;
 if (/^(www\.)?entropylab\.online$/i.test(location.hostname)) document.getElementById("online-warning")?.removeAttribute("hidden");
-var hodlKeyModes = ["dice", "cards", "hex", "seed", "key", "brain-lab"], hodlBrainLabAck = false, hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "♠", label: "Spades", red: false }, { code: "H", symbol: "♥", label: "Hearts", red: true }, { code: "C", symbol: "♣", label: "Clubs", red: false }, { code: "D", symbol: "♦", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, hodlCardColemanSymbols = false, Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], ft = "", re = null, Ge = false, hodlWalletDatBirthday = "genesis", Zs = W("#modes"), at = W("#form"), dr = W("#out");
+var hodlKeyModes = ["dice", "cards", "hex", "seed", "key"], hodlBrainLabAck = false, hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "♠", label: "Spades", red: false }, { code: "H", symbol: "♥", label: "Hearts", red: true }, { code: "C", symbol: "♣", label: "Clubs", red: false }, { code: "D", symbol: "♦", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, hodlCardColemanSymbols = false, Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], ft = "", re = null, Ge = false, hodlWalletDatBirthday = "genesis", Zs = W("#modes"), at = W("#form"), dr = W("#out");
 var hodlManualCalculationsOpen = false;
 hodlKeyModes.forEach((e) => {
   let t = document.createElement("button"), active = e === Ne;
   t.type = "button";
   t.className = "tab" + (active ? " active" : "");
   t.setAttribute("aria-pressed", String(active));
-  t.textContent = e === "dice" ? "Dice rolls" : e === "cards" ? "Cards" : e === "hex" ? "Number bases" : e === "seed" ? "Seed phrase" : e === "brain-lab" ? "Brain wallet — lab" : "Private key";
+  t.textContent = e === "dice" ? "Dice rolls" : e === "cards" ? "Cards" : e === "hex" ? "Number bases" : e === "seed" ? "Seed phrase" : "Private key";
   t.onclick = () => hodlSetMode(e);
   Zs.appendChild(t);
 });
@@ -2621,7 +2621,7 @@ function hodlUpdateKeyModeControls() {
   let singleKey = Ne === "key", settings = document.getElementById("key-settings");
   ["passphrase-field", "master-fingerprint-preview", "script-type-field", "derivation-path-field", "derivation-advanced"].forEach((id) => {
     let element = document.getElementById(id);
-    if (element) element.hidden = singleKey || (id === "master-fingerprint-preview" && Ne === "brain-lab");
+    if (element) element.hidden = singleKey;
   });
   settings?.classList.toggle("single-key-mode", singleKey);
 }
@@ -4224,7 +4224,7 @@ function hodlPassphraseKeyboardToggleMarkup() {
 }
 function hodlPassphraseBip39ToggleMarkup(checked = hodlPassphraseBip39Enabled()) {
   let autocomplete = hodlPassphraseAutocompleteEnabled();
-  return `<div class="passphrase-bip39-options"><label class="seed-autocomplete-toggle passphrase-bip39-toggle"><input type="checkbox" id="passphrase-bip39-words" ${checked ? "checked" : ""} /><span><strong>Build passphrase from BIP39 words</strong> <span class="seed-autocomplete-note">(lowercase words separated by single spaces)</span></span></label><label class="seed-autocomplete-toggle passphrase-autocomplete-toggle" id="passphrase-autocomplete-control"${checked ? "" : " hidden"}><input type="checkbox" id="passphrase-autocomplete" ${autocomplete ? "checked" : ""} /><span><strong>Autocomplete BIP39 words</strong> <span class="seed-autocomplete-note">(when the entered prefix identifies one word)</span></span></label></div>`;
+  return `<div class="passphrase-bip39-options"><label class="seed-autocomplete-toggle passphrase-bip39-toggle"><input type="checkbox" id="passphrase-bip39-words" ${checked ? "checked" : ""} /><span><strong>Build passphrase from BIP39 words</strong> <span class="seed-autocomplete-note">(lowercase words separated by single spaces)</span></span></label><label class="seed-autocomplete-toggle passphrase-autocomplete-toggle" id="passphrase-autocomplete-control"${checked ? "" : " hidden"}><input type="checkbox" id="passphrase-autocomplete" ${autocomplete ? "checked" : ""} /><span><strong>Autocomplete BIP39 words</strong></span></label></div>`;
 }
 function hodlBrainWalletTrimEnabled() {
   return Boolean(document.getElementById("brain-wallet-trim")?.checked);
@@ -4432,12 +4432,79 @@ function hodlPrivateKeyPlaceholder(kind, network = "mainnet") {
   if (kind === "brain") return "Recovery passphrase";
   return network === "testnet" ? "9\u2026 / c\u2026" : "5\u2026 / K\u2026 / L\u2026";
 }
+function hodlBrainWalletText(value, trim = hodlBrainWalletTrimEnabled()) {
+  try {
+    return hodlBrainWalletPassphrase(value, trim);
+  } catch {
+    return "";
+  }
+}
+function hodlBrainWalletOutput() {
+  return document.querySelector('input[name="bo"]:checked')?.value === "hd" ? "hd" : "scalar";
+}
+// The same SHA-256 digest can be used two ways, and they are different wallets:
+// as the private-key scalar, or as 256-bit BIP39 entropy for a 24-word seed.
+// Both live under Brain wallet so the choice is explicit rather than a separate
+// place to land in by accident.
+function hodlBrainOutputMarkup(output = "scalar", acked = Boolean(hodlBrainLabAck)) {
+  let hd = output === "hd";
+  return `<div class="brain-output" id="brain-output" hidden>
+    <p class="label">Brain wallet output</p>
+    <div class="choice-grid">
+      <label class="choice"><input type="radio" name="bo" value="scalar" ${hd ? "" : "checked"} /><span><strong>Single key pair</strong><span class="desc">The digest is the private key. One address, the original brain-wallet behaviour.</span></span></label>
+      <label class="choice"><input type="radio" name="bo" value="hd" ${hd ? "checked" : ""} /><span><strong>HD wallet with seed phrase</strong><span class="desc">The digest is 256-bit BIP39 entropy for a 24-word seed. Not the same wallet as the single key pair.</span></span></label>
+    </div>
+    <div class="wallet-result-messages" id="brain-warning" role="alert">
+      <h3>Brain wallet warning — read before first use</h3>
+      <ul>
+        <li class="is-warning">SHA-256(text) is unsalted and fast. Guessable phrases are stolen coins.</li>
+        <li class="is-warning">Strength is the entropy of this text, nothing more.</li>
+        <li class="is-warning">This is not a BIP39 passphrase.</li>
+        <li class="is-warning">This is not a Bitcoin Core hdseed or address-key backup of the same wallet.</li>
+        <li class="is-warning" data-brain-hd-warning ${hd ? "" : "hidden"}>The 24-word count is not the strength; the text is.</li>
+        <li class="is-warning" data-brain-hd-warning ${hd ? "" : "hidden"}>A valid mnemonic does not mean it is the same wallet as hashing the text as a private-key scalar.</li>
+      </ul>
+    </div>
+    <label class="choice"><input type="checkbox" id="brain-lab-ack" ${acked ? "checked" : ""} /><span><strong>I understand</strong><span class="desc">Required once this session, in page memory only. Derive is still required.</span></span></label>
+    <div id="brain-lab-zone" ${hd ? "" : "hidden"}>
+      <p class="muted" id="brain-lab-help">UTF-8 text is hashed with SHA-256. The 32-byte digest is BIP39 entropy for a 24-word seed. Nothing is derived until you press Derive Wallet.</p>
+      <p class="muted" id="brain-lab-hex" aria-live="polite">SHA-256 hex appears here. 24 words appear only after Derive Wallet.</p>
+    </div>
+  </div>`;
+}
+function hodlSyncBrainOutput() {
+  let zone = document.getElementById("brain-output"), input = document.getElementById("key");
+  if (!zone || !input) return;
+  let kind = hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value, input.value),
+    brain = kind === "brain", output = hodlBrainWalletOutput(), lab = document.getElementById("brain-lab-zone");
+  zone.hidden = !brain;
+  if (lab) lab.hidden = output !== "hd";
+  zone.querySelectorAll("[data-brain-hd-warning]").forEach((item) => {
+    item.hidden = output !== "hd";
+  });
+  let trimControl = document.querySelector("[data-brain-wallet-trim-control]");
+  if (trimControl) trimControl.hidden = !brain;
+  let hex = document.getElementById("brain-lab-hex");
+  if (!hex || !brain || output !== "hd") return;
+  if (!hodlBrainLabAck) {
+    hex.textContent = "Acknowledge the lab warning, then enter text. Derive Wallet is still required.";
+    hex.className = "muted";
+    return;
+  }
+  if (!input.value.length) {
+    hex.textContent = "SHA-256 hex appears here. 24 words appear only after Derive Wallet.";
+    hex.className = "muted";
+    return;
+  }
+  let entropy = hodlBrainLabEntropy(hodlBrainWalletText(input.value));
+  hex.textContent = entropy.ok ? `SHA-256 ${entropy.hex} \xB7 24 words appear only after Derive Wallet.` : entropy.error;
+  hex.className = "muted" + (entropy.ok ? " ok" : " err");
+}
 function hodlUpdatePrivateKeyInputPresentation() {
   let input = document.getElementById("key");
   if (!input) return;
   let kind = hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value, input.value), network = hodlSelectedNetwork(document.getElementById("network"));
-  let trimControl = document.querySelector("[data-brain-wallet-trim-control]");
-  if (trimControl) trimControl.hidden = kind !== "brain";
+  hodlSyncBrainOutput();
   input.placeholder = hodlPrivateKeyPlaceholder(kind, network);
   input.setAttribute("inputmode", kind === "hex-key" ? "text" : "text");
   input.setAttribute("autocapitalize", "off");
@@ -4964,7 +5031,6 @@ function hodlBytesFromBits(bits) {
 function hodlGlobalSyncIsHashedMode() {
   if (Ne === "dice") return ge === "coldcard" || ge === "coleman";
   if (Ne === "cards") return hodlCardMethod === "hashed";
-  if (Ne === "brain-lab") return true;
   if (Ne === "key") {
     let kind = hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value || hodlKeys[hodlActiveKey]?.fields?.keyKind, "");
     return kind === "minikey" || kind === "brain";
@@ -4976,7 +5042,6 @@ function hodlGlobalSyncSourceId() {
   if (Ne === "cards") return `cards:${hodlCardMethod}`;
   if (Ne === "hex") return `number:${hodlEntropyFormat}`;
   if (Ne === "seed") return `seed:${hodlSeedMethod}`;
-  if (Ne === "brain-lab") return "brain-lab";
   let kind = hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value || hodlKeys[hodlActiveKey]?.fields?.keyKind, "");
   return `key:${kind}`;
 }
@@ -4986,7 +5051,6 @@ function hodlGlobalSyncCurrentValue() {
   if (Ne === "cards") return document.getElementById(hodlCardMethod === "direct" ? "direct-cards" : "cards")?.value ?? fields[hodlCardMethod === "direct" ? "directCards" : "cards"] ?? "";
   if (Ne === "hex") return document.getElementById(hodlEntropyFormat)?.value ?? fields[hodlEntropyFormat] ?? "";
   if (Ne === "seed") return document.getElementById(hodlSeedMethod === "numbers" ? "seed-numbers" : "seed")?.value ?? fields[hodlSeedMethod === "numbers" ? "seedNumbers" : "seed"] ?? "";
-  if (Ne === "brain-lab") return document.getElementById("brain-lab")?.value ?? fields.brainLab ?? "";
   let values = hodlPrivateKeyValues(fields), kind = hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value || fields.keyKind, "");
   return document.getElementById("key")?.value ?? values[kind] ?? "";
 }
@@ -5092,10 +5156,6 @@ function hodlGlobalSyncCurrentBits(targetWords = Pt) {
       let mnemonic = words.length === config.words ? words.join(" ") : "";
       if (mnemonic) return Pn(mnemonic, Ae) ? hodlBitsFromBytes(Er(mnemonic, Ae)) : null;
       return hodlGlobalSyncWordBits(words);
-    }
-    if (Ne === "brain-lab") {
-      let entropy = hodlBrainLabEntropy(value);
-      return entropy.ok ? hodlBitsFromBytes(entropy.bytes) : null;
     }
     let kind = hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value || "wif", value);
     if (kind === "hex-key") {
@@ -5418,7 +5478,7 @@ function hodlUpdateSeedLengthControl() {
   let section = document.getElementById("seed-length");
   if (!section) return;
   let config = hodlSeedConfig();
-  section.hidden = Ne === "key" || Ne === "brain-lab";
+  section.hidden = Ne === "key";
   section.querySelectorAll("[data-seed-words]").forEach((button) => {
     let active = Number(button.dataset.seedWords) === config.words;
     button.classList.toggle("active", active);
@@ -5814,7 +5874,7 @@ function hodlRenderKeyForm() {
       update();
       return;
     }
-    at.innerHTML = `${choices}<p class="label">Your ${config.words}-word seed phrase</p><p class="muted" id="seed-help">Enter exactly ${config.words} English BIP39 words. You can also paste an extended key here; the selected phrase length does not apply to extended keys. With ${config.partialWords} compatible diceware words, choose the final checksum word below.</p><div class="seed-entry-tools">${hodlSeedKeyboardToggleMarkup()}<label class="seed-autocomplete-toggle"><input type="checkbox" id="seed-autocomplete" ${autocompleteEnabled ? "checked" : ""} /><span>Autocomplete BIP39 words <span class="seed-autocomplete-note">(fills in once only one word matches: usually 4 letters, or as few as 1 for the final checksum word)</span></span></label></div><div class="dice-input-shell seed-input-shell"><pre class="dice-input-highlight" id="seed-highlight" aria-hidden="true"></pre><textarea id="seed" placeholder="Enter exactly ${config.words} BIP39 words" aria-describedby="seed-help seed-meta" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div><p class="muted" id="seed-meta" aria-live="polite"></p>${hodlSeedKeyboardMarkup()}<div id="last-words" class="row" style="margin-top:8px"></div>`;
+    at.innerHTML = `${choices}<p class="label">Your ${config.words}-word seed phrase</p><p class="muted" id="seed-help">Enter exactly ${config.words} English BIP39 words. You can also paste an extended key here; the selected phrase length does not apply to extended keys. With ${config.partialWords} compatible diceware words, choose the final checksum word below.</p><div class="seed-entry-tools">${hodlSeedKeyboardToggleMarkup()}<label class="seed-autocomplete-toggle"><input type="checkbox" id="seed-autocomplete" ${autocompleteEnabled ? "checked" : ""} /><span>Autocomplete BIP39 words</span></label></div><div class="dice-input-shell seed-input-shell"><pre class="dice-input-highlight" id="seed-highlight" aria-hidden="true"></pre><textarea id="seed" placeholder="Enter exactly ${config.words} BIP39 words" aria-describedby="seed-help seed-meta" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div><p class="muted" id="seed-meta" aria-live="polite"></p>${hodlSeedKeyboardMarkup()}<div id="last-words" class="row" style="margin-top:8px"></div>`;
     let input = document.getElementById("seed"), update = () => {
       let rawValue = input.value, value = rawValue.trim(), meta = W("#seed-meta"), picker = W("#last-words"), analysis = hodlRenderSeedInputState(input, config.words);
       if (hodlLooksExtendedKey(value)) {
@@ -5893,64 +5953,6 @@ function hodlRenderKeyForm() {
     update();
     return;
   }
-  if (Ne === "brain-lab") {
-    let state = hodlKeys[hodlActiveKey], acked = Boolean(hodlBrainLabAck);
-    at.innerHTML = `
-      <details class="lab-entropy" id="brain-lab-details" ${acked ? "" : "open"}>
-        <summary>Brain wallet — lab</summary>
-        <div class="wallet-result-messages" role="alert">
-          <h3>Lab warning — read before first use</h3>
-          <ul>
-            <li class="is-warning">Strength is the entropy of this text, not the 24-word count.</li>
-            <li class="is-warning">SHA-256(text) is unsalted and fast. Guessable phrases are stolen coins.</li>
-            <li class="is-warning">This is not a BIP39 passphrase.</li>
-            <li class="is-warning">This is not a Bitcoin Core hdseed or address-key backup of the same wallet.</li>
-            <li class="is-warning">A valid mnemonic does not mean it is the same Core wallet as hashing the text as a private-key scalar.</li>
-          </ul>
-        </div>
-        <label class="choice"><input type="checkbox" id="brain-lab-ack" ${acked ? "checked" : ""} /><span><strong>I understand</strong><span class="desc">Required once this session, in page memory only. Derive is still required.</span></span></label>
-      </details>
-      <p class="label" id="brain-lab-label">Lab text</p>
-      <p class="muted" id="brain-lab-help">UTF-8 text is hashed with SHA-256. The 32-byte digest is BIP39 entropy for a 24-word seed. Nothing is derived until you press Derive Wallet.</p>
-      <textarea id="brain-lab" placeholder="Exact text. Whitespace is significant." ${acked ? "" : "disabled"} aria-labelledby="brain-lab-label" aria-describedby="brain-lab-help brain-lab-hex"></textarea>
-      <p class="muted" id="brain-lab-hex" aria-live="polite">SHA-256 hex appears here. 24 words appear only after Derive Wallet.</p>`;
-    let ack = document.getElementById("brain-lab-ack"), input = document.getElementById("brain-lab"), hex = document.getElementById("brain-lab-hex");
-    let renderHex = () => {
-      if (!hodlBrainLabAck) {
-        hex.textContent = "Acknowledge the lab warning, then enter text. Derive Wallet is still required.";
-        hex.className = "muted";
-        return;
-      }
-      let value = input.value;
-      if (!value.length) {
-        hex.textContent = "SHA-256 hex appears here. 24 words appear only after Derive Wallet.";
-        hex.className = "muted";
-        return;
-      }
-      let entropy = hodlBrainLabEntropy(value);
-      hex.textContent = entropy.ok ? `SHA-256 (256-bit BIP39 entropy): ${entropy.hex}` : entropy.error;
-      hex.className = "muted " + (entropy.ok ? "ok" : "err");
-    };
-    ack.onchange = () => {
-      hodlBrainLabAck = ack.checked;
-      input.disabled = !hodlBrainLabAck;
-      renderHex();
-      hodlSyncKeyClearButton();
-      hodlSyncDeriveButton();
-    };
-    input.oninput = () => {
-      if (state) state.fields.brainLab = input.value;
-      renderHex();
-      hodlSyncKeyClearButton();
-      hodlSyncDeriveButton();
-    };
-    if (state?.fields.brainLab) input.value = state.fields.brainLab;
-    hodlBindKeyFields();
-    hodlRenderPassphraseKeyboard();
-    renderHex();
-    hodlSyncDeriveButton();
-    return;
-  }
   at.innerHTML = `
     <p class="label">Private key format</p>
     <div class="choice-grid">
@@ -5959,6 +5961,7 @@ function hodlRenderKeyForm() {
     <label class="choice"><input type="radio" name="kk" value="minikey" /><span><strong>Mini key</strong><span class="desc">Casascius-style short key.</span></span></label>
     <label class="choice"><input type="radio" name="kk" value="brain" /><span><strong>Brain wallet</strong><span class="desc">Unsafe. Use only to recover an old passphrase wallet.</span></span></label>
     </div>
+    ${hodlBrainOutputMarkup(hodlKeys[hodlActiveKey]?.brainWalletOutput || "scalar")}
     <p class="label" id="private-key-input-label">Private key or recovery passphrase</p>
     <p class="muted" id="private-key-input-help">Enter the value matching the selected format. Brain wallets are for recovery only.</p>
     ${hodlPrivateKeyKeyboardToggleMarkup()}
@@ -6232,10 +6235,26 @@ function hodlBindKeyFields() {
       radio.addEventListener("input", change);
       radio.addEventListener("change", change);
     });
+    let refreshBrain = () => {
+      hodlSyncBrainOutput();
+      hodlRenderPrivateKeyInputState(key);
+      hodlSyncKeyClearButton();
+      hodlSyncDeriveButton();
+    };
+    document.querySelectorAll('input[name="bo"]').forEach((radio) => radio.addEventListener("change", () => {
+      if (state) state.brainWalletOutput = hodlBrainWalletOutput();
+      refreshBrain();
+    }));
+    let ack = document.getElementById("brain-lab-ack");
+    if (ack) ack.onchange = () => {
+      hodlBrainLabAck = ack.checked;
+      refreshBrain();
+    };
     document.getElementById("network")?.addEventListener("change", apply);
     let trim = document.getElementById("brain-wallet-trim");
     if (trim) trim.onchange = () => {
       if (state) state.brainWalletTrim = trim.checked;
+      hodlSyncBrainOutput();
       hodlRenderPrivateKeyInputState(key);
       hodlSyncKeyClearButton();
       hodlSyncDeriveButton();
@@ -6310,9 +6329,9 @@ function hodlCanDeriveCurrentKey() {
       }
       return hodlValidateTargetMnemonic(value, Pt).ok;
     }
-    if (Ne === "brain-lab") {
+    if (Ne === "key" && hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value, document.getElementById("key")?.value || "") === "brain") {
       if (!hodlBrainLabAck) return false;
-      return hodlBrainLabEntropy(document.getElementById("brain-lab")?.value).ok;
+      if (hodlBrainWalletOutput() === "hd") return hodlBrainLabEntropy(hodlBrainWalletText(document.getElementById("key")?.value)).ok;
     }
     return hodlPrivateKeyInputIsValid();
   } catch {
@@ -6378,7 +6397,6 @@ function hodlFingerprintMnemonic() {
       let validation = hodlValidateTargetMnemonic(value, Pt);
       return validation.ok ? validation.words.join(" ") : null;
     }
-    if (Ne === "brain-lab") return null;
   } catch {
   }
   return null;
@@ -6416,7 +6434,7 @@ function hodlRenderMasterFingerprintPreview(revision = hodlMasterFingerprintRevi
   if (revision !== hodlMasterFingerprintRevision) return;
   let preview = document.getElementById("master-fingerprint-preview"), baseCard = document.getElementById("base-master-fingerprint-card"), base = document.getElementById("base-master-fingerprint"), baseImage = document.getElementById("base-master-fingerprint-lifehash"), arrow = document.getElementById("master-fingerprint-arrow"), derivedCard = document.getElementById("passphrase-master-fingerprint-card"), derived = document.getElementById("passphrase-master-fingerprint"), derivedImage = document.getElementById("passphrase-master-fingerprint-lifehash"), pass = document.getElementById("pass");
   if (!preview || !baseCard || !base || !arrow || !derivedCard || !derived || !pass) return;
-  if (Ne === "key" || Ne === "brain-lab") {
+  if (Ne === "key") {
     preview.hidden = true;
     return;
   }
@@ -6581,18 +6599,22 @@ async function hodlCalculateKey(progress) {
         if (!validation.ok) throw new Error(validation.error);
         re = await hodlMnemonicWalletWithProgress(validation.words.join(" "), passphrase, network, count, void 0, account, addressStart, progress, purpose, coinType, hardening, branchStart, branchRange, derivationPlan);
       }
-    } else if (Ne === "brain-lab") {
-      if (!hodlBrainLabAck) throw new Error("Acknowledge the lab warning before deriving.");
-      let entropy = hodlBrainLabEntropy(document.getElementById("brain-lab")?.value);
-      if (!entropy.ok) throw new Error(entropy.error);
-      re = await hodlEntropyWalletWithProgress(entropy, passphrase, network, count, account, addressStart, progress, purpose, coinType, hardening, branchStart, branchRange, derivationPlan);
     } else {
       let value = document.getElementById("key").value, kind = hodlNormalizePrivateKeyKind(document.querySelector("input[name=kk]:checked")?.value, value);
-      let trimBrainWallet = hodlBrainWalletTrimEnabled();
-      hodlAssertPrivateKeyKind(value, network, kind, trimBrainWallet);
-      progress.setTotal(1);
-      re = Io(value, network, kind, trimBrainWallet);
-      progress.step();
+      if (kind === "brain" && !hodlBrainLabAck) throw new Error("Acknowledge the lab warning before deriving.");
+      if (kind === "brain" && hodlBrainWalletOutput() === "hd") {
+        // The digest becomes BIP39 entropy rather than the private key itself,
+        // which is a different wallet from the same text.
+        let entropy = hodlBrainLabEntropy(hodlBrainWalletPassphrase(value, hodlBrainWalletTrimEnabled()));
+        if (!entropy.ok) throw new Error(entropy.error);
+        re = await hodlEntropyWalletWithProgress(entropy, passphrase, network, count, account, addressStart, progress, purpose, coinType, hardening, branchStart, branchRange, derivationPlan);
+      } else {
+        let trimBrainWallet = hodlBrainWalletTrimEnabled();
+        hodlAssertPrivateKeyKind(value, network, kind, trimBrainWallet);
+        progress.setTotal(1);
+        re = Io(value, network, kind, trimBrainWallet);
+        progress.step();
+      }
     }
     if (re?.network !== network) throw new Error(`The supplied key is for ${re.network}, but Network is set to ${network}.`);
     Ge = false;
@@ -9279,7 +9301,7 @@ function hodlPrivateKeyValues(fields) {
 }
 function hodlNewKeyState(name, keyId, keyNumber) {
   let id = keyId ?? hodlNextKeyId++, number = keyNumber ?? hodlNextKeyNumber++;
-  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", globalSync: false, globalSyncSource: "", globalSyncBitCount: 0, seedAutocomplete: true, passphraseBip39Words: false, passphraseAutocomplete: true, brainWalletTrim: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", derivationPath: "m/84'/0'/0'/0/0", derivationAccountPath: "m/84'/0'/0'", purpose: "84'", purposeHarden: true, coinType: "0'", coinTypeHarden: true, network: "mainnet", account: "0'", accountHarden: true, branchStart: "0", branchHarden: false, branchRange: "1", addressStart: "0", addressHarden: false, addressRange: "1", dice: "", bitboxDice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", brainLab: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
+  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", globalSync: false, globalSyncSource: "", globalSyncBitCount: 0, seedAutocomplete: true, passphraseBip39Words: false, brainWalletOutput: "scalar", passphraseAutocomplete: true, brainWalletTrim: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", derivationPath: "m/84'/0'/0'/0/0", derivationAccountPath: "m/84'/0'/0'", purpose: "84'", purposeHarden: true, coinType: "0'", coinTypeHarden: true, network: "mainnet", account: "0'", accountHarden: true, branchStart: "0", branchHarden: false, branchRange: "1", addressStart: "0", addressHarden: false, addressRange: "1", dice: "", bitboxDice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", brainLab: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
 }
 function hodlRestoreFormFields(state) {
   if (!state) return;
@@ -9294,11 +9316,10 @@ function hodlRestoreFormFields(state) {
   if (showNumberBaseCalculations) showNumberBaseCalculations.checked = Boolean(state.showNumberBaseCalculations);
   let seedAutocomplete = document.getElementById("seed-autocomplete");
   if (seedAutocomplete) seedAutocomplete.checked = Boolean(state.seedAutocomplete);
-  let brainLab = document.getElementById("brain-lab");
-  if (brainLab) {
-    brainLab.value = state.fields.brainLab || "";
-    brainLab.dispatchEvent(new Event("input"));
-  }
+  document.querySelectorAll('input[name="bo"]').forEach((radio) => {
+    radio.checked = radio.value === (state.brainWalletOutput || "scalar");
+  });
+  hodlSyncBrainOutput();
   ["dice", "hex", "bin", "base4", "base8", "base32", "base64", "seed", "seed-numbers", "key", "cards", "direct-cards"].forEach(id => {
     let el = document.getElementById(id);
     if (el) {
@@ -9394,8 +9415,7 @@ function hodlCaptureKey() {
   if (directCards) state.fields.directCards = directCards.value;
   let seedNumbers = document.getElementById("seed-numbers");
   if (seedNumbers) state.fields.seedNumbers = seedNumbers.value;
-  let brainLabField = document.getElementById("brain-lab");
-  if (brainLabField) state.fields.brainLab = brainLabField.value;
+  if (document.querySelector('input[name="bo"]')) state.brainWalletOutput = hodlBrainWalletOutput();
   state.fields.coinType = document.getElementById("network")?.value || "0";
   state.fields.derivationAccountPath = document.getElementById("derivation-path")?.dataset.accountPath || state.fields.derivationAccountPath || "m/84'/0'/0'";
   let hardening = hodlReadHardening();
