@@ -27,6 +27,7 @@ class FakeElement {
     this.disabled = false;
     this.textContent = "";
     this.isConnected = true;
+    this.ownerDocument = null;
   }
   append(...children) { this.children.push(...children); }
   after(node) { this.afterNode = node; }
@@ -52,8 +53,11 @@ class FakeElement {
     if (selector === ".custom-select-option:not(:disabled)") return this.children.find((child) => child.className === "custom-select-option" && !child.disabled) || null;
     return null;
   }
-  contains(target) { return target === this || this.children.includes(target); }
-  focus(options) { this.focusOptions = options; }
+  contains(target) { return target === this || this.children.some((child) => child.contains(target)); }
+  focus(options) {
+    this.focusOptions = options;
+    if (this.ownerDocument) this.ownerDocument.activeElement = this;
+  }
 }
 
 class FakeSelect extends FakeElement {
@@ -80,8 +84,15 @@ class FakeEvent {
 }
 
 class FakeMutationObserver {
-  constructor(callback) { this.callback = callback; }
-  observe() {}
+  static instances = [];
+  constructor(callback) {
+    this.callback = callback;
+    FakeMutationObserver.instances.push(this);
+  }
+  observe(target, options) {
+    this.target = target;
+    this.options = options;
+  }
 }
 
 function makeHarness() {
@@ -91,15 +102,23 @@ function makeHarness() {
   ];
   const select = new FakeSelect(options, "mainnet");
   const body = new FakeElement("body");
+  const listeners = new Map();
   const document = {
     body,
     activeElement: null,
-    createElement(tagName) { return new FakeElement(tagName); },
+    createElement(tagName) {
+      const element = new FakeElement(tagName);
+      element.ownerDocument = document;
+      return element;
+    },
     querySelectorAll(selector) { return selector === "select" ? [select] : []; },
-    addEventListener() {},
+    addEventListener(name, listener) { listeners.set(name, [...(listeners.get(name) || []), listener]); },
+    listeners,
   };
+  select.ownerDocument = document;
+  body.ownerDocument = document;
   new Function("document", "Element", "MutationObserver", "Event", source)(document, FakeElement, FakeMutationObserver, FakeEvent);
-  return { select, root: select.afterNode };
+  return { select, root: select.afterNode, document, body };
 }
 
 test("custom option finishes the tap before dispatching change", async () => {
@@ -141,4 +160,84 @@ test("deferred change is not sent to a select removed during activation", async 
 
   await new Promise((resolve) => setTimeout(resolve, 5));
   assert.deepEqual(calls, []);
+});
+
+test("Enter, Space, and ArrowDown on the button open the list and focus the selection", () => {
+  for (const key of ["Enter", " ", "ArrowDown"]) {
+    const { root, document } = makeHarness();
+    const button = root.children[0];
+    const list = root.children[1];
+    let prevented = 0;
+    button.onkeydown({ key, preventDefault: () => (prevented += 1) });
+    assert.equal(prevented, 1, key);
+    assert.equal(list.hidden, false, key);
+    assert.equal(button.attributes.get("aria-expanded"), "true", key);
+    assert.equal(document.activeElement, list.children[0], `${key}: the selected option takes focus`);
+  }
+});
+
+test("arrow keys move the highlight with clamping and Escape closes", () => {
+  const { root, document } = makeHarness();
+  const button = root.children[0];
+  const list = root.children[1];
+  button.onkeydown({ key: "ArrowDown", preventDefault() {} });
+  assert.equal(document.activeElement, list.children[0]);
+  list.onkeydown({ key: "ArrowDown", preventDefault() {} });
+  assert.equal(document.activeElement, list.children[1]);
+  list.onkeydown({ key: "ArrowDown", preventDefault() {} });
+  assert.equal(document.activeElement, list.children[1], "clamped at the last option");
+  list.onkeydown({ key: "ArrowUp", preventDefault() {} });
+  assert.equal(document.activeElement, list.children[0]);
+  list.onkeydown({ key: "ArrowUp", preventDefault() {} });
+  assert.equal(document.activeElement, list.children[0], "clamped at the first option");
+  list.onkeydown({ key: "Escape", preventDefault() {} });
+  assert.equal(list.hidden, true);
+  assert.equal(button.attributes.get("aria-expanded"), "false");
+  assert.equal(document.activeElement, button, "Escape returns focus to the button");
+});
+
+test("the select's MutationObserver rebuilds the option list and skips the placeholder", () => {
+  const { select, root } = makeHarness();
+  const list = root.children[1];
+  assert.equal(list.children.length, 2);
+  select.options.push(
+    { value: "signet", textContent: "Signet", disabled: false, dataset: {} },
+    { value: "", textContent: "Choose a network", disabled: true, dataset: { customSelectPlaceholder: "true" } },
+  );
+  const observer = FakeMutationObserver.instances.find((instance) => instance.target === select);
+  assert.ok(observer, "the enhancement observes its select");
+  observer.callback();
+  assert.equal(list.children.length, 3, "the placeholder option is not rendered as a choice");
+  assert.equal(list.children[2].textContent, "Signet");
+});
+
+test("selects inserted into the document later are enhanced", () => {
+  const { document, body } = makeHarness();
+  const observer = FakeMutationObserver.instances.find((instance) => instance.target === body);
+  assert.ok(observer, "the document body is observed for added nodes");
+  assert.doesNotThrow(() => observer.callback([{ addedNodes: [null, {}] }]), "non-element nodes are skipped");
+  const added = new FakeSelect([{ value: "a", textContent: "A", disabled: false, dataset: {} }], "a");
+  added.ownerDocument = document;
+  observer.callback([{ addedNodes: [added] }]);
+  assert.ok(added.afterNode, "a custom-select root was inserted");
+  assert.equal(added.afterNode.className, "custom-select");
+  added.afterNode.children[0].onclick();
+  assert.equal(added.afterNode.children[0].attributes.get("aria-expanded"), "true", "the new select is fully wired");
+});
+
+test("clicking outside an open custom select closes it", () => {
+  const { root, document, body } = makeHarness();
+  const button = root.children[0];
+  const list = root.children[1];
+  button.onclick();
+  assert.equal(list.hidden, false);
+  const clicks = document.listeners.get("click") || [];
+  assert.ok(clicks.length > 0, "the document click listener is registered");
+  for (const listener of clicks) listener({ target: list.children[0] });
+  assert.equal(list.hidden, false, "a click inside the root keeps it open");
+  for (const listener of clicks) listener({ target: button });
+  assert.equal(list.hidden, false, "a click on the button is handled by the button");
+  for (const listener of clicks) listener({ target: body });
+  assert.equal(list.hidden, true, "a click outside closes the list");
+  assert.equal(button.attributes.get("aria-expanded"), "false");
 });

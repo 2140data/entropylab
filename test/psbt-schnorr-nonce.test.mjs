@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { hodlParseSchnorr, hodlTapSighashProblems, hodlCompareSchnorrNonces, hodlTapKeySigs } from "../src/js/psbt-schnorr.js";
+import { hodlLooksSchnorr, hodlParseSchnorr, hodlTapSighashProblems, hodlCompareSchnorrNonces, hodlTapKeySigs, hodlTapScriptSigs } from "../src/js/psbt-schnorr.js";
 
 const eq = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
 const rA = new Uint8Array(32).fill(0x11);
@@ -35,4 +35,75 @@ test("tap key sig records are collected", () => {
   raw.set(rA);
   const keys = hodlTapKeySigs([{ type: 19, keydata: new Uint8Array(), val: raw }], (e, t) => e.filter((x) => x.type === t));
   assert.equal(keys.length, 1);
+});
+
+test("looksSchnorr accepts 64/65-byte items but never a DER signature", () => {
+  assert.equal(hodlLooksSchnorr(null), false);
+  assert.equal(hodlLooksSchnorr(new Uint8Array(63)), false);
+  assert.equal(hodlLooksSchnorr(new Uint8Array(64)), true);
+  assert.equal(hodlLooksSchnorr(new Uint8Array(65)), true);
+  const derLookalike = new Uint8Array(65);
+  derLookalike[0] = 0x30;
+  assert.equal(hodlLooksSchnorr(derLookalike), false, "a 65-byte DER signature is not Schnorr");
+  assert.equal(hodlLooksSchnorr(new Uint8Array(66)), false);
+  assert.equal(hodlParseSchnorr(new Uint8Array(10)), null);
+});
+
+test("parse splits r and s and defaults the sighash to DEFAULT", () => {
+  const raw = new Uint8Array(64);
+  raw.set(rA, 0);
+  raw.set(new Uint8Array(32).fill(0x22), 32);
+  const parsed = hodlParseSchnorr(raw);
+  assert.deepEqual(parsed.r, rA);
+  assert.deepEqual(parsed.s, new Uint8Array(32).fill(0x22));
+  assert.equal(parsed.sighash, 0, "SIGHASH_DEFAULT when the suffix byte is absent");
+});
+
+test("sighash problems flag unsafe declarations, suffixes, and disagreements", () => {
+  const label = (p) => "0x" + p.toString(16);
+  assert.deepEqual(hodlTapSighashProblems(null, null, label), []);
+  assert.deepEqual(hodlTapSighashProblems(1, 0, label), [], "DEFAULT and ALL are interchangeable");
+  assert.deepEqual(hodlTapSighashProblems(0, 0x81, label).length, 2, "unsafe suffix that also disagrees with the declaration");
+  assert.deepEqual(hodlTapSighashProblems(0x83, null, label).length, 1, "unsafe declaration alone");
+});
+
+test("tap script sig records slice the x-only pubkey out of the keydata", () => {
+  const raw = new Uint8Array(64);
+  raw.set(rA);
+  const leafHash = new Uint8Array(32).fill(0x44);
+  const withLeaf = hodlTapScriptSigs([{ type: 20, keydata: Uint8Array.from([...key, ...leafHash]), val: raw }], (e, t) => e.filter((x) => x.type === t));
+  assert.equal(withLeaf.length, 1);
+  assert.deepEqual(withLeaf[0].pubkey, key);
+  assert.deepEqual(withLeaf[0].r, rA);
+  assert.equal(withLeaf[0].source, "tap-script");
+  const shortKeydata = hodlTapScriptSigs([{ type: 20, keydata: new Uint8Array(31), val: raw }], (e, t) => e.filter((x) => x.type === t));
+  assert.deepEqual(shortKeydata[0].pubkey, new Uint8Array(), "short keydata yields no pubkey");
+  const unparseable = hodlTapScriptSigs([{ type: 20, keydata: key, val: new Uint8Array(10) }], (e, t) => e.filter((x) => x.type === t));
+  assert.equal(unparseable[0].r, null, "an unparseable value still records the pubkey");
+  assert.deepEqual(unparseable[0].pubkey, key);
+});
+
+test("nonce compare ignores same-input pairs, key mismatches, and missing r values", () => {
+  const sameInput = hodlCompareSchnorrNonces([
+    { input: 0, r: rA, pubkey: key },
+    { input: 0, r: rA, pubkey: key },
+  ], eq);
+  assert.equal(sameInput.possible.length, 0, "two signatures on the same input are not cross-input reuse");
+  const differentKeys = hodlCompareSchnorrNonces([
+    { input: 0, r: rA, pubkey: key },
+    { input: 1, r: rA, pubkey: new Uint8Array(32).fill(0x55) },
+  ], eq);
+  assert.equal(differentKeys.possible.length, 0, "same R under different keys is not reuse");
+  const missingR = hodlCompareSchnorrNonces([
+    { input: 0, r: null, pubkey: key },
+    { input: 1, r: rA, pubkey: key },
+  ], eq);
+  assert.equal(missingR.possible.length, 0, "unparseable records never flag");
+  const flagged = hodlCompareSchnorrNonces([
+    { input: 0, r: rA, pubkey: key },
+    { input: 1, r: rA, pubkey: key },
+    { input: 2, r: rA, pubkey: key },
+  ], eq);
+  assert.equal(flagged.possible.length, 3, "every cross-input pair of the shared R is reported");
+  assert.deepEqual(flagged.reused, [], "definite proof is left to the ECDSA comparison");
 });
