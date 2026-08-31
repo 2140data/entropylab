@@ -624,6 +624,7 @@ ec.innerHTML = `
         <div class="row segmented-control" id="modes" role="group" aria-label="Key input mode"></div>
         <button class="btn delete-key" id="delete-key" type="button" aria-label="Delete current key" disabled>Delete Key</button>
       </div>
+      <div class="global-sync-host" id="global-sync-host"></div>
       <section class="seed-length-control" id="seed-length" aria-labelledby="seed-length-label">
         <p class="label" id="seed-length-label">Seed phrase length</p>
         <div class="row seed-length-options segmented-control" role="group" aria-label="Seed phrase length">
@@ -710,6 +711,7 @@ ec.innerHTML = `
         </details>
       </div>
       <p class="field-note address-estimate derivation-estimate" id="address-estimate" role="status">Measuring this device\u2026</p>
+      <div class="global-sync-host global-sync-hash-host" id="global-sync-hash-host" hidden></div>
       <div class="row key-action-row current-item-actions">
         <button class="btn primary" id="go" disabled aria-disabled="true">Derive Wallet</button>
         <div class="derive-progress" id="derive-progress" role="progressbar" aria-label="Wallet derivation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0% complete" hidden><span class="derive-progress-track"><span class="derive-progress-bar"></span></span><span class="derive-progress-label">0%</span></div>
@@ -1004,7 +1006,7 @@ ec.innerHTML = `
   </div>
 `;
 if (/^(www\.)?entropylab\.online$/i.test(location.hostname)) document.getElementById("online-warning")?.removeAttribute("hidden");
-var hodlKeyModes = ["dice", "cards", "hex", "seed", "key", "brain-lab"], hodlBrainLabAck = false, hodlWorkspaceSyncMsig = [], hodlWorkspaceSyncResult = null, hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "♠", label: "Spades", red: false }, { code: "H", symbol: "♥", label: "Hearts", red: true }, { code: "C", symbol: "♣", label: "Clubs", red: false }, { code: "D", symbol: "♦", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, hodlCardColemanSymbols = false, Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], ft = "", re = null, Ge = false, hodlWalletDatBirthday = "genesis", Zs = W("#modes"), at = W("#form"), dr = W("#out");
+var hodlKeyModes = ["dice", "cards", "hex", "seed", "key", "brain-lab"], hodlBrainLabAck = false, hodlCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K"], hodlDirectCardRanks = ["A", "2", "3", "4", "5", "6", "7", "8"], hodlCardSuits = [{ code: "S", symbol: "♠", label: "Spades", red: false }, { code: "H", symbol: "♥", label: "Hearts", red: true }, { code: "C", symbol: "♣", label: "Clubs", red: false }, { code: "D", symbol: "♦", label: "Diamonds", red: true }], hodlCardSuit = "", hodlCardRank = "", hodlCardMethod = "hashed", hodlSeedMethod = "words", hodlSeedZeroIndexed = false, hodlCardColemanSymbols = false, Ne = "dice", ge = "coldcard", Pt = 24, hodlEntropyFormat = "hex", hodlDiceCoinPositions = [], ft = "", re = null, Ge = false, hodlWalletDatBirthday = "genesis", Zs = W("#modes"), at = W("#form"), dr = W("#out");
 var hodlManualCalculationsOpen = false;
 hodlKeyModes.forEach((e) => {
   let t = document.createElement("button"), active = e === Ne;
@@ -1203,7 +1205,6 @@ function tc() {
     let t = new Blob([hodlFormatRecoverySheet(Oo(re, Ge))], { type: "text/plain" }), r = document.createElement("a");
     r.href = URL.createObjectURL(t), r.download = "bitcoin-recovery-sheet.txt", r.click();
   });
-  hodlRenderWorkspaceSync();
 }
 To = To.map((definition) => definition.id === "bip86" ? { ...definition, slip: "x" } : definition);
 cr = {
@@ -4953,49 +4954,310 @@ function hodlRenderNumberBaseCalculations(value, format = "bin", targetWords = P
 function hodlHexPreviewWords(value, targetWords = Pt) {
   return hodlNumberBasePreviewWords(value, "hex", targetWords);
 }
-function hodlSetNumberBaseSyncStatus(synced) {
-  let status = document.getElementById("number-base-sync-status");
-  if (status) status.hidden = !synced;
+function hodlBitsFromBytes(bytes) {
+  return Array.from(bytes || [], (byte) => byte.toString(2).padStart(8, "0")).join("");
 }
-function hodlSyncNumberBases(input, format, analysis, targetWords = Pt, sourceEdit = true) {
-  let state = hodlKeys[hodlActiveKey], toggle = document.getElementById("sync-number-bases");
-  if (state) {
-    state.syncNumberBases = Boolean(toggle?.checked);
-    state.fields[format] = input.value;
+function hodlBytesFromBits(bits) {
+  let complete = String(bits ?? "").slice(0, Math.floor(String(bits ?? "").length / 8) * 8), bytes = new Uint8Array(complete.length / 8);
+  for (let index = 0; index < bytes.length; index++) bytes[index] = Number.parseInt(complete.slice(index * 8, index * 8 + 8), 2);
+  return bytes;
+}
+function hodlGlobalSyncIsHashedMode() {
+  if (Ne === "dice") return ge === "coldcard" || ge === "coleman";
+  if (Ne === "cards") return hodlCardMethod === "hashed";
+  if (Ne === "brain-lab") return true;
+  if (Ne === "key") {
+    let kind = hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value || hodlKeys[hodlActiveKey]?.fields?.keyKind, "");
+    return kind === "minikey" || kind === "brain";
   }
-  if (!toggle?.checked) {
-    if (state) state.numberBasesSynced = false;
-    hodlSetNumberBaseSyncStatus(false);
-    return false;
+  return false;
+}
+function hodlGlobalSyncSourceId() {
+  if (Ne === "dice") return `dice:${ge}`;
+  if (Ne === "cards") return `cards:${hodlCardMethod}`;
+  if (Ne === "hex") return `number:${hodlEntropyFormat}`;
+  if (Ne === "seed") return `seed:${hodlSeedMethod}`;
+  if (Ne === "brain-lab") return "brain-lab";
+  let kind = hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value || hodlKeys[hodlActiveKey]?.fields?.keyKind, "");
+  return `key:${kind}`;
+}
+function hodlGlobalSyncCurrentValue() {
+  let state = hodlKeys[hodlActiveKey], fields = state?.fields || {};
+  if (Ne === "dice") return document.getElementById("dice")?.value ?? (ge === "dplus" ? fields.dplusDice : ge === "bitbox" ? fields.bitboxDice : fields.dice) ?? "";
+  if (Ne === "cards") return document.getElementById(hodlCardMethod === "direct" ? "direct-cards" : "cards")?.value ?? fields[hodlCardMethod === "direct" ? "directCards" : "cards"] ?? "";
+  if (Ne === "hex") return document.getElementById(hodlEntropyFormat)?.value ?? fields[hodlEntropyFormat] ?? "";
+  if (Ne === "seed") return document.getElementById(hodlSeedMethod === "numbers" ? "seed-numbers" : "seed")?.value ?? fields[hodlSeedMethod === "numbers" ? "seedNumbers" : "seed"] ?? "";
+  if (Ne === "brain-lab") return document.getElementById("brain-lab")?.value ?? fields.brainLab ?? "";
+  let values = hodlPrivateKeyValues(fields), kind = hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value || fields.keyKind, "");
+  return document.getElementById("key")?.value ?? values[kind] ?? "";
+}
+function hodlGlobalSyncWordBits(words) {
+  let bits = "";
+  for (let word of words || []) {
+    let index = hodlBip39WordIndex.get(String(word || "").toLowerCase());
+    if (!Number.isInteger(index)) break;
+    bits += index.toString(2).padStart(11, "0");
   }
-  if (state && sourceEdit) {
-    state.numberBaseSyncSource = format;
-    state.numberBasesSynced = false;
+  return bits;
+}
+function hodlGlobalSyncDPlusBits(value, targetWords = Pt) {
+  let config = hodlSeedConfig(targetWords), entries = hodlDPlusTokens(value), widths = [], steps = [];
+  for (let index = 0; index < config.partialWords; index++) {
+    widths.push(3, 4, 4);
+    steps.push("d8", "d16", "d16");
   }
-  let source = state?.numberBaseSyncSource || format;
-  if (format !== source) {
-    hodlSetNumberBaseSyncStatus(Boolean(state?.numberBasesSynced));
-    return false;
+  for (let step of hodlDPlusFinalSteps(config.words)) {
+    widths.push(hodlDPlusStepBits(step));
+    steps.push(step);
   }
-  if (!analysis.ready) {
-    if (state) state.numberBasesSynced = false;
-    hodlSetNumberBaseSyncStatus(false);
-    return false;
+  let bits = "";
+  for (let index = 0; index < Math.min(entries.length, steps.length); index++) {
+    let value2 = hodlDPlusStepValue(steps[index], entries[index].face);
+    if (value2 === null) break;
+    bits += value2.toString(2).padStart(widths[index], "0");
   }
-  let result = hodlNumberBaseEntropy(input.value, format, targetWords);
-  if (!result.ok) {
-    if (state) state.numberBasesSynced = false;
-    hodlSetNumberBaseSyncStatus(false);
-    return false;
+  return bits.slice(0, config.bits);
+}
+function hodlGlobalSyncDirectCardBits(value, targetWords = Pt) {
+  let parsed = hodlParseDirectCards(value, targetWords), bits = "";
+  for (let index = 0; index < Math.min(parsed.entries.length, parsed.steps.length); index++) {
+    let value2 = parsed.values[index], width = Math.log2(parsed.steps[index]);
+    if (!Number.isInteger(value2) || value2 < 0) break;
+    bits += value2.toString(2).padStart(width, "0");
   }
-  if (state) {
-    Object.keys(hodlEntropyFormats).forEach((id) => {
-      state.fields[id] = hodlNumberBaseValueFromBytes(result.bytes, id, targetWords);
-    });
-    state.numberBasesSynced = true;
+  return bits.slice(0, parsed.config.bits);
+}
+function hodlGlobalSyncBitBoxBits(value, targetWords = Pt) {
+  let config = hodlSeedConfig(targetWords), bits = "", position = 0, words = 0;
+  for (let character of String(value ?? "")) {
+    if (/\s|,|;|\|/.test(character)) continue;
+    if (!/^[1-6]$/.test(character) || words >= config.partialWords) break;
+    let face = Number(character);
+    if (position < 5) {
+      if (face > 4) continue;
+      bits += (face - 1).toString(2).padStart(2, "0");
+      position += 1;
+    } else {
+      bits += face <= 3 ? "0" : "1";
+      position = 0;
+      words += 1;
+    }
   }
-  hodlSetNumberBaseSyncStatus(true);
+  return bits.slice(0, config.bits);
+}
+function hodlGlobalSyncCurrentBits(targetWords = Pt) {
+  let value = hodlGlobalSyncCurrentValue(), config = hodlSeedConfig(targetWords), hashed = hodlGlobalSyncIsHashedMode();
+  if (!String(value).length) return "";
+  try {
+    if (Ne === "dice") {
+      if (hashed) {
+        let entropy = hodlDiceEntropy(value, ge, config.words);
+        return entropy.ok ? hodlBitsFromBytes(entropy.bytes) : null;
+      }
+      if (ge === "dplus") {
+        let parsed = hodlDPlusRolls(value, config.words);
+        if (parsed.complete) return hodlBitsFromBytes(Er([...parsed.wordSlots, parsed.finalWord].join(" "), Ae));
+        return hodlGlobalSyncDPlusBits(value, config.words);
+      }
+      let parsed = hodlBitBoxRolls(value, config.words);
+      if (parsed.waiting === "last-word" && ft) {
+        let mnemonic = [...parsed.words, ft].join(" ");
+        if (Pn(mnemonic, Ae)) return hodlBitsFromBytes(Er(mnemonic, Ae));
+      }
+      return hodlGlobalSyncBitBoxBits(value, config.words);
+    }
+    if (Ne === "cards") {
+      if (hodlCardMethod === "hashed") {
+        let entropy = hodlCardsEntropy(value, config.words, hodlCardColemanSymbols);
+        return entropy.ok ? hodlBitsFromBytes(entropy.bytes) : null;
+      }
+      let parsed = hodlParseDirectCards(value, config.words);
+      if (parsed.complete) return hodlBitsFromBytes(Er([...parsed.wordSlots, parsed.finalWord].join(" "), Ae));
+      return hodlGlobalSyncDirectCardBits(value, config.words);
+    }
+    if (Ne === "hex") {
+      let analysis = hodlAnalyzeEntropyInput(value, hodlEntropyFormat, config.words);
+      return analysis.invalidRanges.length ? null : hodlNumberBaseBits(value, hodlEntropyFormat, config.words);
+    }
+    if (Ne === "seed") {
+      let words;
+      if (hodlSeedMethod === "numbers") words = hodlParseSeedNumbers(value, config.words, hodlSeedZeroIndexed).wordSlots;
+      else if (!hodlLooksExtendedKey(value)) {
+        words = [];
+        for (let word of Rn(value).split(" ").filter(Boolean)) {
+          if (!hodlBip39WordSet.has(word)) break;
+          words.push(word);
+        }
+      }
+      else return null;
+      let mnemonic = words.length === config.words ? words.join(" ") : "";
+      if (mnemonic) return Pn(mnemonic, Ae) ? hodlBitsFromBytes(Er(mnemonic, Ae)) : null;
+      return hodlGlobalSyncWordBits(words);
+    }
+    if (Ne === "brain-lab") {
+      let entropy = hodlBrainLabEntropy(value);
+      return entropy.ok ? hodlBitsFromBytes(entropy.bytes) : null;
+    }
+    let kind = hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value || "wif", value);
+    if (kind === "hex-key") {
+      let bits = "";
+      for (let digit of value.replace(/\s/g, "").replace(/^0x/i, "").slice(0, 64)) {
+        if (!/^[0-9a-fA-F]$/.test(digit)) break;
+        bits += Number.parseInt(digit, 16).toString(2).padStart(4, "0");
+      }
+      return bits;
+    }
+    if (kind === "wif") return hodlBitsFromBytes(Ls(value.trim()).priv);
+    if (kind === "minikey") return hodlBitsFromBytes(Ns(value.trim()));
+    return hodlBitsFromBytes(hodlBrainWalletPrivateKey(value, hodlBrainWalletTrimEnabled()));
+  } catch {
+    return null;
+  }
+}
+function hodlGlobalSyncNumberValue(bits, format, targetWords = Pt) {
+  let meta = hodlEntropyFormatConfig(format, targetWords), source = String(bits ?? "").slice(0, meta.seed.bits), value = "", offset = 0;
+  while (offset + meta.bitsPerDigit <= source.length && value.length < meta.fullDigits) {
+    value += meta.alphabet[Number.parseInt(source.slice(offset, offset + meta.bitsPerDigit), 2)];
+    offset += meta.bitsPerDigit;
+  }
+  if (value.length === meta.fullDigits && meta.remainderBits && source.length - offset >= meta.remainderBits) {
+    let finalBits = source.slice(offset, offset + meta.remainderBits);
+    value += meta.binaryRemainder ? finalBits : meta.alphabet[Number.parseInt(finalBits, 2)];
+  }
+  return meta.id === "bin" ? hodlGroupedBinary(value) : value;
+}
+function hodlGlobalSyncMnemonic(bits, targetWords = Pt) {
+  let config = hodlSeedConfig(targetWords), source = String(bits ?? "");
+  if (source.length < config.bits) return null;
+  return _n(hodlBytesFromBits(source.slice(0, config.bits)));
+}
+function hodlGlobalSyncWordIndices(bits, limit = Infinity) {
+  let source = String(bits ?? ""), count = Math.min(limit, Math.floor(source.length / 11)), indices = [];
+  for (let index = 0; index < count; index++) indices.push(Number.parseInt(source.slice(index * 11, index * 11 + 11), 2));
+  return indices;
+}
+function hodlGlobalSyncDPlusValue(bits, targetWords = Pt) {
+  let config = hodlSeedConfig(targetWords), source = String(bits ?? "").slice(0, config.bits), widths = [], steps = [];
+  for (let index = 0; index < config.partialWords; index++) {
+    widths.push(3, 4, 4);
+    steps.push("d8", "d16", "d16");
+  }
+  for (let step of hodlDPlusFinalSteps(config.words)) {
+    widths.push(hodlDPlusStepBits(step));
+    steps.push(step);
+  }
+  let tokens = [], offset = 0;
+  for (let index = 0; index < steps.length && offset + widths[index] <= source.length; index++) {
+    let value2 = Number.parseInt(source.slice(offset, offset + widths[index]), 2), step = steps[index];
+    tokens.push(step === "coin" ? value2 ? "5" : "1" : step === "d8" ? String(value2 + 1) : value2.toString(16).toUpperCase());
+    offset += widths[index];
+  }
+  let groups = [], partialTokens = tokens.slice(0, config.partialWords * 3);
+  for (let index = 0; index < partialTokens.length; index += 3) groups.push(partialTokens.slice(index, index + 3).join(""));
+  let finalTokens = tokens.slice(config.partialWords * 3);
+  if (finalTokens.length) groups.push(finalTokens.join(""));
+  return groups.filter(Boolean).join(" ");
+}
+function hodlGlobalSyncDirectCardsValue(bits, targetWords = Pt) {
+  let config = hodlSeedConfig(targetWords), source = String(bits ?? "").slice(0, config.bits), steps = hodlDirectCardSteps(config.words), tokens = [], offset = 0;
+  for (let index = 0; index < steps.length; index++) {
+    let width = Math.log2(steps[index]);
+    if (offset + width > source.length) break;
+    tokens.push(hodlDirectCardRanks[Number.parseInt(source.slice(offset, offset + width), 2)]);
+    offset += width;
+  }
+  let value = "";
+  tokens.forEach((token, index) => value += hodlDirectCardSeparator(index, config.words) + token);
+  return value;
+}
+function hodlGlobalSyncBitBoxValue(bits, targetWords = Pt) {
+  let config = hodlSeedConfig(targetWords), source = String(bits ?? "").slice(0, config.bits), tokens = [], offset = 0;
+  for (let word = 0; word < config.partialWords; word++) {
+    for (let position = 0; position < 6; position++) {
+      let width = position < 5 ? 2 : 1;
+      if (offset + width > source.length) return tokens.map((token, index) => `${index && index % 6 === 0 ? " " : ""}${token}`).join("");
+      let value2 = Number.parseInt(source.slice(offset, offset + width), 2);
+      tokens.push(position < 5 ? String(value2 + 1) : value2 ? "4" : "1");
+      offset += width;
+    }
+  }
+  return tokens.map((token, index) => `${index && index % 6 === 0 ? " " : ""}${token}`).join("");
+}
+function hodlApplyGlobalSync(bits, sourceId = hodlGlobalSyncSourceId()) {
+  let state = hodlKeys[hodlActiveKey];
+  if (!state) return false;
+  let config = hodlSeedConfig(state.targetWords), source = String(bits ?? "").slice(0, config.bits), sourceValue = String(hodlGlobalSyncCurrentValue()), fields = state.fields, privateKeys = hodlPrivateKeyValues(fields), mnemonic = hodlGlobalSyncMnemonic(source, config.words), words = mnemonic ? mnemonic.split(" ") : hodlGlobalSyncWordIndices(source, config.partialWords).map((index) => Ae[index]);
+  Object.keys(hodlEntropyFormats).forEach((format) => fields[format] = hodlGlobalSyncNumberValue(source, format, config.words));
+  fields.seed = words.join(" ");
+  fields.seedNumbers = words.map((word) => String(hodlBip39WordIndex.get(word) + (state.seedZeroIndexed ? 0 : 1))).join(" ");
+  fields.dplusDice = hodlGlobalSyncDPlusValue(source, config.words);
+  fields.directCards = hodlGlobalSyncDirectCardsValue(source, config.words);
+  fields.bitboxDice = hodlGlobalSyncBitBoxValue(source, config.words);
+  state.lastWord = mnemonic ? words.at(-1) : "";
+  privateKeys["hex-key"] = source.slice(0, 256).match(/.{4}/g)?.map((chunk) => Number.parseInt(chunk, 2).toString(16)).join("") || "";
+  privateKeys.wif = "";
+  if (source.length >= 256) {
+    let bytes = hodlBytesFromBits(source.slice(0, 256));
+    try {
+      hf(bytes);
+      let coinType = hodlParseDerivationIndexText(fields.coinType ?? "0'")?.value ?? 0, network = hodlNetworkFromCoinType(coinType);
+      privateKeys.wif = rn(bytes, true, network);
+    } catch {
+    }
+  }
+  if (sourceId.startsWith("number:")) fields[sourceId.slice(7)] = sourceValue;
+  else if (sourceId === "seed:words") fields.seed = sourceValue;
+  else if (sourceId === "seed:numbers") fields.seedNumbers = sourceValue;
+  else if (sourceId === "dice:dplus") fields.dplusDice = sourceValue;
+  else if (sourceId === "dice:bitbox") fields.bitboxDice = sourceValue;
+  else if (sourceId === "cards:direct") fields.directCards = sourceValue;
+  else if (sourceId === "key:hex-key") privateKeys["hex-key"] = sourceValue;
+  else if (sourceId === "key:wif") privateKeys.wif = sourceValue;
+  state.globalSyncSource = sourceId;
+  state.globalSyncBitCount = source.length;
   return true;
+}
+function hodlGlobalSyncFromCurrentInput() {
+  let state = hodlKeys[hodlActiveKey];
+  if (!state?.globalSync) {
+    hodlRenderGlobalSyncControl();
+    return false;
+  }
+  let bits = hodlGlobalSyncCurrentBits(state.targetWords);
+  if (bits === null) {
+    state.globalSyncBitCount = 0;
+    hodlRenderGlobalSyncControl();
+    return false;
+  }
+  hodlApplyGlobalSync(bits);
+  hodlRenderGlobalSyncControl();
+  return true;
+}
+function hodlGlobalSyncControlMarkup(hashed, disabled, state) {
+  let detail = hashed ? "Uses this method's deterministic hash as the shared entropy once input is present. Hash transcripts are never reverse-filled." : "Updates every direct entropy method live. A destination waits for enough bits to emit its next complete character.";
+  return `<div class="global-sync-row"><label class="seed-autocomplete-toggle global-sync-toggle"><input type="checkbox" id="global-entropy-sync" ${state?.globalSync ? "checked" : ""} ${disabled ? "disabled" : ""} /><span><strong>Sync entropy across methods</strong> <span class="seed-autocomplete-note">(${detail})</span></span></label><span class="global-sync-status" id="global-sync-status" aria-live="polite" ${state?.globalSync && state?.globalSyncBitCount ? "" : "hidden"}>${hodlCopiedIconMarkup()}<span>${state?.globalSyncBitCount || 0} bits synced</span></span></div>`;
+}
+function hodlRenderGlobalSyncControl() {
+  let directHost = document.getElementById("global-sync-host"), hashHost = document.getElementById("global-sync-hash-host"), state = hodlKeys[hodlActiveKey];
+  if (!directHost || !hashHost || !state) return;
+  let hashed = hodlGlobalSyncIsHashedMode(), activeHost = hashed ? hashHost : directHost, inactiveHost = hashed ? directHost : hashHost, disabled = hashed && !state.globalSync && !String(hodlGlobalSyncCurrentValue()).length;
+  inactiveHost.hidden = true;
+  inactiveHost.innerHTML = "";
+  activeHost.hidden = false;
+  activeHost.innerHTML = hodlGlobalSyncControlMarkup(hashed, disabled, state);
+  let toggle = document.getElementById("global-entropy-sync");
+  if (toggle) toggle.onchange = () => {
+    state.globalSync = toggle.checked;
+    if (!toggle.checked) {
+      state.globalSyncBitCount = 0;
+      state.globalSyncSource = "";
+      hodlRenderGlobalSyncControl();
+      hodlSyncKeyClearButton();
+      return;
+    }
+    hodlGlobalSyncFromCurrentInput();
+    hodlSyncKeyClearButton();
+  };
 }
 function hodlSeedPhraseCopyText(words, targetWords = Pt) {
   let needed = hodlSeedConfig(targetWords).words, source = Array.isArray(words) ? words : [], values = Array.from({ length: needed }, (_, index) => String(source[index] || "").trim()), firstMissing = values.findIndex((word) => !word);
@@ -5091,7 +5353,7 @@ function hodlRenderDiceWordGrid(container, words, targetWords = Pt, provisional 
     }
   }
 }
-function hodlUpdateEntropyInput(input, format, targetWords = Pt, syncContext = "edit") {
+function hodlUpdateEntropyInput(input, format, targetWords = Pt) {
   let config = hodlSeedConfig(targetWords), analysis = hodlRenderEntropyInputState(input, format, config.words), definition = analysis.meta, meta = document.getElementById("entropy-meta"), words = hodlNumberBasePreviewWords(input.value, definition.id, config.words), wordsBox = document.getElementById("entropy-words"), coinPhase = Boolean(definition.binaryRemainder && definition.remainderBits && analysis.count >= definition.fullDigits), coinFlipsEntered = coinPhase ? Math.min(definition.remainderBits, Math.max(0, analysis.count - definition.fullDigits)) : 0, status = coinPhase ? analysis.ready ? `${definition.fullDigits} ${definition.shortLabel} characters complete \xB7 ${coinFlipsEntered} of ${definition.remainderBits} coin flips entered` : `${definition.fullDigits} ${definition.shortLabel} characters complete \xB7 coin flip ${Math.min(definition.remainderBits, coinFlipsEntered + 1)} of ${definition.remainderBits} \xB7 Heads (0) or Tails (1)` : `${analysis.count} of ${analysis.limit} ${definition.unit} \xB7 ${words.length} of ${config.words} seed words filled`;
   if (analysis.invalidCharacterCount) status += ` \xB7 ${analysis.invalidCharacterCount} invalid character${analysis.invalidCharacterCount === 1 ? "" : "s"} highlighted`;
   if (analysis.finalInvalid) status += definition.binaryRemainder ? ` \xB7 final ${definition.remainderBits} entropy bits must each be 0 or 1` : ` \xB7 final ${definition.remainderBits}-bit character must be one of ${[...definition.finalCharacters].join(", ")}`;
@@ -5114,7 +5376,6 @@ function hodlUpdateEntropyInput(input, format, targetWords = Pt, syncContext = "
     button.setAttribute("aria-label", coinPhase && binary ? digit === "0" ? "Enter Heads as binary 0" : "Enter Tails as binary 1" : `Enter ${definition.shortLabel} ${digit}`);
     button.title = finalRestricted ? coinPhase ? `The remaining ${definition.remainderBits} entropy bit${definition.remainderBits === 1 ? "" : "s"} must use 0 or 1.` : `The final character must be one of ${[...definition.finalCharacters].join(", ")}.` : "";
   });
-  if (syncContext) hodlSyncNumberBases(input, definition.id, analysis, config.words, syncContext === "edit");
   return analysis;
 }
 function hodlRenderLastWordPicker(container, candidates, selected, onPick, settings = {}) {
@@ -5227,6 +5488,7 @@ function hodlRenderKeyForm() {
     toggleHost.innerHTML = "";
   }
   hodlUpdateSeedLengthControl();
+  hodlRenderGlobalSyncControl();
   if (Ne === "dice") {
     let dplusFaces = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F"],
       dplusPad = dplusFaces.map(face => `<button type="button" data-d="${face}" aria-label="Hexadecimal D16 result ${face}">${face}</button>`).join("");
@@ -5287,7 +5549,7 @@ function hodlRenderKeyForm() {
             state.fields.dplusDice = raw;
             state.dplusLastWord = lastWord;
           } else {
-            state.fields.dice = raw;
+            state.fields[previousMethod === "bitbox" ? "bitboxDice" : "dice"] = raw;
             state.diceCoinPositions = hodlDiceCoinPositions.slice();
             if (previousMethod === "bitbox") state.lastWord = lastWord;
           }
@@ -5299,7 +5561,7 @@ function hodlRenderKeyForm() {
           ft = ge === "dplus" ? state.dplusLastWord || "" : ge === "bitbox" ? state.lastWord || "" : "";
         } else ft = previousMethod === ge ? lastWord : "";
         hodlRenderKeyForm();
-        let replacement = document.getElementById("dice"), replacementValue = state ? ge === "dplus" ? state.fields.dplusDice || "" : state.fields.dice || "" : previousMethod === ge ? raw : "";
+        let replacement = document.getElementById("dice"), replacementValue = state ? ge === "dplus" ? state.fields.dplusDice || "" : ge === "bitbox" ? state.fields.bitboxDice || "" : state.fields.dice || "" : previousMethod === ge ? raw : "";
         if (replacement) {
           replacement.value = replacementValue;
           replacement.dataset.previousValue = replacementValue;
@@ -5415,7 +5677,7 @@ function hodlRenderKeyForm() {
     return;
   }
   if (Ne === "hex") {
-    let state = hodlKeys[hodlActiveKey], syncEnabled = Boolean(state?.syncNumberBases), format = hodlEntropyFormatConfig(hodlEntropyFormat, config.words), inputId = format.id;
+    let state = hodlKeys[hodlActiveKey], format = hodlEntropyFormatConfig(hodlEntropyFormat, config.words), inputId = format.id;
     let descriptions = { bin: "Use one 0 or 1 for each coin flip.", base4: "Each digit contributes exactly two bits; useful with a fair four-sided source.", base8: "Each octal digit contributes three bits.", hex: "Each hexadecimal character contributes four bits.", base32: "Uses the unambiguous Crockford alphabet, then switches to coin flips for any remaining bits; O becomes 0 and I or L becomes 1.", base64: "Uses the case-sensitive RFC 4648 alphabet with + and /, then switches to coin flips for any remaining bits." };
     let formatChoices = ["bin", "base4", "base8", "hex", "base32", "base64"].map((id) => {
       let option = hodlEntropyFormats[id];
@@ -5426,7 +5688,6 @@ function hodlRenderKeyForm() {
     at.innerHTML = `
       <p class="label">Number base</p>
       <div class="choice-grid entropy-format-grid">${formatChoices}</div>
-      <div class="number-base-sync-row"><label class="seed-autocomplete-toggle number-base-sync-toggle"><input type="checkbox" id="sync-number-bases" ${syncEnabled ? "checked" : ""} /><span><strong>Sync number bases</strong> <span class="seed-autocomplete-note">(fill every format after complete valid entropy is entered)</span></span></label><span class="number-base-sync-status" id="number-base-sync-status" aria-live="polite" hidden>${hodlCopiedIconMarkup()}<span>Synced</span></span></div>
       ${["bin", "base4", "base8", "hex"].includes(format.id) ? `<label class="seed-autocomplete-toggle number-base-calculations-toggle"><input type="checkbox" id="show-number-base-calculations" ${state?.showNumberBaseCalculations ? "checked" : ""} /><span><strong>Show calculations</strong> <span class="seed-autocomplete-note">(show how each BIP39 word number is calculated)</span></span></label>` : ""}
       <p class="label" id="entropy-input-label">${format.label} entropy for a ${config.words}-word seed</p>
       <p class="muted" id="entropy-input-help">Each complete ${format.shortLabel} character contributes ${format.bitsPerDigit} bit${format.bitsPerDigit === 1 ? "" : "s"}${format.binaryRemainder ? "" : " except for a mixed-radix final character when needed"}. Seed-word cards fill as enough bits arrive; the checksum-derived final word appears when all ${format.digits} characters are entered.${format.id === "bin" ? " Spaces are added every 11 bits." : ""}${remainderHelp} No generator \u2014 enter entropy you already created.</p>
@@ -5453,13 +5714,6 @@ function hodlRenderKeyForm() {
         hodlQueueMasterFingerprintPreview(0);
       };
     });
-    let syncToggle = document.getElementById("sync-number-bases");
-    if (syncToggle) syncToggle.onchange = () => {
-      if (state) state.syncNumberBases = syncToggle.checked;
-      let input = document.getElementById(inputId);
-      if (input) hodlUpdateEntropyInput(input, format.id);
-      if (!syncToggle.checked) hodlSetNumberBaseSyncStatus(false);
-    };
     let calculationsToggle = document.getElementById("show-number-base-calculations");
     if (calculationsToggle) calculationsToggle.onchange = () => {
       if (state) state.showNumberBaseCalculations = calculationsToggle.checked;
@@ -5925,15 +6179,15 @@ function hodlBindKeyFields() {
   }
   let format = hodlNormalizeEntropyFormat(hodlEntropyFormat), entropy = document.getElementById(format);
   if (entropy) {
-    let definition = hodlEntropyFormats[format], update = (syncContext = "edit") => {
+    let definition = hodlEntropyFormats[format], update = () => {
       hodlApplyFilteredInput(entropy, (value) => hodlFilterNumberBase(value, format));
       if (format === "bin") hodlFormatBinaryInput(entropy);
-      hodlUpdateEntropyInput(entropy, format, Pt, syncContext);
+      hodlUpdateEntropyInput(entropy, format, Pt);
     };
     entropy.setAttribute("inputmode", definition.base <= 10 ? "numeric" : "text");
     entropy.setAttribute("spellcheck", "false");
     if (format === "bin") entropy.onbeforeinput = (event) => hodlHandleBinarySeparatorDelete(entropy, event);
-    entropy.oninput = () => update(entropy.hodlRestoring ? "restore" : "edit");
+    entropy.oninput = () => update();
     entropy.onscroll = () => hodlSyncDiceHighlight(entropy);
     update("");
   }
@@ -6220,13 +6474,14 @@ function hodlInitMasterFingerprintPreview() {
   if (!panel || !pass) return;
   panel.addEventListener("input", (event) => {
     let id = event.target?.id;
-    if (!["pass", "dice", "hex", "bin", "base4", "base8", "base32", "base64", "seed", "seed-numbers", "cards", "direct-cards"].includes(id)) return;
+    if (!["pass", "dice", "hex", "bin", "base4", "base8", "base32", "base64", "seed", "seed-numbers", "cards", "direct-cards", "brain-lab", "key"].includes(id)) return;
     if (id === "pass") {
       let state = hodlKeys[hodlActiveKey];
       hodlAutocompletePassphraseInput(pass, event);
       if (state) state.fields.pass = pass.value;
       hodlRenderPassphraseInputState(pass);
     }
+    if (id !== "pass" && !event.target?.hodlRestoring) hodlGlobalSyncFromCurrentInput();
     hodlInvalidateLiveKeyResult();
     hodlQueueMasterFingerprintPreview();
   });
@@ -6235,13 +6490,15 @@ function hodlInitMasterFingerprintPreview() {
   ["focus", "blur"].forEach((type) => pass.addEventListener(type, () => hodlRenderPassphraseInputState(pass)));
   panel.addEventListener("change", (event) => {
     let target = event.target;
-    if (!(target instanceof Element) || !target.matches('input[name="dm"], input[name="card-method"], input[name="seed-method"], #seed-zero-index, input[name="entropy-format"], select[aria-label^="Valid final word"]')) return;
+    if (!(target instanceof Element) || !target.matches('input[name="dm"], input[name="card-method"], input[name="seed-method"], input[name="kk"], #seed-zero-index, input[name="entropy-format"], select[aria-label^="Valid final word"]')) return;
     hodlInvalidateLiveKeyResult();
+    hodlRenderGlobalSyncControl();
     hodlQueueMasterFingerprintPreview();
   });
   panel.addEventListener("click", event => {
     let target = event.target instanceof Element ? event.target.closest("#modes button, [data-seed-words], [data-d], [data-lw], [data-card-suit], [data-card-rank], [data-direct-card-rank], #card-undo") : null;
     if (!target) return;
+    if (target.matches("[data-lw]")) hodlGlobalSyncFromCurrentInput();
     hodlInvalidateLiveKeyResult();
     hodlQueueMasterFingerprintPreview();
   });
@@ -9018,7 +9275,7 @@ function hodlPrivateKeyValues(fields) {
 }
 function hodlNewKeyState(name, keyId, keyNumber) {
   let id = keyId ?? hodlNextKeyId++, number = keyNumber ?? hodlNextKeyNumber++;
-  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", syncNumberBases: false, numberBaseSyncSource: "", numberBasesSynced: false, seedAutocomplete: true, passphraseBip39Words: false, passphraseAutocomplete: true, brainWalletTrim: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", derivationPath: "m/84'/0'/0'/0/0", derivationAccountPath: "m/84'/0'/0'", purpose: "84'", purposeHarden: true, coinType: "0'", coinTypeHarden: true, network: "mainnet", account: "0'", accountHarden: true, branchStart: "0", branchHarden: false, branchRange: "1", addressStart: "0", addressHarden: false, addressRange: "1", dice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", brainLab: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
+  return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", globalSync: false, globalSyncSource: "", globalSyncBitCount: 0, seedAutocomplete: true, passphraseBip39Words: false, passphraseAutocomplete: true, brainWalletTrim: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", derivationPath: "m/84'/0'/0'/0/0", derivationAccountPath: "m/84'/0'/0'", purpose: "84'", purposeHarden: true, coinType: "0'", coinTypeHarden: true, network: "mainnet", account: "0'", accountHarden: true, branchStart: "0", branchHarden: false, branchRange: "1", addressStart: "0", addressHarden: false, addressRange: "1", dice: "", bitboxDice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", brainLab: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
 }
 function hodlRestoreFormFields(state) {
   if (!state) return;
@@ -9027,8 +9284,8 @@ function hodlRestoreFormFields(state) {
   document.querySelectorAll("input[name=kk]").forEach((input) => {
     input.checked = input.value === restoredKeyKind;
   });
-  let syncNumberBases = document.getElementById("sync-number-bases");
-  if (syncNumberBases) syncNumberBases.checked = Boolean(state.syncNumberBases);
+  let globalSync = document.getElementById("global-entropy-sync");
+  if (globalSync) globalSync.checked = Boolean(state.globalSync);
   let showNumberBaseCalculations = document.getElementById("show-number-base-calculations");
   if (showNumberBaseCalculations) showNumberBaseCalculations.checked = Boolean(state.showNumberBaseCalculations);
   let seedAutocomplete = document.getElementById("seed-autocomplete");
@@ -9041,7 +9298,7 @@ function hodlRestoreFormFields(state) {
   ["dice", "hex", "bin", "base4", "base8", "base32", "base64", "seed", "seed-numbers", "key", "cards", "direct-cards"].forEach(id => {
     let el = document.getElementById(id);
     if (el) {
-      el.value = id === "dice" && ge === "dplus" ? state.fields.dplusDice || "" : id === "key" ? privateKeys[restoredKeyKind] || "" : id === "direct-cards" ? state.fields.directCards || "" : id === "seed-numbers" ? state.fields.seedNumbers || "" : state.fields[id] || "";
+      el.value = id === "dice" ? ge === "dplus" ? state.fields.dplusDice || "" : ge === "bitbox" ? state.fields.bitboxDice || "" : state.fields.dice || "" : id === "key" ? privateKeys[restoredKeyKind] || "" : id === "direct-cards" ? state.fields.directCards || "" : id === "seed-numbers" ? state.fields.seedNumbers || "" : state.fields[id] || "";
       if (id === "key") el.dataset.privateKeyKind = restoredKeyKind;
       if (id === "dice") {
         el.dataset.previousValue = el.value;
@@ -9075,7 +9332,7 @@ function hodlSetMode(mode) {
 function hodlKeyStateNeedsClear(state) {
   if (!state) return false;
   let fields = state.fields || {}, privateKeys = hodlPrivateKeyValues(fields), hasText = (id) => String(fields[id] ?? "").length > 0;
-  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.syncNumberBases) || state.seedAutocomplete === false || Boolean(state.passphraseBip39Words) || state.passphraseAutocomplete === false || Boolean(state.brainWalletTrim) || Boolean(state.showCards) || Boolean(state.showDiceFairness) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.derivationPath ?? "m/84'/0'/0'/0/0") !== "m/84'/0'/0'/0/0" || String(fields.purpose ?? "84'") !== "84'" || fields.purposeHarden === false || String(fields.coinType ?? (fields.network === "testnet" ? "1'" : "0'")) !== "0'" || fields.coinTypeHarden === false || String(fields.account ?? "0'") !== "0'" || fields.accountHarden === false || String(fields.branchStart ?? "0") !== "0" || Boolean(fields.branchHarden) || String(fields.branchRange ?? "1") !== "1" || String(fields.addressStart ?? "0") !== "0" || Boolean(fields.addressHarden) || String(fields.addressRange ?? fields.count ?? "1") !== "1" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "brainLab", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
+  return String(state.mode ?? "dice") !== "dice" || String(state.diceMethod ?? "coldcard") !== "coldcard" || String(state.cardMethod ?? "hashed") !== "hashed" || String(state.seedMethod ?? "words") !== "words" || Boolean(state.seedZeroIndexed) || Boolean(state.cardColemanSymbols) || String(state.entropyFormat ?? "bin") !== "bin" || Boolean(state.globalSync) || state.seedAutocomplete === false || Boolean(state.passphraseBip39Words) || state.passphraseAutocomplete === false || Boolean(state.brainWalletTrim) || Boolean(state.showCards) || Boolean(state.showDiceFairness) || Number(state.targetWords ?? 24) !== 24 || Array.isArray(state.diceCoinPositions) && state.diceCoinPositions.length > 0 || String(state.lastWord ?? "").length > 0 || String(state.dplusLastWord ?? "").length > 0 || Boolean(state.result) || Boolean(state.reveal) || String(state.error ?? "").length > 0 || String(state.accountId ?? "bip84") !== "bip84" || String(fields.script ?? "bip84") !== "bip84" || String(fields.derivationPath ?? "m/84'/0'/0'/0/0") !== "m/84'/0'/0'/0/0" || String(fields.purpose ?? "84'") !== "84'" || fields.purposeHarden === false || String(fields.coinType ?? (fields.network === "testnet" ? "1'" : "0'")) !== "0'" || fields.coinTypeHarden === false || String(fields.account ?? "0'") !== "0'" || fields.accountHarden === false || String(fields.branchStart ?? "0") !== "0" || Boolean(fields.branchHarden) || String(fields.branchRange ?? "1") !== "1" || String(fields.addressStart ?? "0") !== "0" || Boolean(fields.addressHarden) || String(fields.addressRange ?? fields.count ?? "1") !== "1" || hodlNormalizePrivateKeyKind(fields.keyKind, privateKeys[fields.keyKind] || "") !== "wif" || ["pass", "dice", "bitboxDice", "dplusDice", "hex", "bin", "base4", "base8", "base32", "base64", "cards", "directCards", "seed", "seedNumbers", "brainLab", "key"].some(hasText) || hodlPrivateKeyKinds.some((kind) => privateKeys[kind].length > 0);
 }
 function hodlSyncKeyClearButton(capture = false) {
   if (capture) hodlCaptureKey();
@@ -9084,164 +9341,8 @@ function hodlSyncKeyClearButton(capture = false) {
   button.disabled = !hodlKeyStateNeedsClear(hodlKeys[hodlActiveKey]);
   button.setAttribute("aria-disabled", String(button.disabled));
 }
-function hodlWorkspaceHasHdRoot(result) {
-  return Boolean(result && result.kind === "hd" && (result.mnemonic || result.rootXprv));
-}
-function hodlWorkspaceHasPsbtKey(result) {
-  if (!result) return false;
-  if (result.kind === "single" && result.privHex) return true;
-  return hodlWorkspaceHasHdRoot(result);
-}
-function hodlWorkspaceMsigToken(result, accountId) {
-  if (!result || result.kind !== "hd") return "";
-  let account = (result.accounts || []).find((entry) => entry.def?.id === accountId) || result.accounts?.[0];
-  if (!account?.genericPublic || !account.originFingerprint || !account.originPath) return "";
-  return `[${account.originFingerprint}/${account.originPath}]${account.genericPublic}`;
-}
-function hodlFirstEmptyMsigSlot() {
-  return hodlReadMsigXpubs().findIndex((value) => !String(value).trim());
-}
-function hodlWorkspaceSyncTargets(result, options = {}) {
-  let hd = hodlWorkspaceHasHdRoot(result), psbt = hodlWorkspaceHasPsbtKey(result), token = hodlWorkspaceMsigToken(result, options.accountId), msigEmpty = options.msigEmpty !== false;
-  return [
-    { id: "bip85", label: "BIP-85", ok: hd, skip: hd ? "" : "no HD root" },
-    { id: "sp", label: "Silent Payments", ok: hd, skip: hd ? "" : "no HD root" },
-    { id: "psbt", label: "PSBT / Nonce", ok: psbt, skip: psbt ? "" : "no session key" },
-    { id: "msig", label: "Multisig", ok: Boolean(token) && msigEmpty, skip: token ? (msigEmpty ? "" : "slot filled") : "no account xpub+origin" },
-    { id: "psbted", label: "PSBT editor", ok: false, skip: "never" }
-  ];
-}
-function hodlWorkspaceSyncSetNetwork(result) {
-  let network = result?.network === "testnet" ? "testnet" : "mainnet";
-  let sp = document.getElementById("sp-network");
-  if (sp) sp.value = network;
-  let psbt = document.getElementById("psbt-network");
-  if (psbt) psbt.value = network;
-}
-function hodlApplyWorkspaceSync() {
-  if (!re) return;
-  hodlCaptureKey();
-  let state = hodlKeys[hodlActiveKey];
-  if (state) state.result = re;
-  hodlWorkspaceSyncSetNetwork(re);
-  let accountId = hodlSelectedScriptType(), token = hodlWorkspaceMsigToken(re, accountId), msigValues = hodlReadMsigXpubs(), synced = token ? msigValues.indexOf(token) : -1, slot = synced >= 0 ? synced : hodlFirstEmptyMsigSlot();
-  let targets = hodlWorkspaceSyncTargets(re, { accountId, msigEmpty: slot >= 0 });
-  let enabled = new Set(targets.filter((target) => target.ok).map((target) => target.id));
-  if (enabled.has("bip85")) {
-    try {
-      hodlUseActiveKeyForBip85();
-      let session = document.getElementById("bip85-session");
-      if (session) session.textContent = hodlBip85Note;
-      let error = document.getElementById("bip85-error");
-      if (error) error.textContent = "";
-    } catch (exception) {
-      let error = document.getElementById("bip85-error");
-      if (error) error.textContent = exception.message || String(exception);
-    }
-  }
-  if (enabled.has("sp")) {
-    try {
-      hodlSpUseActiveKey();
-      let key = document.getElementById("sp-key"), pass = document.getElementById("sp-pass"), session = document.getElementById("sp-session"), error = document.getElementById("sp-error");
-      if (key) key.value = "";
-      if (pass) pass.value = "";
-      if (session) session.textContent = hodlSpNote;
-      if (error) error.textContent = "";
-    } catch (exception) {
-      let error = document.getElementById("sp-error");
-      if (error) error.textContent = exception.message || String(exception);
-    }
-  }
-  if (enabled.has("psbt")) {
-    try {
-      hodlUseActiveKeyForPsbt();
-      let key = document.getElementById("psbt-key"), pass = document.getElementById("psbt-pass"), session = document.getElementById("psbt-session"), error = document.getElementById("psbt-error");
-      if (key) key.value = "";
-      if (pass) pass.value = "";
-      if (session) session.textContent = hodlPsbtNote;
-      if (error) error.textContent = "";
-    } catch (exception) {
-      let error = document.getElementById("psbt-error");
-      if (error) error.textContent = exception.message || String(exception);
-    }
-  }
-  if (enabled.has("msig") && token && slot >= 0) {
-    // Idempotent: the panel re-renders on reveal/key-tab switches, so a second
-    // check must reuse the slot already holding the token, not fill the next.
-    if (synced < 0) {
-      msigValues[slot] = token;
-      hodlFillKeys(msigValues);
-    }
-    if (!hodlWorkspaceSyncMsig.includes(token)) hodlWorkspaceSyncMsig.push(token);
-  }
-  hodlWorkspaceSyncResult = re;
-}
-function hodlRenderWorkspaceSync() {
-  let existing = document.getElementById("workspace-sync");
-  if (existing) existing.remove();
-  if (!re || !dr) return;
-  let accountId = hodlSelectedScriptType(), token = hodlWorkspaceMsigToken(re, accountId), synced = token ? hodlReadMsigXpubs().indexOf(token) : -1, slot = synced >= 0 ? synced : hodlFirstEmptyMsigSlot();
-  let targets = hodlWorkspaceSyncTargets(re, { accountId, msigEmpty: slot >= 0 });
-  let list = targets.map((target) => {
-    let gray = !target.ok, reason = target.skip === "never" ? "never" : target.skip ? `skipped · ${target.skip}` : "session copy ready";
-    return `<li class="workspace-sync-target${gray ? " is-unavailable" : ""}" data-target="${target.id}" ${gray ? 'aria-disabled="true"' : ""}><span class="workspace-sync-name">${$t(target.label)}</span><span class="muted">${$t(reason)}</span></li>`;
-  }).join("");
-  let panel = document.createElement("section");
-  panel.id = "workspace-sync";
-  panel.className = "card workspace-sync no-print";
-  panel.innerHTML = `<label class="choice"><input type="checkbox" id="workspace-sync-toggle" /><span><strong>Sync this key to other workspaces</strong><span class="desc">Off by default. Copies the active session into BIP-85, Silent Payments, PSBT / Nonce, and the first empty multisig co-signer slot. Does not run Derive or Inspect. Never writes the PSBT editor. Page memory only.</span></span></label><ul class="workspace-sync-targets">${list}</ul>`;
-  dr.appendChild(panel);
-  let toggle = document.getElementById("workspace-sync-toggle");
-  // The copied sessions survive the re-renders (reveal toggle, key-tab
-  // switch), so the checkbox must too — otherwise it reads "not synced" while
-  // the consumers still hold the key.
-  toggle.checked = hodlWorkspaceSyncResult === re;
-  toggle.onchange = (event) => {
-    if (event.currentTarget.checked) hodlApplyWorkspaceSync();
-  };
-}
-function hodlWipeWorkspaceConsumers() {
-  hodlBip85WipeMem();
-  hodlSpWipeMem();
-  hodlPsbtWipeMem();
-  let bip85Key = document.getElementById("bip85-key"), bip85Out = document.getElementById("bip85-out"), bip85Error = document.getElementById("bip85-error"), bip85Session = document.getElementById("bip85-session");
-  if (bip85Key) bip85Key.value = "";
-  if (bip85Out) bip85Out.innerHTML = "";
-  if (bip85Error) bip85Error.textContent = "";
-  if (bip85Session) bip85Session.textContent = hodlBip85Note;
-  ["sp-key", "sp-pass"].forEach((id) => {
-    let field = document.getElementById(id);
-    if (field) field.value = "";
-  });
-  let spOut = document.getElementById("sp-out"), spError = document.getElementById("sp-error"), spSession = document.getElementById("sp-session");
-  if (spOut) spOut.innerHTML = "";
-  if (spError) spError.textContent = "";
-  if (spSession) spSession.textContent = hodlSpNote;
-  let psbtKey = document.getElementById("psbt-key"), psbtPass = document.getElementById("psbt-pass"), psbtSession = document.getElementById("psbt-session"), psbtError = document.getElementById("psbt-error"), psbtOut = document.getElementById("psbt-out");
-  if (psbtKey) psbtKey.value = "";
-  if (psbtPass) psbtPass.value = "";
-  if (psbtSession) psbtSession.textContent = hodlPsbtNote;
-  if (psbtError) psbtError.textContent = "";
-  if (psbtOut) psbtOut.innerHTML = "";
-  if (hodlWorkspaceSyncMsig.length) {
-    // Clear every slot still holding a synced token, not just the most recent
-    // one — syncing two keys, or re-checking after a re-render, must not orphan
-    // earlier copies. Values the user edited no longer match and are kept.
-    let values = hodlReadMsigXpubs(), changed = false;
-    for (let index = 0; index < values.length; index++) {
-      if (values[index] && hodlWorkspaceSyncMsig.includes(values[index])) {
-        values[index] = "";
-        changed = true;
-      }
-    }
-    if (changed) hodlFillKeys(values);
-    hodlWorkspaceSyncMsig = [];
-  }
-  hodlWorkspaceSyncResult = null;
-}
 function hodlWipeActiveKey() {
   if (hodlActiveKey < 0 || !hodlKeys[hodlActiveKey]) return;
-  hodlWipeWorkspaceConsumers();
   let state = hodlKeys[hodlActiveKey];
   hodlKeys[hodlActiveKey] = hodlNewKeyState(state.name, state.id, state.number);
   hodlRestoreKey();
@@ -9256,8 +9357,8 @@ function hodlCaptureKey() {
   state.seedZeroIndexed = Boolean(hodlSeedZeroIndexed);
   state.cardColemanSymbols = Boolean(hodlCardColemanSymbols);
   state.entropyFormat = hodlEntropyFormat;
-  let syncNumberBases = document.getElementById("sync-number-bases");
-  if (syncNumberBases) state.syncNumberBases = syncNumberBases.checked;
+  let globalSync = document.getElementById("global-entropy-sync");
+  if (globalSync) state.globalSync = globalSync.checked;
   let showNumberBaseCalculations = document.getElementById("show-number-base-calculations");
   if (showNumberBaseCalculations) state.showNumberBaseCalculations = showNumberBaseCalculations.checked;
   let seedAutocomplete = document.getElementById("seed-autocomplete");
@@ -9304,7 +9405,7 @@ function hodlCaptureKey() {
   } catch {
   }
   let dice = document.getElementById("dice");
-  if (dice) state.fields[ge === "dplus" ? "dplusDice" : "dice"] = dice.value;
+  if (dice) state.fields[ge === "dplus" ? "dplusDice" : ge === "bitbox" ? "bitboxDice" : "dice"] = dice.value;
   let key = document.getElementById("key"), privateKeys = hodlPrivateKeyValues(state.fields), checkedKeyKind = document.querySelector("input[name=kk]:checked")?.value || state.fields.keyKind, keyKind = hodlNormalizePrivateKeyKind(key?.dataset.privateKeyKind || checkedKeyKind, key?.value || "");
   if (key) privateKeys[keyKind] = key.value;
   state.fields.keyKind = keyKind;
@@ -10216,8 +10317,6 @@ function hodlInitSecretFieldAutoClear() {
     hodlPsbtWipeMem();
     hodlBip85WipeMem();
     hodlSpWipeMem();
-    hodlWorkspaceSyncMsig = [];
-    hodlWorkspaceSyncResult = null;
     hodlKeys = hodlKeys.map((state) => {
       let fields = state.fields || {}, privateKeys = fields.privateKeys;
       if (privateKeys) Object.keys(privateKeys).forEach((kind) => {

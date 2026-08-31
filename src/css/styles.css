@@ -163,14 +163,17 @@ textarea { display: block; min-height: 96px; letter-spacing: 0.08em; }
 .seed-autocomplete-note { color: var(--muted); font-weight: 400; }
 .seed-entry-tools { display: flex; align-items: stretch; gap: var(--space-control); margin-top: var(--space-component); }
 .seed-entry-tools .seed-autocomplete-toggle { flex: 1 1 auto; margin-top: 0; }
-.number-base-sync-row { display: flex; align-items: stretch; gap: var(--space-control); margin-top: var(--space-component); }
-.number-base-sync-toggle { flex: 1 1 auto; margin-top: 0; }
-.number-base-sync-status {
+.global-sync-host { margin-top: var(--space-component); }
+.global-sync-host[hidden] { display: none; }
+.global-sync-hash-host { margin-bottom: var(--space-component); }
+.global-sync-row { display: flex; align-items: stretch; gap: var(--space-control); }
+.global-sync-toggle { flex: 1 1 auto; margin-top: 0; }
+.global-sync-status {
   display: inline-flex; align-items: center; gap: 5px; flex: 0 0 auto;
   color: var(--ok); font-size: 13px; font-weight: 600; white-space: nowrap;
 }
-.number-base-sync-status[hidden] { display: none; }
-.number-base-sync-status svg { display: block; width: 16px; height: 16px; }
+.global-sync-status[hidden] { display: none; }
+.global-sync-status svg { display: block; width: 16px; height: 16px; }
 .number-base-calculations-toggle { width: 100%; margin-top: var(--space-control); }
 .number-base-calculations-panel { margin-top: var(--space-section); }
 .number-base-calculations-panel[hidden] { display: none; }
@@ -343,17 +346,6 @@ label.field { display: block; margin-top: var(--space-component); font-size: 14p
 .choice:has(input:disabled) { cursor: not-allowed; opacity: 0.52; }
 .choice-grid { display: grid; gap: var(--space-control); margin-top: var(--space-control); }
 .choice-grid .choice { margin-top: 0; }
-.workspace-sync { margin-top: var(--space-section); }
-.workspace-sync-targets {
-  list-style: none; margin: var(--space-control) 0 0; padding: 0;
-  display: grid; gap: 8px;
-}
-.workspace-sync-target {
-  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
-  padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px;
-}
-.workspace-sync-name { font-weight: 600; }
-.workspace-sync-target.is-unavailable { opacity: 0.52; }
 details.lab-entropy { margin-top: var(--space-section); }
 details.lab-entropy > summary {
   cursor: pointer; font-weight: 600; color: var(--fg);
