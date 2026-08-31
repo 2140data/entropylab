@@ -60,7 +60,13 @@ Official website: [entropylab.online](https://entropylab.online)
   (`OP_FALSE OP_IF "ord"`). Reports content-type, size, and text previews; does
   not number sats, fetch chain data, create inscriptions, or render images.
 - Edits PSBT v0 files field by field (a bip174.org-style editor backed by
-  rust-bitcoin compiled to WebAssembly): every key-value pair of the global,
+  rust-bitcoin compiled to WebAssembly): a mempool.space-style
+  transaction-flow diagram draws one box per input and output (claimed
+  amount, address or script template, signing status) with per-column totals
+  and bezier connectors into the unsigned transaction; selecting a box opens
+  that key-value map for editing in a panel under the diagram, the
+  transaction box opens the version/locktime fields, and output amounts edit
+  directly in their boxes. Every key-value pair of the global,
   per-input, and per-output maps is decoded (BIP-174 and BIP-371 taproot
   fields), editable as raw hex, and removable, new pairs can be added, and the
   unsigned transaction's version, locktime, input prevouts/sequences, and
