@@ -158,10 +158,10 @@ test("scriptPushes reads a P2PKH scriptSig", () => {
 test("app inspects raw transactions and labels outputs", () => {
   assert.match(app, /hodlRenderRawTx/);
   assert.match(app, /hodlSessionOwnership/);
-  assert.match(app, /Address as hodlBitcoinAddress/);
+  assert.match(app, /addressFromScript/);
   assert.match(app, /not in this wallet/);
   assert.match(app, /No output belongs to this session wallet/);
-  assert.match(app, /Uint8Array\.from\(script\.subarray/);
+  assert.match(app, /script " \+ M\.encode\(script\)/);
   assert.doesNotMatch(app, /debug fp=/);
   for (const markup of [app, template]) {
     assert.match(markup, /Read a PSBT or a signed transaction/);

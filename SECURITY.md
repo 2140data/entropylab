@@ -20,14 +20,16 @@ material. Its security posture rests on the following model:
 - The tool is self-contained and designed for offline, air-gapped use. It does
   not intentionally transmit sensitive data to any server.
 - EntropyLab's own secp256k1 curve operations (public-key derivation, ECDSA
-  signing and verification in PSBT inspection, curve point math) run on
-  bitcoin-core/libsecp256k1 (the library securing Bitcoin Core), compiled to
-  WebAssembly from the pinned, lockfiled Rust crate in `secp256k1-wasm/` and
-  executed entirely in-process — no network access, and the module never
-  generates randomness (signing is RFC 6979 with caller-fixed extra entropy).
-  The bundled `@scure` libraries still carry `@noble/curves` internally for
-  BIP32 extended-key derivation and address/script construction. CI rebuilds
-  the WASM from the committed Rust sources and runs its test suite against
+  signing and verification in PSBT inspection, curve point math) and its
+  cryptographic hashes (SHA-256/SHA-512/RIPEMD-160/HMAC/PBKDF2) run on
+  bitcoin-core/libsecp256k1 (the library securing Bitcoin Core) and
+  rust-bitcoin's bitcoin_hashes, compiled to WebAssembly from the pinned,
+  lockfiled Rust crate in `entropylab-wasm/` and executed entirely in-process
+  — no network access, and the module never generates randomness (signing is
+  RFC 6979 with caller-fixed extra entropy). BIP32 extended-key derivation,
+  BIP39 mnemonics, Base58Check, bech32m, and address/script construction run
+  on rust-bitcoin's crates in the same module. CI rebuilds the WASM from the
+  committed Rust sources and runs its test suite against
   the fresh build before any deployment; the artifact job then commits the
   runner's copy back to the repository, the same flow as the site artifact.
   Cross-machine byte identity is not claimed — the C side compiles with the

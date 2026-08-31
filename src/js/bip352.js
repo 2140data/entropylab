@@ -1,10 +1,10 @@
 // BIP-352 Silent Payments calculator.
 // Deterministic only: same inputs → same outputs. No entropy is invented.
-// Curve ops go through the libsecp256k1 WASM facade (./secp256k1.js).
-import { sha256 } from "@noble/hashes/sha2.js";
-import { ripemd160 } from "@noble/hashes/legacy.js";
-import { bech32m } from "@scure/base";
-import { HDKey } from "@scure/bip32";
+// Curve ops go through the libsecp256k1 WASM facade (./secp256k1.js),
+// hashes through the bitcoin_hashes WASM facade (./hashes.js).
+import { hash160, sha256 } from "./hashes.js";
+import { bech32mDecode, bech32mEncode, fromWords, toWords } from "./bech32.js";
+import { HDKey } from "./hdkey.js";
 import { secp256k1 } from "./secp256k1.js";
 
 export const BIP352_PURPOSE = 352;
@@ -37,7 +37,6 @@ const equalBytes = (a, b) => {
   for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
   return diff === 0;
 };
-const hash160 = (bytes) => ripemd160(sha256(bytes));
 
 export function taggedHash(tag, ...chunks) {
   const tagHash = sha256(textEncoder.encode(tag));
@@ -229,14 +228,14 @@ export function encodeSilentPaymentAddress(scanPoint, spendPoint, hrp = "sp", ve
   const payload = new Uint8Array(66);
   payload.set(pointToCompressed(scanPoint), 0);
   payload.set(pointToCompressed(spendPoint), 33);
-  const words = [version, ...bech32m.toWords(payload)];
-  return bech32m.encode(hrp, words, BIP352_BECH32_LIMIT);
+  const words = [version, ...toWords(payload)];
+  return bech32mEncode(hrp, words);
 }
 
 export function decodeSilentPaymentAddress(address, expectedHrp) {
   if (typeof address !== "string" || !address) throw new Error("Silent payment address is empty.");
   const lower = address.toLowerCase();
-  const decoded = bech32m.decodeUnsafe(lower, BIP352_BECH32_LIMIT);
+  const decoded = bech32mDecode(lower);
   if (!decoded) throw new Error("Not a Bech32m silent payment address.");
   const { prefix: hrp, words } = decoded;
   if (expectedHrp && hrp !== expectedHrp) throw new Error(`Silent payment address HRP is ${hrp}, expected ${expectedHrp}.`);
@@ -245,7 +244,7 @@ export function decodeSilentPaymentAddress(address, expectedHrp) {
   const version = words[0];
   if (version === 31) throw new Error("Silent payment address version 31 is reserved.");
   if (version > 30) throw new Error("Silent payment address version is unsupported.");
-  const payload = bech32m.fromWords(words.slice(1));
+  const payload = fromWords(words.slice(1));
   if (version === 0 && payload.length !== 66) throw new Error("Silent payment v0 address payload must be 66 bytes.");
   if (payload.length < 66) throw new Error("Silent payment address payload is too short.");
   return {
@@ -306,8 +305,8 @@ export function deriveSilentPaymentKeys(masterSeed, { coinType = 0, account = 0 
 }
 
 const encodeKeyExpression = (hrp, payload) => {
-  const words = [0, ...bech32m.toWords(payload)];
-  return bech32m.encode(hrp, words, BIP352_BECH32_LIMIT);
+  const words = [0, ...toWords(payload)];
+  return bech32mEncode(hrp, words);
 };
 
 export function encodeSpscan(scanPriv, spendPub, network = "mainnet") {
@@ -333,7 +332,7 @@ export function p2trAddressFromXonly(xonlyHex, network = "mainnet") {
   const xonly = typeof xonlyHex === "string" ? hexToBytes(xonlyHex) : xonlyHex;
   if (xonly.length !== 32) throw new Error("Taproot output key must be 32 bytes.");
   const hrp = network === "mainnet" ? "bc" : "tb";
-  return bech32m.encode(hrp, [1, ...bech32m.toWords(xonly)]);
+  return bech32mEncode(hrp, [1, ...toWords(xonly)]);
 }
 
 const vinPrevout = (vin) => (vin.prevout instanceof Uint8Array ? vin.prevout : hexToBytes(typeof vin.prevout === "string" ? vin.prevout : vin.prevout.scriptPubKey.hex));

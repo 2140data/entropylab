@@ -1,0 +1,30 @@
+// Base58Check for EntropyLab, backed by rust-bitcoin's base58ck compiled to
+// WebAssembly (Rust crate in entropylab-wasm/, loaded by entropylab-wasm.js).
+//
+// Drop-in replacement for the slice of @scure/base the app uses for
+// Base58Check: encode(bytes) -> string, decode(string) -> bytes with the
+// checksum verified. WIF keys and extended keys both ride on this.
+import { wasmExports as wasm, withInput, withOutput } from "./entropylab-wasm.js";
+
+const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
+
+// A 78-byte extended key encodes to <= 112 chars; 512 is generous for every
+// payload the app encodes (extended keys, WIF) and a hard ceiling elsewhere.
+const ENCODE_CAP = 512;
+const DECODE_CAP = 512;
+
+export const base58checkEncode = (payload) => {
+  if (!(payload instanceof Uint8Array)) throw new Error("Base58Check payload must be a Uint8Array.");
+  const out = withInput(payload, (p) => withOutput(ENCODE_CAP, (o) => wasm().el_b58check_encode(p, payload.length, o, ENCODE_CAP)));
+  if (!out) throw new Error("Base58Check payload is too large.");
+  return textDecoder.decode(out);
+};
+
+export const base58checkDecode = (text) => {
+  if (typeof text !== "string") throw new Error("Base58Check input must be a string.");
+  const bytes = textEncoder.encode(text);
+  const out = withInput(bytes, (p) => withOutput(DECODE_CAP, (o) => wasm().el_b58check_decode(p, bytes.length, o, DECODE_CAP)));
+  if (!out) throw new Error("Invalid Base58Check string.");
+  return out;
+};

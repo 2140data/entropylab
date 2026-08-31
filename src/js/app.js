@@ -1,5 +1,4 @@
-import { sha256 as Z } from "@noble/hashes/sha2.js";
-import { ripemd160 } from "@noble/hashes/legacy.js";
+import { sha256 as Z } from "./hashes.js";
 // secp256k1 operations run in the libsecp256k1 WebAssembly module; the facade
 // is a drop-in for the noble/curves surface this file uses (see
 // src/js/secp256k1.js). App boot waits for the module to be ready.
@@ -20,19 +19,19 @@ import {
 } from "./bip352.js";
 import { inspectPsbtInscriptions, describeEnvelope } from "./inscription.js";
 import { parseOpReturn, describeOpReturn } from "./opreturn.js";
-import { parseRawTx, extractEcdsaSignatures, inscriptionHints, isPsbtMagic } from "./tx.js";
+import { parseRawTx, extractEcdsaSignatures, inscriptionHints, isPsbtMagic, serializeTx } from "./tx.js";
+import { wasmExports as hodlWasm, withInput as hodlWasmIn, withOutput as hodlWasmOut } from "./entropylab-wasm.js";
 import { indexHdKey, indexSingleKey, matchOwnership, pathLabel } from "./ownership.js";
-import { createBase58check as fi, hex as M } from "@scure/base";
-import { HDKey as Gt } from "@scure/bip32";
-import { entropyToMnemonic as bi, mnemonicToEntropy as Er, mnemonicToSeedSync as wi, validateMnemonic as Pn } from "@scure/bip39";
-import { wordlist as bip39English } from "@scure/bip39/wordlists/english.js";
-import { Address as hodlBitcoinAddress, NETWORK as Ie, OutScript as Oe, TEST_NETWORK as mo, p2pkh as ir, p2sh as Jr, p2tr as en, p2wpkh as Tt, utils as bitcoinUtils } from "@scure/btc-signer";
+import { hex as M } from "./coders.js";
+import { addressFor, addressFromScript, multisigScript, multisigTrScript, p2shP2wpkhScript, p2shScript, p2trKeyScript, p2wshScript } from "./addresses.js";
+import { base58checkDecode, base58checkEncode } from "./base58.js";
+import { HDKey as Gt } from "./hdkey.js";
+import { entropyToMnemonic as bi, mnemonicToEntropy as Er, mnemonicToSeedSync as wi, validateMnemonic as Pn } from "./bip39.js";
+import { wordlist as bip39English } from "./bip39-english.js";
 import { renderSVG as Xs } from "uqr";
 import { BIP39_LANGUAGE_ENGLISH, BIP85_APPS, bip85Path, deriveApplication, parseHardenedIndex, wipeBip85Result, wipeBytes as hodlWipeBytes } from "./bip85.js";
 const Ae = Object.freeze(bip39English);
 const tr = Z;
-const rr = (bytes) => ripemd160(Z(bytes));
-const Ve = bitcoinUtils.equalBytes;
 const Yr = (privateKey, compressed) => xe.getPublicKey(privateKey, compressed);
 var vr = [16, 20, 24, 28, 32], Rc = { 0: "00", 1: "01", 2: "10", 3: "11", 4: "0", 5: "1" };
 function kr(e) {
@@ -155,7 +154,7 @@ function Pr(e, t, r = () => {
   for (let n = 0; n < e.length; n++) r(e[n], `${t}[${n}]`);
   return e;
 }
-var sr = fi(Z), ff = BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"), To = [{ id: "bip44", bip: "BIP44", label: "Legacy", short: "Legacy 1\u2026", beginner: "Addresses that start with 1. Oldest type. Bitcoin Core can import these with importprivkey.", script: "p2pkh", purpose: 44, slip: "x" }, { id: "bip49", bip: "BIP49", label: "Nested SegWit", short: "Nested 3\u2026", beginner: "Addresses that start with 3. A SegWit script wrapped so older wallets can still send to it.", script: "p2sh-p2wpkh", purpose: 49, slip: "y" }, { id: "bip84", bip: "BIP84", label: "Native SegWit", short: "SegWit bc1q\u2026", beginner: "Addresses that start with bc1q. The default in Bitcoin Core, Sparrow, and Electrum today.", script: "p2wpkh", purpose: 84, slip: "z" }, { id: "bip86", bip: "BIP86", label: "Taproot", short: "Taproot bc1p\u2026", beginner: "Addresses that start with bc1p. Newest type. Use this if your wallet speaks Taproot.", script: "p2tr", purpose: 86, slip: "v" }], cr = { mainnet: { x: { pub: 76067358, prv: 76066276, pubName: "xpub", prvName: "xprv" }, y: { pub: 77429938, prv: 77428856, pubName: "ypub", prvName: "yprv" }, z: { pub: 78792518, prv: 78791436, pubName: "zpub", prvName: "zprv" }, v: { pub: 73342198, prv: 73341116, pubName: "vpub", prvName: "vprv" } }, testnet: { x: { pub: 70617039, prv: 70615956, pubName: "tpub", prvName: "tprv" }, y: { pub: 71979618, prv: 71978536, pubName: "upub", prvName: "uprv" }, z: { pub: 73342198, prv: 73341116, pubName: "vpub", prvName: "vprv" }, v: { pub: 39277699, prv: 39276616, pubName: "npub", prvName: "nprv" } } };
+var sr = { encode: base58checkEncode, decode: base58checkDecode }, ff = BigInt("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141"), To = [{ id: "bip44", bip: "BIP44", label: "Legacy", short: "Legacy 1\u2026", beginner: "Addresses that start with 1. Oldest type. Bitcoin Core can import these with importprivkey.", script: "p2pkh", purpose: 44, slip: "x" }, { id: "bip49", bip: "BIP49", label: "Nested SegWit", short: "Nested 3\u2026", beginner: "Addresses that start with 3. A SegWit script wrapped so older wallets can still send to it.", script: "p2sh-p2wpkh", purpose: 49, slip: "y" }, { id: "bip84", bip: "BIP84", label: "Native SegWit", short: "SegWit bc1q\u2026", beginner: "Addresses that start with bc1q. The default in Bitcoin Core, Sparrow, and Electrum today.", script: "p2wpkh", purpose: 84, slip: "z" }, { id: "bip86", bip: "BIP86", label: "Taproot", short: "Taproot bc1p\u2026", beginner: "Addresses that start with bc1p. Newest type. Use this if your wallet speaks Taproot.", script: "p2tr", purpose: 86, slip: "v" }], cr = { mainnet: { x: { pub: 76067358, prv: 76066276, pubName: "xpub", prvName: "xprv" }, y: { pub: 77429938, prv: 77428856, pubName: "ypub", prvName: "yprv" }, z: { pub: 78792518, prv: 78791436, pubName: "zpub", prvName: "zprv" }, v: { pub: 73342198, prv: 73341116, pubName: "vpub", prvName: "vprv" } }, testnet: { x: { pub: 70617039, prv: 70615956, pubName: "tpub", prvName: "tprv" }, y: { pub: 71979618, prv: 71978536, pubName: "upub", prvName: "uprv" }, z: { pub: 73342198, prv: 73341116, pubName: "vpub", prvName: "vprv" }, v: { pub: 39277699, prv: 39276616, pubName: "npub", prvName: "nprv" } } };
 var hodlDerivationSchemes = {
   bip44: { id: "bip44", label: "BIP44", purpose: 44, script: "bip44" },
   bip49: { id: "bip49", label: "BIP49", purpose: 49, script: "bip49" },
@@ -164,9 +163,6 @@ var hodlDerivationSchemes = {
   bip48: { id: "bip48", label: "BIP48", purpose: 48, scriptIndex: 2 },
   custom: { id: "custom", label: "Custom path" }
 };
-function _s(e) {
-  return e === "mainnet" ? Ie : mo;
-}
 function df(e) {
   return e === "mainnet" ? 128 : 239;
 }
@@ -338,25 +334,24 @@ function hf(e) {
   xe.getPublicKey(e, true);
 }
 function pf(e, t, r) {
-  let n = _s(r);
   switch (e) {
     case "p2pkh": {
-      let o = ir(t, n).address;
+      let o = addressFor("p2pkh", t, r);
       if (!o) throw new Error("Failed to build legacy address");
       return o;
     }
     case "p2sh-p2wpkh": {
-      let o = Jr(Tt(t, n), n).address;
+      let o = addressFor("p2sh-p2wpkh", t, r);
       if (!o) throw new Error("Failed to build nested SegWit address");
       return o;
     }
     case "p2wpkh": {
-      let o = Tt(t, n).address;
+      let o = addressFor("p2wpkh", t, r);
       if (!o) throw new Error("Failed to build SegWit address");
       return o;
     }
     case "p2tr": {
-      let o = en(t.slice(1), void 0, n).address;
+      let o = addressFor("p2tr", t, r);
       if (!o) throw new Error("Failed to build Taproot address");
       return o;
     }
@@ -478,7 +473,7 @@ function Io(e, t, r, trimBrainWallet = false) {
     i = M.decode(E.toLowerCase()), n.push("Decoded a 32-byte hex private key.");
   }
   hf(i);
-  let f = Yr(i, true), d = Yr(i, false), h = _s(c), l = ir(d, h).address, u = ir(f, h).address, p = Jr(Tt(f, h), h).address, b = Tt(f, h).address, w = en(f.slice(1), void 0, h).address;
+  let f = Yr(i, true), d = Yr(i, false), l = addressFor("p2pkh", d, c), u = addressFor("p2pkh", f, c), p = addressFor("p2sh-p2wpkh", f, c), b = addressFor("p2wpkh", f, c), w = addressFor("p2tr", f, c);
   return { kind: "single", network: c, warnings: o, notes: n, privHex: M.encode(i), wifCompressed: rn(i, true, c), wifUncompressed: rn(i, false, c), pubkeyCompressed: M.encode(f), pubkeyUncompressed: M.encode(d), p2pkhUncompressed: l, p2pkhCompressed: u, p2shP2wpkh: p, p2wpkh: b, p2tr: w, minikey: s };
 }
 function Oo(e, t) {
@@ -7030,44 +7025,28 @@ function hodlXOnlyPubkey(pubkey) {
 }
 
 function hodlMsigAddr(pubkeys, m, network, kind, sorted = !0) {
-  let net = _s(network);
   if (kind === "p2tr") {
     let xonly = [...pubkeys].map(hodlXOnlyPubkey);
     if (sorted) xonly.sort(hodlCmpBytes);
-    let script = Oe.encode({
-        type: "tr_ms",
-        m,
-        pubkeys: xonly
-      }),
-      out = en(hodlTaprootNumsKey(), {
-        script
-      }, net);
-    if (!out?.address) throw new Error("Failed to build Taproot multisig address");
+    let script = multisigTrScript(m, xonly),
+      out = addressFromScript(p2trLeafScript(hodlTaprootNumsKey(), script), network);
+    if (!out) throw new Error("Failed to build Taproot multisig address");
     return {
-      address: out.address,
+      address: out,
       scriptHex: M.encode(script),
       kind
     }
   }
   let keys = [...pubkeys];
   if (sorted) keys.sort(hodlCmpBytes);
-  let ms = Oe.encode({
-    type: "ms",
-    m,
-    pubkeys: keys
-  });
+  let ms = multisigScript(m, keys);
   if (kind === "p2wsh") {
-    let hash = tr(ms);
-    return { address: hodlBitcoinAddress(net).encode({ type: "wsh", hash }), scriptHex: M.encode(ms), kind };
+    return { address: addressFromScript(p2wshScript(ms), network), scriptHex: M.encode(ms), kind };
   }
   if (kind === "p2sh-p2wsh") {
-    let hash = tr(ms);
-    let wshScript = Oe.encode({ type: "wsh", hash });
-    let wrapped2 = Jr({ script: wshScript, witnessScript: ms }, net);
-    return { address: wrapped2.address, scriptHex: M.encode(ms), kind };
+    return { address: addressFromScript(p2shScript(p2wshScript(ms)), network), scriptHex: M.encode(ms), kind };
   }
-  let wrapped = Jr({ script: ms }, net);
-  return { address: wrapped.address, scriptHex: M.encode(ms), kind };
+  return { address: addressFromScript(p2shScript(ms), network), scriptHex: M.encode(ms), kind };
 }
 function hodlValidatedMsigInputs() {
   let coinType = hodlReadCoinType(document.getElementById("msig-network")), network = hodlNetworkFromCoinType(coinType), addressWindow = hodlReadAddressWindow("msig-"), branchWindow = hodlReadBranchWindow("msig-"), count = addressWindow.range, addressStart = addressWindow.start, branchStart = branchWindow.start, branchRange = branchWindow.range, hardening = hodlReadHardening("msig-"), n = Number(document.getElementById("msig-n")?.value), m = Number(document.getElementById("msig-m")?.value);
@@ -7237,16 +7216,6 @@ function hodlU32(number) {
   new DataView(bytes.buffer).setUint32(0, number >>> 0, true);
   return bytes;
 }
-function hodlU64(number) {
-  let bytes = new Uint8Array(8), value = BigInt(number);
-  if (value < 0n) throw new Error("Negative transaction amount.");
-  for (let i = 0; i < 8; i++) {
-    bytes[i] = Number(value & 255n);
-    value >>= 8n;
-  }
-  if (value) throw new Error("Transaction amount is too large.");
-  return bytes;
-}
 function hodlR32(bytes, offset) {
   hodlPsbtNeed(bytes, offset, 4, "PSBT ended inside a 32-bit value.");
   return new DataView(bytes.buffer, bytes.byteOffset + offset, 4).getUint32(0, true);
@@ -7276,24 +7245,6 @@ function hodlVarInt(bytes, offset) {
   if (value <= 0xffffffffn) throw new Error("Non-canonical compact integer.");
   if (value > BigInt(Number.MAX_SAFE_INTEGER)) throw new Error("PSBT field is too large for EntropyLab.");
   return [Number(value), offset + 9];
-}
-function hodlVarIntBytes(number) {
-  if (!Number.isSafeInteger(number) || number < 0) throw new Error("Invalid compact integer.");
-  if (number < 253) return Uint8Array.of(number);
-  if (number <= 65535) return Uint8Array.of(253, number & 255, number >> 8 & 255);
-  if (number <= 4294967295) {
-    let bytes = new Uint8Array(5);
-    bytes[0] = 254;
-    bytes.set(hodlU32(number), 1);
-    return bytes;
-  }
-  throw new Error("Compact integer is too large.");
-}
-function hodlPushScript(script) {
-  return Os(hodlVarIntBytes(script.length), script);
-}
-function hodlH256(bytes) {
-  return Z(Z(bytes));
 }
 function hodlEq(a, b) {
   if (!a || !b || a.length !== b.length) return false;
@@ -7344,46 +7295,30 @@ function hodlReadMap(bytes, offset) {
   }
 }
 function hodlTx(bytes) {
-  let offset = 0, version = hodlR32(bytes, offset);
-  offset += 4;
-  hodlPsbtNeed(bytes, offset, 2, "Unsigned transaction ended early.");
-  if (bytes[offset] === 0 && bytes[offset + 1] === 1) throw new Error("The PSBT v0 unsigned transaction must not contain a witness marker.");
-  let [inputCount, inputStart] = hodlVarInt(bytes, offset);
-  if (inputCount > 1e5) throw new Error("Unsigned transaction has too many inputs.");
-  offset = inputStart;
-  let inputs = [];
-  for (let i = 0; i < inputCount; i++) {
-    hodlPsbtNeed(bytes, offset, 36, "Unsigned transaction ended inside an input.");
-    let txid = bytes.slice(offset, offset + 32);
-    offset += 32;
-    let vout = hodlR32(bytes, offset);
-    offset += 4;
-    let [scriptLength, scriptStart] = hodlVarInt(bytes, offset);
-    hodlPsbtNeed(bytes, scriptStart, scriptLength + 4, "Unsigned transaction ended inside an input.");
-    let script = bytes.slice(scriptStart, scriptStart + scriptLength);
-    if (script.length) throw new Error("PSBT v0 unsigned transaction inputs must have empty scriptSigs.");
-    offset = scriptStart + scriptLength;
-    let sequence = hodlR32(bytes, offset);
-    offset += 4;
-    inputs.push({ txid, vout, script, sequence });
+  // The consensus decode runs on rust-bitcoin's Transaction in the WASM
+  // module (src/js/tx.js); the BIP174 unsigned-transaction rules (no witness
+  // marker, empty scriptSigs) and the error strings are unchanged.
+  let tx;
+  try {
+    tx = parseRawTx(bytes);
+  } catch (error) {
+    const message = String((error && error.message) || "");
+    if (message.includes("trailing")) throw new Error("Unsigned transaction contains trailing bytes.");
+    if (message.includes("too many inputs")) throw new Error("Unsigned transaction has too many inputs.");
+    if (message.includes("too many outputs")) throw new Error("Unsigned transaction has too many outputs.");
+    throw new Error("Unsigned transaction ended early.");
   }
-  let [outputCount, outputStart] = hodlVarInt(bytes, offset);
-  if (outputCount > 1e5) throw new Error("Unsigned transaction has too many outputs.");
-  offset = outputStart;
-  let outputs = [];
-  for (let i = 0; i < outputCount; i++) {
-    let amount = hodlR64(bytes, offset);
-    offset += 8;
-    let [scriptLength, scriptStart] = hodlVarInt(bytes, offset);
-    hodlPsbtNeed(bytes, scriptStart, scriptLength, "Unsigned transaction ended inside an output.");
-    let script = bytes.slice(scriptStart, scriptStart + scriptLength);
-    offset = scriptStart + scriptLength;
-    outputs.push({ amount, script });
+  if (tx.segwit) throw new Error("The PSBT v0 unsigned transaction must not contain a witness marker.");
+  for (const input of tx.inputs) {
+    if (input.scriptSig.length) throw new Error("PSBT v0 unsigned transaction inputs must have empty scriptSigs.");
   }
-  let locktime = hodlR32(bytes, offset);
-  offset += 4;
-  if (offset !== bytes.length) throw new Error("Unsigned transaction contains trailing bytes.");
-  return { version, inputs, outputs, locktime, raw: bytes };
+  return {
+    version: tx.version,
+    inputs: tx.inputs.map((input) => ({ txid: input.txid, vout: input.vout, script: input.scriptSig, sequence: input.sequence })),
+    outputs: tx.outputs,
+    locktime: tx.locktime,
+    raw: tx.raw
+  };
 }
 function hodlParsePsbt(bytes) {
   if (bytes.length < 5 || bytes[0] !== 112 || bytes[1] !== 115 || bytes[2] !== 98 || bytes[3] !== 116 || bytes[4] !== 255) throw new Error("Not a PSBT. Bitcoin PSBTs start with the bytes psbt followed by ff.");
@@ -7419,18 +7354,11 @@ function hodlSats(number) {
 }
 function hodlAddr(script, network) {
   try {
-    let net = _s(network);
-    if (script instanceof Uint8Array) {
-      if (script.length === 22 && script[0] === 0 && script[1] === 20) return hodlBitcoinAddress(net).encode({ type: "wpkh", hash: Uint8Array.from(script.subarray(2)) });
-      if (script.length === 34 && script[0] === 0 && script[1] === 32) return hodlBitcoinAddress(net).encode({ type: "wsh", hash: Uint8Array.from(script.subarray(2)) });
-      if (script.length === 34 && script[0] === 0x51 && script[1] === 32) return hodlBitcoinAddress(net).encode({ type: "tr", pubkey: Uint8Array.from(script.subarray(2)) });
-      if (script.length === 25 && script[0] === 118 && script[1] === 169 && script[23] === 136 && script[24] === 172) return hodlBitcoinAddress(net).encode({ type: "pkh", hash: Uint8Array.from(script.subarray(3, 23)) });
-      if (script.length === 23 && script[0] === 169 && script[22] === 135) return hodlBitcoinAddress(net).encode({ type: "sh", hash: Uint8Array.from(script.subarray(2, 22)) });
-    }
-    return hodlBitcoinAddress(net).encode(Oe.decode(script));
+    let address = addressFromScript(script, network);
+    if (address) return address;
   } catch {
-    return "script " + M.encode(script);
   }
+  return "script " + M.encode(script);
 }
 function hodlFind(entries, type) {
   return entries.filter((entry) => entry.type === type);
@@ -7598,12 +7526,12 @@ function hodlInputScriptCode(entries, witnessUtxo) {
   try {
     let isP2sh = outputScript.length === 23 && outputScript[0] === 169 && outputScript[1] === 20 && outputScript[22] === 135;
     if (isP2sh) {
-      if (!redeem || !hodlEq(Jr({ script: redeem }).script, outputScript)) return null;
+      if (!redeem || !hodlEq(p2shScript(redeem), outputScript)) return null;
       outputScript = redeem;
     }
     if (outputScript.length === 22 && outputScript[0] === 0 && outputScript[1] === 20) return Os(Uint8Array.of(118, 169, 20), outputScript.slice(2), Uint8Array.of(136, 172));
     if (outputScript.length === 34 && outputScript[0] === 0 && outputScript[1] === 32 && witnessScript) {
-      let committed = Oe.encode({ type: "wsh", hash: tr(witnessScript) });
+      let committed = p2wshScript(witnessScript);
       return hodlEq(committed, outputScript) ? witnessScript : null;
     }
   } catch {
@@ -7612,14 +7540,12 @@ function hodlInputScriptCode(entries, witnessUtxo) {
 }
 function hodlBip143(tx, index, scriptCode, amount, sighashType) {
   if (sighashType !== 1) return null;
-  let prevouts = [], sequences = [], outputs = [];
-  for (let input2 of tx.inputs) {
-    prevouts.push(input2.txid, hodlU32(input2.vout));
-    sequences.push(hodlU32(input2.sequence));
-  }
-  for (let output of tx.outputs) outputs.push(hodlU64(output.amount), hodlPushScript(output.script));
-  let input = tx.inputs[index];
-  return hodlH256(Os(hodlU32(tx.version), hodlH256(Os(...prevouts)), hodlH256(Os(...sequences)), input.txid, hodlU32(input.vout), hodlPushScript(scriptCode), hodlU64(amount), hodlU32(input.sequence), hodlH256(Os(...outputs)), hodlU32(tx.locktime), hodlU32(sighashType)));
+  // BIP143 SegWit v0 digest, computed by rust-bitcoin's SighashCache in the
+  // WASM module. The RFC 6979 comparison re-derives exactly this digest.
+  const raw = tx.raw ?? serializeTx(tx);
+  return hodlWasmIn(raw, (txPtr) =>
+    hodlWasmIn(scriptCode, (scPtr) => hodlWasmOut(32, (out) => hodlWasm().el_sighash_segwit_v0(txPtr, raw.length, index, scPtr, scriptCode.length, amount, out)))
+  ) ?? null;
 }
 function hodlSigParts(der) {
   try {

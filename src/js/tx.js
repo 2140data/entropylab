@@ -1,49 +1,13 @@
 // Raw Bitcoin transaction parser for EntropyLab inspect.
 // Used when the paste is a signed (or unsigned) transaction, not a PSBT.
+//
+// The consensus decode runs on rust-bitcoin's Transaction in the WASM module
+// (entropylab-wasm); this file reshapes the flat layout it emits and keeps
+// the app's guardrails (size caps, the witness-flag rule, the trailing-byte
+// rule) and error strings.
+import { heap, wasmExports as wasm, withInput } from "./entropylab-wasm.js";
+
 const ORD_MAGIC = Uint8Array.of(0x00, 0x63, 0x03, 0x6f, 0x72, 0x64); // OP_FALSE OP_IF "ord"
-
-function need(bytes, offset, length, message) {
-  if (!Number.isSafeInteger(offset) || offset < 0 || offset + length > bytes.length) {
-    throw new Error(message || "Transaction ended early.");
-  }
-}
-
-function readU32(bytes, offset) {
-  need(bytes, offset, 4);
-  return new DataView(bytes.buffer, bytes.byteOffset + offset, 4).getUint32(0, true);
-}
-
-function readU64(bytes, offset) {
-  need(bytes, offset, 8, "Transaction ended inside an amount.");
-  let value = 0n;
-  for (let i = 0; i < 8; i++) value |= BigInt(bytes[offset + i]) << BigInt(8 * i);
-  return value;
-}
-
-function readVarInt(bytes, offset) {
-  need(bytes, offset, 1);
-  const first = bytes[offset];
-  if (first < 0xfd) return [first, offset + 1];
-  if (first === 0xfd) {
-    need(bytes, offset + 1, 2);
-    const value = bytes[offset + 1] | (bytes[offset + 2] << 8);
-    if (value < 0xfd) throw new Error("Non-minimal compact size.");
-    return [value, offset + 3];
-  }
-  if (first === 0xfe) {
-    need(bytes, offset + 1, 4);
-    const value = readU32(bytes, offset + 1);
-    if (value < 0x10000) throw new Error("Non-minimal compact size.");
-    return [value, offset + 5];
-  }
-  throw new Error("Compact size is too large.");
-}
-
-function readSlice(bytes, offset) {
-  const [length, start] = readVarInt(bytes, offset);
-  need(bytes, start, length, "Transaction ended inside a script.");
-  return [bytes.slice(start, start + length), start + length];
-}
 
 function containsOrdEnvelope(bytes) {
   if (!(bytes instanceof Uint8Array) || bytes.length < ORD_MAGIC.length) return false;
@@ -134,66 +98,95 @@ function collectSigs(items, input, signatures) {
   if (pending) signatures.push(pending);
 }
 
+// Cursor over the flat little-endian layout el_tx_parse emits. This is not a
+// consensus parser — it only reshapes bytes the WASM already validated.
+const layoutReader = (bytes) => {
+  let offset = 0;
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const u32 = () => {
+    const value = view.getUint32(offset, true);
+    offset += 4;
+    return value;
+  };
+  const take = (n) => {
+    const out = bytes.slice(offset, offset + n);
+    offset += n;
+    return out;
+  };
+  return { u32, take };
+};
+
+// Serializes the { version, inputs, outputs, locktime } shape back to wire
+// bytes (no witness — the PSBT unsigned transaction never has one). Used when
+// the tx was synthesized from PSBT v2 fields and has no `raw`.
+export function serializeTx(tx) {
+  const out = [];
+  const u32 = (v) => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255];
+  const varint = (n) => (n < 0xfd ? [n] : n < 0x10000 ? [0xfd, n & 255, (n >>> 8) & 255] : [0xfe, ...u32(n)]);
+  out.push(...u32(tx.version >>> 0));
+  out.push(...varint(tx.inputs.length));
+  for (const input of tx.inputs) {
+    const script = input.scriptSig ?? input.script ?? new Uint8Array();
+    out.push(...input.txid, ...u32(input.vout), ...varint(script.length), ...script, ...u32(input.sequence));
+  }
+  out.push(...varint(tx.outputs.length));
+  for (const output of tx.outputs) {
+    let amount = BigInt(output.amount);
+    for (let i = 0; i < 8; i++) {
+      out.push(Number(amount & 255n));
+      amount >>= 8n;
+    }
+    out.push(...varint(output.script.length), ...output.script);
+  }
+  out.push(...u32(tx.locktime >>> 0));
+  return new Uint8Array(out);
+}
+
 export function parseRawTx(bytes) {
   if (!(bytes instanceof Uint8Array)) throw new Error("Transaction must be bytes.");
   if (bytes.length < 10) throw new Error("That is too short to be a Bitcoin transaction.");
   if (bytes.length > 5e6) throw new Error("This transaction is too large to inspect safely.");
-  let offset = 0;
-  const version = readU32(bytes, offset);
-  offset += 4;
-  need(bytes, offset, 1, "Transaction ended before inputs.");
-  let segwit = false;
-  if (bytes[offset] === 0x00) {
-    need(bytes, offset, 2, "Transaction ended inside the witness marker.");
-    if (bytes[offset + 1] !== 0x01) throw new Error("Unknown witness flag.");
-    segwit = true;
-    offset += 2;
-  }
-  const [inputCount, inputStart] = readVarInt(bytes, offset);
+  // BIP144: a zero marker must be followed by flag 0x01 (kept from the
+  // previous parser; rust-bitcoin would decode other flags).
+  if (bytes[4] === 0x00 && bytes.length > 5 && bytes[5] !== 0x01) throw new Error("Unknown witness flag.");
+  const cap = bytes.length * 2 + 65536;
+  const { code, body } = withInput(bytes, (p) => {
+    const outPtr = wasm().secp_alloc(cap);
+    try {
+      const produced = wasm().el_tx_parse(p, bytes.length, outPtr, cap);
+      return { code: produced, body: produced > 0 ? heap().slice(outPtr, outPtr + produced) : null };
+    } finally {
+      wasm().secp_free(outPtr, cap);
+    }
+  });
+  if (code === -2) throw new Error("Transaction contains trailing bytes.");
+  if (!body) throw new Error("Transaction ended early.");
+  const r = layoutReader(body);
+  const version = r.u32();
+  const segwit = r.take(1)[0] === 1;
+  const inputCount = r.u32();
   if (inputCount > 1e5) throw new Error("Transaction has too many inputs.");
-  offset = inputStart;
   const inputs = [];
   for (let i = 0; i < inputCount; i++) {
-    need(bytes, offset, 36, "Transaction ended inside an input.");
-    const txid = bytes.slice(offset, offset + 32);
-    offset += 32;
-    const vout = readU32(bytes, offset);
-    offset += 4;
-    let scriptSig;
-    [scriptSig, offset] = readSlice(bytes, offset);
-    need(bytes, offset, 4, "Transaction ended inside an input sequence.");
-    const sequence = readU32(bytes, offset);
-    offset += 4;
-    inputs.push({ txid, vout, scriptSig, sequence, witness: [] });
+    const txid = r.take(32);
+    const vout = r.u32();
+    const scriptSig = r.take(r.u32());
+    const sequence = r.u32();
+    const witness = [];
+    const stackCount = r.u32();
+    for (let j = 0; j < stackCount; j++) witness.push(r.take(r.u32()));
+    inputs.push({ txid, vout, scriptSig, sequence, witness });
   }
-  const [outputCount, outputStart] = readVarInt(bytes, offset);
+  const outputCount = r.u32();
   if (outputCount > 1e5) throw new Error("Transaction has too many outputs.");
-  offset = outputStart;
   const outputs = [];
   for (let i = 0; i < outputCount; i++) {
-    const amount = readU64(bytes, offset);
-    offset += 8;
-    let script;
-    [script, offset] = readSlice(bytes, offset);
-    outputs.push({ amount, script });
+    let amount = 0n;
+    const amountBytes = r.take(8);
+    for (let j = 0; j < 8; j++) amount |= BigInt(amountBytes[j]) << BigInt(8 * j);
+    outputs.push({ amount, script: r.take(r.u32()) });
   }
-  if (segwit) {
-    for (let i = 0; i < inputs.length; i++) {
-      const [stackCount, stackStart] = readVarInt(bytes, offset);
-      offset = stackStart;
-      const stack = [];
-      for (let j = 0; j < stackCount; j++) {
-        let item;
-        [item, offset] = readSlice(bytes, offset);
-        stack.push(item);
-      }
-      inputs[i].witness = stack;
-    }
-  }
-  need(bytes, offset, 4, "Transaction ended before locktime.");
-  const locktime = readU32(bytes, offset);
-  offset += 4;
-  if (offset !== bytes.length) throw new Error("Transaction contains trailing bytes.");
+  const locktime = r.u32();
   return { version, segwit, inputs, outputs, locktime, raw: bytes };
 }
 

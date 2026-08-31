@@ -1,0 +1,143 @@
+// Tests for the BIP32 (src/js/hdkey.js) and BIP39 (src/js/bip39.js) WASM
+// facades, both backed by the rust-bitcoin ecosystem crates in
+// entropylab-wasm/. Run with `npm test`.
+//
+// Three layers of assurance:
+//  1. The published BIP32 test vectors (bitcoin/bips BIP-0032) and BIP39
+//     vectors (trezor/python-mnemonic), independent of any implementation.
+//  2. Differential checks against @scure/bip32 and @scure/bip39 (pinned,
+//     previously the implementation): the migration must be byte-for-byte
+//     behavior preserving.
+//  3. A word-for-word agreement proof between the JS wordlist data file and
+//     the rust-bip39 crate's English list (single source of truth check).
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { HDKey as ScureHDKey } from "@scure/bip32";
+import * as scureBip39 from "@scure/bip39";
+import { wordlist as scureEnglish } from "@scure/bip39/wordlists/english.js";
+import { HDKey } from "../src/js/hdkey.js";
+import { bip39English, entropyToMnemonic, mnemonicToEntropy, mnemonicToSeedSync, validateMnemonic } from "../src/js/bip39.js";
+import { wasmExports } from "../src/js/entropylab-wasm.js";
+import { withInput, withOutput } from "../src/js/entropylab-wasm.js";
+
+const hexToBytes = (hex) => new Uint8Array(hex.match(/.{2}/g).map((b) => parseInt(b, 16)));
+const bytesToHex = (bytes) => [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+
+// BIP32 test vector 1 (https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki)
+test("BIP32 published vector 1: master and m/0'", () => {
+  const root = HDKey.fromMasterSeed(hexToBytes("000102030405060708090a0b0c0d0e0f"));
+  assert.equal(root.privateExtendedKey, "xprv9s21ZrQH143K3QTDL4LXw2F7HEK3wJUD2nW2nRk4stbPy6cq3jPPqjiChkVvvNKmPGJxWUtg6LnF5kejMRNNU3TGtRBeJgk33yuGBxrMPHi");
+  assert.equal(root.publicExtendedKey, "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8");
+  const child = root.derive("m/0'");
+  assert.equal(child.privateExtendedKey, "xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7");
+  assert.equal(child.publicExtendedKey, "xpub68Gmy5EdvgibQVfPdqkBBCHxA5htiqg55crXYuXoQRKfDBFA1WEjWgP6LHhwBZeNK1VTsfTFUHCdrfp1bgwQ9xv5ski8PX9rL2dZXvgGDnw");
+});
+
+test("BIP32 published vector 2: master and m/0/2147483647'", () => {
+  const root = HDKey.fromMasterSeed(hexToBytes("fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542"));
+  assert.equal(root.privateExtendedKey, "xprv9s21ZrQH143K31xYSDQpPDxsXRTUcvj2iNHm5NUtrGiGG5e2DtALGdso3pGz6ssrdK4PFmM8NSpSBHNqPqm55Qn3LqFtT2emdEXVYsCzC2U");
+  const child = root.derive("m/0/2147483647'");
+  assert.equal(child.publicExtendedKey, "xpub6ASAVgeehLbnwdqV6UKMHVzgqAG8Gr6riv3Fxxpj8ksbH9ebxaEyBLZ85ySDhKiLDBrQSARLq1uNRts8RuJiHjaDMBU4Zn9h8LZNnBC5y4a");
+  assert.equal(child.privateExtendedKey, "xprv9wSp6B7kry3Vj9m1zSnLvN3xH8RdsPP1Mh7fAaR7aRLcQMKTR2vidYEeEg2mUCTAwCd6vnxVrcjfy2kRgVsFawNzmjuHc2YmYRmagcEPdU9");
+});
+
+test("BIP32 differential: private and public derivation match @scure/bip32", () => {
+  for (const seedHex of ["000102030405060708090a0b0c0d0e0f", "fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542"]) {
+    const paths = ["m", "m/0'", "m/0'/1", "m/0'/1/2'", "m/0'/1/2'/2", "m/0'/1/2'/2/1000000000", "m/84'/0'/0'/0/5", "m/83696968'/39'/0'/12'/0'"];
+    for (const path of paths) {
+      const ours = HDKey.fromMasterSeed(hexToBytes(seedHex)).derive(path);
+      const theirs = ScureHDKey.fromMasterSeed(hexToBytes(seedHex)).derive(path);
+      assert.equal(ours.privateExtendedKey, theirs.privateExtendedKey, `xprv ${path}`);
+      assert.equal(ours.publicExtendedKey, theirs.publicExtendedKey, `xpub ${path}`);
+      assert.equal(ours.fingerprint, theirs.fingerprint, `fingerprint ${path}`);
+      assert.equal(ours.depth, theirs.depth);
+      assert.equal(ours.index, theirs.index);
+      assert.equal(ours.parentFingerprint, theirs.parentFingerprint);
+      assert.equal(bytesToHex(ours.chainCode), bytesToHex(theirs.chainCode), `chainCode ${path}`);
+      assert.equal(bytesToHex(ours.privateKey), bytesToHex(theirs.privateKey), `privateKey ${path}`);
+    }
+  }
+});
+
+test("BIP32 watch-only: neutered derivation matches scure on normal paths", () => {
+  const oursRoot = HDKey.fromMasterSeed(hexToBytes("000102030405060708090a0b0c0d0e0f"));
+  const theirsRoot = ScureHDKey.fromMasterSeed(hexToBytes("000102030405060708090a0b0c0d0e0f"));
+  const oursPub = HDKey.fromExtendedKey(oursRoot.derive("m/84'/0'/0'").publicExtendedKey);
+  const theirsPub = ScureHDKey.fromExtendedKey(theirsRoot.derive("m/84'/0'/0'").publicExtendedKey);
+  for (const path of ["m/0/0", "m/0/17", "m/1/3"]) {
+    const ours = oursPub.derive(path);
+    const theirs = theirsPub.derive(path);
+    assert.equal(ours.publicExtendedKey, theirs.publicExtendedKey, `xpub ${path}`);
+    assert.equal(ours.privateKey, null);
+  }
+  assert.throws(() => oursPub.derive("m/0'"), /hardened/);
+  assert.throws(() => theirsPub.derive("m/0'"), /hardened/);
+});
+
+test("BIP32 fromExtendedKey round-trips and rejects malformed input", () => {
+  const root = HDKey.fromMasterSeed(hexToBytes("000102030405060708090a0b0c0d0e0f"));
+  const node = root.derive("m/44'/0'/0'");
+  const restored = HDKey.fromExtendedKey(node.privateExtendedKey);
+  assert.equal(restored.privateExtendedKey, node.privateExtendedKey);
+  assert.equal(restored.depth, 3);
+  assert.equal(restored.index, 0x80000000);
+  assert.throws(() => HDKey.fromExtendedKey("xpub6blahblah"), /Base58|length/);
+  // xpub payload with xprv-version expectation mismatch is rejected
+  const xpubAsXprv = node.publicExtendedKey;
+  assert.equal(HDKey.fromExtendedKey(xpubAsXprv).privateKey, null);
+  assert.throws(() => HDKey.fromExtendedKey(node.privateExtendedKey, { private: 0x0488b21e, public: 0x0488b21e }), /Version mismatch/);
+  // scure parity: seed length bounds
+  assert.throws(() => HDKey.fromMasterSeed(new Uint8Array(15)), /seed length/);
+  assert.throws(() => HDKey.fromMasterSeed(new Uint8Array(65)), /seed length/);
+});
+
+test("BIP39 published vectors (trezor/python-mnemonic subset)", () => {
+  const vectors = [
+    ["00000000000000000000000000000000", "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"],
+    ["7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f7f", "legal winner thank year wave sausage worth useful legal winner thank yellow"],
+    ["80808080808080808080808080808080", "letter advice cage absurd amount doctor acoustic avoid letter advice cage above"],
+    ["000000000000000000000000000000000000000000000000", "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon agent"],
+    ["9e885d952ad362caeb4efe34a8e91bd2", "ozone drill grab fiber curtain grace pudding thank cruise elder eight picnic"],
+  ];
+  for (const [entropyHex, phrase] of vectors) {
+    assert.equal(entropyToMnemonic(hexToBytes(entropyHex)), phrase);
+    assert.equal(bytesToHex(mnemonicToEntropy(phrase)), entropyHex);
+    assert.equal(validateMnemonic(phrase), true);
+  }
+});
+
+test("BIP39 seed matches the published vector (TREZOR passphrase)", () => {
+  const seed = mnemonicToSeedSync("abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about", "TREZOR");
+  assert.equal(
+    bytesToHex(seed),
+    "c55257c360c07c72029aebc1b53c05ed0362ada38ead3e3e9efa3708e53495531f09a6987599d18264c1e1c92f2cf141630c7a3c4ab7c81b2f001698e7463b04"
+  );
+});
+
+test("BIP39 differential vs @scure/bip39 (mnemonic, entropy, seed, validate)", () => {
+  for (let i = 0; i < 16; i++) {
+    const entropy = new Uint8Array(16 + (i % 5) * 4).map((_, j) => (i * 77 + j * 31 + 11) & 0xff);
+    const phrase = entropyToMnemonic(entropy);
+    assert.equal(phrase, scureBip39.entropyToMnemonic(entropy, scureEnglish), `phrase ${i}`);
+    assert.equal(bytesToHex(mnemonicToEntropy(phrase)), bytesToHex(scureBip39.mnemonicToEntropy(phrase, scureEnglish)), `entropy ${i}`);
+    assert.equal(validateMnemonic(phrase), scureBip39.validateMnemonic(phrase, scureEnglish));
+    const pass = i % 2 ? "päss phrase" : "";
+    assert.equal(bytesToHex(mnemonicToSeedSync(phrase, pass)), bytesToHex(scureBip39.mnemonicToSeedSync(phrase, pass)), `seed ${i}`);
+  }
+  // Invalid phrases agree too
+  const bad = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
+  assert.equal(validateMnemonic(bad), scureBip39.validateMnemonic(bad, scureEnglish));
+  assert.throws(() => mnemonicToEntropy(bad));
+});
+
+test("wordlist agreement: JS data file == rust-bip39 English list, word for word", () => {
+  assert.equal(bip39English.length, 2048);
+  const wasm = wasmExports();
+  const decoder = new TextDecoder();
+  for (let i = 0; i < 2048; i++) {
+    const word = withOutput(16, (out) => wasm.el_bip39_word_at(i, out, 16));
+    assert.equal(decoder.decode(word), bip39English[i], `word ${i}`);
+  }
+  // scure's copy (previously the app's list) is identical as well
+  for (let i = 0; i < 2048; i += 137) assert.equal(scureEnglish[i], bip39English[i], `scure word ${i}`);
+});

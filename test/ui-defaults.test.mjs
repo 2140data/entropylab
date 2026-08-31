@@ -598,8 +598,8 @@ test("multisig separates script type from purpose and keeps the Legacy BIP87 sho
 });
 
 test("Native SegWit multisig uses the imported Bitcoin address encoder", () => {
-  assert.match(appSource, /import \{ Address as hodlBitcoinAddress,/);
-  assert.match(appSource, /hodlBitcoinAddress\(net\)\.encode\(\{ type: "wsh", hash \}\)/);
+  assert.match(appSource, /import \{ addressFor, addressFromScript, multisigScript, multisigTrScript, p2shP2wpkhScript, p2shScript, p2trKeyScript, p2wshScript \} from "\.\/addresses\.js"/);
+  assert.match(appSource, /addressFromScript\(p2wshScript\(ms\), network\)/);
   assert.doesNotMatch(appSource, /\bor\(net\)\.encode/);
 });
 

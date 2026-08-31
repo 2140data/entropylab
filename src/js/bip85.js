@@ -6,12 +6,12 @@
 //
 // English BIP-39, HD-seed WIF, XPRV, HEX, and BASE64/BASE85 passwords are
 // implemented. RSA, GPG, DRNG, Dice, and Nostr are out of scope here.
-import { hmac } from "@noble/hashes/hmac.js";
-import { sha256, sha512 } from "@noble/hashes/sha2.js";
-import { createBase58check, hex as hexCoder, base64 as base64Coder } from "@scure/base";
-import { HDKey } from "@scure/bip32";
-import { entropyToMnemonic } from "@scure/bip39";
-import { wordlist as bip39English } from "@scure/bip39/wordlists/english.js";
+import { hmacSha512 } from "./hashes.js";
+import { hex as hexCoder, base64 as base64Coder } from "./coders.js";
+import { base58checkEncode } from "./base58.js";
+import { HDKey } from "./hdkey.js";
+import { entropyToMnemonic } from "./bip39.js";
+import { wordlist as bip39English } from "./bip39-english.js";
 
 export const BIP85_PURPOSE = 83696968;
 export const BIP85_HMAC_KEY = "bip-entropy-from-k";
@@ -42,7 +42,6 @@ export const XPRV_VERSIONS = Object.freeze({
 });
 const INVALID_KEY_MESSAGE = "Derived key is invalid (zero or at/above the secp256k1 curve order). BIP-85 requires a hard fail here; increment the index and derive again.";
 const HMAC_KEY_BYTES = new TextEncoder().encode(BIP85_HMAC_KEY);
-const b58check = createBase58check(sha256);
 
 export function wipeBytes(bytes) {
   if (bytes && bytes.fill) bytes.fill(0);
@@ -82,7 +81,7 @@ export function deriveBip85Entropy(root, path) {
   let child = root.derive(path), key = child.privateKey;
   try {
     if (!key) throw new Error("BIP-85 needs a BIP32 root private key. Watch-only keys cannot derive children.");
-    return hmac(sha512, HMAC_KEY_BYTES, key);
+    return hmacSha512(HMAC_KEY_BYTES, key);
   } finally {
     wipeBytes(key);
   }
@@ -100,7 +99,7 @@ export function encodeWifCompressed(priv, testnet = false) {
   payload[0] = testnet ? 239 : 128;
   payload.set(priv, 1);
   payload[33] = 1;
-  return b58check.encode(payload);
+  return base58checkEncode(payload);
 }
 
 export function encodeXprv(chainCode, privateKey, testnet = false) {
