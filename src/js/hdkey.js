@@ -71,35 +71,47 @@ export class HDKey {
     }
     const body = withInput(seed, (p) => withOutput(78, (out) => wasm().el_hd_master(p, seed.length, out)));
     if (!body) throw new Error("HDKey: master key derivation failed (invalid key material)");
-    const node = unpackNode(body);
-    return new HDKey({ versions, depth: 0, index: 0, parentFingerprint: 0, chainCode: node.chainCode, privateKey: body.slice(46) });
+    try {
+      const node = unpackNode(body);
+      return new HDKey({ versions, depth: 0, index: 0, parentFingerprint: 0, chainCode: node.chainCode, privateKey: body.slice(46) });
+    } finally {
+      body.fill(0); // the master serialization (private key + chain code) is secret
+    }
   }
 
   static fromExtendedKey(base58key, versions = BITCOIN_VERSIONS) {
     versions = validateVersions(versions);
     // => version(4) || depth(1) || fingerprint(4) || index(4) || chain(32) || key(33)
     const keyBuffer = base58checkDecode(base58key);
-    if (keyBuffer.length !== 78) {
-      throw new Error(`HDKey: invalid extended key length: expected 78 bytes, got ${keyBuffer.length}`);
+    let key = null;
+    try {
+      if (keyBuffer.length !== 78) {
+        throw new Error(`HDKey: invalid extended key length: expected 78 bytes, got ${keyBuffer.length}`);
+      }
+      const keyView = new DataView(keyBuffer.buffer, keyBuffer.byteOffset);
+      const version = keyView.getUint32(0, false);
+      const opt = {
+        versions,
+        depth: keyBuffer[4],
+        parentFingerprint: keyView.getUint32(5, false),
+        index: keyView.getUint32(9, false),
+        chainCode: keyBuffer.slice(13, 45),
+      };
+      key = keyBuffer.slice(45);
+      const isPriv = key[0] === 0;
+      if (version !== versions[isPriv ? "private" : "public"]) {
+        throw new Error("Version mismatch");
+      }
+      if (isPriv) {
+        return new HDKey({ ...opt, privateKey: key.slice(1) });
+      }
+      return new HDKey({ ...opt, publicKey: key });
+    } finally {
+      // The decoded 78-byte payload (and the sliced key copy) can carry an
+      // extended private key; the HDKey constructor copies what it needs.
+      keyBuffer.fill(0);
+      if (key) key.fill(0);
     }
-    const keyView = new DataView(keyBuffer.buffer, keyBuffer.byteOffset);
-    const version = keyView.getUint32(0, false);
-    const opt = {
-      versions,
-      depth: keyBuffer[4],
-      parentFingerprint: keyView.getUint32(5, false),
-      index: keyView.getUint32(9, false),
-      chainCode: keyBuffer.slice(13, 45),
-    };
-    const key = keyBuffer.slice(45);
-    const isPriv = key[0] === 0;
-    if (version !== versions[isPriv ? "private" : "public"]) {
-      throw new Error("Version mismatch");
-    }
-    if (isPriv) {
-      return new HDKey({ ...opt, privateKey: key.slice(1) });
-    }
-    return new HDKey({ ...opt, publicKey: key });
   }
 
   constructor(opt) {
@@ -157,7 +169,12 @@ export class HDKey {
   get privateExtendedKey() {
     const priv = this._privateKey;
     if (!priv) throw new Error("No private key");
-    return this.serialize(this.versions.private, new Uint8Array([0, ...priv]));
+    const key = new Uint8Array([0, ...priv]);
+    try {
+      return this.serialize(this.versions.private, key);
+    } finally {
+      key.fill(0);
+    }
   }
   get publicExtendedKey() {
     if (!this._publicKey) throw new Error("No public key");
@@ -173,7 +190,11 @@ export class HDKey {
     view.setUint32(9, this.index >>> 0, false);
     body.set(this._chainCode, 13);
     body.set(key, 45);
-    return base58checkEncode(body);
+    try {
+      return base58checkEncode(body);
+    } finally {
+      body.fill(0); // the private serialization embeds the key and chain code
+    }
   }
 
   neutered() {
@@ -207,7 +228,11 @@ export class HDKey {
       let idx = +m[1];
       if (!Number.isSafeInteger(idx) || idx >= HARDENED_OFFSET) throw new Error("Invalid index");
       if (m[2] === "'") idx += HARDENED_OFFSET;
-      child = child.deriveChild(idx);
+      const next = child.deriveChild(idx);
+      // Intermediate path nodes are dead once their child exists; wipe the
+      // private half instead of leaving the keys for the GC to keep.
+      if (child !== this) child.wipePrivateData();
+      child = next;
     }
     return child;
   }
@@ -221,16 +246,21 @@ export class HDKey {
     const input = packNode(!!this._privateKey, this);
     // The WASM returns 78 (bytes written), 1 (BIP32 retry-with-next-index
     // verdict), or -1 (hard error); keep the three distinct.
-    const { code, body } = withInput(input, (p) => {
-      const outPtr = wasm().secp_alloc(78);
-      try {
-        const fn = this._privateKey ? "el_hd_ckd_priv" : "el_hd_ckd_pub";
-        const produced = wasm()[fn](p, index >>> 0, outPtr);
-        return { code: produced, body: produced === 78 ? heap().slice(outPtr, outPtr + 78) : null };
-      } finally {
-        wasm().secp_free(outPtr, 78);
-      }
-    });
+    let code, body;
+    try {
+      ({ code, body } = withInput(input, (p) => {
+        const outPtr = wasm().secp_alloc(78);
+        try {
+          const fn = this._privateKey ? "el_hd_ckd_priv" : "el_hd_ckd_pub";
+          const produced = wasm()[fn](p, index >>> 0, outPtr);
+          return { code: produced, body: produced === 78 ? heap().slice(outPtr, outPtr + 78) : null };
+        } finally {
+          wasm().secp_free(outPtr, 78);
+        }
+      }));
+    } finally {
+      input.fill(0); // a private node's serialization embeds its key
+    }
     if (code === 1) {
       // BIP32: invalid I_L or child -> proceed with the next index.
       const maxIndex = this._privateKey ? 2 ** 32 - 1 : HARDENED_OFFSET - 1;
@@ -239,6 +269,7 @@ export class HDKey {
     }
     if (code !== 78 || !body) throw new Error("HDKey: child derivation failed");
     const node = unpackNode(body);
+    body.fill(0); // unpackNode slices (copies) what the child keeps
     const opt = {
       versions: this.versions,
       chainCode: node.chainCode,

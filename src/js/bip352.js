@@ -289,7 +289,7 @@ export function deriveSilentPaymentKeys(masterSeed, { coinType = 0, account = 0 
   const spendPriv = spendNode.privateKey.slice();
   const scanPub = secp256k1.getPublicKey(scanPriv, true);
   const spendPub = secp256k1.getPublicKey(spendPriv, true);
-  return {
+  const keys = {
     coinType,
     account,
     scanPath,
@@ -302,6 +302,11 @@ export function deriveSilentPaymentKeys(masterSeed, { coinType = 0, account = 0 
     spendPoint: Point.fromBytes(spendPub),
     fingerprint: root.fingerprint,
   };
+  // The result owns fresh slices; the derivation nodes are dead copies.
+  scanNode.wipePrivateData();
+  spendNode.wipePrivateData();
+  root.wipePrivateData();
+  return keys;
 }
 
 const encodeKeyExpression = (hrp, payload) => {
@@ -313,14 +318,22 @@ export function encodeSpscan(scanPriv, spendPub, network = "mainnet") {
   const payload = new Uint8Array(65);
   payload.set(scanPriv instanceof Uint8Array ? scanPriv : bigToBytes32(scanPriv), 0);
   payload.set(spendPub, 32);
-  return encodeKeyExpression(network === "mainnet" ? "spscan" : "tspscan", payload);
+  try {
+    return encodeKeyExpression(network === "mainnet" ? "spscan" : "tspscan", payload);
+  } finally {
+    payload.fill(0); // embeds the scan private key
+  }
 }
 
 export function encodeSpspend(scanPriv, spendPriv, network = "mainnet") {
   const payload = new Uint8Array(64);
   payload.set(scanPriv instanceof Uint8Array ? scanPriv : bigToBytes32(scanPriv), 0);
   payload.set(spendPriv instanceof Uint8Array ? spendPriv : bigToBytes32(spendPriv), 32);
-  return encodeKeyExpression(network === "mainnet" ? "spspend" : "tspspend", payload);
+  try {
+    return encodeKeyExpression(network === "mainnet" ? "spspend" : "tspspend", payload);
+  } finally {
+    payload.fill(0); // embeds both private keys
+  }
 }
 
 export function formatSpDescriptor(keyExpression, origin) {

@@ -216,6 +216,11 @@ var hodlWalletExport = (() => {
           concat(streamString("walletdescriptorkey"), id, compactSize(pubkey.length), pubkey),
           concat(compactSize(der.length), der, keyHash),
         );
+        // concat() copied the bytes into the record; wipe the intermediates.
+        raw.fill(0);
+        secret.fill(0);
+        der.fill(0);
+        keyHash.fill(0);
       }
 
       const activeKey = `${unit.internal}:${unit.type}`;

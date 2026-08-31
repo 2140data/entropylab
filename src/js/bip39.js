@@ -57,9 +57,13 @@ const mnemonicToEntropy = (mnemonic, wordlist = bip39English) => {
   const text = nfkd(mnemonic);
   if (!canonicalWords(text)) throw new Error("Invalid mnemonic");
   const phrase = textEncoder.encode(text);
-  const out = withInput(phrase, (p) => withOutput(ENTROPY_CAP, (o) => wasm().el_bip39_mnemonic_to_entropy(p, phrase.length, o, ENTROPY_CAP)));
-  if (!out) throw new Error("Invalid mnemonic");
-  return out;
+  try {
+    const out = withInput(phrase, (p) => withOutput(ENTROPY_CAP, (o) => wasm().el_bip39_mnemonic_to_entropy(p, phrase.length, o, ENTROPY_CAP)));
+    if (!out) throw new Error("Invalid mnemonic");
+    return out;
+  } finally {
+    phrase.fill(0); // the encoded mnemonic is secret
+  }
 };
 
 const validateMnemonic = (mnemonic, wordlist = bip39English) => {
@@ -68,7 +72,11 @@ const validateMnemonic = (mnemonic, wordlist = bip39English) => {
     const text = nfkd(mnemonic);
     if (!canonicalWords(text)) return false;
     const phrase = textEncoder.encode(text);
-    return withInput(phrase, (p) => wasm().el_bip39_validate(p, phrase.length)) === 1;
+    try {
+      return withInput(phrase, (p) => wasm().el_bip39_validate(p, phrase.length)) === 1;
+    } finally {
+      phrase.fill(0);
+    }
   } catch {
     return false;
   }
@@ -78,7 +86,14 @@ const validateMnemonic = (mnemonic, wordlist = bip39English) => {
 const mnemonicToSeedSync = (mnemonic, passphrase = "") => {
   const phrase = textEncoder.encode(nfkd(mnemonic));
   const salt = textEncoder.encode(nfkd("mnemonic" + passphrase));
-  return pbkdf2Sha512(phrase, salt, 2048, 64);
+  try {
+    return pbkdf2Sha512(phrase, salt, 2048, 64);
+  } finally {
+    // The encoded phrase and the passphrase-bearing salt are secret; the
+    // 64-byte seed is the caller's to keep or wipe.
+    phrase.fill(0);
+    salt.fill(0);
+  }
 };
 
 export { entropyToMnemonic, mnemonicToEntropy, mnemonicToSeedSync, validateMnemonic };

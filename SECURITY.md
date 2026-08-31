@@ -32,8 +32,22 @@ material. Its security posture rests on the following model:
   committed Rust sources and runs its test suite against
   the fresh build before any deployment; the artifact job then commits the
   runner's copy back to the repository, the same flow as the site artifact.
-  Cross-machine byte identity is not claimed — the C side compiles with the
-  builder's clang, and build-host paths are remapped out of the binary.
+   Cross-machine byte identity is not claimed — the C side compiles with the
+   builder's clang, and build-host paths are remapped out of the binary.
+- Secret byte buffers are overwritten after use, on a best-effort basis. The
+  WASM bindings zero every linear-memory buffer before freeing it
+  (`secp_free`/`psbt_free` use volatile writes) and erase their own secret
+  temporaries — private keys, seeds, chain codes, mnemonics, passphrases,
+  signing nonces, and HMAC/PBKDF2 blocks. The JavaScript layer zeroes the
+  `Uint8Array`s it is done with (`.fill(0)`, `HDKey.wipePrivateData()`),
+  including intermediate BIP32 path nodes, per-address child keys, and the
+  PSBT/BIP-85/Silent-Payments session roots when a session ends or the page
+  unloads. The limits are structural: JavaScript strings and DOM values
+  (displayed seed phrases, WIF keys, typed input) cannot be overwritten, only
+  dereferenced — the "(best effort)" the UI already states — and copies made
+  inside dependency types that expose no erase (HMAC engines,
+  `bip39::Mnemonic`) remain until their memory is reused. None of this
+  protects against a compromised machine.
 - The on-screen result of any derivation can only be as trustworthy as the
   code that produced it. Review the source, build from `src/`, and test the
   tool with published vectors before relying on it.
