@@ -3675,7 +3675,8 @@ function hodlFilterCards(value, coleman = false) {
     text = text.replace(/10\0([CDHS])/g, (_, suit) => "10" + ({ C: "\u2663", D: "\u2666", H: "\u2665", S: "\u2660" })[suit]);
     return text.replace(/[^0-9A-Z\s,.;:_|/\-\u2660\u2663\u2665\u2666]/g, "").replace(/[\s,.;:_|/-]+/g, " ");
   }
-  return text.replace(/[^0-9A-Z\s,.;:_|/-]/g, "").replace(/[\s,.;:_|/-]+/g, " ");
+  text = text.replace(/[^0-9A-Z\s,.;:_|/-]/g, "").replace(/[\s,.;:_|/-]+/g, " ");
+  return text.replace(/(^| )(10|[A2-9TJQK])([CDHS])(?= |$)/g, (_, separator, rank, suit) => separator + rank + suit.toLowerCase());
 }
 function hodlCardTypedCharactersAllowed(value) {
   return [...String(value ?? "")].every((character) => /[A2-9TJQKCDHS10\s,.;:_|/\-\u2660\u2663\u2665\u2666]/i.test(character));
@@ -3702,7 +3703,7 @@ function hodlDealtCardMarkup(card) {
 }
 function hodlCardsEntropy(value, targetWords = Pt, coleman = false) {
   let config = hodlSeedConfig(targetWords), notes = [], warnings = [], parsed = hodlParseCards(value, config.words);
-  if (parsed.invalid.length) return { ok: false, error: `Cards use rank then suit, like AS, 10H, or TD. Ignored: ${parsed.invalid.slice(0, 8).join(" ")}`, notes, warnings, parsed };
+  if (parsed.invalid.length) return { ok: false, error: `Cards use rank then suit, like As, 10h, or Td. Ignored: ${parsed.invalid.slice(0, 8).join(" ")}`, notes, warnings, parsed };
   if (parsed.duplicates.length) return { ok: false, error: `Do not repeat a card in the same shuffle. Repeated: ${parsed.duplicates[0]}.`, notes, warnings, parsed };
   if (!parsed.cards.length) return { ok: false, error: "Deal at least one card from a shuffled deck.", notes, warnings, parsed };
   let required = parsed.needed.first + parsed.needed.extra, hashInput = hodlCardsHashInput(parsed.cards, coleman);
@@ -3908,7 +3909,7 @@ function hodlUpdateCards() {
   if (parsed.pending) status += ` \xB7 finish ${parsed.pending.token} with a suit`;
   if (parsed.invalidEntries.length - (parsed.pending ? 1 : 0) > 0) {
     let count = parsed.invalidEntries.length - (parsed.pending ? 1 : 0);
-    status += ` \xB7 ${count} invalid card${count === 1 ? "" : "s"} highlighted \xB7 use AS, 10H, or TD`;
+    status += ` \xB7 ${count} invalid card${count === 1 ? "" : "s"} highlighted \xB7 use As, 10h, or Td`;
   }
   if (parsed.duplicateEntries.length) status += ` \xB7 repeated ${parsed.duplicateEntries[0].card} highlighted \xB7 deal a different card`;
   let invalid = parsed.invalidRanges.length > 0;
@@ -5179,7 +5180,7 @@ function hodlRenderKeyForm() {
     if (!direct) hodlCardSuit = hodlCardRank = "";
     let suitPad = hodlCardSuits.map((suit) => `<button type="button" class="card-suit${suit.red ? " is-red" : ""}" data-card-suit="${suit.code}" aria-label="${suit.label}" aria-pressed="false">${suit.symbol}</button>`).join("");
     let rankPad = direct ? hodlDirectCardRanks.map((rank) => `<button type="button" data-direct-card-rank="${rank}" aria-label="Enter rank ${rank}">${rank}</button>`).join("") : hodlCardRanks.map((rank) => `<button type="button" data-card-rank="${rank}" aria-label="${rank === "T" ? "10" : rank}">${rank === "T" ? "10" : rank}</button>`).join("");
-    let inputId = direct ? "direct-cards" : "cards", inputLabel = direct ? "Rank-only draw transcript" : "Card transcript", inputHelp = direct ? `For each of the first ${config.partialWords} words, shuffle and draw from A\u20138 three times, then A\u20134 once. Each four-character group selects one word; spaces separate the groups. The shorter final group supplies the remaining entropy bits, and EntropyLab calculates the BIP39 checksum bits.` : `Each valid card updates a deterministic test seed. For real security, ${config.words === 24 ? "deal all 52 unique cards, shuffle again, then deal 6 more" : `deal ${needed.first} unique cards without putting them back`}. SHA-256 hashes the ASCII transcript (AS 2C TD).`, placeholder = direct ? "A284 37A2 \u2026" : hodlCardColemanSymbols ? "A\u2660 2\u2663 10\u2665 T\u2666\u2026" : "AS 2C 10H TD\u2026";
+    let inputId = direct ? "direct-cards" : "cards", inputLabel = direct ? "Rank-only draw transcript" : "Card transcript", inputHelp = direct ? `For each of the first ${config.partialWords} words, shuffle and draw from A\u20138 three times, then A\u20134 once. Each four-character group selects one word; spaces separate the groups. The shorter final group supplies the remaining entropy bits, and EntropyLab calculates the BIP39 checksum bits.` : `Each valid card updates a deterministic test seed. For real security, ${config.words === 24 ? "deal all 52 unique cards, shuffle again, then deal 6 more" : `deal ${needed.first} unique cards without putting them back`}. SHA-256 hashes the canonical ASCII transcript (AS 2C TD).`, placeholder = direct ? "A284 37A2 \u2026" : hodlCardColemanSymbols ? "A\u2660 2\u2663 10\u2665 T\u2666\u2026" : "As 2c 10h Td\u2026";
     at.innerHTML = `
       <p class="label">How to turn cards into a ${config.words}-word seed</p>
       <div class="choice-grid">
@@ -5187,9 +5188,9 @@ function hodlRenderKeyForm() {
         <label class="choice"><input type="radio" name="card-method" value="direct" ${direct ? "checked" : ""} /><span><strong>Direct word selection</strong><span class="desc">Ignore suits. Reshuffle and draw A\u20138, A\u20138, A\u20138, then A\u20134 for each full word. Finish with the shorter rank sequence shown for the checksum-valid final word.</span></span></label>
       </div>
       <p class="muted" id="cards-help">${inputHelp}</p>
-      ${direct ? "" : `<label class="seed-autocomplete-toggle seed-zero-index-toggle"><input type="checkbox" id="cards-ian-coleman" ${hodlCardColemanSymbols ? "checked" : ""} /><span><strong>Match Ian Coleman method</strong> <span class="seed-autocomplete-note">(show and hash A\u2660 2\u2663 instead of AS 2C)</span></span></label>`}
+      ${direct ? "" : `<label class="seed-autocomplete-toggle seed-zero-index-toggle"><input type="checkbox" id="cards-ian-coleman" ${hodlCardColemanSymbols ? "checked" : ""} /><span><strong>Match Ian Coleman method</strong> <span class="seed-autocomplete-note">(show and hash A\u2660 2\u2663 instead of As 2c)</span></span></label>`}
       <label class="field" id="cards-input-label" for="${inputId}">${inputLabel}</label>
-      <div class="dice-input-shell cards-input-shell"><pre class="dice-input-highlight" id="cards-highlight" aria-hidden="true"></pre><textarea id="${inputId}" placeholder="${placeholder}" autocomplete="off" spellcheck="false" autocapitalize="characters" aria-labelledby="cards-input-label" aria-describedby="cards-help cards-meta"></textarea></div>
+      <div class="dice-input-shell cards-input-shell"><pre class="dice-input-highlight" id="cards-highlight" aria-hidden="true"></pre><textarea id="${inputId}" placeholder="${placeholder}" autocomplete="off" spellcheck="false" autocapitalize="off" aria-labelledby="cards-input-label" aria-describedby="cards-help cards-meta"></textarea></div>
       ${hodlSeedMetaRowMarkup("cards-meta")}
       ${direct ? "" : `<div class="card-suit-pad" role="group" aria-label="Suit">${suitPad}</div>`}
       <div class="card-rank-pad dice-input-pad${direct ? " direct-card-rank-pad" : ""}" role="group" aria-label="${direct ? "Rank-only draw" : "Rank"}">${rankPad}</div>
@@ -5253,7 +5254,7 @@ function hodlRenderKeyForm() {
     if (colemanToggle) colemanToggle.onchange = () => {
       hodlCardColemanSymbols = colemanToggle.checked;
       input.value = hodlFilterCards(input.value, hodlCardColemanSymbols);
-      input.placeholder = hodlCardColemanSymbols ? "A\u2660 2\u2663 10\u2665 T\u2666\u2026" : "AS 2C 10H TD\u2026";
+      input.placeholder = hodlCardColemanSymbols ? "A\u2660 2\u2663 10\u2665 T\u2666\u2026" : "As 2c 10h Td\u2026";
       input.setSelectionRange(input.value.length, input.value.length);
       if (state) {
         state.cardColemanSymbols = hodlCardColemanSymbols;
