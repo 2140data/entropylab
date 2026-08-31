@@ -1114,7 +1114,7 @@ function lr() {
     hodlBindFields();
   } else at.innerHTML = `
       <p class="label">Your Bitcoin Core private key</p>
-      <p class="muted">WIF, hex, mini key, or a brain-wallet passphrase (unsafe \u2014 recovery only).</p>
+      <p class="muted">WIF, hex, mini key, or brain-wallet text (unsafe).</p>
       <textarea id="key" placeholder="5\u2026 / K\u2026 / L\u2026"></textarea>
       <label class="choice"><input type="radio" name="kk" value="wif" checked /><span><strong>WIF</strong><span class="desc">Bitcoin wallet import format (Base58Check).</span></span></label>
       <label class="choice"><input type="radio" name="kk" value="hex-key" /><span><strong>Private key hex</strong><span class="desc">Raw 32-byte private key as 64 hexadecimal characters.</span></span></label>
@@ -4431,7 +4431,7 @@ function hodlNormalizePrivateKeyKind(kind, value = "") {
 function hodlPrivateKeyPlaceholder(kind, network = "mainnet") {
   if (kind === "hex-key") return "64 hexadecimal characters";
   if (kind === "minikey") return "S\u2026 (22 or 30 Base58 characters)";
-  if (kind === "brain") return "Recovery passphrase";
+  if (kind === "brain") return "Text to hash";
   return network === "testnet" ? "9\u2026 / c\u2026" : "5\u2026 / K\u2026 / L\u2026";
 }
 function hodlBrainWalletText(value, trim = hodlBrainWalletTrimEnabled()) {
@@ -6004,7 +6004,7 @@ function hodlRenderKeyForm() {
     </div>
     ${hodlBrainOutputMarkup(hodlKeys[hodlActiveKey]?.brainWalletOutput || "scalar")}
     <p class="label" id="private-key-input-label">Private key or recovery passphrase</p>
-    <p class="muted" id="private-key-input-help">Enter the value matching the selected format. Brain wallets are for recovery only.</p>
+    <p class="muted" id="private-key-input-help">Enter the value matching the selected format. Brain wallet text is hashed with SHA-256.</p>
     ${hodlPrivateKeyKeyboardToggleMarkup()}
     <div class="dice-input-shell private-key-input-shell"><pre class="dice-input-highlight" id="private-key-highlight" aria-hidden="true"></pre><textarea id="key" placeholder="5\u2026 / K\u2026 / L\u2026" aria-labelledby="private-key-input-label" aria-describedby="private-key-input-help private-key-meta"></textarea></div><p class="muted" id="private-key-meta" aria-live="polite"></p><div class="passphrase-keyboard-host" id="private-keyboard-host" hidden></div>`;
   hodlBindKeyFields();
@@ -6139,7 +6139,7 @@ function hodlPrivateKeyInputAnalysis(value, kind, network, trimBrainWallet = hod
       ready = false;
     }
     let convention = trimBrainWallet ? hasBoundaryWhitespace ? "boundary whitespace will be trimmed" : "trim enabled; no boundary whitespace present" : hasBoundaryWhitespace ? "exact text will be used, including boundary whitespace" : "exact text will be used";
-    let status = exact.length ? ready ? `Recovery passphrase entered \xB7 ${convention} \xB7 brain wallets are unsafe \xB7 recovery only` : "Boundary whitespace trimming leaves an empty passphrase \xB7 enter non-whitespace text or turn trimming off" : "No recovery passphrase entered \xB7 brain wallets are unsafe \xB7 recovery only";
+    let status = exact.length ? ready ? `Text entered \xB7 ${convention} \xB7 brain wallets are unsafe` : "Boundary whitespace trimming leaves an empty passphrase \xB7 enter non-whitespace text or turn trimming off" : "No text entered \xB7 brain wallets are unsafe";
     return { invalidRanges, ready, status, kind: selected };
   }
   if (selected === "hex-key") {
