@@ -864,6 +864,66 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .psbted-note-warn { color: var(--warn); }
 .psbted-note-bad { color: var(--danger); }
 #psbted-result textarea { font-family: var(--mono); font-size: 12px; min-height: 90px; }
+/* Transaction-flow visualizer (mempool.space-style): input boxes on the
+   left, the unsigned transaction in the middle, output boxes on the right,
+   with a bezier connector drawn from every box into the transaction. Every
+   box opens its fields in the panel under the diagram. The connectors live
+   in an SVG layer under the columns; psbt-editor.js draws the paths once
+   the boxes have layout. In the stacked (narrow) layout the SVG layer
+   hides and plain arrows carry the flow cue instead. */
+.psbted-viz { position: relative; margin-top: var(--space-component); }
+.psbted-viz-svg { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.psbted-viz-cols { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); column-gap: 44px; row-gap: 12px; }
+.psbted-viz-line { fill: none; stroke-width: 2; opacity: 0.55; }
+.psbted-viz-line-in { stroke: var(--blue); }
+.psbted-viz-line-out { stroke: var(--ok); }
+.psbted-viz-line.is-open { opacity: 1; stroke-width: 2.5; }
+.psbted-viz-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.psbted-viz-heading { margin: 0; font-size: 13px; font-weight: 600; color: var(--muted); }
+.psbted-viz-hint { margin: -4px 0 0; font-size: 11px; }
+.psbted-viz-mid { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.psbted-viz-arrow { display: none; position: relative; flex: none; width: 30px; height: 2px; background: var(--faint); }
+.psbted-viz-arrow::after {
+  content: ""; position: absolute; right: 0; top: -4px;
+  border-left: 8px solid var(--faint); border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+}
+.psbted-viz-tx {
+  min-height: 0; margin: 0; max-width: 230px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface-2); color: inherit; font-size: 12px; text-align: center;
+}
+.psbted-viz-tx:hover { border-color: var(--muted); }
+.psbted-viz-tx.is-open, .psbted-viz-tx.is-open:hover { border-color: var(--accent); }
+.psbted-viz-tx:focus-visible { outline: 2px solid var(--selection-accent); outline-offset: 2px; }
+.psbted-viz-txline { display: block; margin: 2px 0; overflow-wrap: anywhere; }
+.psbted-viz-feenum { font-family: var(--mono); }
+.psbted-viz-box { border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); padding: 8px 10px; font-size: 12px; }
+.psbted-viz-box:hover { border-color: var(--muted); }
+.psbted-viz-box.is-open, .psbted-viz-box.is-open:hover { border-color: var(--accent); }
+.psbted-viz-open {
+  display: flex; gap: 8px; align-items: baseline; width: 100%; min-height: 0; margin: 0; padding: 0;
+  border: none; border-radius: 4px; background: none; color: inherit; font-size: 12px; text-align: left;
+}
+.psbted-viz-open:focus-visible { outline: 2px solid var(--selection-accent); outline-offset: 2px; }
+.psbted-viz-idx { flex: none; color: var(--muted); font-family: var(--mono); font-size: 11px; }
+.psbted-viz-id { font-family: var(--mono); overflow-wrap: anywhere; }
+.psbted-viz-in { color: var(--blue); }
+.psbted-viz-out { color: var(--ok); }
+.psbted-viz-tag { color: var(--warn); }
+.psbted-viz-kind { color: var(--muted); }
+.psbted-viz-amount { margin: 6px 0 0; font-family: var(--mono); font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+/* Specificity matches the global text-input rule (two classes + element,
+   later in the file) so the in-box field stays compact and inline. */
+.psbted-viz input.psbted-viz-sats { width: 12ch; min-width: 0; min-height: 0; margin-top: 0; padding: 4px 8px; border-radius: 6px; font-size: 13px; font-weight: 600; }
+.psbted-viz-sub { margin: 4px 0 0; font-size: 11px; overflow-wrap: anywhere; }
+.psbted-viz-detail { margin-top: 12px; padding: 6px 14px 12px; border: 1px solid var(--accent); border-radius: 12px; background: var(--surface-2); }
+.psbted-viz-detail-bar { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.psbted-viz-detail-bar p { margin: 6px 0 0; font-size: 12px; }
+.psbted-viz-detail-bar .psbted-del { flex: none; margin-top: 2px; }
+@media (max-width: 720px) {
+  .psbted-viz-cols { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .psbted-viz-svg { display: none; }
+  .psbted-viz-arrow { display: block; transform: rotate(90deg); }
+}
 /* Expandable cells: a truncated field reads as one quiet line of mono text
    and announces its full length; the whole cell is the click target. */
 .exp-cell {

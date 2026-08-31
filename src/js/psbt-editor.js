@@ -13,6 +13,7 @@
 import { Address as BtcAddress, NETWORK as BTC_MAINNET, TEST_NETWORK as BTC_TESTNET, OutScript } from "@scure/btc-signer";
 import { psbtInspectDoc, psbtBuildBytes, psbtWasmReady } from "./psbt-wasm.js";
 import { expandableHtml, EXPAND_LIMIT, initExpandable } from "./expandable.js";
+import { psbtVizHtml } from "./psbt-viz.js";
 
 const hexToBytes = (hex) => {
   if (!/^(?:[0-9a-f]{2})*$/i.test(hex)) throw new Error("Invalid hexadecimal input.");
@@ -202,6 +203,10 @@ export const initPsbtEditor = () => {
 
   let doc = null; // inspect document being edited; null when nothing is loaded
   let resultBytes = null; // last successfully built PSBT
+  // Which flow-diagram part is open ({ kind: "input"|"output", index } for a
+  // box or { kind: "tx" } for the middle transaction box); its fields render
+  // in the panel under the diagram instead of inline.
+  let selected = null;
 
   initExpandable();
   // Edits saved in the expandable editor window are pending field edits,
@@ -291,25 +296,47 @@ export const initPsbtEditor = () => {
       })
       .join("");
 
-    const inputSections = doc.inputs
-      .map((map, index) => `<section class="psbted-map"><h3>Input ${index} key-value map</h3><p class="muted">Spends ${escapeHtml(tx.inputs[index].txid)}:${escapeHtml(String(tx.inputs[index].vout))}</p>${pairRows("input", map, index)}</section>`)
-      .join("");
-    const outputSections = doc.outputs
-      .map((map, index) => `<section class="psbted-map"><h3>Output ${index} key-value map</h3><p class="muted">Pays ${escapeHtml(String(tx.outputs[index].value))} sats${addressFor(tx.outputs[index].scriptPubKey, network.value) ? ` to ${escapeHtml(addressFor(tx.outputs[index].scriptPubKey, network.value))}` : ""}</p>${pairRows("output", map, index)}</section>`)
-      .join("");
-
-    out.innerHTML = `
-      <p class="psbt-kv"><strong>PSBT v${escapeHtml(String(doc.psbtVersion))}</strong> · ${tx.inputs.length} input(s) · ${tx.outputs.length} output(s) · fee ${fee} · ${verdict}</p>
-      <p class="muted" id="psbted-status" aria-live="polite">${resultBytes ? "The fields below show rust-bitcoin's decode of the current PSBT." : "Field edits are validated when you re-serialize."}</p>
-
-      <section class="psbted-map"><h3>Unsigned transaction</h3>
+    // One map section, rendered either inline (the default) or inside the
+    // flow diagram's detail panel when its box is selected there.
+    const mapSection = (kind, index) => {
+      const map = kind === "input" ? doc.inputs[index] : doc.outputs[index];
+      const sub =
+        kind === "input"
+          ? `Spends ${escapeHtml(tx.inputs[index].txid)}:${escapeHtml(String(tx.inputs[index].vout))}`
+          : `Pays ${escapeHtml(String(tx.outputs[index].value))} sats${addressFor(tx.outputs[index].scriptPubKey, network.value) ? ` to ${escapeHtml(addressFor(tx.outputs[index].scriptPubKey, network.value))}` : ""}`;
+      return `<section class="psbted-map"><h3>${kind === "input" ? "Input" : "Output"} ${index} key-value map</h3><p class="muted">${sub}</p>${pairRows(kind, map, index)}</section>`;
+    };
+    // The unsigned-transaction section, rendered either inline (the default)
+    // or inside the detail panel when the diagram's transaction box is open.
+    const txSection = () => `<section class="psbted-map"><h3>Unsigned transaction</h3>
         <div class="psbted-txhead">
           <label>Version <input class="psbted-num" id="psbted-tx-version" value="${escapeHtml(String(tx.version))}" inputmode="numeric"></label>
           <label>Locktime <input class="psbted-num" id="psbted-tx-locktime" value="${escapeHtml(String(tx.locktime))}" inputmode="numeric"></label>
         </div>
         <table class="psbted-pairs"><thead><tr><th>Input</th><th>Previous txid</th><th>vout</th><th>sequence</th></tr></thead><tbody>${inputRows}</tbody></table>
         <table class="psbted-pairs"><thead><tr><th>Output</th><th>Value</th><th>scriptPubKey</th></tr></thead><tbody>${outputRows}</tbody></table>
-      </section>
+      </section>`;
+    const isSelected = (kind, index) => selected && selected.kind === kind && (kind === "tx" || selected.index === index);
+    const inputSections = doc.inputs.map((_, index) => (isSelected("input", index) ? "" : mapSection("input", index))).join("");
+    const outputSections = doc.outputs.map((_, index) => (isSelected("output", index) ? "" : mapSection("output", index))).join("");
+    const detail = selected
+      ? `<div class="psbted-viz-detail" id="psbted-viz-detail">
+          <div class="psbted-viz-detail-bar">
+            <p class="muted">Fields of ${selected.kind === "tx" ? "the unsigned transaction" : `${selected.kind} ${selected.index}`}, moved here from below. Activate its box again (or ×) to put them back.</p>
+            <button type="button" class="psbted-del" data-viz-close aria-label="Close the ${selected.kind === "tx" ? "unsigned transaction" : `${selected.kind} ${selected.index}`} fields">×</button>
+          </div>
+          ${selected.kind === "tx" ? txSection() : mapSection(selected.kind, selected.index)}
+        </div>`
+      : "";
+
+    out.innerHTML = `
+      <p class="psbt-kv"><strong>PSBT v${escapeHtml(String(doc.psbtVersion))}</strong> · ${tx.inputs.length} input(s) · ${tx.outputs.length} output(s) · fee ${fee} · ${verdict}</p>
+      <p class="muted" id="psbted-status" aria-live="polite">${resultBytes ? "The fields below show rust-bitcoin's decode of the current PSBT." : "Field edits are validated when you re-serialize."}</p>
+
+      ${psbtVizHtml(doc, network.value, selected)}
+      ${detail}
+
+      ${isSelected("tx") ? "" : txSection()}
 
       <section class="psbted-map"><h3>Global key-value map</h3>${pairRows("global", doc.globals, 0)}</section>
       ${inputSections}
@@ -349,6 +376,47 @@ export const initPsbtEditor = () => {
     };
   };
 
+  // The mempool.space-style connectors: a bezier from every input box into
+  // the transaction box and from there out to every output box, drawn into
+  // the diagram's (initially empty) SVG layer once the boxes have layout.
+  // The selected box's line comes to the front, like its accent border.
+  const drawViz = () => {
+    const viz = out.querySelector(".psbted-viz");
+    const svg = viz?.querySelector(".psbted-viz-svg");
+    if (!viz || !svg || !svg.clientWidth) return; // no diagram, or the stacked layout hides the layer
+    const boxRect = viz.getBoundingClientRect();
+    const txRect = viz.querySelector(".psbted-viz-tx").getBoundingClientRect();
+    const origin = { x: boxRect.left, y: boxRect.top };
+    const edge = (rect, side) => ({
+      x: (side === "right" ? rect.right : rect.left) - origin.x,
+      y: rect.top - origin.y + rect.height / 2,
+    });
+    const paths = [];
+    const link = (from, to, cls, open) => {
+      // Horizontal S-curve (the mempool.space flow look); the bend spans
+      // half the gap so the line leaves and arrives level.
+      const bend = Math.max(24, Math.abs(to.x - from.x) / 2);
+      const d = `M ${from.x} ${from.y} C ${from.x + bend} ${from.y}, ${to.x - bend} ${to.y}, ${to.x} ${to.y}`;
+      paths.push(`<path class="psbted-viz-line ${cls}${open ? " is-open" : ""}" d="${d}"/>`);
+    };
+    const boxFor = (kind, index) => viz.querySelector(`[data-viz="${kind}:${index}"]`)?.closest(".psbted-viz-box");
+    const txIn = edge(txRect, "left");
+    doc.tx.inputs.forEach((_, index) => {
+      const rect = boxFor("input", index)?.getBoundingClientRect();
+      if (rect) link(edge(rect, "right"), txIn, "psbted-viz-line-in", selected?.kind === "input" && selected.index === index);
+    });
+    const txOut = edge(txRect, "right");
+    doc.tx.outputs.forEach((_, index) => {
+      const rect = boxFor("output", index)?.getBoundingClientRect();
+      if (rect) link(txOut, edge(rect, "left"), "psbted-viz-line-out", selected?.kind === "output" && selected.index === index);
+    });
+    svg.setAttribute("viewBox", `0 0 ${boxRect.width} ${boxRect.height}`);
+    svg.innerHTML = paths.join("");
+  };
+  window.addEventListener("resize", () => {
+    if (doc) drawViz();
+  });
+
   // Builds + re-inspects the working document. On success the editor is
   // re-rendered from rust-bitcoin's fresh decode; on failure the working
   // document is kept as-is and the error is shown.
@@ -370,6 +438,7 @@ export const initPsbtEditor = () => {
 
   const loadFromText = () => {
     setError("");
+    selected = null;
     try {
       doc = psbtInspectDoc(psbtBytesFromText(text.value));
       resultBytes = null;
@@ -428,6 +497,30 @@ export const initPsbtEditor = () => {
       input.addEventListener("input", () => (doc.tx.outputs[Number(input.dataset.txoutScript)].scriptPubKey = input.value.trim()))
     );
 
+    // Flow-diagram boxes (and the middle transaction box) toggle the detail
+    // panel under the diagram; the part's fields render there (and out of
+    // the sections list) while open.
+    const vizTarget = (part) => (part.kind === "tx" ? "tx" : `${part.kind}:${part.index}`);
+    out.querySelectorAll("[data-viz]").forEach((button) =>
+      button.addEventListener("click", () => {
+        const [kind, indexText] = button.dataset.viz.split(":");
+        const part = kind === "tx" ? { kind } : { kind, index: Number(indexText) };
+        const closing = selected && selected.kind === part.kind && (part.kind === "tx" || selected.index === part.index);
+        selected = closing ? null : part;
+        render();
+        renderResult();
+        // Keep focus on the control that reflects the new state.
+        (closing ? out.querySelector(`[data-viz="${vizTarget(part)}"]`) : out.querySelector("[data-viz-close]"))?.focus();
+      })
+    );
+    out.querySelector("[data-viz-close]")?.addEventListener("click", () => {
+      const focusBack = selected ? `[data-viz="${vizTarget(selected)}"]` : null;
+      selected = null;
+      render();
+      renderResult();
+      if (focusBack) out.querySelector(focusBack)?.focus();
+    });
+
     out.querySelectorAll(".psbted-value").forEach((input) =>
       input.addEventListener("input", () => {
         const { kind, map, pair } = input.dataset;
@@ -469,6 +562,8 @@ export const initPsbtEditor = () => {
         });
       })
     );
+
+    drawViz(); // the boxes exist now; draw the connectors over the layout
   };
 
   load.onclick = () => {
@@ -477,6 +572,7 @@ export const initPsbtEditor = () => {
   $("psbted-wipe").onclick = () => {
     doc = null;
     resultBytes = null;
+    selected = null;
     text.value = "";
     setError("");
     render();

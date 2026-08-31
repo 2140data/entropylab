@@ -1109,6 +1109,95 @@
     await until(() => !document.getElementById("calc-card").hidden, "key workspace");
   });
 
+  await test("PSBT editor flow diagram opens, edits, and re-decodes a map", async () => {
+    // Same BIP-174 valid vector 2 as the editor cases above.
+    const vector = "cHNidP8BAKACAAAAAqsJSaCMWvfEm4IS9Bfi8Vqz9cM9zxU4IagTn4d6W3vkAAAAAAD+////qwlJoIxa98SbghL0F+LxWrP1wz3PFTghqBOfh3pbe+QBAAAAAP7///8CYDvqCwAAAAAZdqkUdopAu9dAy+gdmI5x3ipNXHE5ax2IrI4kAAAAAAAAGXapFG9GILVT+glechue4O/p+gOcykWXiKwAAAAAAAEHakcwRAIgR1lmF5fAGwNrJZKJSGhiGDR9iYZLcZ4ff89X0eURZYcCIFMJ6r9Wqk2Ikf/REf3xM286KdqGbX+EhtdVRs7tr5MZASEDXNxh/HupccC1AaZGoqg7ECy0OIEhfKaC3Ibi1z+ogpIAAQEgAOH1BQAAAAAXqRQ1RebjO4MsRwUPJNPuuTycA5SLx4cBBBYAFIXRNTfy4mVAWjTbr6nj3aAfuCMIAAAA";
+    document.querySelector('#workspace [data-workspace="psbted"]').click();
+    const box = await until(() => document.getElementById("psbted-text"), "PSBT editor input");
+    input(box, vector);
+    document.getElementById("psbted-load").click();
+    const viz = await until(() => document.querySelector("#psbted-out .psbted-viz"), "flow diagram");
+    const outText = () => document.getElementById("psbted-out").textContent;
+    // One box per input/output, decoded claims, and the transaction summary.
+    for (const target of ["input:0", "input:1", "output:0", "output:1"]) {
+      assert(viz.querySelector(`[data-viz="${target}"]`), `diagram is missing box ${target}`);
+    }
+    // Diagram amounts are digit-grouped (\u202f) for scanning; the field
+    // tables below keep raw digits for editing.
+    assert(viz.textContent.includes("100\u202f000\u202f000 sats"), "witness UTXO claim missing from the diagram");
+    assert(viz.textContent.includes("199\u202f909\u202f358 sats in total"), "outputs total missing from the diagram");
+    assert(outText().includes("no amount claim"), "input without a UTXO pair must say so");
+    assert(outText().includes("finalized"), "finalized input status missing");
+    // One bezier connector per box: two into the transaction, two out.
+    equal(viz.querySelectorAll(".psbted-viz-svg path").length, 4, "connector paths not drawn");
+    equal(viz.querySelectorAll(".psbted-viz-line-in").length, 2, "input connectors not drawn");
+    equal(viz.querySelectorAll(".psbted-viz-line-out").length, 2, "output connectors not drawn");
+    // Geometry: every line runs left to right, from its box's vertical
+    // middle into the transaction box's (mempool.space flow look).
+    const vizRect = viz.getBoundingClientRect();
+    const txRect = viz.querySelector(".psbted-viz-tx").getBoundingClientRect();
+    const nums = (path) => path.getAttribute("d").match(/-?[\d.]+/g).map(Number);
+    for (const [i, path] of [...viz.querySelectorAll(".psbted-viz-line-in")].entries()) {
+      const [x1, y1, , , , , x2, y2] = nums(path);
+      const boxRect = viz.querySelector(`[data-viz="input:${i}"]`).closest(".psbted-viz-box").getBoundingClientRect();
+      assert(x1 < x2, `input ${i} connector does not flow right`);
+      assert(Math.abs(y1 - (boxRect.top - vizRect.top + boxRect.height / 2)) < 1, `input ${i} connector does not start at its box`);
+      assert(Math.abs(y2 - (txRect.top - vizRect.top + txRect.height / 2)) < 1, `input ${i} connector does not end at the transaction`);
+    }
+    for (const [i, path] of [...viz.querySelectorAll(".psbted-viz-line-out")].entries()) {
+      const [x1, , , , , , x2, y2] = nums(path);
+      const boxRect = viz.querySelector(`[data-viz="output:${i}"]`).closest(".psbted-viz-box").getBoundingClientRect();
+      assert(x1 < x2, `output ${i} connector does not flow right`);
+      assert(Math.abs(y2 - (boxRect.top - vizRect.top + boxRect.height / 2)) < 1, `output ${i} connector does not end at its box`);
+    }
+    // Activating a box opens its key-value map in the detail panel (and out
+    // of the sections list below).
+    const openBox = viz.querySelector('[data-viz="input:1"]');
+    equal(openBox.getAttribute("aria-expanded"), "false", "box starts expanded");
+    openBox.click();
+    const panel = await until(() => document.getElementById("psbted-viz-detail"), "detail panel");
+    assert(panel.textContent.includes("PSBT_IN_WITNESS_UTXO"), "panel does not show the input's pairs");
+    equal(outText().match(/Input 1 key-value map/g).length, 1, "the open map renders twice");
+    equal(document.querySelector('[data-viz="input:1"]').getAttribute("aria-expanded"), "true", "open box not marked expanded");
+    // The open box's connector comes to the front, like its accent border.
+    const lit = document.querySelectorAll("#psbted-out .psbted-viz-line.is-open");
+    equal(lit.length, 1, "open box's connector not highlighted");
+    assert(lit[0].classList.contains("psbted-viz-line-in"), "wrong connector highlighted");
+    // Edit the witness UTXO's claimed amount in the panel (3,900,000 sats LE)
+    // and re-serialize: the diagram re-decodes the new claim.
+    const claim = panel.querySelector('.psbted-value[data-kind="input"][data-map="1"][data-pair="0"]');
+    input(claim, "60823b000000000017a9143545e6e33b832c47050f24d3eeb93c9c03948bc787");
+    document.getElementById("psbted-build").click();
+    await until(() => (document.getElementById("psbted-result-b64") || {}).value || document.getElementById("psbted-error").textContent, "editor rebuild");
+    equal(document.getElementById("psbted-error").textContent, "", "editor rebuild failed");
+    assert(document.querySelector("#psbted-out .psbted-viz").textContent.includes("3\u202f900\u202f000 sats"), "edited claim was not re-decoded into the diagram");
+    assert(document.getElementById("psbted-viz-detail"), "panel did not stay open across the rebuild");
+    // The output boxes edit the unsigned transaction inline (WYSIWYG).
+    const sats = document.querySelector('.psbted-viz [data-txout-val="0"]');
+    input(sats, "199902000");
+    document.getElementById("psbted-build").click();
+    await until(() => document.getElementById("psbted-error").textContent === "" && document.querySelector('.psbted-viz [data-txout-val="0"]').value === "199902000" ? true : document.getElementById("psbted-error").textContent, "inline amount rebuild");
+    equal(document.getElementById("psbted-error").textContent, "", "inline amount rebuild failed");
+    // × puts the map back into the sections list.
+    document.querySelector("[data-viz-close]").click();
+    await until(() => !document.getElementById("psbted-viz-detail"), "panel did not close");
+    equal(outText().match(/Input 1 key-value map/g).length, 1, "map did not return to the sections list");
+    // The middle transaction box opens the unsigned-transaction fields the
+    // same way (and they come back on ×).
+    document.querySelector('[data-viz="tx"]').click();
+    const txPanel = await until(() => document.getElementById("psbted-viz-detail"), "tx detail panel");
+    assert(txPanel.querySelector("#psbted-tx-version"), "tx fields did not move into the panel");
+    equal(outText().match(/Unsigned transaction/g).length, 1, "the tx section renders twice");
+    equal(document.querySelector('[data-viz="tx"]').getAttribute("aria-expanded"), "true", "tx box not marked expanded");
+    txPanel.querySelector("[data-viz-close]").click();
+    await until(() => !document.getElementById("psbted-viz-detail"), "tx panel did not close");
+    assert(document.querySelector("#psbted-out #psbted-tx-version"), "tx fields did not return to the sections list");
+    input(box, "");
+    document.getElementById("psbted-wipe").click();
+    document.querySelector('#workspace [data-workspace="calc"]').click();
+    await until(() => !document.getElementById("calc-card").hidden, "key workspace");
+  });
+
   await test("a known BIP39 wallet can be derived through the UI", async () => {
     document.querySelector('[data-seed-words="12"]').click();
     await chooseMode("Number bases");
