@@ -8474,14 +8474,22 @@ function hodlSessionOwnership(network) {
 }
 function hodlDeclaredOutput(entries, script, network) {
   if (!hodlPsbtHd || !entries || !script) return null;
-  let fingerprint = Us(hodlPsbtHd.fingerprint);
+  let fingerprint = Us(hodlPsbtHd.fingerprint), declared = null;
   for (let entry of hodlFind(entries, 2)) {
     if (entry.val.length < 4 || (entry.val.length - 4) % 4) continue;
     let fp = M.encode(entry.val.slice(0, 4));
     let path = [];
     for (let i = 4; i < entry.val.length; i += 4) path.push(new DataView(entry.val.buffer, entry.val.byteOffset + i, 4).getUint32(0, true));
     let label = "m/" + pathLabel(path);
-    if (fp !== fingerprint) return { state: "other-wallet", path: label, fingerprint: fp };
+    // A foreign-fingerprint record says nothing about this wallet, and an
+    // output map may carry several records (multisig cosigners) in an order
+    // the PSBT creator chose. Scan every record so the verdict cannot depend
+    // on that order: only a record naming this wallet settles ownership, and
+    // every such claim is verified (issue #194).
+    if (fp !== fingerprint) {
+      if (!declared) declared = { state: "other-wallet", path: label, fingerprint: fp };
+      continue;
+    }
     try {
       let node = hodlPsbtHd;
       for (let index of path) node = node.deriveChild(index);
@@ -8496,12 +8504,12 @@ function hodlDeclaredOutput(entries, script, network) {
       }
       if (!encoded) return { state: "lie", path: label };
       let chain = path.length >= 2 ? path[path.length - 2] : null;
-      return { state: "ours", path: label, role: chain === 1 ? "change" : chain === 0 ? "receive" : "key" };
+      declared = { state: "ours", path: label, role: chain === 1 ? "change" : chain === 0 ? "receive" : "key" };
     } catch {
       return { state: "lie", path: label };
     }
   }
-  return null;
+  return declared;
 }
 function hodlRenderOutputHtml(output, index, network, map, entries) {
   let opReturn = parseOpReturn(output.script);
