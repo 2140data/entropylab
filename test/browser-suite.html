@@ -309,9 +309,17 @@
     seed.focus();
     seed.setSelectionRange(seed.value.length, seed.value.length);
     const autocomplete = document.getElementById("seed-autocomplete");
-    assert(!autocomplete.checked, "Seed autocomplete unexpectedly started enabled");
+    assert(autocomplete.checked, "Seed autocomplete did not start enabled");
     autocomplete.click();
-    equal(seed.value, "amount ");
+    assert(!autocomplete.checked, "Clicking the autocomplete toggle did not turn it off");
+    equal(seed.value, "amou", "Turning autocomplete off changed the typed input");
+    autocomplete.click();
+    equal(seed.value, "amount");
+    equal(
+      seed.value.slice(seed.selectionStart, seed.selectionEnd),
+      "nt",
+      "The completion was not left selected so that typing replaces it",
+    );
     autocomplete.click();
     input(seed, "");
     const keyboardToggle = document.getElementById("seed-keyboard-toggle");
@@ -1307,12 +1315,12 @@
     input(document.getElementById("msig-n-number"), "2");
     input(document.getElementById("msig-x-0"), bip87Export);
     input(document.getElementById("msig-x-1"), bip48Export);
-    equal(multisigScript.value, "mixed");
-    assert(
-      document.getElementById("msig-script-warning").textContent.includes("different script types"),
-      "Legacy and Native SegWit keys did not show an explicit incompatibility",
-    );
+    equal(multisigScript.value, "p2wsh");
     assert(document.getElementById("msig-purpose-warning").textContent.includes("do not match"), "Mixed co-signer purposes did not show a warning");
+    assert(
+      document.getElementById("msig-go").disabled,
+      "A BIP87 co-signer mixed with a BIP48 export was allowed to derive",
+    );
     input(document.getElementById("msig-x-1"), "");
     input(document.getElementById("msig-n-number"), "1");
     equal(document.getElementById("msig-m").value, "1");
@@ -1373,6 +1381,12 @@
     input(document.getElementById("msig-x-0"), "");
     multisigScript.value = "p2wsh";
     multisigScript.dispatchEvent(new Event("change", { bubbles: true }));
+    // The BIP87 choice is not Legacy-only any more, so it survives a script-type
+    // change; clearing it returns this script type to its own standard.
+    equal(multisigPurpose.value, "87", "The BIP87 choice did not carry across a script-type change");
+    assert(!document.getElementById("msig-legacy-account-toggle").hidden, "BIP87 option stayed hidden for Native SegWit");
+    bip87Toggle.checked = false;
+    bip87Toggle.dispatchEvent(new Event("change", { bubbles: true }));
     equal(multisigPurpose.value, "48", "Native SegWit did not restore its standard multisig purpose");
     input(document.getElementById("msig-x-0"), bip48Export.replace("/48h/", "/69420h/"));
     equal(multisigPurpose.value, "69420", "A custom co-signer purpose was not auto-detected");

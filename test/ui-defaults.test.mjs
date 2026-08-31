@@ -189,7 +189,7 @@ test("Seed phrase offers one-based or zero-based BIP39 word-number entry", () =>
   assert.match(appSource, /\[0, 1, 2, 3, 4, 5, 6, 7, 8, 9\]/);
   assert.match(appSource, /id="seed-number-words" class="dice-word-grid"/);
   assert.match(css, /\.dice-input-pad\.seed-number-pad \{ grid-template-columns: repeat\(5/);
-  assert.match(appSource, /Ne === "seed" && hodlSeedMethod === "numbers"/);
+  assert.match(appSource, /passphrase = !privateKey/);
 });
 
 test("hashed cards can match Ian Coleman's suit-symbol SHA-256 transcript", () => {
@@ -307,9 +307,12 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /function hodlSeedKeyboardCanEnterSpace\(input,targetWords=Pt\)/);
   assert.match(app, /words\.length<config\.words&&words\.every\(word=>hodlBip39WordSet\.has\(word\)\)/);
   assert.match(app, /function hodlUpdateSeedKeyboardKeys\(input,targetWords=Pt\)/);
-  assert.match(app, /function hodlUpdatePassphraseKeyboardKeys\(input\)/);
+  // The seed keyboard doubles as the passphrase keyboard while that field has
+  // focus, so the key-state update takes whichever keyboard is asking.
+  assert.match(app, /function hodlUpdatePassphraseKeyboardKeys\(input,keyboardId="passphrase-keyboard"\)/);
+  assert.match(app, /isPassphrase\(\)\?hodlUpdatePassphraseKeyboardKeys\(activeInput,"seed-keyboard"\)/);
   assert.match(app, /function hodlPrivateKeyboardCanEnterCharacter\(input,key\)/);
-  assert.match(app, /function hodlUpdatePrivateKeyKeyboardKeys\(input\)/);
+  assert.match(app, /function hodlUpdatePrivateKeyKeyboardKeys\(input,keyboardId="private-keyboard"\)/);
   assert.match(app, /function hodlPrivateKeyInitialCharacters\(kind,network\)/);
   assert.match(app, /network==="testnet"\?\["9","c"\]:\["5","K","L"\]/);
   assert.match(appWhitespace, /if\(kind==="minikey"\)return\["S"\]/);
@@ -358,9 +361,14 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /\^S\(\?:\[1-9A-HJ-NP-Za-km-z\]\{21\}\|\[1-9A-HJ-NP-Za-km-z\]\{29\}\)\$/);
   assert.match(app, /function hodlPassphraseKeyboardMarkup\(\)/);
   assert.match(app, /function hodlPrivateKeyKeyboardMarkup\(\)/);
-  assert.match(app, /function hodlBindPassphraseKeyboard\(inputId="pass",toggleId="passphrase-keyboard-toggle",inputName="passphrase"\)/);
+  assert.match(app, /function hodlBindPassphraseKeyboard\(inputId="pass",toggleId="passphrase-keyboard-toggle",inputName="passphrase",keyboardId="passphrase-keyboard"\)/);
+  // Each on-screen keyboard owns a distinct element id, so two of them can
+  // coexist without one binding stealing the other's keys.
+  assert.match(app, /hodlKeyboardMarkup\(!0,"passphrase","passphrase-keyboard"\)/);
+  assert.match(app, /hodlKeyboardMarkup\(!0,"private key","private-keyboard",!0\)/);
+  assert.doesNotMatch(app, /hodlKeyboardMarkup\(!0\)/);
   assert.match(app, /function hodlRenderPassphraseKeyboard\(\)/);
-  assert.match(app, /passphrase=Ne==="dice"\|\|Ne==="hex"\|\|Ne==="seed"&&hodlSeedMethod==="numbers",enabled=passphrase\|\|privateKey/);
+  assert.match(app, /privateKey=Ne==="key",passphrase=!privateKey,enabled=passphrase\|\|privateKey/);
   assert.match(app, /hodlPassphraseKeyboardToggleMarkup\(\)/);
   assert.match(app, /function hodlPassphraseBip39ToggleMarkup\(checked=hodlPassphraseBip39Enabled\(\)\)/);
   assert.match(app, /function hodlAnalyzeBip39Passphrase\(value,activeCaret=null\)/);
@@ -384,7 +392,7 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(appWhitespace, /setTimeout\(\(\)=>\{holdTimer=null;repeated=true;remove\(\);if\(!button\.disabled\)repeatTimer=setInterval\(remove,69\)\},420\)/);
   assert.match(app, /\["pointerup","pointercancel","pointerleave","lostpointercapture"\]/);
   assert.match(appWhitespace, /if\(repeated\)\{event\.preventDefault\(\);repeated=false;return\}/);
-  assert.match(app, /function hodlAutocompleteSeedInput\(input,event,completeExisting=!1\)/);
+  assert.match(app, /function hodlAutocompleteSeedInput\(input,event,completeExisting=!1,wholeWordlist=!1\)/);
   assert.match(app, /toggle\.checked&&hodlAutocompleteSeedInput\(input,null,!0\)/);
   assert.match(app, /inputType:"insertReplacementText"/);
   assert.match(appWhitespace, /toggle\.checked;input\.focus\(\{preventScroll:true\}\)/);
@@ -497,7 +505,7 @@ test("multisig script type and placeholders follow detected co-signer exports", 
   assert.match(template, /placeholder="\[fingerprint\/48h\/0h\/0h\/2h\]Zpub…"/);
   assert.match(app, /function hodlMultisigKeyPlaceholder\(kind,network,purpose,coinType=Rs\(network\),hardening=/);
   assert.match(appWhitespace, /kind==="p2sh"&&purpose===45\)return`\[fingerprint\/\$\{purposeStep\}\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
-  assert.match(appWhitespace, /kind==="p2sh"\)return`\[fingerprint\/\$\{purposeStep\}\/\$\{coin\}\/\$\{account\}\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
+  assert.match(appWhitespace, /kind==="p2sh"\|\|purpose===87\)return`\[fingerprint\/\$\{purposeStep\}\/\$\{coin\}\/\$\{account\}\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
   assert.match(app, /testnet\?"Upub":"Ypub"/);
   assert.match(app, /testnet\?"Vpub":"Zpub"/);
   assert.match(appWhitespace, /kind==="p2tr"\)return`\[fingerprint\/\$\{purposeStep\}\/\$\{coin\}\/\$\{account\}\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
@@ -588,9 +596,11 @@ test("multisig separates script type from purpose and keeps the Legacy BIP87 sho
     assert.match(markup, /m\/87h\/coinh\/accounth/);
   }
   assert.match(css, /\.msig-legacy-account-toggle\[hidden\] \{ display: none !important; \}/);
-  assert.match(app, /legacy=hodlScriptKind\(\)==="p2sh"/);
-  assert.match(appSource, /if \(toggle\) toggle\.hidden = !legacy/);
-  assert.match(app, /hodlSetMsigPurpose\(legacy\.checked\?87:45\)/);
+  assert.match(appSource, /if \(toggle\) toggle\.hidden = kind === "p2tr"/);
+  assert.match(app, /hodlSetMsigPurpose\(hodlStandardMsigPurpose\(\)\)/);
+  assert.match(appSource, /if \(kind === "p2tr"\) return 87;/);
+  assert.match(appSource, /if \(document\.getElementById\("msig-legacy-bip87"\)\?\.checked\) return 87;/);
+  assert.match(appSource, /if \(kind === "p2sh"\) return 45;/);
   assert.match(app, /hodlSetMsigPurpose\(hodlStandardMsigPurpose\(script\.value\)\)/);
   assert.match(app, /legacyBip87:!1/);
   assert.match(app, /purpose:"48"/);
