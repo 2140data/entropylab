@@ -201,7 +201,13 @@ jobs:
           name: entropylab-candidate
       - name: Verify the candidate digest
         run: echo "${{ needs.build.outputs.sha256 }}  entropylab.html" | sha256sum -c -
-      - name: Run headless Firefox tests
+      # The runner image ships Edge's setuid sandbox helper without the
+      # setuid bit, so headless Edge aborts at launch. Run the Chromium
+      # engines unsandboxed here — the same opt-out the dev container uses
+      # (the audited artifact is the app, not the browser).
+      - name: Run headless browser tests
+        env:
+          BROWSER_TEST_NO_SANDBOX: "1"
         run: npm run test:browser
 
   # ── Per-section tests: each runs in its own isolated runner, in parallel ──
