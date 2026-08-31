@@ -8666,7 +8666,9 @@ function hodlRenderPsbt(psbt) {
   return html.join("")
 }
 function hodlRenderRawTx(tx) {
-  let network = hodlSelectedNetwork(document.getElementById("psbt-network")),
+  // psbt-network is a mainnet/testnet select, not a numeric coin-type input,
+  // so hodlSelectedNetwork (which reads coin types) cannot parse it.
+  let network = document.getElementById("psbt-network")?.value === "testnet" ? "testnet" : "mainnet",
     html = [],
     map = hodlSessionOwnership(network),
     signatures = extractEcdsaSignatures(tx),
