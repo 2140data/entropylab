@@ -391,7 +391,7 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /hodlKeyboardMarkup\(!0,"private key","private-keyboard",!0\)/);
   assert.doesNotMatch(app, /hodlKeyboardMarkup\(!0\)/);
   assert.match(app, /function hodlRenderPassphraseKeyboard\(\)/);
-  assert.match(app, /privateKey=Ne==="key",passphrase=!privateKey/);
+  assert.match(app, /privateKey=Ne==="key"&&!hodlBrainHdActive\(\),passphrase=!privateKey/);
   // Where the seed keyboard exists it already follows focus into the passphrase
   // box, so no second on-screen keyboard is rendered underneath it.
   assert.match(app, /shared=passphrase&&!!document\.getElementById\("seed-keyboard"\),enabled=!shared/);

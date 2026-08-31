@@ -2618,17 +2618,19 @@ function hodlImportedExtendedKeyDepth() {
   }
 }
 function hodlUpdateKeyModeControls() {
-  let singleKey = Ne === "key", settings = document.getElementById("key-settings");
+  let singleKey = Ne === "key", hdBrain = hodlBrainHdActive(), settings = document.getElementById("key-settings");
   ["passphrase-field", "master-fingerprint-preview", "script-type-field", "derivation-path-field", "derivation-advanced"].forEach((id) => {
     let element = document.getElementById(id);
-    if (element) element.hidden = singleKey;
+    // The HD brain output is a wallet, not a single key: it needs these fields.
+    // The fingerprint preview stays hidden so nothing is shown before Derive.
+    if (element) element.hidden = id === "master-fingerprint-preview" ? singleKey : singleKey && !hdBrain;
   });
-  settings?.classList.toggle("single-key-mode", singleKey);
+  settings?.classList.toggle("single-key-mode", singleKey && !hdBrain);
 }
 function hodlUpdateDerivationPathPreview() {
   hodlUpdateKeyModeControls();
   let input = document.getElementById("derivation-path"), help = document.getElementById("derivation-path-help");
-  if (!input || Ne === "key") return;
+  if (!input || Ne === "key" && !hodlBrainHdActive()) return;
   try {
     let visible = hodlReadVisibleDerivationPath();
     input.dataset.accountPath = `m${visible.accountComponents.map((entry) => `/${hodlPathIndex(entry.index, entry.hardened)}`).join("")}`;
@@ -4439,6 +4441,12 @@ function hodlBrainWalletText(value, trim = hodlBrainWalletTrimEnabled()) {
     return "";
   }
 }
+function hodlBrainHdActive() {
+  if (Ne !== "key") return false;
+  let input = document.getElementById("key");
+  if (!input) return false;
+  return hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value, input.value) === "brain" && hodlBrainWalletOutput() === "hd";
+}
 function hodlBrainWalletOutput() {
   return document.querySelector('input[name="bo"]:checked')?.value === "hd" ? "hd" : "scalar";
 }
@@ -4846,7 +4854,7 @@ function hodlBindBase64Keyboard(input) {
   refresh();
 }
 function hodlRenderPassphraseKeyboard() {
-  let host = document.getElementById("passphrase-keyboard-host"), toggleHost = document.getElementById("passphrase-keyboard-toggle-host"), privateKey = Ne === "key", passphrase = !privateKey;
+  let host = document.getElementById("passphrase-keyboard-host"), toggleHost = document.getElementById("passphrase-keyboard-toggle-host"), privateKey = Ne === "key" && !hodlBrainHdActive(), passphrase = !privateKey;
   // The seed keyboard already follows focus between the seed box and the
   // passphrase box, so where it exists it serves both and a second on-screen
   // keyboard would only stack another copy under the first.
@@ -6237,6 +6245,9 @@ function hodlBindKeyFields() {
     });
     let refreshBrain = () => {
       hodlSyncBrainOutput();
+      hodlUpdateKeyModeControls();
+      hodlRenderPassphraseKeyboard();
+      hodlUpdateDerivationPathPreview();
       hodlRenderPrivateKeyInputState(key);
       hodlSyncKeyClearButton();
       hodlSyncDeriveButton();
@@ -6533,8 +6544,8 @@ async function hodlCalculateKey(progress) {
   // recovery export.
   hodlWalletDatBirthday = "genesis";
   try {
-    let derivationPlan = Ne === "key" ? null : hodlReadDerivationPlan(), coinType = derivationPlan?.coinType ?? hodlReadCoinType(document.getElementById("network")), network = derivationPlan?.network ?? hodlNetworkFromCoinType(coinType), addressWindow = Ne === "key" ? { start: 0, range: 1 } : hodlReadAddressWindow(), branchWindow = Ne === "key" ? { start: 0, range: 2 } : hodlReadBranchWindow(), count = addressWindow.range, addressStart = addressWindow.start, branchStart = branchWindow.start, branchRange = branchWindow.range, passphrase = document.getElementById("pass").value, scriptType = hodlSelectedScriptType(), purpose = derivationPlan?.purpose ?? 84, account = derivationPlan?.accountIndex ?? 0, hardening = derivationPlan?.hardening ?? hodlDefaultHardening();
-    if (Ne !== "key" && hodlPassphraseBip39Enabled() && passphrase) {
+    let derivationPlan = Ne === "key" && !hodlBrainHdActive() ? null : hodlReadDerivationPlan(), coinType = derivationPlan?.coinType ?? hodlReadCoinType(document.getElementById("network")), network = derivationPlan?.network ?? hodlNetworkFromCoinType(coinType), addressWindow = Ne === "key" ? { start: 0, range: 1 } : hodlReadAddressWindow(), branchWindow = Ne === "key" ? { start: 0, range: 2 } : hodlReadBranchWindow(), count = addressWindow.range, addressStart = addressWindow.start, branchStart = branchWindow.start, branchRange = branchWindow.range, passphrase = document.getElementById("pass").value, scriptType = hodlSelectedScriptType(), purpose = derivationPlan?.purpose ?? 84, account = derivationPlan?.accountIndex ?? 0, hardening = derivationPlan?.hardening ?? hodlDefaultHardening();
+    if ((Ne !== "key" || hodlBrainHdActive()) && hodlPassphraseBip39Enabled() && passphrase) {
       let passphraseAnalysis = hodlAnalyzeBip39Passphrase(passphrase);
       if (passphraseAnalysis.invalidRanges.length || passphraseAnalysis.incomplete || passphraseAnalysis.trailingSeparator) throw new Error("Correct the highlighted BIP39-word passphrase inconsistencies before deriving.");
     }
@@ -6605,6 +6616,7 @@ async function hodlCalculateKey(progress) {
       if (kind === "brain" && hodlBrainWalletOutput() === "hd") {
         // The digest becomes BIP39 entropy rather than the private key itself,
         // which is a different wallet from the same text.
+        if (passphrase && document.getElementById("passphrase-field")?.hidden) throw new Error("A passphrase is set but not visible for this output. Show it and confirm it, or clear it, before deriving.");
         let entropy = hodlBrainLabEntropy(hodlBrainWalletPassphrase(value, hodlBrainWalletTrimEnabled()));
         if (!entropy.ok) throw new Error(entropy.error);
         re = await hodlEntropyWalletWithProgress(entropy, passphrase, network, count, account, addressStart, progress, purpose, coinType, hardening, branchStart, branchRange, derivationPlan);
