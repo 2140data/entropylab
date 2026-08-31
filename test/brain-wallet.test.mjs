@@ -85,15 +85,24 @@ test("brain-wallet lab rejects empty text and keeps private-key hashing separate
   const labHex = lab.hodlBrainLabEntropy(text).hex;
   const scalarHex = Buffer.from(helpers.hodlBrainWalletPrivateKey(text)).toString("hex");
   assert.equal(labHex, scalarHex);
-  assert.equal(app.includes('Ne === "brain-lab"'), true);
+  assert.match(app, /kind === "brain" && hodlBrainWalletOutput\(\) === "hd"/);
   assert.match(app, /function hodlBrainWalletPrivateKey\(/);
   assert.match(app, /function hodlBrainLabEntropy\(/);
 });
 
-test("brain-lab has no silent fingerprint or mnemonic preview path", () => {
-  assert.match(app, /hodlKeyModes = \["dice", "cards", "hex", "seed", "key", "brain-lab"\]/);
-  assert.match(app, /Brain wallet — lab/);
-  assert.match(loadSlice("hodlFingerprintMnemonic"), /if \(Ne === "brain-lab"\) return null;/);
+test("the brain-wallet HD output has no silent fingerprint or mnemonic preview path", () => {
+  // It lives under Private key > Brain wallet rather than in its own mode, so the
+  // two uses of the same digest are chosen explicitly instead of by tab.
+  assert.match(app, /hodlKeyModes = \["dice", "cards", "hex", "seed", "key"\]/);
+  assert.doesNotMatch(app, /"brain-lab" \? "Brain wallet/);
+  assert.doesNotMatch(app, /Brain wallet — lab/);
+  assert.doesNotMatch(app, /id="brain-lab-details"/);
+  assert.match(app, /id="brain-warning"/);
+  assert.match(app, /name="bo" value="scalar"/);
+  assert.match(app, /name="bo" value="hd"/);
+  // The private-key mode never previews a fingerprint or mnemonic, which now
+  // covers the HD brain output too.
+  assert.match(app, /if \(Ne === "key"\) \{\s*preview\.hidden = true;/);
   assert.match(app, /24 words appear only after Derive Wallet/);
   assert.match(app, /Acknowledge the lab warning before deriving/);
   assert.doesNotMatch(loadSlice("hodlBrainLabEntropy"), /localStorage/);

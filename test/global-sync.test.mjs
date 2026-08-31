@@ -69,7 +69,7 @@ test("hashed methods publish one way without being overwritten", () => {
   const current = loadSlice("hodlGlobalSyncCurrentBits");
   assert.match(current, /hodlDiceEntropy\(value, ge, config\.words\)/);
   assert.match(current, /hodlCardsEntropy\(value, config\.words, hodlCardColemanSymbols\)/);
-  assert.match(current, /hodlBrainLabEntropy\(value\)/);
+  assert.match(current, /hodlBrainWalletPrivateKey\(value, hodlBrainWalletTrimEnabled\(\)\)/);
   const apply = loadSlice("hodlApplyGlobalSync");
   assert.doesNotMatch(apply, /fields\.dice\s*=/);
   assert.doesNotMatch(apply, /fields\.cards\s*=/);

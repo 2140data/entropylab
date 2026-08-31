@@ -205,7 +205,7 @@ test("Seed phrase offers one-based or zero-based BIP39 word-number entry", () =>
   assert.match(appSource, /\[0, 1, 2, 3, 4, 5, 6, 7, 8, 9\]/);
   assert.match(appSource, /id="seed-number-words" class="dice-word-grid"/);
   assert.match(css, /\.dice-input-pad\.seed-number-pad \{ grid-template-columns: repeat\(5/);
-  assert.match(appSource, /passphrase = !privateKey/);
+  assert.match(appSource, /passphrase = !keyMode \|\| hdBrain/);
 });
 
 test("hashed cards can match Ian Coleman's suit-symbol SHA-256 transcript", () => {
@@ -392,11 +392,14 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /hodlKeyboardMarkup\(!0,"private key","private-keyboard",!0\)/);
   assert.doesNotMatch(app, /hodlKeyboardMarkup\(!0\)/);
   assert.match(app, /function hodlRenderPassphraseKeyboard\(\)/);
-  assert.match(app, /privateKey=Ne==="key",passphrase=!privateKey/);
+  assert.match(app, /keyMode=Ne==="key",hdBrain=hodlBrainHdActive\(\),privateKey=keyMode,passphrase=!keyMode\|\|hdBrain/);
   // Where the seed keyboard exists it already follows focus into the passphrase
   // box, so no second on-screen keyboard is rendered underneath it.
-  assert.match(app, /shared=passphrase&&!!document\.getElementById\("seed-keyboard"\),enabled=!shared/);
-  assert.match(app, /passphrase\?\(shared\?"":hodlPassphraseKeyboardToggleMarkup\(\)\)\+hodlPassphraseBip39ToggleMarkup\(\)/);
+  assert.match(app, /shared=passphrase&&!!document\.getElementById\("seed-keyboard"\),ownToggle=passphrase&&!shared&&!hdBrain,enabled=!shared/);
+  // Only one on-screen keyboard toggle per section: the seed keyboard and the
+  // private-key keyboard each already serve the passphrase field too.
+  assert.match(app, /ownToggle\?hodlPassphraseKeyboardToggleMarkup\(\):""/);
+  assert.match(app, /passphrase\?\(ownToggle\?hodlPassphraseKeyboardToggleMarkup\(\):""\)\+hodlPassphraseBip39ToggleMarkup\(\)/);
   assert.match(app, /hodlPassphraseKeyboardToggleMarkup\(\)/);
   assert.match(app, /function hodlPassphraseBip39ToggleMarkup\(checked=hodlPassphraseBip39Enabled\(\)\)/);
   assert.match(app, /function hodlAnalyzeBip39Passphrase\(value,activeCaret=null\)/);

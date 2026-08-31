@@ -249,7 +249,7 @@ test("character entries skip whitespace and keep astral characters whole", () =>
 test("brain analysis reports the exact-text and trim conventions", () => {
   let analysis = hodlPrivateKeyInputAnalysis("", "brain", "mainnet", false);
   assert.equal(analysis.ready, false);
-  assert.match(analysis.status, /No recovery passphrase entered/);
+  assert.match(analysis.status, /No text entered/);
   analysis = hodlPrivateKeyInputAnalysis("correct horse battery staple", "brain", "mainnet", false);
   assert.equal(analysis.ready, true);
   assert.match(analysis.status, /exact text will be used/);
