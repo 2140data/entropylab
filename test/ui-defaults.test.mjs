@@ -598,19 +598,45 @@ test("multisig separates script type from purpose and keeps the Legacy BIP87 sho
 });
 
 test("Native SegWit multisig uses the imported Bitcoin address encoder", () => {
-  // Pinning the import list verbatim once let a used-but-unimported helper
-  // ship (p2trLeafScript); assert instead that every name the file calls is
-  // actually imported from the facade.
-  const importMatch = appSource.match(/import \{([^}]*)\} from "\.\/addresses\.js"/);
-  assert.ok(importMatch, "app.js imports from ./addresses.js");
-  const imported = new Set(importMatch[1].split(",").map((name) => name.trim()));
-  const body = appSource.replace(/import \{[^}]*\} from "\.\/addresses\.js";/, "");
-  for (const name of ["addressFor", "addressFromScript", "multisigScript", "multisigTrScript", "p2shScript", "p2trLeafScript", "p2wshScript"]) {
-    assert.match(body, new RegExp(`\\b${name}\\(`), `${name} is called by app.js`);
-    assert.ok(imported.has(name), `${name} must be imported from ./addresses.js`);
-  }
   assert.match(appSource, /addressFromScript\(p2wshScript\(ms\), network\)/);
   assert.doesNotMatch(appSource, /\bor\(net\)\.encode/);
+});
+
+test("every facade export app.js calls is imported from that facade", () => {
+  // Pinning the addresses.js import list verbatim once let a used-but-
+  // unimported helper ship (p2trLeafScript threw ReferenceError at runtime).
+  // A hardcoded name list can lock in the next omission the same way, so
+  // derive the expectation: for every local module app.js imports from, every
+  // export the file actually calls must be in that module's import statement.
+  const body = appSource.replace(/^import \{[^}]*\} from "\.\/[^"]+";$/gm, "");
+  const importPattern = /^import \{([^}]*)\} from "\.\/([\w-]+)\.js";$/gm;
+  let statement;
+  const problems = [];
+  while ((statement = importPattern.exec(appSource))) {
+    const imported = new Set(statement[1].split(",").map((name) => name.trim().split(" as ").pop().trim()));
+    const module = `src/js/${statement[2]}.js`;
+    let exportsSource;
+    try {
+      exportsSource = read(module);
+    } catch {
+      continue; // not a source module (e.g. generated); nothing to check
+    }
+    const exported = new Set();
+    for (const match of exportsSource.matchAll(/^export (?:const|function|class) (\w+)/gm)) exported.add(match[1]);
+    for (const match of exportsSource.matchAll(/export \{([^}]*)\}/gm)) {
+      for (const entry of match[1].split(",")) {
+        const name = entry.trim().split(" as ").pop().trim();
+        if (name) exported.add(name);
+      }
+    }
+    for (const name of exported) {
+      if (imported.has(name) || !new RegExp(`\\b${name}\\(`).test(body)) continue;
+      // A local declaration shadows the import site and cannot throw.
+      if (new RegExp(`function ${name}\\(|(?:const|let|var) ${name} =`).test(body)) continue;
+      problems.push(`app.js calls ${name}() but does not import it from ./${statement[2]}.js`);
+    }
+  }
+  assert.deepEqual(problems, [], problems.join("\n"));
 });
 
 test("the master fingerprint cards reserve a compact empty square for each LifeHash", () => {

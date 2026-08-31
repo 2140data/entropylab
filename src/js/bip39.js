@@ -32,8 +32,15 @@ const nfkd = (value) => {
 // as typed, so accepting one here would report "valid" for a phrase whose
 // seed no other wallet derives. Reject them the way the previous
 // implementation did, before the crate ever sees the text.
+//
+// A word-count check alone is not enough: "word\t word" is twelve pieces when
+// split on " " but twelve clean words when split on whitespace runs, so the
+// crate would accept a phrase the count admits. Equivalent acceptance means
+// the two tokenizations agree, which holds exactly when every separator is a
+// single ASCII space and no token carries whitespace of its own.
 const WORD_COUNTS = [12, 15, 18, 21, 24];
-const canonicalWords = (phrase) => WORD_COUNTS.includes(phrase.split(" ").length);
+const SINGLE_ASCII_SPACES = /^\S+( \S+)*$/;
+const canonicalWords = (phrase) => SINGLE_ASCII_SPACES.test(phrase) && WORD_COUNTS.includes(phrase.split(" ").length);
 
 const entropyToMnemonic = (entropy, wordlist = bip39English) => {
   if (!(entropy instanceof Uint8Array) || ![16, 20, 24, 28, 32].includes(entropy.length)) {
