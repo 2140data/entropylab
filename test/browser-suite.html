@@ -138,10 +138,10 @@
     // Parked with the rest of the banners; restore them and this asserts the
     // hosted build lights the warning up again.
     assert(!warning || !warning.hidden, "Online warning was not displayed");
-    // Titled and dismissible like the beta banner above it.
+    // Titled like the beta banner above it, but permanent: no dismiss control.
     const label = warning.querySelector(".online-warning-text strong");
-    const dismiss = document.getElementById("online-warning-dismiss");
-    assert(label && dismiss, "Online warning is missing its label wrapper or dismiss control");
+    assert(label, "Online warning is missing its label wrapper");
+    assert(!document.getElementById("online-warning-dismiss"), "Online warning must not carry a dismiss control");
     const labelStyle = getComputedStyle(label);
     assert(labelStyle.textTransform === "uppercase", "Online warning label is not uppercase");
     assert(labelStyle.display === "block", "Online warning label does not sit on its own line");
@@ -158,21 +158,11 @@
     if (beta) {
       assert(labelStyle.color === getComputedStyle(beta).color, "The two banner labels are different colours");
     }
-    const box = warning.getBoundingClientRect();
-    const button = dismiss.getBoundingClientRect();
-    assert(Math.abs(button.right - box.right) < 12, "Online dismiss control is not at the banner's right edge");
-    assert(button.top < box.top + box.height / 2, "Online dismiss control is not near the banner's top");
-    try {
-      dismiss.click();
-      assert(getComputedStyle(warning).display === "none", "Online warning survived its dismiss control");
-      assert(
-        localStorage.getItem("entropylab-online-warning-dismissed") === currentVersion.replace(/^v/, ""),
-        "Online dismissal was not persisted against this build's version",
-      );
-    } finally {
-      localStorage.removeItem("entropylab-online-warning-dismissed");
-      warning.hidden = false;
-    }
+    // The warning is permanent, so nothing about it may live in storage.
+    assert(
+      localStorage.getItem("entropylab-online-warning-dismissed") === null,
+      "Online warning must not persist anything in storage",
+    );
     assert(logo, "Header logo is missing");
     assert(
       logo.querySelector("svg.site-logo-dark") && logo.querySelector("svg.site-logo-light") && logo.getBoundingClientRect().width > 0,
