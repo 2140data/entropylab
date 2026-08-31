@@ -1381,6 +1381,12 @@
     input(document.getElementById("msig-x-0"), "");
     multisigScript.value = "p2wsh";
     multisigScript.dispatchEvent(new Event("change", { bubbles: true }));
+    // The BIP87 choice is not Legacy-only any more, so it survives a script-type
+    // change; clearing it returns this script type to its own standard.
+    equal(multisigPurpose.value, "87", "The BIP87 choice did not carry across a script-type change");
+    assert(!document.getElementById("msig-legacy-account-toggle").hidden, "BIP87 option stayed hidden for Native SegWit");
+    bip87Toggle.checked = false;
+    bip87Toggle.dispatchEvent(new Event("change", { bubbles: true }));
     equal(multisigPurpose.value, "48", "Native SegWit did not restore its standard multisig purpose");
     input(document.getElementById("msig-x-0"), bip48Export.replace("/48h/", "/69420h/"));
     equal(multisigPurpose.value, "69420", "A custom co-signer purpose was not auto-detected");

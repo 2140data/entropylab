@@ -307,9 +307,12 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /function hodlSeedKeyboardCanEnterSpace\(input,targetWords=Pt\)/);
   assert.match(app, /words\.length<config\.words&&words\.every\(word=>hodlBip39WordSet\.has\(word\)\)/);
   assert.match(app, /function hodlUpdateSeedKeyboardKeys\(input,targetWords=Pt\)/);
-  assert.match(app, /function hodlUpdatePassphraseKeyboardKeys\(input\)/);
+  // The seed keyboard doubles as the passphrase keyboard while that field has
+  // focus, so the key-state update takes whichever keyboard is asking.
+  assert.match(app, /function hodlUpdatePassphraseKeyboardKeys\(input,keyboardId="passphrase-keyboard"\)/);
+  assert.match(app, /isPassphrase\(\)\?hodlUpdatePassphraseKeyboardKeys\(activeInput,"seed-keyboard"\)/);
   assert.match(app, /function hodlPrivateKeyboardCanEnterCharacter\(input,key\)/);
-  assert.match(app, /function hodlUpdatePrivateKeyKeyboardKeys\(input\)/);
+  assert.match(app, /function hodlUpdatePrivateKeyKeyboardKeys\(input,keyboardId="private-keyboard"\)/);
   assert.match(app, /function hodlPrivateKeyInitialCharacters\(kind,network\)/);
   assert.match(app, /network==="testnet"\?\["9","c"\]:\["5","K","L"\]/);
   assert.match(appWhitespace, /if\(kind==="minikey"\)return\["S"\]/);

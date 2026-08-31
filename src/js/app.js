@@ -4274,8 +4274,8 @@ function hodlPassphraseBip39CanEnterSpace(input) {
     value = input.value.slice(0, start) + " " + input.value.slice(end), analysis = hodlAnalyzeBip39Passphrase(value);
   return analysis.invalidRanges.length === 0 && analysis.tokens.length > 0 && analysis.completeWords === analysis.tokens.length;
 }
-function hodlUpdatePassphraseKeyboardKeys(input) {
-  let keyboard = document.getElementById("passphrase-keyboard");
+function hodlUpdatePassphraseKeyboardKeys(input, keyboardId = "passphrase-keyboard") {
+  let keyboard = document.getElementById(keyboardId);
   if (!keyboard || !input) return;
   let constrained = hodlPassphraseBip39Enabled(), modeButton = keyboard.querySelector("[data-seed-keyboard-mode]");
   if (constrained && modeButton && keyboard.dataset.seedKeyboardLayout !== "lower") hodlSetSeedKeyboardLayout(keyboard, modeButton, "lower");
@@ -4415,8 +4415,8 @@ function hodlUpdatePrivateKeyInitialKeys(keyboard, input, kind, network) {
   if (show) keyboard.setAttribute("aria-label", `Choose the first ${kind === "wif" ? "WIF" : "Mini key"} character`);
   return show;
 }
-function hodlUpdatePrivateKeyKeyboardKeys(input) {
-  let keyboard = document.getElementById("private-keyboard");
+function hodlUpdatePrivateKeyKeyboardKeys(input, keyboardId = "private-keyboard") {
+  let keyboard = document.getElementById(keyboardId);
   if (!keyboard || !input) return;
   let kind = hodlNormalizePrivateKeyKind(document.querySelector('input[name="kk"]:checked')?.value, input.value), network = hodlSelectedNetwork(document.getElementById("network")), initialOnly = hodlUpdatePrivateKeyInitialKeys(keyboard, input, kind, network);
   let hexKeypad = keyboard.querySelector("[data-private-key-hex-keypad]"), hexOnly = kind === "hex-key";
@@ -4579,7 +4579,7 @@ function hodlBindSeedKeyboard(input, targetWords = Pt) {
   let toggle = document.getElementById("seed-keyboard-toggle"), keyboard = document.getElementById("seed-keyboard"), modeButton = keyboard?.querySelector("[data-seed-keyboard-mode]"), passphrase = document.getElementById("pass");
   if (!toggle || !keyboard || !input) return;
   let activeInput = input, isPassphrase = () => Boolean(passphrase && activeInput === passphrase), refresh = () => {
-    if (isPassphrase()) hodlUpdatePassphraseKeyboardKeys(activeInput);
+    if (isPassphrase()) hodlUpdatePassphraseKeyboardKeys(activeInput, "seed-keyboard");
     else hodlUpdateSeedKeyboardKeys(input, targetWords);
   };
   let activate = (target) => {
@@ -4617,7 +4617,7 @@ function hodlBindSeedKeyboard(input, targetWords = Pt) {
 function hodlBindPassphraseKeyboard(inputId = "pass", toggleId = "passphrase-keyboard-toggle", inputName = "passphrase", keyboardId = "passphrase-keyboard") {
   let toggle = document.getElementById(toggleId), keyboard = document.getElementById(keyboardId), input = document.getElementById(inputId), modeButton = keyboard?.querySelector("[data-seed-keyboard-mode]"), bip39Toggle = document.getElementById("passphrase-bip39-words");
   if (!toggle || !keyboard || !input) return;
-  let privateKey = inputId === "key", refresh = () => privateKey ? hodlUpdatePrivateKeyKeyboardKeys(input) : hodlUpdatePassphraseKeyboardKeys(input);
+  let privateKey = inputId === "key", refresh = () => privateKey ? hodlUpdatePrivateKeyKeyboardKeys(input, keyboardId) : hodlUpdatePassphraseKeyboardKeys(input, keyboardId);
   toggle.onclick = () => {
     hodlSetOnScreenKeyboardOpen(!hodlOnScreenKeyboardOpen);
     refresh();
