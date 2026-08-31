@@ -205,7 +205,7 @@
   await test("limited private-key prefixes replace the full keypad until selected", async () => {
     await chooseMode("Private key");
     const privateKey = await until(() => document.getElementById("key"), "private-key input");
-    const keyboard = document.querySelector("#passphrase-keyboard-host [data-on-screen-keyboard]");
+    const keyboard = document.getElementById("private-keyboard");
     const toggle = document.getElementById("private-keyboard-toggle");
     const initialRow = keyboard?.querySelector("[data-private-key-initial-row]");
     assert(keyboard && toggle && initialRow, "Private-key initial choices are missing");
@@ -926,7 +926,7 @@
 
     await chooseMode("Private key");
     toggle = await until(() => document.getElementById("private-keyboard-toggle"), "private-key keyboard toggle");
-    keyboard = document.querySelector("#passphrase-keyboard-host [data-on-screen-keyboard]");
+    keyboard = await until(() => document.getElementById("private-keyboard"), "private-key keyboard");
     const privateKey = document.getElementById("key");
     assert(toggle.getAttribute("aria-expanded") === "true" && !keyboard.hidden, "Private-key keyboard did not inherit the shared open state");
     assert(
