@@ -53,15 +53,18 @@ fn clear_error() {
     LAST_ERROR.with(|slot| slot.borrow_mut().clear());
 }
 
-/// Allocates `len` bytes of linear memory for JS to fill. Pair with
-/// `psbt_free`.
+/// Allocates `len` zero-filled bytes of linear memory for JS to fill. Pair
+/// with `psbt_free`. The box owns exactly `len` bytes, so the deallocation
+/// layout is reproducible from `len` alone.
 #[no_mangle]
 pub extern "C" fn psbt_alloc(len: usize) -> *mut u8 {
     Box::into_raw(vec![0u8; len].into_boxed_slice()) as *mut u8
 }
 
 /// # Safety
-/// `ptr`/`len` must come from `psbt_alloc`.
+/// `ptr` must come from `psbt_alloc` and `len` must be exactly the length
+/// passed there: the box is reconstructed from `len` alone, so any other
+/// length deallocates with the wrong layout.
 #[no_mangle]
 pub unsafe extern "C" fn psbt_free(ptr: *mut u8, len: usize) {
     // Zero the buffer before deallocation. The boundary is watch-only by
@@ -912,4 +915,33 @@ fn build(json_bytes: &[u8]) -> Result<Vec<u8>, String> {
     // witness-carrying unsigned transactions and count mismatches.
     Psbt::deserialize(&out).map_err(|e| format!("rebuilt PSBT does not parse: {e}"))?;
     Ok(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // The allocator pair must round-trip exact sizes, including zero length:
+    // psbt_free reconstructs a Box<[u8]> whose layout comes from `len` alone,
+    // so a capacity mismatch corrupts the host allocator. The wasm suite
+    // (test/wipe-wasm.test.mjs) pins this behavior in the artifact; this test
+    // makes the same lifecycle checkable on the host — `cargo test`, or
+    // `cargo +nightly miri test` for a UB-checked run.
+    #[test]
+    fn alloc_free_round_trips_exact_sizes() {
+        for len in [0usize, 1, 2, 15, 16, 31, 32, 255, 256, 4096] {
+            for cycle in 0..8u8 {
+                let ptr = psbt_alloc(len);
+                assert!(!ptr.is_null());
+                unsafe {
+                    for i in 0..len {
+                        // A recycled block must never expose stale bytes.
+                        assert_eq!(ptr.add(i).read(), 0);
+                        ptr.add(i).write_volatile(cycle ^ i as u8);
+                    }
+                    psbt_free(ptr, len);
+                }
+            }
+        }
+    }
 }

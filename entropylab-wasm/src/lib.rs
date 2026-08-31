@@ -44,15 +44,18 @@ fn ctx() -> &'static Secp256k1<secp256k1::All> {
     CONTEXT.get_or_init(Secp256k1::new)
 }
 
-/// Allocates `len` bytes of linear memory for JS to fill. Pair with
-/// `secp_free`.
+/// Allocates `len` zero-filled bytes of linear memory for JS to fill. Pair
+/// with `secp_free`. The box owns exactly `len` bytes, so the deallocation
+/// layout is reproducible from `len` alone.
 #[no_mangle]
 pub extern "C" fn secp_alloc(len: usize) -> *mut u8 {
     Box::into_raw(vec![0u8; len].into_boxed_slice()) as *mut u8
 }
 
 /// # Safety
-/// `ptr`/`len` must come from `secp_alloc`.
+/// `ptr` must come from `secp_alloc` and `len` must be exactly the length
+/// passed there: the box is reconstructed from `len` alone, so any other
+/// length deallocates with the wrong layout.
 #[no_mangle]
 pub unsafe extern "C" fn secp_free(ptr: *mut u8, len: usize) {
     // Zero the buffer before deallocation: inputs can carry private keys,
@@ -1089,4 +1092,33 @@ pub unsafe extern "C" fn el_sighash_segwit_v0(
     let digest = bitcoin_hashes::sha256d::Hash::hash(&buf).to_byte_array();
     std::ptr::copy_nonoverlapping(digest.as_ptr(), out, 32);
     32
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // The allocator pair must round-trip exact sizes, including zero length:
+    // secp_free reconstructs a Box<[u8]> whose layout comes from `len` alone,
+    // so a capacity mismatch corrupts the host allocator. The wasm suite
+    // (test/wipe-wasm.test.mjs) pins this behavior in the artifact; this test
+    // makes the same lifecycle checkable on the host — `cargo test`, or
+    // `cargo +nightly miri test` for a UB-checked run.
+    #[test]
+    fn alloc_free_round_trips_exact_sizes() {
+        for len in [0usize, 1, 2, 15, 16, 31, 32, 255, 256, 4096] {
+            for cycle in 0..8u8 {
+                let ptr = secp_alloc(len);
+                assert!(!ptr.is_null());
+                unsafe {
+                    for i in 0..len {
+                        // A recycled block must never expose stale bytes.
+                        assert_eq!(ptr.add(i).read(), 0);
+                        ptr.add(i).write_volatile(cycle ^ i as u8);
+                    }
+                    secp_free(ptr, len);
+                }
+            }
+        }
+    }
 }
