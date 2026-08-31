@@ -865,6 +865,18 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .psbted-pairs .psbted-name, .psbted-pairs .psbted-hex { font-family: var(--mono); font-size: 12px; }
 .psbted-pairs input, .psbted-add input, .psbted-add select { margin-top: 0; padding: 6px 8px; border-radius: 6px; font-size: 12px; }
 .psbted-pairs .psbted-num { min-width: 90px; }
+/* Size the tx-table number fields near their real maxima — output values
+   stay under ~2.1e15 sats (16 digits), sequences are 10 digits, prevout
+   indexes ~6 — so "sats" fits on the input's line and the wide columns go
+   to the txid and scriptPubKey fields. */
+.psbted-pairs input[data-txout-val] { width: 19ch; }
+.psbted-pairs input[data-txin-seq] { width: 13ch; }
+.psbted-pairs input[data-txin-vout] { width: 9ch; }
+/* The decoded address under a scriptPubKey (and in a map section's "Pays"
+   line) is one long unbroken bech32 string: wrap it anywhere so it can
+   never overflow the cell or the card. */
+.psbted-addr { display: block; margin-top: 2px; overflow-wrap: anywhere; }
+.psbted-map > p { overflow-wrap: anywhere; }
 .psbted-del { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--danger); cursor: pointer; padding: 4px 10px; font-size: 14px; line-height: 1; }
 .psbted-add { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 2fr) auto; gap: 8px; align-items: center; margin: 4px 0 14px; }
 @media (max-width: 720px) {

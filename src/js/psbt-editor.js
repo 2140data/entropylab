@@ -291,7 +291,7 @@ export const initPsbtEditor = () => {
           <td>${index}</td>
           <td><input class="psbted-num" data-txout-val="${index}" value="${escapeHtml(String(output.value))}" inputmode="numeric" aria-label="Output ${index} value in sats"> sats</td>
           <td><input class="psbted-txid" data-txout-script="${index}" value="${escapeHtml(output.scriptPubKey)}" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Output ${index} scriptPubKey (hex)">
-            <br><span class="muted">${escapeHtml(addr || output.asm || "")}</span></td>
+            <span class="muted psbted-addr">${escapeHtml(addr || output.asm || "")}</span></td>
         </tr>`;
       })
       .join("");
