@@ -14,7 +14,13 @@ Official website: [entropylab.online](https://entropylab.online)
 - Accepts dice rolls, coin flips, hexadecimal entropy, BIP39 seed phrases,
   extended keys, WIF keys, raw private keys, and Casascius mini private keys.
   All five BIP39 phrase lengths (12, 15, 18, 21, and 24 words) are supported
-  for every entropy entry method.
+  for every entropy entry method. A separate **Brain wallet — lab** mode hashes
+  exact UTF-8 text with SHA-256 and uses the 32-byte digest as 256-bit BIP39
+  entropy (24 words). That is not a BIP39 passphrase, not a Bitcoin Core hdseed
+  or address-key backup, and not the private-key brain-wallet path (which treats
+  the same hash as a secp256k1 scalar). Strength is the entropy of the text, not
+  the word count. Derive Wallet is required; the lab does not preview the
+  mnemonic while typing.
 - Derives BIP39 seeds, BIP32 extended keys, wallet fingerprints, addresses,
   and Bitcoin Core-compatible descriptors. Each master fingerprint is shown
   next to its deterministic [LifeHash](https://lifehash.info) icon so two
