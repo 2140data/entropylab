@@ -464,16 +464,16 @@
       assert(!document.getElementById("go").disabled, `${format} did not accept exact zero entropy`);
       equal(document.querySelector("#entropy-words [data-word]").textContent, "abandon");
     }
-    const sync = document.getElementById("sync-number-bases");
-    assert(sync && !sync.checked, "Number-base syncing did not start opt-in");
+    const sync = document.getElementById("global-entropy-sync");
+    assert(sync && !sync.checked, "Global entropy syncing did not start opt-in");
     sync.click();
     await wait(0);
-    const syncStatus = document.getElementById("number-base-sync-status");
-    assert(syncStatus && !syncStatus.hidden && syncStatus.textContent.includes("Synced"), "Complete entropy did not show the synced confirmation");
+    const syncStatus = document.getElementById("global-sync-status");
+    assert(syncStatus && !syncStatus.hidden && syncStatus.textContent.includes("128 bits synced"), "Complete entropy did not show the global synced confirmation");
     document.querySelector('input[name="entropy-format"][value="hex"]').click();
     const syncedHex = await until(() => document.getElementById("hex"), "synced hex input");
     equal(syncedHex.value, "0".repeat(32));
-    assert(document.getElementById("sync-number-bases").checked, "Sync preference did not persist between formats");
+    assert(document.getElementById("global-entropy-sync").checked, "Global sync preference did not persist between formats");
     document.querySelector('input[name="entropy-format"][value="base8"]').click();
     const base8 = await until(() => document.getElementById("base8"), "Base 8 entropy input");
     input(base8, `${"0".repeat(42)}4`);
@@ -500,21 +500,116 @@
     input(base32For24, `${"0".repeat(51)}1`);
     await wait(0);
     assert(!document.getElementById("go").disabled, "24-word Base32 did not accept a final single entropy bit");
-    document.getElementById("sync-number-bases").click();
     input(base32For24, "0".repeat(51));
-    document.getElementById("sync-number-bases").click();
-    assert(document.getElementById("sync-number-bases").checked, "Sync did not turn back on for incomplete entropy");
-    assert(document.getElementById("number-base-sync-status").hidden, "Incomplete entropy incorrectly remained marked as synced");
+    assert(document.getElementById("global-entropy-sync").checked, "Global sync turned off for incomplete entropy");
+    assert(document.getElementById("global-sync-status").textContent.includes("255 bits synced"), "Incomplete entropy did not report its exact synced bit count");
     document.querySelector('input[name="entropy-format"][value="hex"]').click();
-    const preservedHex = await until(() => document.getElementById("hex"), "preserved synchronized hex input");
-    assert(preservedHex.value.length === 64, "Re-enabling sync with an incomplete source blanked another representation");
+    const preservedHex = await until(() => document.getElementById("hex"), "truncated synchronized hex input");
+    assert(preservedHex.value.length === 63, "Global sync did not wait for a complete next hexadecimal character");
     document.querySelector('input[name="entropy-format"][value="base32"]').click();
     const preservedBase32 = await until(() => document.getElementById("base32"), "preserved incomplete Base32 input");
     equal(preservedBase32.value, "0".repeat(51));
     input(preservedBase32, "");
   });
 
+  await test("global entropy sync follows partial direct input and excludes hashed input", async () => {
+    document.querySelector('[data-seed-words="12"]').click();
+    await chooseMode("Number bases");
+    document.querySelector('input[name="entropy-format"][value="bin"]').click();
+    const binary = await until(() => document.getElementById("bin"), "global-sync binary input");
+    const directToggle = document.getElementById("global-entropy-sync");
+    if (!directToggle.checked) directToggle.click();
+    input(binary, "000");
+    assert(document.getElementById("global-sync-status").textContent.includes("3 bits synced"), "Partial direct entropy did not sync immediately");
+
+    await chooseMode("Dice rolls");
+    document.querySelector('input[name="dm"][value="dplus"]').click();
+    equal(document.getElementById("dice").value, "1", "Three bits did not emit the first complete D++ D8 result");
+    document.querySelector('input[name="dm"][value="bitbox"]').click();
+    equal(document.getElementById("dice").value, "1", "BitBox emitted a second die before four bits were available");
+    await chooseMode("Cards");
+    document.querySelector('input[name="card-method"][value="direct"]').click();
+    equal(document.getElementById("direct-cards").value, "A", "Three bits did not emit the first complete direct-card draw");
+
+    await chooseMode("Number bases");
+    document.querySelector('input[name="entropy-format"][value="bin"]').click();
+    input(document.getElementById("bin"), "0".repeat(11));
+    await chooseMode("Seed phrase");
+    equal(document.getElementById("seed").value, "abandon", "Eleven direct bits did not fill the first BIP39 word");
+    await chooseMode("Dice rolls");
+    document.querySelector('input[name="dm"][value="dplus"]').click();
+    equal(document.getElementById("dice").value, "100", "Eleven direct bits did not fill one D++ word group");
+    document.querySelector('input[name="dm"][value="bitbox"]').click();
+    equal(document.getElementById("dice").value, "111111", "Eleven direct bits did not fill one BitBox word group");
+
+    await chooseMode("Seed phrase");
+    const invalidMnemonic = Array(12).fill("abandon").join(" ");
+    input(document.getElementById("seed"), invalidMnemonic);
+    await chooseMode("Number bases");
+    document.querySelector('input[name="entropy-format"][value="hex"]').click();
+    equal(document.getElementById("hex").value, "00", "An invalid complete mnemonic overwrote the last valid synced entropy");
+    await chooseMode("Seed phrase");
+    equal(document.getElementById("seed").value, invalidMnemonic, "Global sync rewrote its invalid source input");
+
+    await chooseMode("Private key");
+    const uncompressedWif = "5HpHagT65TZzG1PH3CSu63k8DbpvD8s5ip4nEB3kEsreAnchuDf";
+    input(document.getElementById("key"), uncompressedWif);
+    await chooseMode("Number bases");
+    document.querySelector('input[name="entropy-format"][value="hex"]').click();
+    const wifHex = document.getElementById("hex").value;
+    equal(wifHex.length, 32, "A 12-word target did not truncate WIF entropy to 128 synced bits");
+    await chooseMode("Private key");
+    equal(document.getElementById("key").value, uncompressedWif, "Global sync replaced the source WIF encoding");
+
+    await chooseMode("Dice rolls");
+    document.querySelector('input[name="dm"][value="coldcard"]').click();
+    const hashedToggle = document.getElementById("global-entropy-sync");
+    assert(hashedToggle.closest("#global-sync-host"), "The global sync control moved away from the method button bar for a hashed input");
+    assert(hashedToggle.disabled && hashedToggle.checked, "A hashed input method did not preserve the enabled non-hashed sync preference while showing it as unavailable");
+    assert(hashedToggle.closest("label").textContent.includes("non-hashed"), "The global sync label did not explain its non-hashed scope");
+    const hashedDice = document.getElementById("dice");
+    input(hashedDice, "1");
+    assert(document.getElementById("global-entropy-sync").disabled, "Entering hashed input enabled global sync");
+    await chooseMode("Number bases");
+    document.querySelector('input[name="entropy-format"][value="hex"]').click();
+    equal(document.getElementById("hex").value, wifHex, "A hashed input changed the last non-hashed synchronized entropy");
+    const cleanupToggle = document.getElementById("global-entropy-sync");
+    assert(!cleanupToggle.disabled && cleanupToggle.checked, "The non-hashed sync preference did not resume after leaving a hashed method");
+    if (cleanupToggle.checked) cleanupToggle.click();
+    document.getElementById("wipe").click();
+  });
+
+  await test("global entropy sync follows dice-pad clicks and direct-card undo", async () => {
+    // The dice pad and the card undo button mutate their textarea without a
+    // bubbling input event; the delegated click handler must re-run the sync.
+    await chooseMode("Dice rolls");
+    document.querySelector('input[name="dm"][value="dplus"]').click();
+    const diceToggle = document.getElementById("global-entropy-sync");
+    assert(diceToggle && !diceToggle.disabled && !diceToggle.checked, "A direct dice method did not offer an enabled, unchecked global sync toggle");
+    diceToggle.click();
+    for (const face of ["1", "0", "0"]) document.querySelector(`[data-d="${face}"]`).click();
+    assert(document.getElementById("global-sync-status").textContent.includes("11 bits synced"), "Dice pad clicks did not re-run the sync");
+    await chooseMode("Seed phrase");
+    equal(document.getElementById("seed").value, "abandon", "Eleven pad-entered bits did not fill the first BIP39 word");
+
+    await chooseMode("Cards");
+    document.querySelector('input[name="card-method"][value="direct"]').click();
+    const directCards = await until(() => document.getElementById("direct-cards"), "direct cards input");
+    equal(directCards.value, "AAAA", "Eleven synced bits did not emit four direct-card draws");
+    document.getElementById("card-undo").click();
+    equal(document.getElementById("direct-cards").value, "AAA", "Card undo did not trim the synced transcript");
+    await chooseMode("Seed phrase");
+    equal(document.getElementById("seed").value, "", "Undoing a synced draw did not withdraw the first word");
+
+    await chooseMode("Cards");
+    const cardCleanup = document.getElementById("global-entropy-sync");
+    if (cardCleanup.checked) cardCleanup.click();
+    document.getElementById("wipe").click();
+  });
+
   await test("Base64 uses the shared case, number, and symbol keyboard", async () => {
+    document.querySelector('[data-seed-words="24"]').click();
+    await chooseMode("Number bases");
     document.querySelector('input[name="entropy-format"][value="base64"]').click();
     const base64 = await until(() => document.getElementById("base64"), "Base64 input");
     input(base64, "");
@@ -794,6 +889,8 @@
 
     await chooseMode("Number bases");
     document.querySelector('input[name="entropy-format"][value="hex"]').click();
+    const globalSync = document.getElementById("global-entropy-sync");
+    if (globalSync?.checked) globalSync.click();
     toggle = await until(() => document.getElementById("passphrase-keyboard-toggle"), "hex passphrase keyboard toggle");
     assert(document.getElementById("passphrase-autocomplete")?.checked, "Passphrase autocomplete did not stay synchronized across entropy tabs");
     keyboard = document.querySelector("#passphrase-keyboard-host [data-on-screen-keyboard]");
