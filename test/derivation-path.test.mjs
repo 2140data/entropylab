@@ -25,12 +25,12 @@ function loadSlice(name) {
 
 const api = new Function(
   `
-  ${["hodlPathIndex", "hodlOriginPathIndex", "hodlParseCustomDerivationPath", "hodlParseDerivationIndexText", "hodlReadDerivationIndex"].map(loadSlice).join("\n")}
-  return { hodlPathIndex, hodlOriginPathIndex, hodlParseCustomDerivationPath, hodlReadDerivationIndex };
+  ${["hodlPathIndex", "hodlOriginPathIndex", "hodlParseCustomDerivationPath", "hodlParseDerivationIndexText", "hodlSanitizeDerivationIndexDraft", "hodlReadDerivationIndex"].map(loadSlice).join("\n")}
+  return { hodlPathIndex, hodlOriginPathIndex, hodlParseCustomDerivationPath, hodlSanitizeDerivationIndexDraft, hodlReadDerivationIndex };
   `,
 )();
 
-const { hodlParseCustomDerivationPath, hodlReadDerivationIndex } = api;
+const { hodlParseCustomDerivationPath, hodlSanitizeDerivationIndexDraft, hodlReadDerivationIndex } = api;
 
 test("custom paths parse into components, display path, and origin path", () => {
   assert.deepEqual(hodlParseCustomDerivationPath("m"), { components: [], path: "m", originPath: "", hasHardened: false });
@@ -74,6 +74,14 @@ test("derivation indexes accept whole numbers 0 to 2,147,483,647", () => {
   for (const bad of ["", "1.5", "-1", "2147483648", "abc", "0x10", "1e3", "99999999999999999999", null, undefined]) {
     assert.throws(() => hodlReadDerivationIndex({ value: bad }, "Branch", false), /Branch must be a whole number from 0 to 2,147,483,647\./, String(bad));
   }
+});
+
+test("derivation index drafts allow digits followed by at most one hardening marker", () => {
+  assert.equal(hodlSanitizeDerivationIndexDraft("84''12"), "84'");
+  assert.equal(hodlSanitizeDerivationIndexDraft("8h4"), "8'");
+  assert.equal(hodlSanitizeDerivationIndexDraft("H42"), "'");
+  assert.equal(hodlSanitizeDerivationIndexDraft("12abc"), "12");
+  assert.equal(hodlSanitizeDerivationIndexDraft(""), "");
 });
 
 test("the bounds check marks the offending field when asked", () => {

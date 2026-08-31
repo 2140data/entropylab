@@ -474,11 +474,14 @@ test("one editable derivation path replaces schemes and accepts arbitrary depth"
   assert.match(appSource, /accountPath = derivationPlan\?\.accountPath \|\| Ao/);
 });
 
-test("typing or deleting a hardening suffix syncs the adjacent Harden control", () => {
+test("advanced derivation indexes constrain and restore hardening suffixes", () => {
+  assert.match(appSource, /function hodlSanitizeDerivationIndexDraft\(value\)/);
+  assert.match(appSource, /function hodlRestoreAdvancedDerivationIndex\(input\)/);
   assert.match(appSource, /function hodlSyncAdvancedDerivationHardening\(input\)/);
   assert.match(appSource, /checkbox\.checked = parsed\.hardened/);
   assert.match(appSource, /input\.value = `\$\{parsed\.value\}\$\{parsed\.hardened \? "'" : ""\}`/);
-  assert.match(appSource, /\^\\d\+\[hH'\]\?\$/);
+  assert.match(appSource, /input\?\.addEventListener\("blur", \(\) => hodlRestoreAdvancedDerivationIndex\(input\)\)/);
+  assert.match(appSource, /draft === "'" \? "0'" : hodlDefaultAdvancedDerivationIndex\(input\.id\)/);
 });
 
 test("derivation indexes keep adjacent Harden controls with safe defaults", () => {

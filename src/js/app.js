@@ -235,6 +235,29 @@ function hodlParseDerivationIndexText(value) {
   if (!match || !Number.isSafeInteger(index) || index < 0 || index > 2147483647) return null;
   return { value: index, hardened: Boolean(match[2]) };
 }
+function hodlSanitizeDerivationIndexDraft(value) {
+  let result = "", hardened = false;
+  for (let character of String(value ?? "")) {
+    if (/\d/.test(character) && !hardened) result += character;
+    else if ((character === "'" || character === "h" || character === "H") && !hardened) {
+      result += "'";
+      hardened = true;
+    }
+  }
+  return result;
+}
+function hodlDefaultAdvancedDerivationIndex(id) {
+  if (id === "purpose") return `${hodlScriptDefinition(hodlSelectedScriptType()).purpose}'`;
+  if (id === "network" || id === "account") return "0'";
+  return "0";
+}
+function hodlRestoreAdvancedDerivationIndex(input) {
+  let draft = hodlSanitizeDerivationIndexDraft(input?.value);
+  if (!input || draft !== "" && draft !== "'") return false;
+  input.value = draft === "'" ? "0'" : hodlDefaultAdvancedDerivationIndex(input.id);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  return true;
+}
 function hodlReadDerivationIndex(input, label, mark = true) {
   let parsed = hodlParseDerivationIndexText(input?.value), valid = Boolean(parsed);
   if (mark) {
@@ -2549,6 +2572,7 @@ function hodlUpdateDerivationPathPreview() {
   }
 }
 function hodlSyncAdvancedDerivationHardening(input) {
+  if (input) input.value = hodlSanitizeDerivationIndexDraft(input.value);
   let parsed = hodlParseDerivationIndexText(input?.value);
   input?.classList.toggle("bad", !parsed);
   input?.setAttribute("aria-invalid", String(!parsed));
@@ -2565,11 +2589,12 @@ function hodlInitDerivationControls() {
   let advancedIds = ["purpose", "network", "account", "branch-start", "address-start"], advancedInputs = advancedIds.map((id) => document.getElementById(id));
   advancedInputs.forEach((input) => {
     input?.addEventListener("input", () => hodlSyncAdvancedDerivationHardening(input));
+    input?.addEventListener("blur", () => hodlRestoreAdvancedDerivationIndex(input));
     input?.addEventListener("keydown", (event) => {
       if (["e", "E", "+", "-", "."].includes(event.key)) event.preventDefault();
     });
     input?.addEventListener("paste", (event) => {
-      if (!/^\d+[hH']?$/.test((event.clipboardData?.getData("text") ?? "").trim())) event.preventDefault();
+      if (!/^(?:\d+)?[hH']?$/.test((event.clipboardData?.getData("text") ?? "").trim())) event.preventDefault();
     });
   });
   panel.addEventListener("input", (event) => {

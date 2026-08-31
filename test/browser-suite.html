@@ -1255,6 +1255,17 @@
     input(purpose, "84h");
     equal(purpose.value, "84'", "A typed purpose h suffix was not normalized to an apostrophe");
     assert(document.getElementById("purpose-harden").checked, "A typed h did not check the purpose Harden control");
+    input(purpose, "8'4");
+    equal(purpose.value, "8'", "A number was accepted after the purpose hardening prime");
+    input(purpose, "84''");
+    equal(purpose.value, "84'", "More than one purpose hardening prime was accepted");
+    input(purpose, "");
+    purpose.dispatchEvent(new Event("blur"));
+    equal(purpose.value, "84'", "A blank purpose did not restore the script type's default");
+    input(purpose, "'");
+    purpose.dispatchEvent(new Event("blur"));
+    equal(purpose.value, "0'", "A lone purpose prime did not normalize to hardened zero");
+    input(purpose, "84'");
     input(purpose, "84");
     assert(!document.getElementById("purpose-harden").checked, "Deleting the purpose apostrophe did not clear Harden");
     input(purpose, "84'");
