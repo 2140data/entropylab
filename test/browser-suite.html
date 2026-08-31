@@ -138,10 +138,10 @@
     // Parked with the rest of the banners; restore them and this asserts the
     // hosted build lights the warning up again.
     assert(!warning || !warning.hidden, "Online warning was not displayed");
-    // Titled and dismissible like the beta banner above it.
+    // Titled like the beta banner above it, but permanent: no dismiss control.
     const label = warning.querySelector(".online-warning-text strong");
-    const dismiss = document.getElementById("online-warning-dismiss");
-    assert(label && dismiss, "Online warning is missing its label wrapper or dismiss control");
+    assert(label, "Online warning is missing its label wrapper");
+    assert(!document.getElementById("online-warning-dismiss"), "Online warning must not carry a dismiss control");
     const labelStyle = getComputedStyle(label);
     assert(labelStyle.textTransform === "uppercase", "Online warning label is not uppercase");
     assert(labelStyle.display === "block", "Online warning label does not sit on its own line");
@@ -158,21 +158,11 @@
     if (beta) {
       assert(labelStyle.color === getComputedStyle(beta).color, "The two banner labels are different colours");
     }
-    const box = warning.getBoundingClientRect();
-    const button = dismiss.getBoundingClientRect();
-    assert(Math.abs(button.right - box.right) < 12, "Online dismiss control is not at the banner's right edge");
-    assert(button.top < box.top + box.height / 2, "Online dismiss control is not near the banner's top");
-    try {
-      dismiss.click();
-      assert(getComputedStyle(warning).display === "none", "Online warning survived its dismiss control");
-      assert(
-        localStorage.getItem("entropylab-online-warning-dismissed") === currentVersion.replace(/^v/, ""),
-        "Online dismissal was not persisted against this build's version",
-      );
-    } finally {
-      localStorage.removeItem("entropylab-online-warning-dismissed");
-      warning.hidden = false;
-    }
+    // The warning is permanent, so nothing about it may live in storage.
+    assert(
+      localStorage.getItem("entropylab-online-warning-dismissed") === null,
+      "Online warning must not persist anything in storage",
+    );
     assert(logo, "Header logo is missing");
     assert(
       logo.querySelector("svg.site-logo-dark") && logo.querySelector("svg.site-logo-light") && logo.getBoundingClientRect().width > 0,
@@ -314,12 +304,7 @@
     assert(!autocomplete.checked, "Clicking the autocomplete toggle did not turn it off");
     equal(seed.value, "amou", "Turning autocomplete off changed the typed input");
     autocomplete.click();
-    equal(seed.value, "amount");
-    equal(
-      seed.value.slice(seed.selectionStart, seed.selectionEnd),
-      "nt",
-      "The completion was not left selected so that typing replaces it",
-    );
+    equal(seed.value, "amount ");
     autocomplete.click();
     input(seed, "");
     const keyboardToggle = document.getElementById("seed-keyboard-toggle");
@@ -1020,10 +1005,10 @@
     await until(() => !document.getElementById("calc-card").hidden, "key workspace");
   });
 
-  await test("PSBT inspector renders a BIP-174 vector", async () => {
+  await test("PSBT inspector renders a BIP-174 vector and a BIP143 raw transaction", async () => {
     // Regression: the inspector used to hand the mainnet/testnet select to a
-    // coin-type reader, so every parseable PSBT failed with "Coin type must
-    // be a whole number".
+    // coin-type reader, so every parseable PSBT and raw transaction failed
+    // with "Coin type must be a whole number".
     const vector = "cHNidP8BAKACAAAAAqsJSaCMWvfEm4IS9Bfi8Vqz9cM9zxU4IagTn4d6W3vkAAAAAAD+////qwlJoIxa98SbghL0F+LxWrP1wz3PFTghqBOfh3pbe+QBAAAAAP7///8CYDvqCwAAAAAZdqkUdopAu9dAy+gdmI5x3ipNXHE5ax2IrI4kAAAAAAAAGXapFG9GILVT+glechue4O/p+gOcykWXiKwAAAAAAAEHakcwRAIgR1lmF5fAGwNrJZKJSGhiGDR9iYZLcZ4ff89X0eURZYcCIFMJ6r9Wqk2Ikf/REf3xM286KdqGbX+EhtdVRs7tr5MZASEDXNxh/HupccC1AaZGoqg7ECy0OIEhfKaC3Ibi1z+ogpIAAQEgAOH1BQAAAAAXqRQ1RebjO4MsRwUPJNPuuTycA5SLx4cBBBYAFIXRNTfy4mVAWjTbr6nj3aAfuCMIAAAA";
     document.querySelector('#workspace [data-workspace="psbt"]').click();
     const box = await until(() => document.getElementById("psbt-text"), "PSBT input");
@@ -1036,6 +1021,32 @@
     assert(out.includes("1.99900000"), "decoded output amount missing");
     assert(out.includes("Signature policy: SIGHASH_ALL"), "sighash policy missing");
     assert(out.includes("r values:"), "finalized signature was not inspected");
+    // BIP143 "Native P2WPKH" signed transaction (witness-carrying) — the raw
+    // transaction path reads the same network select.
+    const rawTx =
+      "01000000000102fff7f7881a8099afa6940d42d1e7f6362bec38171ea3edf433541db4e4ad969f0000000049" +
+      "4830450221008b9d1dc26ba6a9cb62127b02742fa9d754cd3bebf337f7a55d114c8e5cdd30be022040529b194ba3f9281a99f2b1c0a19c0489bc22ede944ccf4ecbab4cc618ef3ed01eeffffff" +
+      "ef51e1b804cc89d182d279655c3aa89e815b1b309fe287d9b2b55d57b90ec68a0100000000ffffffff" +
+      "02202cb206000000001976a9148280b37df378db99f66f85c95a783a76ac7a6d5988ac" +
+      "9093510d000000001976a9143bde42dbee7e4dbe6a21b2d50ce2f0167faa815988ac" +
+      "000247304402203609e17b84f6a7d30c80bfa610b5b4542f32a8a0d5447a12fb1366d7f01cc44a0220573a954c4518331561406f90300e8f3358f51928d43c212a8caed02de67eebee01" +
+      "21025476c2e83188368da1ff3e292e7acafcdb3566bb0ad253f62fc70f07aeee635711000000";
+    input(box, rawTx);
+    document.getElementById("psbt-go").click();
+    await until(() => document.getElementById("psbt-out").textContent.includes("ECDSA nonce check") || document.getElementById("psbt-error").textContent, "raw transaction report");
+    equal(document.getElementById("psbt-error").textContent, "", "inspector rejected a valid raw transaction");
+    const rawOut = document.getElementById("psbt-out").textContent;
+    assert(rawOut.includes("Raw Bitcoin transaction."), "raw transaction banner missing");
+    assert(rawOut.includes("Where this transaction sends bitcoin"), "raw transaction outputs section missing");
+    assert(rawOut.includes("1Cu32FVupVCgHkMMRJdYJugxwo2Aprgk7H"), "mainnet output address missing");
+    assert(rawOut.includes("r values:"), "raw transaction signatures were not inspected");
+    // The testnet option must reach the render as well.
+    const network = document.getElementById("psbt-network");
+    input(network, "testnet");
+    document.getElementById("psbt-go").click();
+    await until(() => document.getElementById("psbt-out").textContent.includes("msQzKJatdWdw4rpy8sbv8puHoncseekYCf") || document.getElementById("psbt-error").textContent, "testnet raw transaction report");
+    equal(document.getElementById("psbt-error").textContent, "", "inspector rejected the testnet selection");
+    input(network, "mainnet");
     input(box, "");
     document.getElementById("psbt-wipe").click();
     document.querySelector('#workspace [data-workspace="calc"]').click();

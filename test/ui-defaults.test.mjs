@@ -368,7 +368,11 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /hodlKeyboardMarkup\(!0,"private key","private-keyboard",!0\)/);
   assert.doesNotMatch(app, /hodlKeyboardMarkup\(!0\)/);
   assert.match(app, /function hodlRenderPassphraseKeyboard\(\)/);
-  assert.match(app, /privateKey=Ne==="key",passphrase=!privateKey,enabled=passphrase\|\|privateKey/);
+  assert.match(app, /privateKey=Ne==="key",passphrase=!privateKey/);
+  // Where the seed keyboard exists it already follows focus into the passphrase
+  // box, so no second on-screen keyboard is rendered underneath it.
+  assert.match(app, /shared=passphrase&&!!document\.getElementById\("seed-keyboard"\),enabled=!shared/);
+  assert.match(app, /passphrase\?\(shared\?"":hodlPassphraseKeyboardToggleMarkup\(\)\)\+hodlPassphraseBip39ToggleMarkup\(\)/);
   assert.match(app, /hodlPassphraseKeyboardToggleMarkup\(\)/);
   assert.match(app, /function hodlPassphraseBip39ToggleMarkup\(checked=hodlPassphraseBip39Enabled\(\)\)/);
   assert.match(app, /function hodlAnalyzeBip39Passphrase\(value,activeCaret=null\)/);
@@ -815,11 +819,11 @@ test("the beta banner carries a dismiss control in a narrow right-hand column", 
   // The banner is a row: the message takes the slack, the control does not.
   assert.match(css, /#beta-warning, #online-warning \{ display: flex; align-items: flex-start; gap: 12px; \}/);
   assert.match(css, /\.beta-warning-text, \.online-warning-text \{ flex: 1; \}/);
-  assert.match(css, /\.beta-warning-dismiss, \.online-warning-dismiss \{[^}]*flex: none;[^}]*\}/s);
+  assert.match(css, /\.beta-warning-dismiss \{[^}]*flex: none;[^}]*\}/s);
   // White on the dark banner, near-black on the light theme's pale one: the
   // glyph must stay legible in both.
-  assert.match(css, /\.beta-warning-dismiss, \.online-warning-dismiss \{[^}]*color: #ffffff;[^}]*\}/s);
-  assert.match(css, /:root\[data-theme="light"\] :is\(\.beta-warning-dismiss, \.online-warning-dismiss\) \{ color: var\(--fg\); \}/);
+  assert.match(css, /\.beta-warning-dismiss \{[^}]*color: #ffffff;[^}]*\}/s);
+  assert.match(css, /:root\[data-theme="light"\] \.beta-warning-dismiss \{ color: var\(--fg\); \}/);
   // The author display would otherwise beat the user agent's [hidden] rule
   // and the dismissed banner would stay on screen.
   assert.match(css, /#beta-warning\[hidden\], #online-warning\[hidden\] \{ display: none; \}/);
@@ -865,13 +869,11 @@ test("the online and noscript warnings are titled like the beta banner", () => {
       /<div class="online-warning-text"><strong>Online version<\/strong> Do not enter seed phrases/,
       "the online warning must carry its label in a wrapper",
     );
-    assert.match(
+    // The hosted-site warning is permanent: no dismiss control anywhere.
+    assert.doesNotMatch(
       markup,
-      /<button type="button" class="online-warning-dismiss" id="online-warning-dismiss" aria-label="Dismiss the online version warning">/,
-    );
-    assert.ok(
-      markup.indexOf('class="online-warning-text"') < markup.indexOf('class="online-warning-dismiss"'),
-      "the dismiss column must follow the warning text",
+      /online-warning-dismiss/,
+      "the online warning must not carry a dismiss control",
     );
   }
   assert.match(template, /<div class="beta-warning-text"><strong>JavaScript is required<\/strong> EntropyLab performs wallet/);
@@ -881,16 +883,11 @@ test("the online and noscript warnings are titled like the beta banner", () => {
   // answer one. It takes the label treatment and nothing else.
   const noscript = template.slice(template.indexOf("<noscript>"), template.indexOf("</noscript>"));
   assert.doesNotMatch(noscript, /-dismiss/, "the noscript notice cannot carry a scripted control");
-  // Dismissal is owned by the unit that reveals the banner, so a dismissed
-  // warning is never shown rather than shown and then hidden.
-  assert.match(online, /const KEY = "entropylab-online-warning-dismissed";/);
-  assert.match(online, /if \(localStorage\.getItem\(KEY\) === VERSION\) return;/);
-  assert.match(online, /localStorage\.setItem\(KEY, VERSION\)/);
-  assert.match(online, /banner\.removeAttribute\("hidden"\)/);
-  assert.ok(
-    online.indexOf("localStorage.getItem(KEY)") < online.indexOf('removeAttribute("hidden")'),
-    "the dismissal must be checked before the banner is revealed",
-  );
+  // The hosted-site warning is permanent: the reveal unit must not read or
+  // write storage, so every visit warns again.
+  assert.match(online, /getElementById\("online-warning"\)\?\.removeAttribute\("hidden"\)/);
+  assert.doesNotMatch(online, /localStorage/, "the online warning must not touch storage");
+  assert.doesNotMatch(css, /\.online-warning-dismiss/);
 });
 
 test("the beta disclaimer gates the page as a modal until accepted", () => {

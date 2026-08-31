@@ -556,7 +556,6 @@ ec.innerHTML = `
     </aside>
     <aside class="online-warning no-print" id="online-warning" role="alert" hidden>
       <div class="online-warning-text"><strong>Online version</strong> Do not enter seed phrases, private keys, or other wallet secrets on an internet-connected device. <a href="entropylab.html" download="entropylab.html">Download EntropyLab</a> and run the HTML file offline on a trusted, air-gapped computer.</div>
-      <button type="button" class="online-warning-dismiss" id="online-warning-dismiss" aria-label="Dismiss the online version warning"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </aside>
     <!-- TODO: This copy is being kept for the network-detected modal that will
          replace the banner. Verbatim, with the lead-in as the modal's title:
@@ -4175,7 +4174,6 @@ function hodlAutocompleteSeedInput(input, event, completeExisting = false, whole
   // boxes in other modes (the passphrase) still obey it.
   let toggle = document.getElementById("seed-autocomplete"),
     enabled = toggle ? toggle.checked : Boolean(hodlKeys[hodlActiveKey]?.seedAutocomplete);
-  input.hodlCompletionActive = false;
   if (!enabled || !completeExisting && (event?.inputType !== "insertText" || event.isComposing) || input.selectionStart !== input.selectionEnd) return false;
   let caret = input.selectionStart ?? input.value.length, suffix = input.value.slice(caret);
   if (suffix && !/^\s/.test(suffix)) return false;
@@ -4185,22 +4183,9 @@ function hodlAutocompleteSeedInput(input, event, completeExisting = false, whole
   if (prefix.length < minimumLength) return false;
   let matches = options.filter((word) => word.startsWith(prefix));
   if (matches.length !== 1) return false;
-  // Insert the rest of the word but leave it selected, so typing on simply
-  // replaces it instead of appending to a word already completed. The space
-  // arrives only when the completion is accepted and the next word begins.
-  input.setRangeText(matches[0], start, caret, "end");
-  input.setSelectionRange(caret, start + matches[0].length);
-  input.hodlCompletionActive = start + matches[0].length > caret;
+  let replacement = matches[0] + (suffix ? "" : " ");
+  input.setRangeText(replacement, start, caret, "end");
   return true;
-}
-// Space, Tab or Enter accepts a live completion: the caret jumps past the
-// selected remainder so the key lands after the whole word instead of
-// replacing it.
-function hodlAcceptSeedCompletion(input, event) {
-  if (!input || event.key !== " " && event.key !== "Tab" && event.key !== "Enter") return;
-  if (!input.hodlCompletionActive || input.selectionStart === input.selectionEnd) return;
-  input.setSelectionRange(input.selectionEnd, input.selectionEnd);
-  input.hodlCompletionActive = false;
 }
 function hodlKeyboardToggleMarkup(id, label, controls = "seed-keyboard") {
   return `<button type="button" class="seed-keyboard-toggle" id="${id}" data-on-screen-keyboard-toggle aria-label="${hodlOnScreenKeyboardOpen ? `Hide ${label}` : `Show ${label}`}" aria-controls="${controls}" aria-expanded="${hodlOnScreenKeyboardOpen}"><svg viewBox="0 0 64 44" aria-hidden="true" focusable="false"><rect class="seed-keyboard-icon-case" x="3" y="6" width="58" height="32" rx="4"/><g class="seed-keyboard-icon-keys"><rect x="9" y="10" width="4" height="5" rx=".5"/><rect x="15" y="10" width="4" height="5" rx=".5"/><rect x="21" y="10" width="4" height="5" rx=".5"/><rect x="27" y="10" width="4" height="5" rx=".5"/><rect x="33" y="10" width="4" height="5" rx=".5"/><rect x="39" y="10" width="4" height="5" rx=".5"/><rect x="45" y="10" width="4" height="5" rx=".5"/><rect x="51" y="10" width="4" height="5" rx=".5"/><rect x="12" y="18" width="4" height="5" rx=".5"/><rect x="18" y="18" width="4" height="5" rx=".5"/><rect x="24" y="18" width="4" height="5" rx=".5"/><rect x="30" y="18" width="4" height="5" rx=".5"/><rect x="36" y="18" width="4" height="5" rx=".5"/><rect x="42" y="18" width="4" height="5" rx=".5"/><rect x="48" y="18" width="4" height="5" rx=".5"/><rect x="17" y="28" width="30" height="5" rx=".75"/></g></svg></button>`;
@@ -4641,7 +4626,10 @@ function hodlBindSeedKeyboardDelete(getInput, button, applyDelete = hodlApplySee
 function hodlBindSeedKeyboard(input, targetWords = Pt) {
   let toggle = document.getElementById("seed-keyboard-toggle"), keyboard = document.getElementById("seed-keyboard"), modeButton = keyboard?.querySelector("[data-seed-keyboard-mode]"), passphrase = document.getElementById("pass");
   if (!toggle || !keyboard || !input) return;
-  let activeInput = input, isPassphrase = () => Boolean(passphrase && activeInput === passphrase), refresh = () => {
+  let activeInput = input, passphraseField = () => document.getElementById("pass") || passphrase, isPassphrase = () => {
+    let field = passphraseField();
+    return Boolean(field && activeInput === field);
+  }, refresh = () => {
     if (isPassphrase()) hodlUpdatePassphraseKeyboardKeys(activeInput, "seed-keyboard");
     else hodlUpdateSeedKeyboardKeys(input, targetWords);
   };
@@ -4671,10 +4659,18 @@ function hodlBindSeedKeyboard(input, targetWords = Pt) {
     refresh();
   };
   input.onfocus = () => activate(input);
-  if (passphrase) passphrase.addEventListener("focus", () => activate(passphrase));
-  [input, ...passphrase ? [passphrase] : []].forEach((field) => {
-    ["input", "click", "keyup", "select"].forEach((type) => field.addEventListener(type, () => activate(field)));
-  });
+  // Delegated so the passphrase field is found whenever it renders, and stored on
+  // the keyboard so re-binding replaces the handler rather than stacking another.
+  // Typing and clicking retarget as well as focus, because a headless browser
+  // does not always deliver focus events to a document that is not foremost.
+  let activityEvents = ["focusin", "input", "click", "keyup", "select"];
+  if (keyboard.hodlKeyboardActivity) activityEvents.forEach((type) => document.removeEventListener(type, keyboard.hodlKeyboardActivity));
+  keyboard.hodlKeyboardActivity = (event) => {
+    let field = passphraseField();
+    if (field && event.target === field) activate(field);
+    else if (event.target === input) activate(input);
+  };
+  activityEvents.forEach((type) => document.addEventListener(type, keyboard.hodlKeyboardActivity));
   activate(input);
 }
 function hodlBindPassphraseKeyboard(inputId = "pass", toggleId = "passphrase-keyboard-toggle", inputName = "passphrase", keyboardId = "passphrase-keyboard") {
@@ -4738,10 +4734,15 @@ function hodlBindBase64Keyboard(input) {
   refresh();
 }
 function hodlRenderPassphraseKeyboard() {
-  let host = document.getElementById("passphrase-keyboard-host"), toggleHost = document.getElementById("passphrase-keyboard-toggle-host"), privateKey = Ne === "key", passphrase = !privateKey, enabled = passphrase || privateKey;
+  let host = document.getElementById("passphrase-keyboard-host"), toggleHost = document.getElementById("passphrase-keyboard-toggle-host"), privateKey = Ne === "key", passphrase = !privateKey;
+  // The seed keyboard already follows focus between the seed box and the
+  // passphrase box, so where it exists it serves both and a second on-screen
+  // keyboard would only stack another copy under the first.
+  let shared = passphrase && Boolean(document.getElementById("seed-keyboard")),
+    enabled = !shared;
   if (toggleHost) {
     toggleHost.hidden = !passphrase;
-    toggleHost.innerHTML = passphrase ? hodlPassphraseKeyboardToggleMarkup() + hodlPassphraseBip39ToggleMarkup() : "";
+    toggleHost.innerHTML = passphrase ? (shared ? "" : hodlPassphraseKeyboardToggleMarkup()) + hodlPassphraseBip39ToggleMarkup() : "";
   }
   if (!host) return;
   host.hidden = !enabled;
@@ -5417,7 +5418,7 @@ function hodlRenderKeyForm() {
       update();
       return;
     }
-    at.innerHTML = `${choices}<p class="label">Your ${config.words}-word seed phrase</p><p class="muted" id="seed-help">Enter exactly ${config.words} English BIP39 words. You can also paste an extended key here; the selected phrase length does not apply to extended keys. With ${config.partialWords} compatible diceware words, choose the final checksum word below.</p><div class="seed-entry-tools">${hodlSeedKeyboardToggleMarkup()}<label class="seed-autocomplete-toggle"><input type="checkbox" id="seed-autocomplete" ${autocompleteEnabled ? "checked" : ""} /><span>Autocomplete BIP39 words <span class="seed-autocomplete-note">(2+ letters normally; 1+ for a unique checksum word)</span></span></label></div><div class="dice-input-shell seed-input-shell"><pre class="dice-input-highlight" id="seed-highlight" aria-hidden="true"></pre><textarea id="seed" placeholder="Enter exactly ${config.words} BIP39 words" aria-describedby="seed-help seed-meta" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div><p class="muted" id="seed-meta" aria-live="polite"></p>${hodlSeedKeyboardMarkup()}<div id="last-words" class="row" style="margin-top:8px"></div>`;
+    at.innerHTML = `${choices}<p class="label">Your ${config.words}-word seed phrase</p><p class="muted" id="seed-help">Enter exactly ${config.words} English BIP39 words. You can also paste an extended key here; the selected phrase length does not apply to extended keys. With ${config.partialWords} compatible diceware words, choose the final checksum word below.</p><div class="seed-entry-tools">${hodlSeedKeyboardToggleMarkup()}<label class="seed-autocomplete-toggle"><input type="checkbox" id="seed-autocomplete" ${autocompleteEnabled ? "checked" : ""} /><span>Autocomplete BIP39 words <span class="seed-autocomplete-note">(fills in once only one word matches: usually 4 letters, or as few as 1 for the final checksum word)</span></span></label></div><div class="dice-input-shell seed-input-shell"><pre class="dice-input-highlight" id="seed-highlight" aria-hidden="true"></pre><textarea id="seed" placeholder="Enter exactly ${config.words} BIP39 words" aria-describedby="seed-help seed-meta" autocomplete="off" spellcheck="false" autocapitalize="off"></textarea></div><p class="muted" id="seed-meta" aria-live="polite"></p>${hodlSeedKeyboardMarkup()}<div id="last-words" class="row" style="margin-top:8px"></div>`;
     let input = document.getElementById("seed"), update = () => {
       let rawValue = input.value, value = rawValue.trim(), meta = W("#seed-meta"), picker = W("#last-words"), analysis = hodlRenderSeedInputState(input, config.words);
       if (hodlLooksExtendedKey(value)) {
@@ -5484,7 +5485,6 @@ function hodlRenderKeyForm() {
       hodlAutocompleteSeedInput(input, event);
       update();
     };
-    input.onkeydown = (event) => hodlAcceptSeedCompletion(input, event);
     input.onscroll = () => hodlSyncDiceHighlight(input);
     input.onfocus = update;
     input.onblur = (event) => {
@@ -6022,7 +6022,6 @@ function hodlInitMasterFingerprintPreview() {
     hodlQueueMasterFingerprintPreview();
   });
   panel.addEventListener("keydown", (event) => {
-    if (event.target?.id === "pass") hodlAcceptSeedCompletion(pass, event);
   });
   ["focus", "blur"].forEach((type) => pass.addEventListener(type, () => hodlRenderPassphraseInputState(pass)));
   panel.addEventListener("change", (event) => {
@@ -8724,7 +8723,9 @@ function hodlRenderPsbt(psbt) {
   return html.join("")
 }
 function hodlRenderRawTx(tx) {
-  let network = hodlSelectedNetwork(document.getElementById("psbt-network")),
+  // psbt-network is a mainnet/testnet select, not a numeric coin-type input,
+  // so hodlSelectedNetwork (which reads coin types) cannot parse it.
+  let network = document.getElementById("psbt-network")?.value === "testnet" ? "testnet" : "mainnet",
     html = [],
     map = hodlSessionOwnership(network),
     signatures = extractEcdsaSignatures(tx),
