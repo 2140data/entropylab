@@ -23,7 +23,7 @@ import { parseRawTx, extractEcdsaSignatures, inscriptionHints, isPsbtMagic, seri
 import { wasmExports as hodlWasm, withInput as hodlWasmIn, withOutput as hodlWasmOut } from "./entropylab-wasm.js";
 import { indexHdKey, indexSingleKey, matchOwnership, pathLabel } from "./ownership.js";
 import { hex as M } from "./coders.js";
-import { addressFor, addressFromScript, multisigScript, multisigTrScript, p2shP2wpkhScript, p2shScript, p2trKeyScript, p2wshScript } from "./addresses.js";
+import { addressFor, addressFromScript, multisigScript, multisigTrScript, p2shP2wpkhScript, p2shScript, p2trKeyScript, p2trLeafScript, p2wshScript } from "./addresses.js";
 import { base58checkDecode, base58checkEncode } from "./base58.js";
 import { HDKey as Gt } from "./hdkey.js";
 import { entropyToMnemonic as bi, mnemonicToEntropy as Er, mnemonicToSeedSync as wi, validateMnemonic as Pn } from "./bip39.js";
@@ -7297,7 +7297,15 @@ function hodlReadMap(bytes, offset) {
 function hodlTx(bytes) {
   // The consensus decode runs on rust-bitcoin's Transaction in the WASM
   // module (src/js/tx.js); the BIP174 unsigned-transaction rules (no witness
-  // marker, empty scriptSigs) and the error strings are unchanged.
+  // marker, empty scriptSigs) are enforced here.
+  //
+  // The marker is checked on the raw bytes before the decode: rust-bitcoin
+  // rejects a marker whose witness stacks are all empty, so asking the parsed
+  // transaction would report that hostile PSBT as a generic truncation. The
+  // decoder's own failures still collapse to one message — naming which byte
+  // ran out would need distinct return codes from el_tx_parse.
+  hodlPsbtNeed(bytes, 4, 2, "Unsigned transaction ended early.");
+  if (bytes[4] === 0 && bytes[5] === 1) throw new Error("The PSBT v0 unsigned transaction must not contain a witness marker.");
   let tx;
   try {
     tx = parseRawTx(bytes);
@@ -7308,7 +7316,6 @@ function hodlTx(bytes) {
     if (message.includes("too many outputs")) throw new Error("Unsigned transaction has too many outputs.");
     throw new Error("Unsigned transaction ended early.");
   }
-  if (tx.segwit) throw new Error("The PSBT v0 unsigned transaction must not contain a witness marker.");
   for (const input of tx.inputs) {
     if (input.scriptSig.length) throw new Error("PSBT v0 unsigned transaction inputs must have empty scriptSigs.");
   }

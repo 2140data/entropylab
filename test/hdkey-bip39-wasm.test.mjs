@@ -130,6 +130,109 @@ test("BIP39 differential vs @scure/bip39 (mnemonic, entropy, seed, validate)", (
   assert.throws(() => mnemonicToEntropy(bad));
 });
 
+// Regression guard for #183: rust-bip39 splits on any run of whitespace,
+// where @scure/bip39 split on a single ASCII space. Accepting the loose forms
+// would be unsafe rather than lenient — mnemonicToSeedSync hashes the phrase
+// as typed, so a phrase validated with a stray space derives a seed no other
+// wallet produces.
+test("BIP39 rejects non-canonical whitespace exactly as @scure/bip39 did", () => {
+  const phrase = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+  assert.equal(validateMnemonic(phrase), true);
+  const loose = {
+    "double space": phrase.replace("abandon abandon", "abandon  abandon"),
+    "leading and trailing spaces": `  ${phrase}  `,
+    "newline separators": phrase.replace(/ /g, "\n"),
+    "tab separators": phrase.replace(/ /g, "\t"),
+  };
+  for (const [name, value] of Object.entries(loose)) {
+    assert.equal(scureBip39.validateMnemonic(value, scureEnglish), false, `${name}: scure baseline`);
+    assert.equal(validateMnemonic(value), false, `${name}: accepted a phrase scure rejected`);
+    assert.throws(() => mnemonicToEntropy(value), /Invalid mnemonic/, `${name}: entropy`);
+  }
+});
+
+// The count check alone was not the whole guard: "word\t word" splits into
+// twelve pieces on " " (count passes) but rust-bip39's whitespace-run split
+// sees twelve clean words and accepts. Every separator shape scure's
+// split(" ") tokenization disagrees on must be rejected, and every shape it
+// agrees on must keep its outcome — across word counts and positions.
+test("BIP39 separator matrix: acceptance matches @scure/bip39 for every word count", () => {
+  const words12 = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+  const phrases = {
+    12: words12,
+    15: entropyToMnemonic(new Uint8Array(20).fill(0)),
+    18: entropyToMnemonic(new Uint8Array(24).fill(0)),
+    21: entropyToMnemonic(new Uint8Array(28).fill(0)),
+    24: entropyToMnemonic(new Uint8Array(32).fill(0)),
+  };
+  // What rust-bip39 treats as whitespace that could desync the tokenizations.
+  // 0xA0 and 0x3000 fold to ASCII space under NFKD, so both implementations
+  // accept them; the rest must be rejected by both.
+  const separators = {
+    "tab": "\t",
+    "newline": "\n",
+    "carriage return": "\r",
+    "CRLF": "\r\n",
+    "vertical tab": "\v",
+    "form feed": "\f",
+    "double space": "  ",
+    "tab + space": "\t ",
+    "space + tab": " \t",
+    "space + newline": " \n",
+    "ogham space mark (U+1680)": "\u1680",
+    "line separator (U+2028)": "\u2028",
+    "paragraph separator (U+2029)": "\u2029",
+    "zero-width no-break space (U+FEFF)": "\uFEFF",
+    "no-break space (U+00A0, NFKD folds)": "\u00A0",
+    "ideographic space (U+3000, NFKD folds)": "\u3000",
+  };
+  for (const [count, phrase] of Object.entries(phrases)) {
+    assert.equal(validateMnemonic(phrase), true, `${count}-word canonical phrase must stay valid`);
+    const words = phrase.split(" ");
+    for (const [name, sep] of Object.entries(separators)) {
+      const variants = {
+        "interior": words.slice(0, 2).join(" ") + sep + words.slice(2).join(" "),
+        "leading": sep + phrase,
+        "trailing": phrase + sep,
+      };
+      for (const [position, value] of Object.entries(variants)) {
+        const label = `${count} words, ${name} at ${position}`;
+        const expected = scureBip39.validateMnemonic(value, scureEnglish);
+        assert.equal(validateMnemonic(value), expected, `${label}: validateMnemonic disagrees with scure`);
+        const entropy = () => mnemonicToEntropy(value);
+        const scureEntropy = () => scureBip39.mnemonicToEntropy(value, scureEnglish);
+        if (expected) {
+          assert.equal(bytesToHex(entropy()), bytesToHex(scureEntropy()), `${label}: entropy disagrees with scure`);
+        } else {
+          assert.throws(entropy, undefined, `${label}: mnemonicToEntropy accepted a phrase scure rejected`);
+          assert.throws(scureEntropy, undefined, `${label}: scure baseline must reject`);
+        }
+      }
+    }
+  }
+});
+
+// A phrase the loose split accepts hashes to a seed no canonical phrase
+// produces, which is the failure this guard exists to prevent. Prove the
+// guard rejects every one of them before the crate sees the text.
+test("BIP39: no non-canonical separator yields a derivable seed-bearing phrase", () => {
+  const words = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about".split(" ");
+  const sneak = ["\t ", " \t", " \n", "\v ", "\f ", "\u2028 ", " \u2029"];
+  for (const sep of sneak) {
+    for (let gap = 1; gap < words.length; gap++) {
+      const phrase = words.slice(0, gap).join(" ") + sep + words.slice(gap).join(" ");
+      assert.equal(validateMnemonic(phrase), false, `separator ${JSON.stringify(sep)} at gap ${gap} validated`);
+      assert.throws(() => mnemonicToEntropy(phrase), /Invalid mnemonic/, `separator ${JSON.stringify(sep)} at gap ${gap} derived entropy`);
+    }
+  }
+  // Off-count phrases agree with scure as well (11/13/14/16/17/23/25 words).
+  for (const count of [11, 13, 14, 16, 17, 23, 25]) {
+    const phrase = new Array(count).fill("abandon").join(" ");
+    assert.equal(validateMnemonic(phrase), scureBip39.validateMnemonic(phrase, scureEnglish), `${count} words`);
+    assert.throws(() => mnemonicToEntropy(phrase), undefined, `${count} words`);
+  }
+});
+
 test("wordlist agreement: JS data file == rust-bip39 English list, word for word", () => {
   assert.equal(bip39English.length, 2048);
   const wasm = wasmExports();

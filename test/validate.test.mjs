@@ -210,8 +210,68 @@ test("third-party actions are immutable and deployment is test-gated", () => {
   // The WASM gate must rebuild the bindings from the Rust sources, test the
   // fresh build, and block both the artifact commit and the Pages deploy.
   assert.match(workflow, /^\s{2}build-wasm:\n(?:.|\n)*?npm run build:wasm\n/m);
-  assert.match(workflow, /^\s{2}build-wasm:\n(?:.|\n)*?node --test test\/entropylab-wasm\.test\.mjs test\/hashes-wasm\.test\.mjs/m);
+  assert.deepEqual(wasmGateProblems(workflow), []);
   assert.match(workflow, /^\s{2}deploy:\n(?:.|\n)*?^\s{4}needs: \[build, verify, test-ci, test-browser, build-wasm\]$/m);
+});
+
+// The build-wasm gate only guards the crate if (a) the job rebuilds the
+// bindings before testing them, (b) the test step lives in the build-wasm job
+// itself, and (c) every suite that exercises the WASM boundary runs against
+// that fresh build. Returns the list of ways the gate is broken, so the same
+// check can be exercised against doctored workflows below.
+function wasmGateProblems(workflow) {
+  const problems = [];
+  const job = workflow.match(/^  build-wasm:\n([\s\S]*?)(?=^  \w)/m);
+  if (!job) return ["the build-wasm job is missing"];
+  const buildAt = job[1].search(/^\s*run: npm run build:wasm$/m);
+  const testAt = job[1].search(/^\s*run: node --test /m);
+  if (buildAt === -1) problems.push("the build-wasm job never rebuilds the bindings from the Rust sources");
+  if (testAt === -1) {
+    problems.push("the build-wasm job runs no test suites against the fresh build");
+    return problems;
+  }
+  if (buildAt !== -1 && buildAt > testAt) {
+    problems.push("build-wasm tests run before the rebuild, so they exercise the committed artifact instead");
+  }
+  const step = job[1].match(/^\s*run: node --test ([^\n]+)$/m)[1];
+  for (const suite of readdirSync(join(root, "test")).filter((name) => name.endsWith("-wasm.test.mjs"))) {
+    if (!step.includes(`test/${suite}`)) problems.push(`build-wasm must run test/${suite} against the fresh build`);
+  }
+  return problems;
+}
+
+test("the WASM gate check detects its own failure modes", () => {
+  // A gate assertion that cannot fail is not a gate. Doctor the real workflow
+  // each way the check exists to catch and require detection every time.
+  const workflow = read(".github/workflows/ci-cd.yml");
+  const suite = readdirSync(join(root, "test")).find((name) => name.endsWith("-wasm.test.mjs"));
+  const dropped = workflow.replace(` test/${suite}`, "");
+  assert.notEqual(dropped, workflow, "fixture: the suite name must appear in the workflow");
+  assert.ok(
+    wasmGateProblems(dropped).some((problem) => problem.includes(suite)),
+    "dropping a WASM suite from the gate must be detected",
+  );
+  const reordered = workflow.replace(
+    /(\s*run: )(npm run build:wasm)\n(\s*- name: [^\n]+\n\s*run: )(node --test [^\n]+)/,
+    "$1$4\n$3$2"
+  );
+  assert.notEqual(reordered, workflow, "fixture: the build and test steps must be reorderable");
+  assert.ok(
+    wasmGateProblems(reordered).some((problem) => problem.includes("before the rebuild")),
+    "testing before rebuilding must be detected",
+  );
+  const noTest = workflow.replace(/^\s*- name: Test the freshly built bindings\n\s*run: node --test [^\n]+\n/m, "");
+  assert.notEqual(noTest, workflow, "fixture: the fresh-build test step must exist");
+  assert.ok(
+    wasmGateProblems(noTest).some((problem) => problem.includes("no test suites")),
+    "deleting the fresh-build test step must be detected",
+  );
+  // The committed artifact is gated by test:ci; a WASM suite that runs only
+  // against the fresh build would let a broken committed artifact deploy.
+  const ciScript = pkg.scripts["test:ci"];
+  for (const suiteName of readdirSync(join(root, "test")).filter((name) => name.endsWith("-wasm.test.mjs"))) {
+    assert.ok(ciScript.includes(`test/${suiteName}`), `test:ci must also run test/${suiteName} against the committed artifact`);
+  }
 });
 
 test("the intentional low-entropy recovery behavior is documented", () => {
