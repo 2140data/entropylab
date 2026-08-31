@@ -6174,7 +6174,7 @@ function hodlSetMsigPurpose(value) {
 }
 function hodlStandardMsigPurpose(kind = hodlScriptKind()) {
   if (kind === "p2sh") return document.getElementById("msig-legacy-bip87")?.checked ? 87 : 45;
-  if (kind === "p2tr") return 86;
+  if (kind === "p2tr") return 87;
   return 48;
 }
 function hodlOriginScriptError(origin, kind, network, purpose, coinType = Rs(network), hardening = { purpose: true, coinType: true, account: true, address: false }) {
@@ -6228,7 +6228,6 @@ function hodlMultisigOriginScriptKind(origin) {
   let steps = hodlNormalizeOriginPath(origin?.path).split("/").filter(Boolean);
   if (steps.length === 1) return "p2sh";
   if (steps[0].replace(/h$/, "") === "86" && steps.length === 3) return "p2tr";
-  if (steps[0].replace(/h$/, "") === "87" && steps.length === 3) return "p2sh";
   if (steps[0].replace(/h$/, "") !== "48" || steps.length !== 4) return null;
   if (steps[3] === "1h") return "p2sh-p2wsh";
   if (steps[3] === "2h") return "p2wsh";
