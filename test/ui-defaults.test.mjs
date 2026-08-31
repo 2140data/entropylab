@@ -1019,9 +1019,8 @@ test("the seam into the tool is wider than the page's other major seams", () => 
   assert.match(css, /--space-lede: 48px;/);
   // The pitch-to-tool seam is the page's widest; the closing Sources card keeps
   // the ordinary major one. Both collapse with a neighbouring card's 16px, so
-  // the larger value wins rather than the two adding up. The seam lives on the
-  // shell that now groups the workspace switcher with the tool it switches.
-  assert.match(css, /\.tool-shell \{ margin-top: var\(--space-lede\); \}/);
+  // the larger value wins rather than the two adding up.
+  assert.match(css, /\.workspace \{ position: relative; margin: var\(--space-lede\) 0 4px; \}/);
   assert.match(css, /\.sources \{ margin-top: var\(--space-major\); \}/);
   for (const markup of [template, app]) {
     assert.match(markup, /<section class="card muted sources">/);
@@ -1194,34 +1193,25 @@ test("Silent Payments sits between Multi Signature and PSBT / Nonce", () => {
   assert.match(css, /#sp-card\[hidden\]/);
 });
 
-test("the workspace switcher is a sticky sidebar on wide screens and a hamburger dropdown on narrow ones", () => {
-  // The switcher and the sections it switches are grouped in one shell so the
-  // wide layout can place the menu in its own column beside the tool.
-  for (const markup of [template, appSource]) {
-    assert.match(markup, /<div class="tool-shell">/);
-    assert.match(markup, /<div class="tool-content">/);
-  }
-  // The switcher is a nav now, and no longer one of the segmented controls.
+test("the workspace switcher is a hamburger dropdown menu at every width", () => {
+  // The switcher is a nav holding a hamburger toggle and the menu it
+  // controls; it is no longer one of the segmented controls.
   assert.match(template, /<nav class="workspace no-print" id="workspace">/);
   assert.match(appSource, /<nav class="workspace no-print" id="workspace"><\/nav>/);
   assert.doesNotMatch(template, /segmented-control" id="workspace"/);
-  // The hamburger toggle is wired to the menu it opens, and names the current
+  // The toggle is wired to the menu it opens, and names the current
   // workspace in the collapsed bar.
   assert.match(template, /<button type="button" class="workspace-menu-toggle" id="workspace-menu-toggle" aria-expanded="false" aria-controls="workspace-menu">/);
   assert.match(template, /<span class="workspace-menu-current" id="workspace-menu-current">Key Derivation<\/span>/);
   assert.match(template, /<div class="workspace-menu" id="workspace-menu" role="group" aria-label="Workspace">/);
-  // Narrow screens: the menu hides until toggled; wide screens: it is always
-  // shown as the sidebar and the toggle is gone. One breakpoint owns both.
-  assert.match(css, /\.workspace-menu \{[^}]*display: none;/s);
+  // The menu hides until toggled. There is no wide-screen sidebar layout:
+  // the same dropdown serves every width and the page keeps its single
+  // 1000px measure.
+  assert.match(css, /\.workspace-menu \{[^}]*position: absolute;[^}]*display: none;/s);
   assert.match(css, /\.workspace\.is-open \.workspace-menu \{ display: grid; \}/);
-  assert.match(css, /@media \(min-width: 1024px\) \{[\s\S]*?\.workspace-menu-toggle \{ display: none; \}/);
-  assert.match(css, /@media \(min-width: 1024px\) \{[\s\S]*?\.workspace-menu \{ position: static; display: grid; box-shadow: none; \}/);
-  assert.match(appSource, /matchMedia\("\(min-width: 1024px\)"\)/);
-  // The sidebar rides along beside the tool instead of docking to the
-  // viewport edge: the centered page simply widens by the menu's footprint.
-  assert.match(css, /@media \(min-width: 1024px\) \{[\s\S]*?\.site-header-inner, \.wrap \{ max-width: 1260px; \}/);
-  assert.match(css, /\.tool-shell \{[^}]*grid-template-columns: 232px minmax\(0, 1fr\);/s);
-  assert.match(css, /@media \(min-width: 1024px\) \{[\s\S]*?\.workspace \{ position: sticky; top: calc\(var\(--site-header-height\) \+ 12px\);/);
+  assert.doesNotMatch(css, /min-width: 1024px|max-width: 1260px|tool-shell|tool-content/);
+  assert.doesNotMatch(appSource, /matchMedia\("\(min-width: 1024px\)"\)/);
+  assert.doesNotMatch(`${template}${appSource}`, /tool-shell|tool-content/);
   // Menu entries keep the app's orange active state.
   assert.match(css, /\.workspace-menu \.tab:is\(\.active, \[aria-pressed="true"\]\) \{[^}]*background: var\(--selection-accent\);/s);
   // Runtime: the toggle flips aria-expanded with the open class, picking an

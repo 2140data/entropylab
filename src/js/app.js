@@ -555,9 +555,7 @@ ec.innerHTML = `
         <li>Keep your private keys offline.</li>
       </ul>
     </section>
-    <div class="tool-shell">
     <nav class="workspace no-print" id="workspace"></nav>
-    <div class="tool-content">
     <section class="key-manager no-print" id="key-manager">
       <div class="key-manager-head"><h2>Keys</h2></div>
       <div class="key-tab-strip"><div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div><div class="add-item-control"><button class="add-key" id="add-key" type="button" aria-label="Add key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Add another key</span></div></div>
@@ -932,8 +930,6 @@ ec.innerHTML = `
       <p class="muted">Session keys remain in this page only and are never intentionally stored or sent. Memory clearing is best-effort because browsers may retain internal copies; close the page before reconnecting the computer.</p>
     </section>
     <div id="out"></div>
-    </div>
-    </div>
     <section class="card muted sources">
       <h3 class="sources-heading">Sources</h3>
       <p>Ian Coleman BIP39: <a href="https://github.com/iancoleman/bip39" target="_blank" rel="noopener noreferrer">github.com/iancoleman/bip39</a> \u2014 pull <code>bip39-standalone.html</code> from Releases, or <code>src/js/index.js</code>, <code>entropy.js</code>, <code>jsbip39.js</code>, <code>wordlist_english.js</code>.</p>
@@ -9594,10 +9590,9 @@ function hodlSeedInitialManagers() {
   }
 }
 var hodlWorkspaceTabs = [["calc", "Key Derivation"], ["bip85", "BIP-85"], ["msig", "Multi Signature"], ["sp", "Silent Payments"], ["psbt", "PSBT / Nonce"]];
-// The switcher reads as a videogame settings menu: a sticky sidebar beside
-// the tool on wide screens, and a hamburger dropdown above it on narrow
-// ones. The is-open class only matters in the dropdown layout; the sidebar
-// ignores it, and crossing back to the wide layout clears it.
+// The switcher reads as a videogame settings menu at every width: a
+// hamburger bar that drops the menu down over the tool. The is-open class
+// opens and closes the dropdown.
 function hodlSetWorkspaceMenuOpen(open) {
   W("#workspace").classList.toggle("is-open", open);
   W("#workspace-menu-toggle").setAttribute("aria-expanded", String(open));
@@ -9642,7 +9637,6 @@ function hodlInitWorkspace() {
       toggle.focus();
     }
   });
-  matchMedia("(min-width: 1024px)").addEventListener("change", () => hodlSetWorkspaceMenuOpen(false));
   hodlInitMsig();
   hodlInitPsbt();
   hodlInitBip85();

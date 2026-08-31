@@ -767,16 +767,10 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .hint.bad { color: var(--danger); }
 .hint.ok { color: var(--ok); }
 .hint:empty, .err:empty { display: none; }
-/* The pitch-to-tool seam now lands on the shell that holds the workspace
-   switcher and the tool together. */
-.tool-shell { margin-top: var(--space-lede); }
-/* Grid items refuse to shrink below their content without this; the address
-   tables inside are wider than any narrow column. */
-.tool-content { min-width: 0; }
-/* The workspace switcher is a videogame-style settings menu: a sticky
-   sidebar beside the tool on wide screens, a hamburger dropdown above it on
-   narrow ones. */
-.workspace { position: relative; margin: 0 0 4px; }
+/* The workspace switcher is a videogame-style settings menu at every width:
+   a hamburger bar above the tool that drops the menu down over it. The
+   pitch-to-tool seam lands on it, as it did on the tab strip before. */
+.workspace { position: relative; margin: var(--space-lede) 0 4px; }
 .workspace-menu-toggle {
   display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px;
   padding: 0 14px; border: 1px solid var(--border); border-radius: 12px;
@@ -791,8 +785,8 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .workspace-menu-chevron { color: var(--accent); transition: transform 120ms ease; }
 .workspace.is-open .workspace-menu-chevron { transform: rotate(180deg); }
 @media (prefers-reduced-motion: reduce) { .workspace-menu-chevron { transition: none; } }
-/* Narrow screens: the menu is a dropdown panel under the toggle, closed
-   until it is asked for. */
+/* The menu is a dropdown panel under the toggle, closed until it is asked
+   for. */
 .workspace-menu {
   position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 60;
   display: none; gap: 4px; padding: 8px;
@@ -811,18 +805,6 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 }
 .workspace-menu .tab:focus-visible {
   outline: 2px solid color-mix(in oklab, var(--selection-accent) 72%, var(--fg)); outline-offset: 2px;
-}
-/* Wide screens: header and page widen by exactly the sidebar's footprint, so
-   the content column keeps its 1000px-line measure and the centered pair —
-   not the viewport edge — carries the menu. */
-@media (min-width: 1024px) {
-  .site-header-inner, .wrap { max-width: 1260px; }
-  .tool-shell { display: grid; grid-template-columns: 232px minmax(0, 1fr); gap: 0 28px; align-items: start; }
-  /* Sticky, so the menu stays beside the tool down the longest result page.
-     The 14px aligns its top edge with the Keys / Multisigs tab strip. */
-  .workspace { position: sticky; top: calc(var(--site-header-height) + 12px); margin: 14px 0 0; }
-  .workspace-menu-toggle { display: none; }
-  .workspace-menu { position: static; display: grid; box-shadow: none; }
 }
 .segmented-control {
   display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; max-width: 100%; isolation: isolate;
