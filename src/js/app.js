@@ -1119,7 +1119,7 @@ function lr() {
       <label class="choice"><input type="radio" name="kk" value="wif" checked /><span><strong>WIF</strong><span class="desc">Bitcoin wallet import format (Base58Check).</span></span></label>
       <label class="choice"><input type="radio" name="kk" value="hex-key" /><span><strong>Private key hex</strong><span class="desc">Raw 32-byte private key as 64 hexadecimal characters.</span></span></label>
       <label class="choice"><input type="radio" name="kk" value="minikey" /><span><strong>Mini key</strong><span class="desc">Casascius-style short key.</span></span></label>
-      <label class="choice"><input type="radio" name="kk" value="brain" /><span><strong>Brain wallet</strong><span class="desc">Unsafe. Use only to recover an old passphrase wallet.</span></span></label>
+      <label class="choice"><input type="radio" name="kk" value="brain" /><span><strong>Brain wallet</strong><span class="desc">Unsafe. SHA-256 of your text, as one private key or a 24-word seed.</span></span></label>
     `;
   hodlBindFields();
 }
@@ -4778,16 +4778,27 @@ function hodlBindSeedKeyboard(input, targetWords = Pt) {
 function hodlBindPassphraseKeyboard(inputId = "pass", toggleId = "passphrase-keyboard-toggle", inputName = "passphrase", keyboardId = "passphrase-keyboard") {
   let toggle = document.getElementById(toggleId), keyboard = document.getElementById(keyboardId), input = document.getElementById(inputId), modeButton = keyboard?.querySelector("[data-seed-keyboard-mode]");
   if (!toggle || !keyboard || !input) return;
-  let privateKey = inputId === "key", refresh = () => privateKey ? hodlUpdatePrivateKeyKeyboardKeys(input, keyboardId) : hodlUpdatePassphraseKeyboardKeys(input, keyboardId);
+  let privateKey = inputId === "key", activeInput = input,
+    // Resolved on demand: the passphrase field is not always in the document
+    // when this binds, and it is only a target while it is actually shown.
+    passphraseTarget = () => {
+      let field = document.getElementById("passphrase-field"), element = document.getElementById("pass");
+      return privateKey && element && field && !field.hidden ? element : null;
+    },
+    onPassphrase = () => {
+      let target = passphraseTarget();
+      return Boolean(target) && activeInput === target;
+    },
+    refresh = () => onPassphrase() ? hodlUpdatePassphraseKeyboardKeys(activeInput, keyboardId) : privateKey ? hodlUpdatePrivateKeyKeyboardKeys(input, keyboardId) : hodlUpdatePassphraseKeyboardKeys(input, keyboardId);
   toggle.onclick = () => {
     hodlSetOnScreenKeyboardOpen(!hodlOnScreenKeyboardOpen);
     refresh();
   };
-  hodlBindKeypadPointer(keyboard.querySelectorAll("button"), () => input);
+  hodlBindKeypadPointer(keyboard.querySelectorAll("button"), () => activeInput);
   keyboard.querySelectorAll("[data-seed-character-key],.seed-keyboard-space").forEach((button) => {
-    button.onclick = () => hodlApplySeedKeyboardKey(input, button.dataset.seedKey || "");
+    button.onclick = () => hodlApplySeedKeyboardKey(activeInput, button.dataset.seedKey || "");
   });
-  keyboard.querySelectorAll("[data-seed-delete]").forEach((button) => hodlBindSeedKeyboardDelete(() => input, button));
+  keyboard.querySelectorAll("[data-seed-delete]").forEach((button) => hodlBindSeedKeyboardDelete(() => activeInput, button));
   if (modeButton) {
     modeButton.disabled = false;
     modeButton.onclick = () => {
@@ -4796,10 +4807,27 @@ function hodlBindPassphraseKeyboard(inputId = "pass", toggleId = "passphrase-key
       refresh();
     };
   }
-  ["input", "focus", "blur", "click", "keyup", "select"].forEach((type) => input.addEventListener(type, refresh));
+  ["input", "focus", "blur", "click", "keyup", "select"].forEach((type) => input.addEventListener(type, () => {
+    activeInput = input;
+    refresh();
+  }));
   if (privateKey) {
     document.querySelectorAll('input[name="kk"]').forEach((radio) => radio.addEventListener("change", refresh));
     document.getElementById("network")?.addEventListener("change", refresh);
+    // Delegated so a passphrase field that renders later is still picked up, and
+    // stored on the keyboard so re-binding replaces the handler.
+    let events = ["focusin", "input", "click", "keyup", "select"];
+    if (keyboard.hodlKeyboardActivity) events.forEach((type) => document.removeEventListener(type, keyboard.hodlKeyboardActivity));
+    keyboard.hodlKeyboardActivity = (event) => {
+      let target = passphraseTarget();
+      if (target && event.target === target) activeInput = target;
+      else if (event.target === input) activeInput = input;
+      else return;
+      // Announce the field it is actually typing into.
+      keyboard.setAttribute("aria-label", `On-screen ${keyboard.dataset.seedKeyboardLayout || "lower"} ${onPassphrase() ? "passphrase" : inputName} keyboard`);
+      refresh();
+    };
+    events.forEach((type) => document.addEventListener(type, keyboard.hodlKeyboardActivity));
   }
   refresh();
 }
@@ -4854,15 +4882,20 @@ function hodlBindBase64Keyboard(input) {
   refresh();
 }
 function hodlRenderPassphraseKeyboard() {
-  let host = document.getElementById("passphrase-keyboard-host"), toggleHost = document.getElementById("passphrase-keyboard-toggle-host"), privateKey = Ne === "key" && !hodlBrainHdActive(), passphrase = !privateKey;
-  // The seed keyboard already follows focus between the seed box and the
-  // passphrase box, so where it exists it serves both and a second on-screen
-  // keyboard would only stack another copy under the first.
+  let host = document.getElementById("passphrase-keyboard-host"), toggleHost = document.getElementById("passphrase-keyboard-toggle-host"),
+    keyMode = Ne === "key", hdBrain = hodlBrainHdActive(),
+    // The HD brain output needs the passphrase controls, but its keyboard is
+    // still the private-key one, which now follows focus into the passphrase.
+    privateKey = keyMode, passphrase = !keyMode || hdBrain;
+  // One on-screen keyboard per section: the seed keyboard already serves both
+  // fields, and in key mode the private-key keyboard does, so neither case adds
+  // a second keyboard or a second toggle.
   let shared = passphrase && Boolean(document.getElementById("seed-keyboard")),
+    ownToggle = passphrase && !shared && !hdBrain,
     enabled = !shared;
   if (toggleHost) {
     toggleHost.hidden = !passphrase;
-    toggleHost.innerHTML = passphrase ? (shared ? "" : hodlPassphraseKeyboardToggleMarkup()) + hodlPassphraseBip39ToggleMarkup() : "";
+    toggleHost.innerHTML = passphrase ? (ownToggle ? hodlPassphraseKeyboardToggleMarkup() : "") + hodlPassphraseBip39ToggleMarkup() : "";
   }
   if (!host) return;
   host.hidden = !enabled;
@@ -5967,7 +6000,7 @@ function hodlRenderKeyForm() {
     <label class="choice"><input type="radio" name="kk" value="wif" checked /><span><strong>WIF</strong><span class="desc">Bitcoin wallet import format (Base58Check).</span></span></label>
     <label class="choice"><input type="radio" name="kk" value="hex-key" /><span><strong>Private key hex</strong><span class="desc">Raw 32-byte private key as 64 hexadecimal characters.</span></span></label>
     <label class="choice"><input type="radio" name="kk" value="minikey" /><span><strong>Mini key</strong><span class="desc">Casascius-style short key.</span></span></label>
-    <label class="choice"><input type="radio" name="kk" value="brain" /><span><strong>Brain wallet</strong><span class="desc">Unsafe. Use only to recover an old passphrase wallet.</span></span></label>
+    <label class="choice"><input type="radio" name="kk" value="brain" /><span><strong>Brain wallet</strong><span class="desc">Unsafe. SHA-256 of your text, as one private key or a 24-word seed.</span></span></label>
     </div>
     ${hodlBrainOutputMarkup(hodlKeys[hodlActiveKey]?.brainWalletOutput || "scalar")}
     <p class="label" id="private-key-input-label">Private key or recovery passphrase</p>
