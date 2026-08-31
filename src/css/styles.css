@@ -854,45 +854,74 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .hint.bad { color: var(--danger); }
 .hint.ok { color: var(--ok); }
 .hint:empty, .err:empty { display: none; }
-/* The workspace switcher is a videogame-style settings menu at every width:
-   a hamburger bar above the tool that drops the menu down over it. The
-   pitch-to-tool seam lands on it, as it did on the tab strip before. */
-.workspace { position: relative; margin: var(--space-lede) 0 4px; }
-.workspace-menu-toggle {
-  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px;
-  padding: 0 14px; border: 1px solid var(--border); border-radius: 12px;
-  background: var(--surface); color: var(--fg); font-weight: 600; text-align: left;
+/* The tool switcher keeps every tool on screen, in the same folder-tab shape
+   the Keys section uses for its dynamic key tabs. It scrolls rather than
+   collapsing, so a sixth tool widens the row instead of disappearing behind a
+   control the user has to know to open. The strip sits on its own rule rather
+   than merging into the panel below, because for two of the tools what
+   follows is a manager with its own tab strip. */
+.workspace { position: relative; margin: var(--space-lede) 0 0; }
+/* Sits in the seam above the strip's right edge, where it reads as a label on
+   the tabs rather than another control. Uppercase and accent-coloured like the
+   page's other small labels; it never takes a click, the strip does. */
+.workspace-more {
+  position: absolute; right: 0; bottom: 100%; z-index: 4;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 2px 6px; border: 0; background: none; cursor: pointer;
+  font-size: 11px; font-weight: 700; line-height: 1; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--accent);
 }
-.workspace-menu-toggle:hover { border-color: var(--faint); }
-.workspace-menu-toggle:focus-visible { outline: 2px solid var(--selection-accent); outline-offset: 2px; }
-.workspace-menu-toggle svg { flex: 0 0 auto; }
-.workspace-menu-current {
-  flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.workspace-more[hidden] { display: none; }
+.workspace-more:hover { color: var(--fg); }
+.workspace-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.workspace-tabs {
+  display: flex; align-items: flex-end; gap: 0; min-width: 0; height: 50px;
+  position: relative; z-index: 2; margin-bottom: -1px;
+  overflow-x: auto; overflow-y: hidden; overscroll-behavior-inline: contain;
+  scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch; cursor: grab;
 }
-.workspace-menu-chevron { color: var(--accent); transition: transform 120ms ease; }
-.workspace.is-open .workspace-menu-chevron { transform: rotate(180deg); }
-@media (prefers-reduced-motion: reduce) { .workspace-menu-chevron { transition: none; } }
-/* The menu is a dropdown panel under the toggle, closed until it is asked
-   for. */
-.workspace-menu {
-  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 60;
-  display: none; gap: 4px; padding: 8px;
-  border: 1px solid var(--border); border-radius: 14px; background: var(--surface);
-  box-shadow: 0 16px 36px rgb(0 0 0 / 55%);
+.workspace-tabs::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.workspace-tabs.dragging, .workspace-tabs.dragging .workspace-tab { cursor: grabbing; user-select: none; }
+.workspace-tab {
+  position: relative; display: inline-flex; align-items: center; flex: 0 0 auto;
+  width: max-content; min-height: 44px; padding: 0 16px; white-space: nowrap;
+  border: 1px solid transparent; border-radius: 10px 10px 0 0; background: transparent;
+  color: var(--muted); font-weight: 600;
 }
-.workspace.is-open .workspace-menu { display: grid; }
-.workspace-menu .tab {
-  display: flex; align-items: center; margin: 0; border: 1px solid transparent;
-  border-radius: 10px; background: transparent; color: var(--muted);
-  text-align: left; white-space: nowrap;
+.workspace-tab:not(.active):hover { background: color-mix(in oklab, var(--surface-2) 60%, transparent); color: var(--fg); }
+/* Hairlines between neighbours, dropped beside the active tab and at the end,
+   exactly as the key tabs do it. */
+.workspace-tab:not(.active)::after {
+  content: ""; position: absolute; top: 12px; right: -1px; width: 1px; height: 20px; background: var(--border);
 }
-.workspace-menu .tab:not(.active):hover { background: color-mix(in oklab, var(--surface-2) 70%, transparent); color: var(--fg); }
-.workspace-menu .tab:is(.active, [aria-pressed="true"]) {
-  background: var(--selection-accent); border-color: var(--selection-accent); color: var(--selection-fg); font-weight: 600;
+.workspace-tab:last-child::after, .workspace-tab:has(+ .workspace-tab.active)::after { display: none; }
+/* The chosen tool takes the panel's own ground and paints its bottom border in
+   that same colour, cutting the strip's rule so the tab and the panel below it
+   are one continuous enclosure rather than a chip resting on a line. */
+.workspace-tab.active {
+  background: var(--bg); color: var(--fg); border-color: var(--border); border-bottom-color: var(--bg);
 }
-.workspace-menu .tab:focus-visible {
-  outline: 2px solid color-mix(in oklab, var(--selection-accent) 72%, var(--fg)); outline-offset: 2px;
+.workspace-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+/* Full names by default; the short forms wait for the narrow breakpoint, the
+   same width at which the header drops its control labels. */
+.workspace-tab-short { display: none; }
+/* The panel completes the folder: the strip's rule is its top edge, so the
+   chosen tab and the tool below it read as one enclosure. Transparent, so the
+   cards inside keep the surface-on-ground contrast they have everywhere else
+   and the key tabs still merge into their own card. */
+.workspace-panel {
+  position: relative; z-index: 1;
+  border: 1px solid var(--border); border-radius: 0 0 20px 20px;
+  padding: 20px 16px;
 }
+/* The tool's context sits on the panel's own ground above the card, so the
+   grey surface starts at the controls rather than at the explanation. */
+.tool-intro { margin: 0 0 24px; }
+.tool-intro[hidden] { display: none; }
+.tool-intro h2 { margin: 5px 0 8px; }
+.tool-intro > .muted { max-width: 760px; margin: 0; }
+.workspace-panel > :first-child { margin-top: 0; }
+.workspace-panel > :last-child { margin-bottom: 0; }
 .segmented-control {
   display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; max-width: 100%; isolation: isolate;
 }
@@ -1525,6 +1554,10 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 @media (max-width: 719px) {
   :root { --site-header-pad: 12px; }
   .control-label { display: none; }
+  /* Short tool names here: the strip is the page's only horizontal scroll, so
+     fitting more of it on screen matters more than the fuller wording. */
+  .workspace-tab-full { display: none; }
+  .workspace-tab-short { display: inline; }
   /* Icon-only: square them off against the 40px theme toggle. */
   .download-controls .btn:is(.download-html, .github-repo-link) { flex: 0 0 40px; width: 40px; padding: 0; justify-content: center; }
   /* The wordmark gives back the width the icon-only buttons still need. */

@@ -775,6 +775,74 @@
     );
   });
 
+  await test("tool tabs answer the arrow keys and name themselves in full", async () => {
+    const strip = document.getElementById("workspace-tabs");
+    const tabs = [...strip.querySelectorAll("[data-workspace]")];
+    assert(tabs.length === 6, `Expected six tool tabs, found ${tabs.length}`);
+    // The visible label may be abbreviated; the accessible name never is.
+    const names = ["Key Derivation", "BIP-85", "Multi Signature", "Silent Payments", "PSBT / Nonce", "PSBT Editor"];
+    tabs.forEach((tab, i) => {
+      assert(tab.getAttribute("aria-label") === names[i], `Tab ${i} should be named "${names[i]}"`);
+    });
+    const start = document.querySelector('#workspace [data-workspace="calc"]');
+    try {
+      start.focus();
+      // Right moves to the next tool and takes focus with it.
+      start.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+      await until(() => !document.getElementById("bip85-card").hidden, "BIP-85 to open on ArrowRight");
+      assert(document.activeElement === tabs[1], "Focus should follow the arrow key");
+      assert(tabs[1].getAttribute("aria-selected") === "true", "The reached tab should be selected");
+      // End jumps to the last tool, Home returns to the first.
+      tabs[1].dispatchEvent(new KeyboardEvent("keydown", { key: "End", bubbles: true }));
+      await until(() => !document.getElementById("psbted-card").hidden, "End to reach the last tool");
+      assert(document.activeElement === tabs[5], "End should move focus to the last tab");
+      tabs[5].dispatchEvent(new KeyboardEvent("keydown", { key: "Home", bubbles: true }));
+      await until(() => document.activeElement === tabs[0], "Home to return to the first tab");
+      // Left from the first wraps round to the last.
+      tabs[0].dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
+      await until(() => document.activeElement === tabs[5], "ArrowLeft to wrap to the last tab");
+    } finally {
+      document.querySelector('#workspace [data-workspace="calc"]').click();
+      await until(() => !document.getElementById("key-manager").hidden, "key workspace");
+    }
+  });
+  await test("the tool strip advertises tools that are off its right edge", async () => {
+    const strip = document.getElementById("workspace-tabs");
+    const hint = document.getElementById("workspace-more");
+    assert(strip && hint, "The tool strip or its overflow hint is missing");
+    // It scrolls the strip, so it is a labelled button rather than decoration:
+    // an interactive control must stay in the accessibility tree.
+    assert(hint.tagName === "BUTTON", "The hint must be a button now that it acts");
+    assert(!hint.hasAttribute("aria-hidden"), "An interactive control must not be hidden from assistive tech");
+    assert(hint.getAttribute("aria-label"), "The hint needs a label naming what it does");
+    const width = strip.style.maxWidth;
+    try {
+      // Wide enough for every tab: nothing is out of reach, so no hint.
+      await until(() => hint.hidden, "the hint to stay hidden when every tool fits");
+      // Squeeze the strip until tabs overflow.
+      strip.style.maxWidth = "180px";
+      await until(() => !hint.hidden, "the hint to appear once tools overflow");
+      assert(/more tools/i.test(hint.textContent), "The hint should name what is off-screen");
+      assert(hint.querySelector("svg"), "The hint should carry its arrow");
+      // Positioned against the switcher, which is the strip's full width in
+      // the real layout; the squeeze above only narrows the strip itself.
+      const box = document.getElementById("workspace").getBoundingClientRect();
+      const mark = hint.getBoundingClientRect();
+      assert(Math.abs(mark.right - box.right) < 12, "The hint should sit at the switcher's right edge");
+      assert(mark.bottom <= strip.getBoundingClientRect().top + 1, "The hint should sit above the strip");
+      // One click reaches the end, and the label clears itself on arrival.
+      hint.click();
+      await until(() => hint.hidden, "one click to reach the end and clear the hint");
+      assert(
+        strip.scrollWidth - strip.clientWidth - strip.scrollLeft <= 1,
+        "A single click should land at the far right, not part of the way",
+      );
+    } finally {
+      strip.style.maxWidth = width;
+      strip.scrollLeft = 0;
+    }
+  });
+
   await test("the beta banner's dismiss control clears the banner from the page", () => {
     const banner = document.getElementById("beta-warning");
     const dismiss = document.getElementById("beta-warning-dismiss");

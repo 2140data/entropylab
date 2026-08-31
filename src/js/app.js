@@ -615,15 +615,17 @@ ec.innerHTML = `
       </ul>
     </section>
     <nav class="workspace no-print" id="workspace"></nav>
-    <section class="key-manager no-print" id="key-manager">
-      <div class="key-manager-head"><h2>Keys</h2></div>
-      <div class="key-tab-strip"><div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div><div class="add-item-control"><button class="add-key" id="add-key" type="button" aria-label="Add key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Add another key</span></div></div>
+      <div class="workspace-panel" id="workspace-panel">
+      <div class="tool-intro" id="calc-tool-intro">
+        <div class="kicker">Your entropy enters the lab</div>
+        <h2>Create. Derive. Verify.</h2>
+        <p class="muted calc-intro">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+      </div>
+      <section class="key-manager no-print" id="key-manager">
+      <div class="key-tab-strip"><div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div><div class="add-item-control"><button class="add-key" id="add-key" type="button" aria-label="Add key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Add another key</span></div><div class="add-item-control"><button class="add-key remove-key" id="delete-key" type="button" aria-label="Delete current key" aria-describedby="delete-key-tooltip" disabled>−</button><span class="add-item-tooltip" id="delete-key-tooltip" role="tooltip">Delete this key</span></div></div>
     </section>
     <section class="card no-print" id="calc-card" role="tabpanel" hidden>
-      <div class="key-panel-head">
-        <div class="row segmented-control" id="modes" role="group" aria-label="Key input mode"></div>
-        <button class="btn delete-key" id="delete-key" type="button" aria-label="Delete current key" disabled>Delete Key</button>
-      </div>
+      <div class="row segmented-control" id="modes" role="group" aria-label="Key input mode"></div>
       <div class="global-sync-host" id="global-sync-host"></div>
       <section class="seed-length-control" id="seed-length" aria-labelledby="seed-length-label">
         <p class="label" id="seed-length-label">Seed phrase length</p>
@@ -719,10 +721,12 @@ ec.innerHTML = `
       </div>
       <p class="err" id="error"></p>
     </section>
-    <section class="card no-print" id="bip85-card" role="tabpanel" hidden>
-      <div class="kicker">One seed. Many children.</div>
-      <h2>Derive BIP-85 child entropy</h2>
-      <p class="muted bip85-intro">Deterministic child seeds, keys, and passwords from the active key's BIP32 root. Same parent, application, and index always reproduce the same child. This does not invent entropy \u2014 it is a calculator. English BIP-39 children match COLDCARD.</p>
+    <div class="tool-intro" id="bip85-tool-intro" hidden>
+        <div class="kicker">One seed. Many children.</div>
+        <h2>Derive BIP-85 child entropy</h2>
+        <p class="muted bip85-intro">Deterministic child seeds, keys, and passwords from the active key's BIP32 root. Same parent, application, and index always reproduce the same child. This does not invent entropy \u2014 it is a calculator. English BIP-39 children match COLDCARD.</p>
+      </div>
+      <section class="card no-print" id="bip85-card" role="tabpanel" hidden>
       <label class="field">Optional root xprv (leave blank to use the active key)
         <textarea id="bip85-key" placeholder="xprv\u2026 or leave blank to use the active key" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
       </label>
@@ -773,16 +777,15 @@ ec.innerHTML = `
       <div id="bip85-out" aria-live="polite"></div>
       <p class="muted">Derived children remain in this page only. Anyone with the parent seed, passphrase, application, and index can reproduce them. Memory clearing is best-effort; close the page before reconnecting the computer.</p>
     </section>
-    <section class="key-manager no-print" id="msig-manager" hidden>
-      <div class="key-manager-head"><h2>Multisigs</h2></div>
-      <div class="key-tab-strip"><div class="key-tabs" id="msig-tabs" role="tablist" aria-label="Multisigs"></div><div class="add-item-control"><button class="add-key" id="add-msig" type="button" aria-label="Add multisig" aria-describedby="add-msig-tooltip">+</button><span class="add-item-tooltip" id="add-msig-tooltip" role="tooltip">Add another multisig</span></div></div>
+      <div class="tool-intro" id="msig-tool-intro" hidden>
+        <div class="kicker">Multiple keys, one wallet</div>
+        <h2>Derive a multisig wallet</h2>
+        <p class="muted msig-intro">Combine extended public keys into a multisignature wallet. Paste each key origin and extended public key as exported by its signer: <span class="mono">[fingerprint/48h/0h/0h/2h]xpub\u2026</span>. Private keys are not needed. The derived addresses can receive bitcoin, and spending requires the configured number of signatures.</p>
+      </div>
+      <section class="key-manager no-print" id="msig-manager" hidden>
+      <div class="key-tab-strip"><div class="key-tabs" id="msig-tabs" role="tablist" aria-label="Multisigs"></div><div class="add-item-control"><button class="add-key" id="add-msig" type="button" aria-label="Add multisig" aria-describedby="add-msig-tooltip">+</button><span class="add-item-tooltip" id="add-msig-tooltip" role="tooltip">Add another multisig</span></div><div class="add-item-control"><button class="add-key remove-key" id="delete-msig" type="button" aria-label="Delete current multisig" aria-describedby="delete-msig-tooltip" disabled>−</button><span class="add-item-tooltip" id="delete-msig-tooltip" role="tooltip">Delete this multisig</span></div></div>
     </section>
     <section class="card no-print" id="msig-card" role="tabpanel" hidden>
-      <div class="key-panel-head">
-        <div><div class="kicker">Multiple keys, one wallet</div><h2>Derive a multisig wallet</h2></div>
-        <button class="btn delete-key" id="delete-msig" type="button" aria-label="Delete current multisig" disabled>Delete Multisig</button>
-      </div>
-      <p class="muted msig-intro">Combine extended public keys into a multisignature wallet. Paste each key origin and extended public key as exported by its signer: <span class="mono">[fingerprint/48h/0h/0h/2h]xpub\u2026</span>. Private keys are not needed. The derived addresses can receive bitcoin, and spending requires the configured number of signatures.</p>
       <div class="msig-threshold-labels">
         <label for="msig-m-number"><span>Signatures needed to spend (m)</span><input class="msig-threshold-number" id="msig-m-number" type="number" min="1" max="15" step="1" value="2" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
         <label for="msig-n-number"><span>Total signing keys (n)</span><input class="msig-threshold-number" id="msig-n-number" type="number" min="1" max="15" step="1" value="3" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
@@ -868,10 +871,12 @@ ec.innerHTML = `
       </div>
       <p class="err" id="msig-error"></p>
     </section>
-    <section class="card no-print" id="sp-card" role="tabpanel" hidden>
-      <div class="kicker">BIP-352 · reusable address, unique outputs</div>
-      <h2>Silent Payments</h2>
-      <p class="muted psbt-intro">A calculator, not a chain scanner. Derive a reusable <code>sp1q…</code> address from your seed, compute the unique taproot output a sender must pay, or check pasted outputs against your scan key. Nothing here talks to the network.</p>
+    <div class="tool-intro" id="sp-tool-intro" hidden>
+        <div class="kicker">BIP-352 · reusable address, unique outputs</div>
+        <h2>Silent Payments</h2>
+        <p class="muted psbt-intro">A calculator, not a chain scanner. Derive a reusable <code>sp1q…</code> address from your seed, compute the unique taproot output a sender must pay, or check pasted outputs against your scan key. Nothing here talks to the network.</p>
+      </div>
+      <section class="card no-print" id="sp-card" role="tabpanel" hidden>
       <div class="row no-print segmented-control" id="sp-modes">
         <button class="tab active" type="button" data-sp-mode="receive" aria-pressed="true">Receive</button>
         <button class="tab" type="button" data-sp-mode="send" aria-pressed="false">Send</button>
@@ -938,10 +943,12 @@ ec.innerHTML = `
       <div id="sp-out" aria-live="polite"></div>
       <p class="muted">Session keys remain in this page only and are never intentionally stored or sent. Memory clearing is best-effort because browsers may retain internal copies; close the page before reconnecting the computer.</p>
     </section>
-    <section class="card no-print" id="psbt-card" role="tabpanel" hidden>
-      <div class="kicker">Inspect first. Sign elsewhere.</div>
-      <h2>Read a PSBT or a signed transaction.</h2>
-      <p class="muted psbt-intro">Inspecting a PSBT v0 or a raw Bitcoin transaction does not require a private key. EntropyLab can show outputs, PSBT-provided input amounts and fees, signatures, and repeated ECDSA nonce values. Optional Jade anti-exfil transcripts (host nonce \u03C1 and signer opening R) are checked without a key. Finalized taproot witnesses and tap-leaf scripts are scanned for inscription envelopes (OP_FALSE OP_IF "ord"); this does not number sats or fetch content from the chain. Loading a matching key additionally labels which outputs belong to this wallet (change vs receive vs not yours) and checks whether supported signatures match plain RFC 6979 or Bitcoin Core-style low-r grinding; a mismatch alone is not evidence of a compromised signer.</p>
+    <div class="tool-intro" id="psbt-tool-intro" hidden>
+        <div class="kicker">Inspect first. Sign elsewhere.</div>
+        <h2>Read a PSBT or a signed transaction.</h2>
+        <p class="muted psbt-intro">Inspecting a PSBT v0 or a raw Bitcoin transaction does not require a private key. EntropyLab can show outputs, PSBT-provided input amounts and fees, signatures, and repeated ECDSA nonce values. Optional Jade anti-exfil transcripts (host nonce \u03C1 and signer opening R) are checked without a key. Finalized taproot witnesses and tap-leaf scripts are scanned for inscription envelopes (OP_FALSE OP_IF "ord"); this does not number sats or fetch content from the chain. Loading a matching key additionally labels which outputs belong to this wallet (change vs receive vs not yours) and checks whether supported signatures match plain RFC 6979 or Bitcoin Core-style low-r grinding; a mismatch alone is not evidence of a compromised signer.</p>
+      </div>
+      <section class="card no-print" id="psbt-card" role="tabpanel" hidden>
       <label class="field">PSBT v0 or raw transaction (base64 or hex)
         <textarea id="psbt-text" placeholder="cHNidP8B\u2026 or 020000000001\u2026" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
       </label>
@@ -972,10 +979,12 @@ ec.innerHTML = `
       <div id="psbt-out" aria-live="polite"></div>
       <p class="muted">Session keys remain in this page only and are never intentionally stored or sent. Memory clearing is best-effort because browsers may retain internal copies; close the page before reconnecting the computer.</p>
     </section>
-    <section class="card no-print" id="psbted-card" role="tabpanel" hidden>
-      <div class="kicker">Full-fidelity editor. Sign elsewhere.</div>
-      <h2>Edit a PSBT, field by field.</h2>
-      <p class="muted psbt-intro">A BIP-174 editor in the spirit of bip174.org, backed by rust-bitcoin compiled to WebAssembly. Every key-value pair of the global, per-input and per-output maps is shown with a typed decode (BIP-174 and BIP-371 taproot fields) and stays editable as raw hex, and the unsigned transaction's version, locktime, input prevouts/sequences and output amounts/scripts get structured fields. Adding or removing a pair re-validates the file immediately; Re-serialize validates the pending field edits and produces the new PSBT. PSBT v0 only; unknown and proprietary pairs round-trip untouched. Editing never signs anything.</p>
+    <div class="tool-intro" id="psbted-tool-intro" hidden>
+        <div class="kicker">Full-fidelity editor. Sign elsewhere.</div>
+        <h2>Edit a PSBT, field by field.</h2>
+        <p class="muted psbt-intro">A BIP-174 editor in the spirit of bip174.org, backed by rust-bitcoin compiled to WebAssembly. Every key-value pair of the global, per-input and per-output maps is shown with a typed decode (BIP-174 and BIP-371 taproot fields) and stays editable as raw hex, and the unsigned transaction's version, locktime, input prevouts/sequences and output amounts/scripts get structured fields. Adding or removing a pair re-validates the file immediately; Re-serialize validates the pending field edits and produces the new PSBT. PSBT v0 only; unknown and proprietary pairs round-trip untouched. Editing never signs anything.</p>
+      </div>
+      <section class="card no-print" id="psbted-card" role="tabpanel" hidden>
       <label class="field">PSBT v0 (base64 or hex)
         <textarea id="psbted-text" placeholder="cHNidP8B..." spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
       </label>
@@ -991,6 +1000,7 @@ ec.innerHTML = `
       <p class="muted">Fees and input amounts shown here are unverified PSBT claims; the editor does not check them against previous transactions or the blockchain. Nothing is signed or broadcast.</p>
     </section>
     <div id="out"></div>
+    </div>
     <section class="card muted sources">
       <h3 class="sources-heading">Sources</h3>
       <p>Ian Coleman BIP39: <a href="https://github.com/iancoleman/bip39" target="_blank" rel="noopener noreferrer">github.com/iancoleman/bip39</a> \u2014 pull <code>bip39-standalone.html</code> from Releases, or <code>src/js/index.js</code>, <code>entropy.js</code>, <code>jsbip39.js</code>, <code>wordlist_english.js</code>.</p>
@@ -10083,12 +10093,12 @@ function hodlShowWorkspace(id) {
   if (hodlWorkspace === "calc") hodlCaptureKey();
   else if (hodlWorkspace === "msig") hodlCaptureMsig();
   hodlWorkspace = id;
-  [...W("#workspace-menu").children].forEach((button) => {
+  [...W("#workspace-tabs").querySelectorAll("[data-workspace]")].forEach((button) => {
     let active = button.dataset.workspace === id;
     button.classList.toggle("active", active);
-    button.setAttribute("aria-pressed", String(active));
+    button.setAttribute("aria-selected", String(active));
+    if (active) hodlRevealTab(W("#workspace-tabs"), [...W("#workspace-tabs").children].indexOf(button));
   });
-  W("#workspace-menu-current").textContent = hodlWorkspaceTabs.find(([tab]) => tab === id)?.[1] ?? "";
   document.getElementById("key-manager").hidden = id !== "calc";
   document.getElementById("msig-manager").hidden = id !== "msig";
   document.getElementById("calc-card").hidden = true;
@@ -10097,6 +10107,11 @@ function hodlShowWorkspace(id) {
   document.getElementById("psbted-card").hidden = id !== "psbted";
   document.getElementById("bip85-card").hidden = id !== "bip85";
   document.getElementById("sp-card").hidden = id !== "sp";
+  // The context block sits outside its tool's card, so it is shown and hidden
+  // with the card rather than by it.
+  ["psbt", "psbted", "bip85", "sp", "msig", "calc"].forEach((tool) => {
+    document.getElementById(`${tool}-tool-intro`).hidden = id !== tool;
+  });
   re = null;
   Ge = false;
   dr.innerHTML = "";
@@ -10188,54 +10203,77 @@ function hodlSeedInitialManagers() {
     hodlActiveMsig = 0;
   }
 }
-var hodlWorkspaceTabs = [["calc", "Key Derivation"], ["bip85", "BIP-85"], ["msig", "Multi Signature"], ["sp", "Silent Payments"], ["psbt", "PSBT / Nonce"], ["psbted", "PSBT Editor"]];
-// The switcher reads as a videogame settings menu at every width: a
-// hamburger bar that drops the menu down over the tool. The is-open class
-// opens and closes the dropdown.
-function hodlSetWorkspaceMenuOpen(open) {
-  W("#workspace").classList.toggle("is-open", open);
-  W("#workspace-menu-toggle").setAttribute("aria-expanded", String(open));
+// Each tool carries a full name and a short one. Narrow screens show the
+// short form so more tools stay on screen instead of off the right edge.
+var hodlWorkspaceTabs = [["calc", "Key Derivation", "Keys"], ["bip85", "BIP-85", "BIP85"], ["msig", "Multi Signature", "MultiSig"], ["sp", "Silent Payments", "SP"], ["psbt", "PSBT / Nonce", "PSBT"], ["psbted", "PSBT Editor", "Editor"]];
+// The switcher keeps every tool on screen as a folder-tab strip that scrolls
+// when it must, in the shape the Keys section uses for its own tabs.
+function hodlWorkspaceTabKeydown(event, index) {
+  let next = null, length = hodlWorkspaceTabs.length;
+  if (event.key === "ArrowRight") next = (index + 1) % length;
+  else if (event.key === "ArrowLeft") next = (index - 1 + length) % length;
+  else if (event.key === "Home") next = 0;
+  else if (event.key === "End") next = length - 1;
+  if (next === null) return;
+  event.preventDefault();
+  hodlShowWorkspace(hodlWorkspaceTabs[next][0]);
+  W("#workspace-tabs").querySelectorAll("[data-workspace]")[next]?.focus();
+}
+function hodlSyncWorkspaceOverflow() {
+  let strip = document.getElementById("workspace-tabs"), hint = document.getElementById("workspace-more");
+  if (!strip || !hint) return;
+  hint.hidden = strip.scrollWidth - strip.clientWidth - strip.scrollLeft <= 1;
 }
 function hodlInitWorkspace() {
   let box = W("#workspace");
   box.innerHTML = "";
-  let toggle = document.createElement("button");
-  toggle.type = "button";
-  toggle.className = "workspace-menu-toggle";
-  toggle.id = "workspace-menu-toggle";
-  toggle.setAttribute("aria-expanded", "false");
-  toggle.setAttribute("aria-controls", "workspace-menu");
-  toggle.innerHTML = `<svg class="workspace-menu-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span class="workspace-menu-current" id="workspace-menu-current"></span><svg class="workspace-menu-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg>`;
-  toggle.onclick = () => hodlSetWorkspaceMenuOpen(!box.classList.contains("is-open"));
-  let menu = document.createElement("div");
-  menu.className = "workspace-menu";
-  menu.id = "workspace-menu";
-  menu.setAttribute("role", "group");
-  menu.setAttribute("aria-label", "Workspace");
-  hodlWorkspaceTabs.forEach(([id, label]) => {
+  // Every tool stays on screen. The strip scrolls rather than collapsing, so
+  // adding tools later widens the row instead of hiding them behind a control
+  // the user has to know to open.
+  let hint = document.createElement("button");
+  hint.type = "button";
+  hint.className = "workspace-more";
+  hint.id = "workspace-more";
+  hint.setAttribute("aria-controls", "workspace-tabs");
+  hint.setAttribute("aria-label", "Scroll the tool list to see more tools");
+  hint.hidden = true;
+  hint.innerHTML = `More tools<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
+  let strip = document.createElement("div");
+  strip.className = "workspace-tabs";
+  strip.id = "workspace-tabs";
+  strip.setAttribute("role", "tablist");
+  strip.setAttribute("aria-label", "Tool");
+  hodlWorkspaceTabs.forEach(([id, label, short], index) => {
     let button = document.createElement("button"), active = hodlWorkspace === id;
     button.type = "button";
-    button.className = "tab" + (active ? " active" : "");
+    button.className = "workspace-tab" + (active ? " active" : "");
     button.dataset.workspace = id;
-    button.setAttribute("aria-pressed", String(active));
-    button.textContent = label;
-    button.onclick = () => {
-      hodlShowWorkspace(id);
-      hodlSetWorkspaceMenuOpen(false);
-    };
-    menu.appendChild(button);
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-selected", String(active));
+    button.innerHTML = `<span class="workspace-tab-full"></span><span class="workspace-tab-short"></span>`;
+    button.firstChild.textContent = label;
+    button.lastChild.textContent = short;
+    // The short form is display:none at wide widths and the full one is hidden
+    // at narrow ones, and hidden text is not in the accessibility tree — so the
+    // name is stated outright rather than left to whichever span is showing.
+    button.setAttribute("aria-label", label);
+    button.onclick = () => hodlShowWorkspace(id);
+    button.onkeydown = (event) => hodlWorkspaceTabKeydown(event, index);
+    strip.appendChild(button);
   });
-  box.append(toggle, menu);
-  W("#workspace-menu-current").textContent = hodlWorkspaceTabs.find(([id]) => id === hodlWorkspace)?.[1] ?? "";
-  document.addEventListener("click", (event) => {
-    if (box.classList.contains("is-open") && !event.target.closest("#workspace")) hodlSetWorkspaceMenuOpen(false);
+  box.append(hint, strip);
+  hodlInitTabDrag(strip);
+  // The hint points at tools that are off the right edge, so it answers "is
+  // there more that way": it goes once the end is reached, and one click
+  // finishes the journey rather than stopping part of the way.
+  hint.onclick = () => strip.scrollTo({
+    left: strip.scrollWidth,
+    behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
   });
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && box.classList.contains("is-open")) {
-      hodlSetWorkspaceMenuOpen(false);
-      toggle.focus();
-    }
-  });
+  hodlSyncWorkspaceOverflow();
+  strip.addEventListener("scroll", hodlSyncWorkspaceOverflow, { passive: true });
+  addEventListener("resize", hodlSyncWorkspaceOverflow);
+  new ResizeObserver(hodlSyncWorkspaceOverflow).observe(strip);
   hodlInitMsig();
   hodlInitPsbt();
   initPsbtEditor();
