@@ -24,7 +24,8 @@ Official website: [entropylab.online](https://entropylab.online)
 - Derives BIP39 seeds, BIP32 extended keys, wallet fingerprints, addresses,
   and Bitcoin Core-compatible descriptors. Each master fingerprint is shown
   next to its deterministic [LifeHash](https://lifehash.info) icon so two
-  keys can be told apart at a glance.
+  keys can be told apart at a glance. The icon hashes the raw fingerprint
+  bytes, so it matches the image Sparrow Wallet shows for the same key.
 - Supports legacy, nested SegWit, native SegWit, and Taproot single-signature
   address types. Derivation-scheme presets cover the BIP44, BIP49, BIP84,
   BIP86, and six-level BIP48 layouts and label each path level accordingly.

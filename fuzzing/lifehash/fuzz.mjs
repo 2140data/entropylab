@@ -5,9 +5,11 @@
 // Every input goes through both full public pipelines and the rendered pixels
 // must be byte-identical:
 //   ours:    fromFingerprint(fp, moduleSize) -> PNG data URL -> decoded RGB
-//   theirs:  LifeHash.makeFrom(fp, version2, moduleSize, false).colors
-// Comparing the app's final PNG (rather than internals) also covers the
-// hand-rolled PNG encoder and the module-size scaling.
+//   theirs:  LifeHash.makeFrom(hexToBytes(fp), version2, moduleSize, false).colors
+// Both hash the RAW fingerprint bytes (Sparrow/toucan's convention), so the
+// fuzzer also guards that the app stays Sparrow-compatible. Comparing the
+// app's final PNG (rather than internals) also covers the hand-rolled PNG
+// encoder and the module-size scaling.
 //
 // Deterministic: inputs come from a seeded xorshift64 PRNG, so a CI failure
 // reproduces locally with the same FUZZ_SEED (and FUZZ_ITERATIONS). The app
@@ -79,22 +81,25 @@ const nextFingerprint = () => [...Array(4)].map(() => nextByte().toString(16).pa
 const sha256Hex = (bytes) => createHash("sha256").update(Buffer.from(bytes)).digest("hex");
 
 // Non-vacuity guard: the same vectors test/lifehash.test.mjs pins, generated
-// from the canonical implementation. Both sides must reproduce them before
-// any fuzzing happens — a fuzzer whose comparisons silently no-op must fail
-// here, loudly.
+// from the canonical implementation over the raw fingerprint bytes (Sparrow's
+// convention). Both sides must reproduce them before any fuzzing happens — a
+// fuzzer whose comparisons silently no-op must fail here, loudly.
 const VECTORS = [
-  { input: "73c5da0a", rgb: "094d645318061f009f3d60aa1f196d9ed59868f2407d78d69c0772c02cdd21c8" },
-  { input: "00000000", rgb: "9cae40ba1272c23df266c71dc2535bf97a033f0e7d04d46b5b538f1b3345365c" },
-  { input: "ffffffff", rgb: "77a2d1c510c4e173e4ee1b2531dec918e40d0790c7ffb78f964a38b882cc518a" },
-  { input: "b8688df1", rgb: "bd129ec7b61d576013ca2c5a0c242f3ffcd1f9c33ad2e32510200122d339df8a" },
+  { input: "73c5da0a", rgb: "09da10ffd57a4f58616a5eda313d3f0c861e79b93e1b609a012f9c3530b427b5" },
+  { input: "00000000", rgb: "9003d9fd366ec3aa06f54d6797485114ec00c61bf85c0efafa91bd2e40176d5b" },
+  { input: "ffffffff", rgb: "e856f1b33dfd8eef83151de7407c3d4861581ce09f11f11f2dfc6b0219a1e51b" },
+  { input: "b8688df1", rgb: "d44ba038c1389003c955a6f17accfb87c98fce4e8c98c9e2a44c71067b6521fe" },
 ];
 // Edge inputs beyond the PRNG stream: boundary nibbles, repeated bytes, and
-// uppercase variants (the app lowercases before hashing; the official package
-// hashes as-is, so ours(UPPER) is compared against theirs(lower)).
+// uppercase variants (hex decoding is case-insensitive on both sides, so
+// ours(UPPER) is compared against theirs(lower)).
 const FIXED = [
   "00000000", "ffffffff", "01234567", "89abcdef", "deadbeef", "aaaaaaaa", "55555555", "0f0f0f0f", "f0f0f0f0",
   ...VECTORS.map((v) => v.input.toUpperCase()),
 ];
+
+// Case-insensitive hex decode, mirroring Sparrow's Utils.hexToBytes.
+const hexToBytes = (hex) => Uint8Array.from(Buffer.from(hex.toLowerCase(), "hex"));
 
 let comparisons = 0;
 const fail = (fingerprint, moduleSize, message) => {
@@ -107,7 +112,7 @@ const fail = (fingerprint, moduleSize, message) => {
 
 const compare = async (fingerprint, moduleSize, theirsFp = fingerprint) => {
   const oursPng = decodePngRgb(await ours.fromFingerprint(fingerprint, moduleSize));
-  const theirs = LifeHash.makeFrom(theirsFp, LifeHashVersion.version2, moduleSize, false);
+  const theirs = LifeHash.makeFrom(hexToBytes(theirsFp), LifeHashVersion.version2, moduleSize, false);
   if (oursPng.width !== theirs.width || oursPng.height !== theirs.height) {
     fail(fingerprint, moduleSize, `dimensions ${oursPng.width}x${oursPng.height} vs ${theirs.width}x${theirs.height}`);
   }
@@ -131,7 +136,7 @@ const compare = async (fingerprint, moduleSize, theirsFp = fingerprint) => {
 for (const { input, rgb } of VECTORS) {
   const oursPng = await compare(input, 1);
   if (sha256Hex(oursPng.rgb) !== rgb) fail(input, 1, "EntropyLab no longer reproduces the pinned canonical vector");
-  const theirs = LifeHash.makeFrom(input, LifeHashVersion.version2, 1, false);
+  const theirs = LifeHash.makeFrom(hexToBytes(input), LifeHashVersion.version2, 1, false);
   if (sha256Hex(theirs.colors) !== rgb) fail(input, 1, "the pinned `lifehash` package no longer reproduces the canonical vector");
 }
 
