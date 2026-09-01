@@ -1347,9 +1347,9 @@ test("PSBT Editor tab follows PSBT / Nonce and wires the rust-bitcoin editor", (
   assert.match(css, /#psbted-card\[hidden\]/);
 });
 
-test("BIP-85 entry point sits beside Derive Wallet and opens the BIP-85 tab", () => {
+test("BIP-85 entry point sits beside Derive Key and opens the BIP-85 tab", () => {
   for (const markup of [template, appSource]) {
-    assert.match(markup, /id="go"[^>]*>Derive Wallet<\/button>[\s\S]*?id="bip85-open"[^>]*>Derive BIP-85 child<\/button>[\s\S]*?id="wipe"/);
+    assert.match(markup, /id="go"[^>]*>Derive Key<\/button>[\s\S]*?id="bip85-open"[^>]*>Derive BIP-85 child<\/button>[\s\S]*?id="wipe"/);
   }
   assert.match(appSource, /getElementById\("bip85-open"\)/);
   assert.match(appSource, /open\.onclick = \(\) => \{\s*hodlShowWorkspace\("bip85"\)/);

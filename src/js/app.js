@@ -550,8 +550,8 @@ hodlRootEl.innerHTML = `
       </div>
       <p class="field-note address-estimate derivation-estimate" id="address-estimate" role="status">Measuring this device\u2026</p>
       <div class="row key-action-row current-item-actions">
-        <button class="btn primary" id="go" disabled aria-disabled="true">Derive Wallet</button>
-        <div class="derive-progress" id="derive-progress" role="progressbar" aria-label="Wallet derivation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0% complete" hidden><span class="derive-progress-track"><span class="derive-progress-bar"></span></span><span class="derive-progress-label">0%</span></div>
+        <button class="btn primary" id="go" disabled aria-disabled="true">Derive Key</button>
+        <div class="derive-progress" id="derive-progress" role="progressbar" aria-label="Key derivation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0% complete" hidden><span class="derive-progress-track"><span class="derive-progress-bar"></span></span><span class="derive-progress-label">0%</span></div>
         <button class="btn secondary" id="bip85-open" type="button">Derive BIP-85 child</button>
         <button class="btn clear-current-action" id="wipe" type="button" disabled aria-disabled="true">Clear Current Key</button>
       </div>
@@ -2165,16 +2165,16 @@ function hodlSetDerivationButtonState(kind, state) {
     button.textContent = "Stop";
     button.disabled = false;
     button.setAttribute("aria-disabled", "false");
-    button.setAttribute("aria-label", kind === "msig" ? "Stop deriving multisig" : "Stop deriving wallet");
+    button.setAttribute("aria-label", kind === "msig" ? "Stop deriving multisig" : "Stop deriving key");
     button.dataset.derivationState = "running";
   } else if (state === "stopping") {
     button.textContent = "Stopping…";
     button.disabled = true;
     button.setAttribute("aria-disabled", "true");
-    button.setAttribute("aria-label", kind === "msig" ? "Stopping multisig derivation" : "Stopping wallet derivation");
+    button.setAttribute("aria-label", kind === "msig" ? "Stopping multisig derivation" : "Stopping key derivation");
     button.dataset.derivationState = "stopping";
   } else {
-    button.textContent = kind === "msig" ? "Derive Multisig" : "Derive Wallet";
+    button.textContent = kind === "msig" ? "Derive Multisig" : "Derive Key";
     button.removeAttribute("aria-label");
     delete button.dataset.derivationState;
     delete button.dataset.derivationWidth;
@@ -4133,8 +4133,8 @@ function hodlBrainOutputMarkup(output = "scalar", acked = Boolean(hodlBrainLabAc
     </div>
     <label class="choice"><input type="checkbox" id="brain-lab-ack" ${acked ? "checked" : ""} /><span><strong>I understand</strong><span class="desc">Required once this session, in page memory only. Derive is still required.</span></span></label>
     <div id="brain-lab-zone" ${hd ? "" : "hidden"}>
-      <p class="muted" id="brain-lab-help">UTF-8 text is hashed with SHA-256. The 32-byte digest is BIP39 entropy for a 24-word seed. Nothing is derived until you press Derive Wallet.</p>
-      <p class="muted" id="brain-lab-hex" aria-live="polite">SHA-256 hex appears here. 24 words appear only after Derive Wallet.</p>
+      <p class="muted" id="brain-lab-help">UTF-8 text is hashed with SHA-256. The 32-byte digest is BIP39 entropy for a 24-word seed. Nothing is derived until you press Derive Key.</p>
+      <p class="muted" id="brain-lab-hex" aria-live="polite">SHA-256 hex appears here. 24 words appear only after Derive Key.</p>
     </div>
   </div>`;
 }
@@ -4153,17 +4153,17 @@ function hodlSyncBrainOutput() {
   let hex = document.getElementById("brain-lab-hex");
   if (!hex || !brain || output !== "hd") return;
   if (!hodlBrainLabAck) {
-    hex.textContent = "Acknowledge the lab warning, then enter text. Derive Wallet is still required.";
+    hex.textContent = "Acknowledge the lab warning, then enter text. Derive Key is still required.";
     hex.className = "muted";
     return;
   }
   if (!input.value.length) {
-    hex.textContent = "SHA-256 hex appears here. 24 words appear only after Derive Wallet.";
+    hex.textContent = "SHA-256 hex appears here. 24 words appear only after Derive Key.";
     hex.className = "muted";
     return;
   }
   let entropy = hodlBrainLabEntropy(hodlBrainWalletText(input.value));
-  hex.textContent = entropy.ok ? `SHA-256 ${entropy.hex} \xB7 24 words appear only after Derive Wallet.` : entropy.error;
+  hex.textContent = entropy.ok ? `SHA-256 ${entropy.hex} \xB7 24 words appear only after Derive Key.` : entropy.error;
   hex.className = "muted" + (entropy.ok ? " ok" : " err");
 }
 function hodlUpdatePrivateKeyInputPresentation() {
@@ -6331,7 +6331,7 @@ async function hodlCalculateKey(progress) {
   } catch (error) {
     if (error instanceof HodlDerivationCancelledError) throw error;
     hodlWalletResult = null;
-    hodlElement("#error").textContent = error instanceof Error ? error.message : "Could not derive wallet";
+    hodlElement("#error").textContent = error instanceof Error ? error.message : "Could not derive key";
     hodlOutEl.innerHTML = "";
     hodlCaptureKey();
     return false;
@@ -8496,7 +8496,7 @@ function hodlInitBip85() {
     hodlRefreshStationKeyPickers();
   });
   go.onclick = hodlRunBip85;
-  // Entry point beside Derive Wallet (idea adopted from PR #150): jump to the
+  // Entry point beside Derive Key (idea adopted from PR #150): jump to the
   // BIP-85 tab with the active key loaded as parent. Errors land in the tab's
   // own error line; secrets stay behind the existing reveal/wipe flow.
   let open = document.getElementById("bip85-open");

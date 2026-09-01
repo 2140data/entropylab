@@ -1693,8 +1693,8 @@
     derive.click();
     equal(derive.textContent.trim(), "Stopping…", "The Stop button did not acknowledge the cancellation request");
     assert(Math.abs(derive.getBoundingClientRect().width - deriveWidth) < 0.5, "The Stopping button changed width");
-    await until(() => derive.textContent.trim() === "Derive Wallet", "restored Derive Wallet button");
-    assert(!derive.disabled, "Derive Wallet did not become available again after stopping");
+    await until(() => derive.textContent.trim() === "Derive Key", "restored Derive Key button");
+    assert(!derive.disabled, "Derive Key did not become available again after stopping");
     const stoppedProgress = document.getElementById("derive-progress");
     assert(stoppedProgress.hidden, "The progress indicator remained visible after cancellation");
     equal(stoppedProgress.getAttribute("aria-valuenow"), "0", "Cancellation did not reset progress");
@@ -1738,7 +1738,7 @@
     equal(multisigDerive.title, "A derivation is already running.", "The disabled multisig derive button did not explain why");
     await until(() => Number(document.getElementById("derive-progress").getAttribute("aria-valuenow")) > 0, "derivation progress before editing");
     input(start, "8");
-    await until(() => derive.textContent.trim() === "Derive Wallet", "restored Derive Wallet button after editing");
+    await until(() => derive.textContent.trim() === "Derive Key", "restored Derive Key button after editing");
     assert(!document.getElementById("error").textContent, "Cancelling via an edit was shown as a derivation error");
     assert(!document.querySelector("#acct .account-result-card"), "An edited derivation published a stale wallet");
     const progress = document.getElementById("derive-progress");
