@@ -1392,3 +1392,70 @@ test("the workspace switcher keeps every tool on screen as a tab strip", () => {
   assert.match(css, /\.workspace-more \{[^}]*position: absolute; right: 0; bottom: 100%;/s);
   assert.match(css, /\.workspace-more\[hidden\] \{ display: none; \}/);
 });
+
+test("Lab stays put and a derived key opens a fingerprint tab with a summary", () => {
+  assert.match(appSource, /function hodlNewLabState\(\) \{/);
+  assert.match(appSource, /function hodlCommitDerivedKey\(\) \{/);
+  assert.match(appSource, /function hodlSelectLab\(\) \{/);
+  assert.match(appSource, /function hodlSyncKeyResultView\(\) \{/);
+  assert.match(appSource, /hodlKeys\.push\(hodlNewLabState\(\)\)/);
+  assert.match(appSource, /hodlCommitDerivedKey\(\)/);
+  assert.match(appSource, /button\.id = state\.isLab \? "key-tab-lab"/);
+  assert.match(appSource, /function hodlAddKey\(\) \{\s*hodlSelectLab\(\);/s);
+  assert.match(appSource, /button\.disabled = !state \|\| state\.isLab;/);
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /id="key-summary"/);
+    assert.match(markup, /id="key-lab"/);
+    assert.match(markup, /id="key-edit-inputs"/);
+    assert.match(markup, /id="key-summary-path"/);
+    assert.match(markup, /Open the lab to derive another key/);
+  }
+  assert.match(appSource, /function hodlSnapshotKeySummary\(/);
+  assert.match(appSource, /state\.createdScript = hodlKeySummaryScript\(state\)/);
+  assert.match(appSource, /state\.createdPath = hodlKeySummaryPath\(state\)/);
+  assert.match(css, /#calc-card\.is-result-view #modes/);
+  assert.match(css, /#calc-card:not\(\.is-result-view\) #out/);
+});
+
+test("derived key results put private recovery before script type and addresses", () => {
+  assert.match(appSource, /\$\{hodlHdWalletData\(t\)\}[\s\S]*id="acct-tabs-label">Script type[\s\S]*id="acct"/);
+  assert.match(appSource, /id="wallet-private-heading">Private recovery material/);
+  assert.match(appSource, /These values can recreate or spend from the wallet\. Reveal them only while this file is running offline on an air-gapped computer\./);
+  assert.match(appSource, /id="account-private-heading">Private account material/);
+  assert.match(appSource, /id="account-watch-heading">Watch-only wallet data/);
+  assert.match(appSource, /id="account-address-heading">Addresses/);
+  assert.match(appSource, /Verify the first selected address on another trusted wallet or signing device before accepting bitcoin\./);
+  assert.doesNotMatch(appSource, /id="account-receive-heading">Receive/);
+  assert.match(appSource, /if \(state\) state\.reveal = Ge;/);
+  assert.match(appSource, /hodlBindWalletResultActions\(\);/);
+});
+
+test("multisig co-signer rows can pick a session key or paste a public key", () => {
+  assert.match(appSource, /function hodlSessionMsigKeys\(\) \{/);
+  assert.match(appSource, /function hodlMatchingMsigExport\(result\) \{/);
+  assert.match(appSource, /function hodlSyncMsigKeyAvatar\(row\) \{/);
+  assert.match(appSource, /chips\.className = "msig-session-keys"/);
+  assert.match(appSource, /button\.className = "msig-session-key"/);
+  assert.match(appSource, /hodlFillKeyTabLifehash\(image, fingerprint\)/);
+  assert.match(appSource, /hodlRefreshMsigSessionPickers\(\)/);
+  assert.match(css, /\.msig-session-key \{/);
+  assert.match(css, /\.msig-key-ident \{/);
+});
+
+test("Multisig Lab stays put and a derived wallet opens its own results tab", () => {
+  assert.match(appSource, /function hodlNewMsigLabState\(\) \{/);
+  assert.match(appSource, /function hodlCommitDerivedMsig\(\) \{/);
+  assert.match(appSource, /function hodlSelectMsigLab\(\) \{/);
+  assert.match(appSource, /hodlMsigs\.push\(hodlNewMsigLabState\(\)\)/);
+  assert.match(appSource, /hodlCommitDerivedMsig\(\)/);
+  assert.match(appSource, /out\.innerHTML = `/);
+  assert.match(appSource, /function hodlAddMsig\(\) \{\s*hodlSelectMsigLab\(\);/s);
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /id="msig-summary"/);
+    assert.match(markup, /id="msig-lab"/);
+    assert.match(markup, /id="msig-out"/);
+    assert.match(markup, /id="msig-edit-inputs"/);
+  }
+  assert.match(css, /#msig-card:not\(\.is-result-view\) #msig-out/);
+  assert.match(css, /#msig-card\.is-result-view \.msig-lab/);
+});
