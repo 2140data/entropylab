@@ -1537,15 +1537,25 @@ test("derived key results put private recovery before script type and addresses"
   assert.match(appSource, /hodlBindWalletResultActions\(\);/);
 });
 
-test("multisig co-signer rows can pick a session key or paste a public key", () => {
+test("MS Station assigns keys from one session picker and makes reuse opt in", () => {
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /class="station-key-source msig-station-key-source"[\s\S]*id="msig-session-keys"[\s\S]*id="msig-reuse-session-keys"/);
+    assert.match(markup, /Choose a compatible HD-root key from this session, or paste a co-signer extended public key below/);
+    assert.match(markup, /id="msig-reuse-session-keys" type="checkbox"/);
+  }
   assert.match(appSource, /function hodlSessionMsigKeys\(\) \{/);
   assert.match(appSource, /function hodlMatchingMsigExport\(result\) \{/);
   assert.match(appSource, /function hodlSyncMsigKeyAvatar\(row\) \{/);
-  assert.match(appSource, /chips\.className = "msig-session-keys"/);
-  assert.match(appSource, /button\.className = "msig-session-key"/);
+  assert.match(appSource, /function hodlPickMsigSessionKey\(state\) \{/);
+  assert.match(appSource, /function hodlMsigUsedSessionFingerprints\(\) \{/);
+  assert.match(appSource, /reuse \? keys : keys\.filter/);
+  assert.match(appSource, /hodlMsigKeyTarget = \[\.\.\.document\.querySelectorAll\("#msig-keys textarea"\)\]\.find/);
+  assert.doesNotMatch(appSource, /chips\.className = "msig-session-keys"/);
   assert.match(appSource, /hodlFillKeyTabLifehash\(image, fingerprint\)/);
   assert.match(appSource, /hodlRefreshMsigSessionPickers\(\)/);
-  assert.match(css, /\.msig-session-key \{/);
+  assert.match(appSource, /reuseSessionKeys: false/);
+  assert.match(appSource, /state\.fields\.reuseSessionKeys = Boolean/);
+  assert.match(css, /\.msig-key-reuse-toggle/);
   assert.match(css, /\.msig-key-ident \{/);
 });
 

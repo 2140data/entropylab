@@ -1618,6 +1618,37 @@
     await until(() => !document.getElementById("key-manager").hidden, "key workspace after SP Station test");
   });
 
+  await test("MS Station assigns Key Station keys globally and only reuses them when opted in", async () => {
+    document.querySelector('#workspace [data-workspace="msig"]').click();
+    await until(() => !document.getElementById("msig-manager").hidden, "MS Station");
+    const reuse = document.getElementById("msig-reuse-session-keys");
+    assert(reuse && !reuse.checked, "MS Station key reuse was not opt in");
+    let option = document.querySelector("#msig-session-keys .session-key-option");
+    assert(option, "MS Station did not offer the compatible Key Station key in its global picker");
+    const first = document.getElementById("msig-x-0");
+    first.focus();
+    option.click();
+    assert(first.value.trim(), "The global MS Station picker did not populate the focused co-signer input");
+    assert(!first.closest(".msig-key-row").querySelector(".msig-key-ident").hidden, "The selected key identity was not shown above its co-signer input");
+    assert(!document.querySelector("#msig-session-keys .session-key-option"), "An assigned key remained available while reuse was off");
+
+    reuse.click();
+    option = document.querySelector("#msig-session-keys .session-key-option");
+    assert(option, "Enabling reuse did not restore the assigned key to the global picker");
+    const second = document.getElementById("msig-x-1");
+    second.focus();
+    option.click();
+    assert(second.value.trim(), "Reuse did not populate a second co-signer input");
+    assert(!second.closest(".msig-key-row").querySelector(".msig-key-ident").hidden, "The reused key identity was not shown above the second input");
+    assert(document.querySelector("#msig-session-keys .session-key-option"), "The key disappeared from the global picker while reuse was on");
+
+    input(first, "");
+    input(second, "");
+    reuse.click();
+    document.querySelector('#workspace [data-workspace="calc"]').click();
+    await until(() => !document.getElementById("key-manager").hidden, "key workspace after MS Station picker test");
+  });
+
   await test("a custom arbitrary-depth account path drives the derived addresses and descriptors", async () => {
     input(document.getElementById("branch-range"), "1");
     input(document.getElementById("address-range"), "1");

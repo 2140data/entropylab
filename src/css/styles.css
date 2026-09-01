@@ -962,18 +962,13 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .key-result-main { margin-top: 8px; padding: 16px 16px 20px; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); }
 .key-result .wallet-result-messages { margin: 0 0 16px; }
 .account-receive-section { margin-top: 0; }
-.msig-session-keys { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 8px; }
-.msig-session-keys[hidden] { display: none; }
-.msig-session-key {
-  display: inline-flex; align-items: center; gap: 8px;
-  min-height: 44px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 10px;
-  background: var(--surface-2); color: var(--fg); font-family: var(--mono); font-size: 13px; cursor: pointer;
-}
-.msig-session-key.active { border-color: var(--accent); color: var(--fg); }
 .station-key-source { margin: 0 0 20px; }
 #sp-modes + .station-key-source { margin-top: 20px; }
 .station-key-source > .label { margin: 0 0 8px; }
 .station-key-source > .field-note { display: block; margin: 8px 0 0; }
+.msig-key-reuse-toggle { margin-top: 12px; }
+.msig-station-key-source #msig-session-key-status:empty { display: none; }
+.msig-station-key-source + .msig-threshold-labels { margin-top: 0; }
 .session-key-picker { display: flex; flex-wrap: wrap; gap: 8px; }
 .session-key-picker[hidden] { display: none; }
 .session-key-option {

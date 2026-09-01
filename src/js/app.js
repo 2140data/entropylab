@@ -642,6 +642,16 @@ hodlRootEl.innerHTML = `
         <button class="btn secondary" id="msig-edit-inputs" type="button">Edit input</button>
       </div>
       <div class="msig-lab" id="msig-lab">
+      <div class="station-key-source msig-station-key-source">
+        <p class="label">Bring in a key from Key Station</p>
+        <div class="session-key-picker" id="msig-session-keys" role="group" aria-label="Compatible Key Station keys" hidden></div>
+        <p class="field-note">Choose a compatible HD-root key from this session, or paste a co-signer extended public key below.</p>
+        <label class="choice msig-key-reuse-toggle">
+          <input id="msig-reuse-session-keys" type="checkbox">
+          <span><strong>Allow key reuse</strong><span class="desc">Keep selected Key Station keys available for more than one co-signer input.</span></span>
+        </label>
+        <p class="field-note" id="msig-session-key-status" aria-live="polite"></p>
+      </div>
       <div class="msig-threshold-labels">
         <label for="msig-m-number"><span>Signatures needed to spend (m)</span><input class="msig-threshold-number" id="msig-m-number" type="number" min="1" max="15" step="1" value="2" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
         <label for="msig-n-number"><span>Total signing keys (n)</span><input class="msig-threshold-number" id="msig-n-number" type="number" min="1" max="15" step="1" value="3" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
@@ -7047,10 +7057,6 @@ function hodlMsigKeyOriginFingerprint(value) {
 function hodlSyncMsigKeyAvatar(row) {
   if (!row) return;
   let ta = row.querySelector("textarea"), ident = row.querySelector(".msig-key-ident"), image = ident?.querySelector("img"), code = ident?.querySelector("code"), fingerprint = hodlMsigKeyOriginFingerprint(ta?.value);
-  row.querySelectorAll(".msig-session-key").forEach((button) => {
-    button.classList.toggle("active", Boolean(fingerprint) && button.dataset.fingerprint === fingerprint);
-    button.setAttribute("aria-pressed", String(button.classList.contains("active")));
-  });
   if (ident) ident.hidden = !fingerprint;
   if (code) code.textContent = fingerprint;
   if (image) {
@@ -7059,44 +7065,68 @@ function hodlSyncMsigKeyAvatar(row) {
     if (fingerprint) hodlFillKeyTabLifehash(image, fingerprint);
   }
 }
+var hodlMsigKeyTarget = null;
+function hodlMsigUsedSessionFingerprints() {
+  return new Set([...document.querySelectorAll("#msig-keys textarea")].map((textarea) => hodlMsigKeyOriginFingerprint(textarea.value)).filter(Boolean));
+}
+function hodlMsigNextKeyTarget() {
+  let inputs = [...document.querySelectorAll("#msig-keys textarea")];
+  if (hodlMsigKeyTarget?.isConnected && inputs.includes(hodlMsigKeyTarget)) return hodlMsigKeyTarget;
+  return inputs.find((textarea) => !textarea.value.trim()) || null;
+}
+function hodlPickMsigSessionKey(state) {
+  let target = hodlMsigNextKeyTarget(), status = document.getElementById("msig-session-key-status");
+  if (!target) {
+    if (status) status.textContent = "All co-signer inputs are filled. Focus or clear an input before choosing another key.";
+    return;
+  }
+  let value = hodlMatchingMsigExport(state.result);
+  if (!value) {
+    if (status) status.textContent = "That Key Station key has no compatible multisig export for the selected script type.";
+    return;
+  }
+  target.value = value;
+  target.dispatchEvent(new Event("input"));
+  let position = [...document.querySelectorAll("#msig-keys textarea")].indexOf(target) + 1;
+  if (status) status.textContent = `Added ${state.result?.masterFingerprint || state.name} to co-signer ${position}.`;
+  hodlMsigKeyTarget = [...document.querySelectorAll("#msig-keys textarea")].find((textarea) => !textarea.value.trim()) || null;
+  hodlRefreshMsigSessionPickers();
+}
 function hodlRefreshMsigSessionPickers() {
-  let keys = hodlSessionMsigKeys();
-  document.querySelectorAll(".msig-key-row").forEach((row) => {
-    let box = row.querySelector(".msig-session-keys"), ta = row.querySelector("textarea");
-    if (!box) return;
-    box.innerHTML = "";
-    box.hidden = !keys.length;
-    keys.forEach((state) => {
-      let fingerprint = state.result?.masterFingerprint || state.name, button = document.createElement("button"), image = document.createElement("img"), label = document.createElement("span");
-      button.type = "button";
-      button.className = "msig-session-key";
-      button.dataset.keyId = String(state.id);
-      button.dataset.fingerprint = fingerprint;
-      button.setAttribute("aria-pressed", "false");
-      button.setAttribute("aria-label", "Use session key " + fingerprint);
-      image.className = "key-tab-lifehash";
-      image.width = 22;
-      image.height = 22;
-      image.alt = "";
-      image.hidden = true;
-      if (fingerprint) hodlFillKeyTabLifehash(image, fingerprint);
-      label.textContent = fingerprint;
-      button.append(image, label);
-      button.onclick = () => {
-        if (!ta) return;
-        ta.value = hodlMatchingMsigExport(state.result);
-        ta.dispatchEvent(new Event("input"));
-      };
-      box.appendChild(button);
-    });
-    hodlSyncMsigKeyAvatar(row);
+  let box = document.getElementById("msig-session-keys"), status = document.getElementById("msig-session-key-status");
+  if (!box) return;
+  let keys = hodlSessionMsigKeys(), reuse = document.getElementById("msig-reuse-session-keys")?.checked, used = hodlMsigUsedSessionFingerprints(), available = reuse ? keys : keys.filter((state) => !used.has(state.result?.masterFingerprint || ""));
+  box.replaceChildren();
+  box.hidden = !available.length;
+  available.forEach((state) => {
+    let fingerprint = state.result?.masterFingerprint || state.name, button = document.createElement("button"), image = document.createElement("img"), label = document.createElement("span"), assigned = used.has(fingerprint);
+    button.type = "button";
+    button.className = "session-key-option" + (assigned ? " active" : "");
+    button.dataset.keyId = String(state.id);
+    button.dataset.fingerprint = fingerprint;
+    button.setAttribute("aria-pressed", String(assigned));
+    button.setAttribute("aria-label", `Add Key Station key ${fingerprint} to ${hodlMsigNextKeyTarget()?.id?.replace("msig-x-", "co-signer ") || "a co-signer input"}`);
+    image.className = "key-tab-lifehash";
+    image.width = 22;
+    image.height = 22;
+    image.alt = "";
+    image.hidden = true;
+    if (fingerprint) hodlFillKeyTabLifehash(image, fingerprint);
+    label.textContent = fingerprint;
+    button.append(image, label);
+    button.onclick = () => hodlPickMsigSessionKey(state);
+    box.appendChild(button);
   });
+  document.querySelectorAll(".msig-key-row").forEach(hodlSyncMsigKeyAvatar);
+  if (status && !status.textContent && keys.length && !available.length) status.textContent = "All compatible Key Station keys are assigned. Enable key reuse to keep them available.";
+  if (status && (!keys.length || available.length) && status.textContent.startsWith("All compatible")) status.textContent = "";
 }
 function hodlFillKeys(values) {
   let n = Number(document.getElementById("msig-n").value || 3),
     saved = Array.isArray(values) ? values : hodlReadMsigXpubs(),
     box = document.getElementById("msig-keys"),
     listed = !hodlMsigKeysSorted();
+  hodlMsigKeyTarget = null;
   box.classList.toggle("msig-keys-listed", listed);
   box.innerHTML = "";
   for (let i = 0; i < n; i++) {
@@ -7132,9 +7162,6 @@ function hodlFillKeys(values) {
     ta.autocomplete = "off";
     ta.spellcheck = false;
     ta.value = saved[i] || "";
-    let chips = document.createElement("div");
-    chips.className = "msig-session-keys";
-    chips.hidden = true;
     let ident = document.createElement("div");
     ident.className = "msig-key-ident";
     ident.hidden = true;
@@ -7148,7 +7175,7 @@ function hodlFillKeys(values) {
     identFp.className = "msig-key-ident-fp";
     ident.append(identImage, identFp);
     lab.append(ident, ta);
-    row.append(chips, lab);
+    row.append(lab);
     box.appendChild(row);
     ta.oninput = () => {
       ta.value = hodlFilterXpub(ta.value);
@@ -7157,7 +7184,14 @@ function hodlFillKeys(values) {
       hodlUpdateMsigKeyOrderStatus();
       hodlInvalidateMsig();
       hodlSyncMsigKeyAvatar(row);
+      hodlRefreshMsigSessionPickers();
     }
+    ta.addEventListener("focus", () => {
+      hodlMsigKeyTarget = ta;
+      let status = document.getElementById("msig-session-key-status");
+      if (status) status.textContent = `The next selected Key Station key will fill co-signer ${i + 1}.`;
+      hodlRefreshMsigSessionPickers();
+    });
   }
   hodlBindMsigKeyReorder(box);
   hodlSyncMsigKeyMoveButtons();
@@ -7168,6 +7202,7 @@ function hodlFillKeys(values) {
   hodlUpdateMsigHint();
   hodlUpdateMsigAccount();
   hodlUpdateMsigKeyOrderStatus();
+  hodlMsigKeyTarget = [...box.querySelectorAll("textarea")].find((textarea) => !textarea.value.trim()) || null;
   hodlRefreshMsigSessionPickers();
 }
 function hodlMultisigPrefixCompatible(parsed, kind, purpose) {
@@ -7248,6 +7283,9 @@ function hodlResetMsigForm() {
   hodlSetMsigPurpose(48);
   let legacy = document.getElementById("msig-legacy-bip87");
   if (legacy) legacy.checked = false;
+  let reuseSessionKeys = document.getElementById("msig-reuse-session-keys"), sessionStatus = document.getElementById("msig-session-key-status");
+  if (reuseSessionKeys) reuseSessionKeys.checked = false;
+  if (sessionStatus) sessionStatus.textContent = "";
   hodlUpdateMsigLegacyControls();
   hodlSyncSelect(document.getElementById("msig-key-order"), "sorted");
   let advanced = document.getElementById("msig-advanced");
@@ -7281,7 +7319,14 @@ function hodlInitMsig() {
     branchStartInput = document.getElementById("msig-branch-start"),
     addressStartInput = document.getElementById("msig-address-start"),
     legacy = document.getElementById("msig-legacy-bip87"),
+    reuseSessionKeys = document.getElementById("msig-reuse-session-keys"),
     keyOrder = document.getElementById("msig-key-order");
+  reuseSessionKeys?.addEventListener("change", () => {
+    let status = document.getElementById("msig-session-key-status");
+    if (status) status.textContent = reuseSessionKeys.checked ? "Selected Key Station keys remain available for every co-signer input." : "Each selected Key Station key is removed from the available list.";
+    hodlRefreshMsigSessionPickers();
+    hodlSyncMsigClearButton(true);
+  });
   script.addEventListener("change", () => {
     if (script.value !== "mixed") script.dataset.lastConcrete = script.value;
     hodlSetMsigPurpose(hodlStandardMsigPurpose(script.value));
@@ -10011,6 +10056,7 @@ function hodlNewMsigState(name, msigId, msigNumber) {
       purposeHarden: true,
       legacyBip87: !1,
       keyOrder: "sorted",
+      reuseSessionKeys: false,
       xpubs: ["", "", ""],
       coinType: "0",
       coinTypeHarden: true,
@@ -10156,7 +10202,7 @@ function hodlMsigStateNeedsClear(state) {
   let fields = state.fields || {},
     xpubs = Array.isArray(fields.xpubs) ? fields.xpubs : [];
   return Boolean(state.result) || String(state.error ?? "").length > 0 || xpubs.some(value => String(value ?? "").length > 0) ||
-    String(fields.m ?? "2") !== "2" || String(fields.n ?? "3") !== "3" || String(fields.script ?? "p2wsh") !== "p2wsh" || String(fields.purpose ?? "48") !== "48" || fields.purposeHarden === false || Boolean(fields.legacyBip87) || String(fields.keyOrder ?? "sorted") !== "sorted" || String(fields.coinType ?? (fields.network === "testnet" ? "1" : "0")) !== "0" || fields.coinTypeHarden === false || fields.accountHarden === false || String(fields.branchStart ?? "0") !== "0" || Boolean(fields.branchHarden) || String(fields.branchRange ?? "2") !== "2" || String(fields.addressStart ?? "0") !== "0" || Boolean(fields.addressHarden) || String(fields.addressRange ?? fields.count ?? "5") !== "5"
+    String(fields.m ?? "2") !== "2" || String(fields.n ?? "3") !== "3" || String(fields.script ?? "p2wsh") !== "p2wsh" || String(fields.purpose ?? "48") !== "48" || fields.purposeHarden === false || Boolean(fields.legacyBip87) || String(fields.keyOrder ?? "sorted") !== "sorted" || Boolean(fields.reuseSessionKeys) || String(fields.coinType ?? (fields.network === "testnet" ? "1" : "0")) !== "0" || fields.coinTypeHarden === false || fields.accountHarden === false || String(fields.branchStart ?? "0") !== "0" || Boolean(fields.branchHarden) || String(fields.branchRange ?? "2") !== "2" || String(fields.addressStart ?? "0") !== "0" || Boolean(fields.addressHarden) || String(fields.addressRange ?? fields.count ?? "5") !== "5"
 }
 
 function hodlSyncMsigClearButton(capture = !1) {
@@ -10175,6 +10221,7 @@ function hodlCaptureMsig() {
   state.fields.purpose = document.getElementById("msig-purpose")?.value || "48";
   state.fields.legacyBip87 = hodlSelectedLegacyMultisigStandard() === "bip87";
   state.fields.keyOrder = hodlMsigKeysSorted() ? "sorted" : "listed";
+  state.fields.reuseSessionKeys = Boolean(document.getElementById("msig-reuse-session-keys")?.checked);
   hodlMergeMsigXpubs(state);
   state.fields.coinType = document.getElementById("msig-network")?.value || "0";
   let hardening = hodlReadHardening("msig-");
@@ -10214,6 +10261,9 @@ function hodlRestoreMsig() {
   hodlUpdateMsigLegacyControls();
   state.fields.keyOrder = state.fields.keyOrder === "listed" ? "listed" : "sorted";
   hodlSyncSelect(document.getElementById("msig-key-order"), state.fields.keyOrder);
+  let reuseSessionKeys = document.getElementById("msig-reuse-session-keys"), sessionStatus = document.getElementById("msig-session-key-status");
+  if (reuseSessionKeys) reuseSessionKeys.checked = Boolean(state.fields.reuseSessionKeys);
+  if (sessionStatus) sessionStatus.textContent = "";
   let advanced = document.getElementById("msig-advanced");
   if (advanced) advanced.open = state.fields.keyOrder === "listed";
   state.fields.coinType = String(state.fields.coinType ?? (state.fields.network === "testnet" ? 1 : 0));
