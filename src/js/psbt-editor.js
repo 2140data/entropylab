@@ -14,6 +14,7 @@ import { Address as BtcAddress, NETWORK as BTC_MAINNET, TEST_NETWORK as BTC_TEST
 import { psbtInspectDoc, psbtBuildBytes, psbtWasmReady } from "./psbt-wasm.js";
 import { expandableHtml, EXPAND_LIMIT, initExpandable } from "./expandable.js";
 import { psbtVizHtml } from "./psbt-viz.js";
+import { parseOpReturn } from "./opreturn.js";
 
 const hexToBytes = (hex) => {
   if (!/^(?:[0-9a-f]{2})*$/i.test(hex)) throw new Error("Invalid hexadecimal input.");
@@ -85,6 +86,40 @@ const addressFor = (scriptHex, network) => {
   } catch {
     return null;
   }
+};
+
+// One-line decode of a data-carrier (OP_RETURN) output for its row in the
+// transaction table: payload as UTF-8 text when it decodes, hex otherwise,
+// plus the protocol hint the inspector also reports. Invalid hex (a field
+// being typed) and non-OP_RETURN scripts return null, leaving the row's
+// usual address/asm fallback untouched. A non-zero value on a data-carrier
+// output burns those sats; the row says so and takes the warning tone.
+export const opReturnSummary = (scriptHex, valueSats = 0) => {
+  let parsed;
+  try {
+    parsed = parseOpReturn(hexToBytes(scriptHex));
+  } catch {
+    return null;
+  }
+  if (!parsed) return null;
+  const burn = Number(valueSats) > 0;
+  const parts = [
+    parsed.error
+      ? `OP_RETURN · malformed: ${parsed.error}`
+      : `OP_RETURN · ${parsed.payloadBytes} byte${parsed.payloadBytes === 1 ? "" : "s"}`,
+  ];
+  if (parsed.hint) parts.push(parsed.hint);
+  if (!parsed.error && parsed.payloadBytes) {
+    let text = null;
+    try {
+      text = new TextDecoder("utf-8", { fatal: true }).decode(parsed.payload);
+    } catch {
+      // Not UTF-8: the hex branch below shows the payload.
+    }
+    parts.push(text !== null ? `“${text.length > 80 ? `${text.slice(0, 80)}…` : text}”` : `hex ${bytesToHex(parsed.payload.slice(0, 40))}${parsed.payloadBytes > 40 ? "…" : ""}`);
+  }
+  if (burn) parts.push(`burns ${valueSats} sats — unspendable`);
+  return { text: parts.join(" · "), burn };
 };
 
 // Per-map key types offered by the "add pair" control: [type byte, name,
@@ -303,11 +338,12 @@ export const initPsbtEditor = () => {
     const outputRows = tx.outputs
       .map((output, index) => {
         const addr = addressFor(output.scriptPubKey, network.value);
+        const opret = addr ? null : opReturnSummary(output.scriptPubKey, output.value);
         return `<tr>
           <td>${index}</td>
           <td><input class="psbted-num" data-txout-val="${index}" value="${escapeHtml(String(output.value))}" inputmode="numeric" aria-label="Output ${index} value in sats"> sats</td>
           <td><input class="psbted-txid" data-txout-script="${index}" value="${escapeHtml(output.scriptPubKey)}" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Output ${index} scriptPubKey (hex)">
-            <span class="muted psbted-addr">${escapeHtml(addr || output.asm || "")}</span></td>
+            <span class="${opret?.burn ? "psbted-note-warn" : "muted"} psbted-addr">${escapeHtml(addr || opret?.text || output.asm || "")}</span></td>
           <td><button type="button" class="psbted-del" data-txout-del="${index}" aria-label="Delete output ${index}">×</button></td>
         </tr>`;
       })
