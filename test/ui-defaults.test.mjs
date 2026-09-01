@@ -1498,6 +1498,10 @@ test("Lab stays put and a derived key opens a fingerprint tab with a summary", (
   assert.match(appSource, /function hodlSnapshotKeySummary\(/);
   assert.match(appSource, /state\.createdScript = hodlKeySummaryScript\(state\)/);
   assert.match(appSource, /state\.createdPath = hodlKeySummaryPath\(state\)/);
+  assert.match(appSource, /function hodlFillLabFromKey\(source\) \{/);
+  assert.match(appSource, /function hodlEditKeyInputs\(\) \{/);
+  assert.match(appSource, /hodlSelectKey\(hodlFillLabFromKey\(hodlKeys\[hodlActiveKey\]\)\)/);
+  assert.match(appSource, /if \(edit\) edit\.onclick = hodlEditKeyInputs;/);
   assert.match(css, /#calc-card\.is-result-view #modes/);
   assert.match(css, /#calc-card:not\(\.is-result-view\) #out/);
 });
@@ -1538,6 +1542,10 @@ test("Multisig Lab stays put and a derived wallet opens its own results tab", ()
   assert.match(appSource, /hodlCommitDerivedMsig\(\)/);
   assert.match(appSource, /out\.innerHTML = `/);
   assert.match(appSource, /function hodlAddMsig\(\) \{\s*hodlSelectMsigLab\(\);/s);
+  assert.match(appSource, /function hodlFillMsigLabFromWallet\(source\) \{/);
+  assert.match(appSource, /function hodlEditMsigInputs\(\) \{/);
+  assert.match(appSource, /hodlSelectMsig\(hodlFillMsigLabFromWallet\(hodlMsigs\[hodlActiveMsig\]\)\)/);
+  assert.match(appSource, /if \(edit\) edit\.onclick = hodlEditMsigInputs;/);
   for (const markup of [template, appSource]) {
     assert.match(markup, /id="msig-summary"/);
     assert.match(markup, /id="msig-lab"/);
