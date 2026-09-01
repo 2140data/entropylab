@@ -52,6 +52,18 @@ export const psbtBytesFromText = (raw) => {
   return bytes;
 };
 
+// Accepts the raw bytes of an uploaded file. Wallets (Sparrow, Coldcard, …)
+// save a PSBT as a binary .psbt file, which starts with the "psbt\xff" magic;
+// a text export ("Copy PSBT" or a hex dump saved to disk) decodes through
+// the same rules and bounds as the paste box.
+export const psbtBytesFromUpload = (bytes) => {
+  if (!(bytes instanceof Uint8Array) || !bytes.length) throw new Error("Choose a PSBT file to upload.");
+  if (bytes.length > 5e6) throw new Error("This PSBT is too large to edit safely.");
+  const PSBT_MAGIC = [0x70, 0x73, 0x62, 0x74, 0xff]; // "psbt\xff"
+  if (bytes.length >= PSBT_MAGIC.length && PSBT_MAGIC.every((byte, index) => bytes[index] === byte)) return bytes;
+  return psbtBytesFromText(new TextDecoder().decode(bytes));
+};
+
 export const satsToBtc = (sats) => {
   let value = BigInt(sats), negative = value < 0n;
   if (negative) value = -value;
@@ -365,6 +377,7 @@ export const initPsbtEditor = () => {
       <div class="row psbt-actions">
         <button class="btn secondary" id="psbted-copy-b64" type="button">Copy base64</button>
         <button class="btn secondary" id="psbted-copy-hex" type="button">Copy hex</button>
+        <button class="btn secondary" id="psbted-download" type="button">Download .psbt</button>
         <button class="btn secondary" id="psbted-reload" type="button">Load edited PSBT into the editor</button>
       </div>
       <label class="field">Edited PSBT (hex)<textarea id="psbted-result-hex" readonly spellcheck="false">${escapeHtml(hex)}</textarea></label>`;
@@ -373,6 +386,16 @@ export const initPsbtEditor = () => {
     $("psbted-reload").onclick = () => {
       text.value = b64;
       loadFromText();
+    };
+    // The binary download round-trips with wallet software: Sparrow and
+    // Coldcard read the .psbt file this produces.
+    $("psbted-download").onclick = () => {
+      const url = URL.createObjectURL(new Blob([resultBytes], { type: "application/octet-stream" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "edited.psbt";
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     };
   };
 
@@ -569,6 +592,23 @@ export const initPsbtEditor = () => {
   load.onclick = () => {
     psbtWasmReady.then(loadFromText).catch((exception) => setError(exception.message || String(exception)));
   };
+  // File upload is a second load path for the same loader: Sparrow & co. save
+  // the PSBT as raw binary; a text export decodes through the paste rules.
+  // The textarea mirrors the upload (as base64) so the loaded bytes and the
+  // "edited PSBT" reload path stay visible.
+  const file = $("psbted-file");
+  $("psbted-upload").onclick = () => file.click();
+  file.addEventListener("change", () => {
+    const chosen = file.files?.[0];
+    file.value = ""; // picking the same file again must fire change again
+    if (!chosen) return;
+    psbtWasmReady
+      .then(async () => {
+        text.value = base64Encode(psbtBytesFromUpload(new Uint8Array(await chosen.arrayBuffer())));
+        loadFromText();
+      })
+      .catch((exception) => setError(exception.message || String(exception)));
+  });
   $("psbted-wipe").onclick = () => {
     doc = null;
     resultBytes = null;

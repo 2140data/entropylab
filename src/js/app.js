@@ -1006,7 +1006,7 @@ ec.innerHTML = `
     <div class="tool-intro" id="psbted-tool-intro" hidden>
         <div class="kicker">Full-fidelity editor. Sign elsewhere.</div>
         <h2>Edit a PSBT, field by field.</h2>
-        <p class="muted psbt-intro">A BIP-174 editor in the spirit of bip174.org, backed by rust-bitcoin compiled to WebAssembly. Every key-value pair of the global, per-input and per-output maps is shown with a typed decode (BIP-174 and BIP-371 taproot fields) and stays editable as raw hex, and the unsigned transaction's version, locktime, input prevouts/sequences and output amounts/scripts get structured fields. Adding or removing a pair re-validates the file immediately; Re-serialize validates the pending field edits and produces the new PSBT. PSBT v0 only; unknown and proprietary pairs round-trip untouched. Editing never signs anything.</p>
+        <p class="muted psbt-intro">A BIP-174 editor in the spirit of bip174.org, backed by rust-bitcoin compiled to WebAssembly. Every key-value pair of the global, per-input and per-output maps is shown with a typed decode (BIP-174 and BIP-371 taproot fields) and stays editable as raw hex, and the unsigned transaction's version, locktime, input prevouts/sequences and output amounts/scripts get structured fields. Adding or removing a pair re-validates the file immediately; Re-serialize validates the pending field edits and produces the new PSBT. A binary .psbt file as saved by Sparrow, Coldcard or another wallet uploads directly, and the edited result downloads back as binary. PSBT v0 only; unknown and proprietary pairs round-trip untouched. Editing never signs anything.</p>
       </div>
       <section class="card no-print" id="psbted-card" role="tabpanel" hidden>
       <label class="field">PSBT v0 (base64 or hex)
@@ -1014,6 +1014,8 @@ ec.innerHTML = `
       </label>
       <div class="row psbt-actions psbted-actions">
         <button class="btn primary" id="psbted-load" type="button">Load PSBT</button>
+        <button class="btn secondary" id="psbted-upload" type="button">Upload .psbt file</button>
+        <input type="file" id="psbted-file" accept=".psbt,.txt,.hex" hidden>
         <button class="btn secondary" id="psbted-wipe" type="button">Clear editor</button>
         <label class="field psbted-network-field">Address network
           <select id="psbted-network"><option value="mainnet" selected>Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
