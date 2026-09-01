@@ -447,7 +447,7 @@ hodlRootEl.innerHTML = `
         <p class="muted calc-intro">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
       </div>
       <section class="key-manager no-print" id="key-manager">
-      <div class="key-tab-strip"><div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div><div class="add-item-control"><button class="add-key" id="add-key" type="button" aria-label="Open the lab to derive another key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Open the lab to derive another key</span></div><div class="add-item-control"><button class="add-key remove-key" id="delete-key" type="button" aria-label="Delete current key" aria-describedby="delete-key-tooltip" disabled>−</button><span class="add-item-tooltip" id="delete-key-tooltip" role="tooltip">Delete this key</span></div></div>
+      <div class="key-tab-strip"><div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div><div class="add-item-control"><button class="add-key" id="add-key" type="button" aria-label="Open Key Station to derive another key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Open Key Station to derive another key</span></div><div class="add-item-control"><button class="add-key remove-key" id="delete-key" type="button" aria-label="Delete current key" aria-describedby="delete-key-tooltip" disabled>−</button><span class="add-item-tooltip" id="delete-key-tooltip" role="tooltip">Delete this key</span></div></div>
     </section>
     <section class="card no-print" id="calc-card" role="tabpanel" hidden>
       <div class="row segmented-control" id="modes" role="group" aria-label="Key input mode"></div>
@@ -550,8 +550,8 @@ hodlRootEl.innerHTML = `
       </div>
       <p class="field-note address-estimate derivation-estimate" id="address-estimate" role="status">Measuring this device\u2026</p>
       <div class="row key-action-row current-item-actions">
-        <button class="btn primary" id="go" disabled aria-disabled="true">Derive Wallet</button>
-        <div class="derive-progress" id="derive-progress" role="progressbar" aria-label="Wallet derivation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0% complete" hidden><span class="derive-progress-track"><span class="derive-progress-bar"></span></span><span class="derive-progress-label">0%</span></div>
+        <button class="btn primary" id="go" disabled aria-disabled="true">Derive Key</button>
+        <div class="derive-progress" id="derive-progress" role="progressbar" aria-label="Key derivation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0% complete" hidden><span class="derive-progress-track"><span class="derive-progress-bar"></span></span><span class="derive-progress-label">0%</span></div>
         <button class="btn secondary" id="bip85-open" type="button">Derive BIP-85 child</button>
         <button class="btn clear-current-action" id="wipe" type="button" disabled aria-disabled="true">Clear Current Key</button>
       </div>
@@ -559,14 +559,23 @@ hodlRootEl.innerHTML = `
       </div>
       <div id="out"></div>
     </section>
-    <div class="tool-intro" id="bip85-tool-intro" hidden>
+      <div class="tool-intro" id="bip85-tool-intro" hidden>
         <div class="kicker">One seed. Many children.</div>
         <h2>Derive BIP-85 child entropy</h2>
-        <p class="muted bip85-intro">Deterministic child seeds, keys, and passwords from the active key's BIP32 root. Same parent, application, and index always reproduce the same child. This does not invent entropy \u2014 it is a calculator. English BIP-39 children match COLDCARD.</p>
+        <p class="muted bip85-intro">Deterministic child seeds, keys, and passwords from a Key Station BIP32 root. Same parent, application, and index always reproduce the same child. This does not invent entropy \u2014 it is a calculator. English BIP-39 children match COLDCARD.</p>
       </div>
+      <section class="key-manager no-print" id="bip85-manager" hidden>
+        <div class="key-tab-strip"><div class="key-tabs" id="bip85-tabs" role="tablist" aria-label="BIP-85 child seeds"></div><div class="add-item-control"><button class="add-key" id="add-bip85" type="button" aria-label="Open BIP-85 Station to derive another child" aria-describedby="add-bip85-tooltip">+</button><span class="add-item-tooltip" id="add-bip85-tooltip" role="tooltip">Open BIP-85 Station</span></div><div class="add-item-control"><button class="add-key remove-key" id="delete-bip85" type="button" aria-label="Delete current BIP-85 child" aria-describedby="delete-bip85-tooltip" disabled>\u2212</button><span class="add-item-tooltip" id="delete-bip85-tooltip" role="tooltip">Delete this BIP-85 child</span></div></div>
+      </section>
       <section class="card no-print" id="bip85-card" role="tabpanel" hidden>
-      <label class="field">Optional root xprv (leave blank to use the active key)
-        <textarea id="bip85-key" placeholder="xprv\u2026 or leave blank to use the active key" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+      <div class="bip85-bench" id="bip85-bench">
+      <div class="station-key-source">
+        <p class="label">Bring in a key from Key Station</p>
+        <div class="session-key-picker" id="bip85-session-keys" role="group" aria-label="Compatible Key Station keys" hidden></div>
+        <p class="field-note">Choose a compatible HD-root key from this session, or paste a root extended private key below.</p>
+      </div>
+      <label class="field">Root xprv (optional)
+        <textarea id="bip85-key" placeholder="Paste a root xprv or tprv" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
       </label>
       <div class="bip85-grid">
         <label class="field">Application
@@ -607,11 +616,11 @@ hodlRootEl.innerHTML = `
       <p class="muted bip85-path-row">Path <code id="bip85-path">m/83696968'/39'/0'/24'/0'</code></p>
       <div class="row bip85-actions">
         <button class="btn primary" id="bip85-go" type="button">Derive child</button>
-        <button class="btn secondary" id="bip85-use-calc" type="button">Use active key</button>
-        <button class="btn secondary" id="bip85-wipe" type="button">Clear derived child</button>
+        <button class="btn secondary" id="bip85-wipe" type="button">Clear parent session</button>
       </div>
-      <p class="muted" id="bip85-session" aria-live="polite">No parent loaded. Derive a key first, or paste a root xprv.</p>
+      <p class="muted" id="bip85-session" aria-live="polite">No parent loaded. Choose a Key Station key, or paste a root xprv.</p>
       <p class="err" id="bip85-error" role="alert"></p>
+      </div>
       <div id="bip85-out" aria-live="polite"></div>
       <p class="muted">Derived children remain in this page only. Anyone with the parent seed, passphrase, application, and index can reproduce them. Memory clearing is best-effort; close the page before reconnecting the computer.</p>
     </section>
@@ -621,7 +630,7 @@ hodlRootEl.innerHTML = `
         <p class="muted msig-intro">Combine extended public keys into a multisignature wallet. Paste each key origin and extended public key as exported by its signer: <span class="mono">[fingerprint/48h/0h/0h/2h]xpub\u2026</span>. Private keys are not needed. The derived addresses can receive bitcoin, and spending requires the configured number of signatures.</p>
       </div>
       <section class="key-manager no-print" id="msig-manager" hidden>
-      <div class="key-tab-strip"><div class="key-tabs" id="msig-tabs" role="tablist" aria-label="Multisigs"></div><div class="add-item-control"><button class="add-key" id="add-msig" type="button" aria-label="Open the lab to derive another multisig" aria-describedby="add-msig-tooltip">+</button><span class="add-item-tooltip" id="add-msig-tooltip" role="tooltip">Open the lab to derive another multisig</span></div><div class="add-item-control"><button class="add-key remove-key" id="delete-msig" type="button" aria-label="Delete current multisig" aria-describedby="delete-msig-tooltip" disabled>−</button><span class="add-item-tooltip" id="delete-msig-tooltip" role="tooltip">Delete this multisig</span></div></div>
+      <div class="key-tab-strip"><div class="key-tabs" id="msig-tabs" role="tablist" aria-label="Multisigs"></div><div class="add-item-control"><button class="add-key" id="add-msig" type="button" aria-label="Open MS Station to derive another multisig" aria-describedby="add-msig-tooltip">+</button><span class="add-item-tooltip" id="add-msig-tooltip" role="tooltip">Open MS Station</span></div><div class="add-item-control"><button class="add-key remove-key" id="delete-msig" type="button" aria-label="Delete current multisig" aria-describedby="delete-msig-tooltip" disabled>−</button><span class="add-item-tooltip" id="delete-msig-tooltip" role="tooltip">Delete this multisig</span></div></div>
     </section>
     <section class="card no-print" id="msig-card" role="tabpanel" hidden>
       <div class="key-summary" id="msig-summary" hidden>
@@ -633,6 +642,16 @@ hodlRootEl.innerHTML = `
         <button class="btn secondary" id="msig-edit-inputs" type="button">Edit input</button>
       </div>
       <div class="msig-lab" id="msig-lab">
+      <div class="station-key-source msig-station-key-source">
+        <p class="label">Bring in a key from Key Station</p>
+        <div class="session-key-picker" id="msig-session-keys" role="group" aria-label="Compatible Key Station keys" hidden></div>
+        <p class="field-note">Choose a compatible HD-root key from this session, or paste a co-signer extended public key below.</p>
+        <label class="choice msig-key-reuse-toggle">
+          <input id="msig-reuse-session-keys" type="checkbox">
+          <span><strong>Allow key reuse</strong><span class="desc">Keep selected Key Station keys available for more than one co-signer input.</span></span>
+        </label>
+        <p class="field-note" id="msig-session-key-status" aria-live="polite"></p>
+      </div>
       <div class="msig-threshold-labels">
         <label for="msig-m-number"><span>Signatures needed to spend (m)</span><input class="msig-threshold-number" id="msig-m-number" type="number" min="1" max="15" step="1" value="2" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
         <label for="msig-n-number"><span>Total signing keys (n)</span><input class="msig-threshold-number" id="msig-n-number" type="number" min="1" max="15" step="1" value="3" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
@@ -725,15 +744,23 @@ hodlRootEl.innerHTML = `
         <h2>Silent Payments</h2>
         <p class="muted tool-intro-note">A calculator, not a chain scanner. Derive a reusable <code>sp1q…</code> address from your seed, compute the unique taproot output a sender must pay, or check pasted outputs against your scan key. Nothing here talks to the network.</p>
       </div>
+      <section class="key-manager no-print" id="sp-manager" hidden>
+        <div class="key-tab-strip"><div class="key-tabs" id="sp-tabs" role="tablist" aria-label="Silent Payments"></div></div>
+      </section>
       <section class="card no-print" id="sp-card" role="tabpanel" hidden>
       <div class="row no-print segmented-control" id="sp-modes">
         <button class="tab active" type="button" data-sp-mode="receive" aria-pressed="true">Receive</button>
         <button class="tab" type="button" data-sp-mode="send" aria-pressed="false">Send</button>
         <button class="tab" type="button" data-sp-mode="verify" aria-pressed="false">Verify</button>
       </div>
+      <div class="station-key-source">
+        <p class="label">Bring in a key from Key Station</p>
+        <div class="session-key-picker" id="sp-session-keys" role="group" aria-label="Compatible Key Station keys" hidden></div>
+        <p class="field-note">Choose a compatible HD-root key from this session, or enter a seed phrase or root extended private key below.</p>
+      </div>
       <div class="psbt-grid">
         <label class="field">Session key (BIP39 seed phrase or root xprv/tprv)
-          <textarea id="sp-key" placeholder="Leave blank and use the active key, or paste a seed / root xprv" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+          <textarea id="sp-key" placeholder="Enter a seed phrase or root xprv/tprv" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
         </label>
         <div>
           <label class="field">Optional BIP39 passphrase
@@ -748,7 +775,6 @@ hodlRootEl.innerHTML = `
         </div>
       </div>
       <div class="row psbt-actions">
-        <button class="btn secondary" id="sp-use-calc" type="button">Use active key this session</button>
         <button class="btn secondary" id="sp-wipe" type="button">End session / clear fields</button>
       </div>
       <p class="muted" id="sp-session" aria-live="polite">No session key. Receive and verify need a seed or root xprv.</p>
@@ -2149,16 +2175,16 @@ function hodlSetDerivationButtonState(kind, state) {
     button.textContent = "Stop";
     button.disabled = false;
     button.setAttribute("aria-disabled", "false");
-    button.setAttribute("aria-label", kind === "msig" ? "Stop deriving multisig" : "Stop deriving wallet");
+    button.setAttribute("aria-label", kind === "msig" ? "Stop deriving multisig" : "Stop deriving key");
     button.dataset.derivationState = "running";
   } else if (state === "stopping") {
     button.textContent = "Stopping…";
     button.disabled = true;
     button.setAttribute("aria-disabled", "true");
-    button.setAttribute("aria-label", kind === "msig" ? "Stopping multisig derivation" : "Stopping wallet derivation");
+    button.setAttribute("aria-label", kind === "msig" ? "Stopping multisig derivation" : "Stopping key derivation");
     button.dataset.derivationState = "stopping";
   } else {
-    button.textContent = kind === "msig" ? "Derive Multisig" : "Derive Wallet";
+    button.textContent = kind === "msig" ? "Derive Multisig" : "Derive Key";
     button.removeAttribute("aria-label");
     delete button.dataset.derivationState;
     delete button.dataset.derivationWidth;
@@ -4117,8 +4143,8 @@ function hodlBrainOutputMarkup(output = "scalar", acked = Boolean(hodlBrainLabAc
     </div>
     <label class="choice"><input type="checkbox" id="brain-lab-ack" ${acked ? "checked" : ""} /><span><strong>I understand</strong><span class="desc">Required once this session, in page memory only. Derive is still required.</span></span></label>
     <div id="brain-lab-zone" ${hd ? "" : "hidden"}>
-      <p class="muted" id="brain-lab-help">UTF-8 text is hashed with SHA-256. The 32-byte digest is BIP39 entropy for a 24-word seed. Nothing is derived until you press Derive Wallet.</p>
-      <p class="muted" id="brain-lab-hex" aria-live="polite">SHA-256 hex appears here. 24 words appear only after Derive Wallet.</p>
+      <p class="muted" id="brain-lab-help">UTF-8 text is hashed with SHA-256. The 32-byte digest is BIP39 entropy for a 24-word seed. Nothing is derived until you press Derive Key.</p>
+      <p class="muted" id="brain-lab-hex" aria-live="polite">SHA-256 hex appears here. 24 words appear only after Derive Key.</p>
     </div>
   </div>`;
 }
@@ -4137,17 +4163,17 @@ function hodlSyncBrainOutput() {
   let hex = document.getElementById("brain-lab-hex");
   if (!hex || !brain || output !== "hd") return;
   if (!hodlBrainLabAck) {
-    hex.textContent = "Acknowledge the lab warning, then enter text. Derive Wallet is still required.";
+    hex.textContent = "Acknowledge the lab warning, then enter text. Derive Key is still required.";
     hex.className = "muted";
     return;
   }
   if (!input.value.length) {
-    hex.textContent = "SHA-256 hex appears here. 24 words appear only after Derive Wallet.";
+    hex.textContent = "SHA-256 hex appears here. 24 words appear only after Derive Key.";
     hex.className = "muted";
     return;
   }
   let entropy = hodlBrainLabEntropy(hodlBrainWalletText(input.value));
-  hex.textContent = entropy.ok ? `SHA-256 ${entropy.hex} \xB7 24 words appear only after Derive Wallet.` : entropy.error;
+  hex.textContent = entropy.ok ? `SHA-256 ${entropy.hex} \xB7 24 words appear only after Derive Key.` : entropy.error;
   hex.className = "muted" + (entropy.ok ? " ok" : " err");
 }
 function hodlUpdatePrivateKeyInputPresentation() {
@@ -6315,7 +6341,7 @@ async function hodlCalculateKey(progress) {
   } catch (error) {
     if (error instanceof HodlDerivationCancelledError) throw error;
     hodlWalletResult = null;
-    hodlElement("#error").textContent = error instanceof Error ? error.message : "Could not derive wallet";
+    hodlElement("#error").textContent = error instanceof Error ? error.message : "Could not derive key";
     hodlOutEl.innerHTML = "";
     hodlCaptureKey();
     return false;
@@ -6983,6 +7009,38 @@ function hodlMsigScriptOrder(keyTokens) {
 function hodlSessionMsigKeys() {
   return hodlKeys.filter((state) => !state.isLab && state.result?.multisigCosignerExports?.length);
 }
+function hodlSessionHdRootKeys() {
+  return hodlKeys.filter((state) => !state.isLab && state.result?.kind === "hd" && (state.result.mnemonic || state.result.rootXprv));
+}
+function hodlFillStationKeyPicker(id, selectedSource, onSelect) {
+  let box = document.getElementById(id);
+  if (!box) return;
+  let keys = hodlSessionHdRootKeys();
+  box.replaceChildren();
+  box.hidden = !keys.length;
+  keys.forEach((state) => {
+    let fingerprint = state.result?.masterFingerprint || state.name || "Key " + state.number, button = document.createElement("button"), image = document.createElement("img"), label = document.createElement("span"), selected = selectedSource === "key:" + state.id;
+    button.type = "button";
+    button.className = "session-key-option" + (selected ? " active" : "");
+    button.dataset.keyId = String(state.id);
+    button.setAttribute("aria-pressed", String(selected));
+    button.setAttribute("aria-label", "Bring in Key Station key " + fingerprint);
+    image.className = "key-tab-lifehash";
+    image.width = 22;
+    image.height = 22;
+    image.alt = "";
+    image.hidden = true;
+    hodlFillKeyTabLifehash(image, fingerprint);
+    label.textContent = fingerprint;
+    button.append(image, label);
+    button.onclick = () => onSelect(state);
+    box.appendChild(button);
+  });
+}
+function hodlRefreshStationKeyPickers() {
+  hodlFillStationKeyPicker("bip85-session-keys", hodlBip85Source, hodlPickBip85SessionKey);
+  hodlFillStationKeyPicker("sp-session-keys", hodlSpSource, hodlPickSpSessionKey);
+}
 function hodlMatchingMsigExport(result) {
   if (!result?.multisigCosignerExports?.length) return "";
   let kind = hodlScriptKind(), purpose = hodlReadMsigPurpose(), exports = result.multisigCosignerExports;
@@ -6999,10 +7057,6 @@ function hodlMsigKeyOriginFingerprint(value) {
 function hodlSyncMsigKeyAvatar(row) {
   if (!row) return;
   let ta = row.querySelector("textarea"), ident = row.querySelector(".msig-key-ident"), image = ident?.querySelector("img"), code = ident?.querySelector("code"), fingerprint = hodlMsigKeyOriginFingerprint(ta?.value);
-  row.querySelectorAll(".msig-session-key").forEach((button) => {
-    button.classList.toggle("active", Boolean(fingerprint) && button.dataset.fingerprint === fingerprint);
-    button.setAttribute("aria-pressed", String(button.classList.contains("active")));
-  });
   if (ident) ident.hidden = !fingerprint;
   if (code) code.textContent = fingerprint;
   if (image) {
@@ -7011,44 +7065,82 @@ function hodlSyncMsigKeyAvatar(row) {
     if (fingerprint) hodlFillKeyTabLifehash(image, fingerprint);
   }
 }
+var hodlMsigKeyTarget = null;
+function hodlMsigCanonicalSessionKey(value) {
+  try {
+    return hodlCanonicalMultisigKey(hodlParseMultisigCosigner(String(value || "").trim()));
+  } catch {
+    return "";
+  }
+}
+function hodlMsigUsedSessionKeys() {
+  return new Set([...document.querySelectorAll("#msig-keys textarea")].map((textarea) => hodlMsigCanonicalSessionKey(textarea.value)).filter(Boolean));
+}
+function hodlMsigNextKeyTarget() {
+  let inputs = [...document.querySelectorAll("#msig-keys textarea")];
+  if (hodlMsigKeyTarget?.isConnected && inputs.includes(hodlMsigKeyTarget)) return hodlMsigKeyTarget;
+  return inputs.find((textarea) => !textarea.value.trim()) || null;
+}
+function hodlPickMsigSessionKey(state) {
+  let target = hodlMsigNextKeyTarget(), status = document.getElementById("msig-session-key-status");
+  if (!target) {
+    if (status) status.textContent = "All co-signer inputs are filled. Focus or clear an input before choosing another key.";
+    return;
+  }
+  let value = hodlMatchingMsigExport(state.result);
+  if (!value) {
+    if (status) status.textContent = "That Key Station key has no compatible multisig export for the selected script type.";
+    return;
+  }
+  target.value = value;
+  target.dispatchEvent(new Event("input"));
+  let position = [...document.querySelectorAll("#msig-keys textarea")].indexOf(target) + 1;
+  if (status) status.textContent = `Added ${state.result?.masterFingerprint || state.name} to co-signer ${position}.`;
+  hodlMsigKeyTarget = [...document.querySelectorAll("#msig-keys textarea")].find((textarea) => !textarea.value.trim()) || null;
+  hodlRefreshMsigSessionPickers();
+}
 function hodlRefreshMsigSessionPickers() {
-  let keys = hodlSessionMsigKeys();
-  document.querySelectorAll(".msig-key-row").forEach((row) => {
-    let box = row.querySelector(".msig-session-keys"), ta = row.querySelector("textarea");
-    if (!box) return;
-    box.innerHTML = "";
-    box.hidden = !keys.length;
-    keys.forEach((state) => {
-      let fingerprint = state.result?.masterFingerprint || state.name, button = document.createElement("button"), image = document.createElement("img"), label = document.createElement("span");
-      button.type = "button";
-      button.className = "msig-session-key";
-      button.dataset.keyId = String(state.id);
-      button.dataset.fingerprint = fingerprint;
-      button.setAttribute("aria-pressed", "false");
-      button.setAttribute("aria-label", "Use session key " + fingerprint);
-      image.className = "key-tab-lifehash";
-      image.width = 22;
-      image.height = 22;
-      image.alt = "";
-      image.hidden = true;
-      if (fingerprint) hodlFillKeyTabLifehash(image, fingerprint);
-      label.textContent = fingerprint;
-      button.append(image, label);
-      button.onclick = () => {
-        if (!ta) return;
-        ta.value = hodlMatchingMsigExport(state.result);
-        ta.dispatchEvent(new Event("input"));
-      };
-      box.appendChild(button);
-    });
-    hodlSyncMsigKeyAvatar(row);
+  let box = document.getElementById("msig-session-keys"), status = document.getElementById("msig-session-key-status");
+  if (!box) return;
+  let keys = hodlSessionMsigKeys(), reuse = document.getElementById("msig-reuse-session-keys")?.checked, used = hodlMsigUsedSessionKeys(), options = keys.map((state) => {
+    let value = "";
+    try {
+      value = hodlMatchingMsigExport(state.result);
+    } catch {
+    }
+    return { state, canonical: hodlMsigCanonicalSessionKey(value) };
+  }), available = reuse ? options : options.filter((option) => !option.canonical || !used.has(option.canonical));
+  box.replaceChildren();
+  box.hidden = !available.length;
+  available.forEach(({ state, canonical }) => {
+    let fingerprint = state.result?.masterFingerprint || state.name, button = document.createElement("button"), image = document.createElement("img"), label = document.createElement("span"), assigned = Boolean(canonical) && used.has(canonical);
+    button.type = "button";
+    button.className = "session-key-option" + (assigned ? " active" : "");
+    button.dataset.keyId = String(state.id);
+    button.dataset.fingerprint = fingerprint;
+    button.setAttribute("aria-pressed", String(assigned));
+    button.setAttribute("aria-label", `Add Key Station key ${fingerprint} to ${hodlMsigNextKeyTarget()?.id?.replace("msig-x-", "co-signer ") || "a co-signer input"}`);
+    image.className = "key-tab-lifehash";
+    image.width = 22;
+    image.height = 22;
+    image.alt = "";
+    image.hidden = true;
+    if (fingerprint) hodlFillKeyTabLifehash(image, fingerprint);
+    label.textContent = fingerprint;
+    button.append(image, label);
+    button.onclick = () => hodlPickMsigSessionKey(state);
+    box.appendChild(button);
   });
+  document.querySelectorAll(".msig-key-row").forEach(hodlSyncMsigKeyAvatar);
+  if (status && !status.textContent && keys.length && !available.length) status.textContent = "All compatible Key Station keys are assigned. Enable key reuse to keep them available.";
+  if (status && (!keys.length || available.length) && status.textContent.startsWith("All compatible")) status.textContent = "";
 }
 function hodlFillKeys(values) {
   let n = Number(document.getElementById("msig-n").value || 3),
     saved = Array.isArray(values) ? values : hodlReadMsigXpubs(),
     box = document.getElementById("msig-keys"),
     listed = !hodlMsigKeysSorted();
+  hodlMsigKeyTarget = null;
   box.classList.toggle("msig-keys-listed", listed);
   box.innerHTML = "";
   for (let i = 0; i < n; i++) {
@@ -7084,9 +7176,6 @@ function hodlFillKeys(values) {
     ta.autocomplete = "off";
     ta.spellcheck = false;
     ta.value = saved[i] || "";
-    let chips = document.createElement("div");
-    chips.className = "msig-session-keys";
-    chips.hidden = true;
     let ident = document.createElement("div");
     ident.className = "msig-key-ident";
     ident.hidden = true;
@@ -7100,7 +7189,7 @@ function hodlFillKeys(values) {
     identFp.className = "msig-key-ident-fp";
     ident.append(identImage, identFp);
     lab.append(ident, ta);
-    row.append(chips, lab);
+    row.append(lab);
     box.appendChild(row);
     ta.oninput = () => {
       ta.value = hodlFilterXpub(ta.value);
@@ -7109,7 +7198,14 @@ function hodlFillKeys(values) {
       hodlUpdateMsigKeyOrderStatus();
       hodlInvalidateMsig();
       hodlSyncMsigKeyAvatar(row);
+      hodlRefreshMsigSessionPickers();
     }
+    ta.addEventListener("focus", () => {
+      hodlMsigKeyTarget = ta;
+      let status = document.getElementById("msig-session-key-status");
+      if (status) status.textContent = `The next selected Key Station key will fill co-signer ${i + 1}.`;
+      hodlRefreshMsigSessionPickers();
+    });
   }
   hodlBindMsigKeyReorder(box);
   hodlSyncMsigKeyMoveButtons();
@@ -7120,6 +7216,7 @@ function hodlFillKeys(values) {
   hodlUpdateMsigHint();
   hodlUpdateMsigAccount();
   hodlUpdateMsigKeyOrderStatus();
+  hodlMsigKeyTarget = [...box.querySelectorAll("textarea")].find((textarea) => !textarea.value.trim()) || null;
   hodlRefreshMsigSessionPickers();
 }
 function hodlMultisigPrefixCompatible(parsed, kind, purpose) {
@@ -7200,6 +7297,9 @@ function hodlResetMsigForm() {
   hodlSetMsigPurpose(48);
   let legacy = document.getElementById("msig-legacy-bip87");
   if (legacy) legacy.checked = false;
+  let reuseSessionKeys = document.getElementById("msig-reuse-session-keys"), sessionStatus = document.getElementById("msig-session-key-status");
+  if (reuseSessionKeys) reuseSessionKeys.checked = false;
+  if (sessionStatus) sessionStatus.textContent = "";
   hodlUpdateMsigLegacyControls();
   hodlSyncSelect(document.getElementById("msig-key-order"), "sorted");
   let advanced = document.getElementById("msig-advanced");
@@ -7233,7 +7333,14 @@ function hodlInitMsig() {
     branchStartInput = document.getElementById("msig-branch-start"),
     addressStartInput = document.getElementById("msig-address-start"),
     legacy = document.getElementById("msig-legacy-bip87"),
+    reuseSessionKeys = document.getElementById("msig-reuse-session-keys"),
     keyOrder = document.getElementById("msig-key-order");
+  reuseSessionKeys?.addEventListener("change", () => {
+    let status = document.getElementById("msig-session-key-status");
+    if (status) status.textContent = reuseSessionKeys.checked ? "Selected Key Station keys remain available for every co-signer input." : "Each selected Key Station key is removed from the available list.";
+    hodlRefreshMsigSessionPickers();
+    hodlSyncMsigClearButton(true);
+  });
   script.addEventListener("change", () => {
     if (script.value !== "mixed") script.dataset.lastConcrete = script.value;
     hodlSetMsigPurpose(hodlStandardMsigPurpose(script.value));
@@ -8053,11 +8160,8 @@ function hodlInitPsbt() {
     if (event.persisted) clearSecretFields();
   });
 }
-var hodlBip85Root = null, hodlBip85Note = "No parent loaded. Derive a key first, or paste a root xprv.", hodlBip85Source = "", hodlBip85Result = null, hodlBip85Reveal = false, hodlBip85Testnet = false;
-function hodlBip85WipeMem() {
-  wipeBip85Result(hodlBip85Result);
-  hodlBip85Result = null;
-  hodlBip85Reveal = false;
+var hodlBip85Root = null, hodlBip85Note = "No parent loaded. Choose a Key Station key, or paste a root xprv.", hodlBip85Source = "", hodlBip85Result = null, hodlBip85Reveal = false, hodlBip85Testnet = false, hodlBip85Children = [], hodlActiveBip85 = -1, hodlNextBip85ChildId = 1;
+function hodlBip85WipeParent() {
   if (hodlBip85Root) try {
     hodlBip85Root.wipePrivateData();
   } catch {
@@ -8065,7 +8169,75 @@ function hodlBip85WipeMem() {
   hodlBip85Root = null;
   hodlBip85Source = "";
   hodlBip85Testnet = false;
-  hodlBip85Note = "No parent loaded. Derive a key first, or paste a root xprv.";
+  hodlBip85Note = "No parent loaded. Choose a Key Station key, or paste a root xprv.";
+}
+function hodlBip85WipeMem() {
+  let wiped = /* @__PURE__ */ new Set();
+  for (let state of hodlBip85Children) {
+    if (!state.result || wiped.has(state.result)) continue;
+    wipeBip85Result(state.result);
+    wiped.add(state.result);
+  }
+  if (hodlBip85Result && !wiped.has(hodlBip85Result)) wipeBip85Result(hodlBip85Result);
+  hodlBip85Result = null;
+  hodlBip85Reveal = false;
+  hodlBip85Children = [hodlNewBip85BenchState()];
+  hodlActiveBip85 = 0;
+  hodlNextBip85ChildId = 1;
+  if (hodlBip85Root) try {
+    hodlBip85Root.wipePrivateData();
+  } catch {
+  }
+  hodlBip85Root = null;
+  hodlBip85Source = "";
+  hodlBip85Testnet = false;
+  hodlBip85Note = "No parent loaded. Choose a Key Station key, or paste a root xprv.";
+}
+function hodlNewBip85BenchState() {
+  return { isLab: true, id: 0, name: "BIP-85 Station", result: null, reveal: false, fingerprint: "", fingerprintKind: "" };
+}
+function hodlBip85ActiveState() {
+  return hodlBip85Children[hodlActiveBip85] || null;
+}
+function hodlBip85AppLabel(app) {
+  if (app === "bip39") return "BIP-39";
+  if (app === "wif") return "WIF";
+  if (app === "xprv") return "XPRV";
+  if (app === "hex") return "HEX";
+  if (app === "pwd-base64") return "Base64 password";
+  if (app === "pwd-base85") return "Base85 password";
+  return "BIP-85 child";
+}
+function hodlBip85ChildFingerprint(result) {
+  let seed = null, node = null, payload = null, privateKey = null, digest = null;
+  try {
+    if (result.app === "bip39") {
+      seed = hodlMnemonicToSeed(result.secret, "");
+      node = hodlHDKey.fromMasterSeed(seed);
+      return { value: hodlFingerprintHex(node.fingerprint), kind: "master" };
+    }
+    if (result.app === "xprv") {
+      node = hodlHDKey.fromExtendedKey(hodlParseExtendedKey(result.secret).xkey);
+      return { value: hodlFingerprintHex(node.fingerprint), kind: "master" };
+    }
+    if (result.app === "wif") {
+      payload = hodlBase58Check.decode(result.secret);
+      privateKey = payload.slice(1, 33);
+      node = new hodlHDKey({ privateKey });
+      return { value: hodlFingerprintHex(node.fingerprint), kind: "key" };
+    }
+    digest = hodlSha256(result.entropy);
+    return { value: hodlHex.encode(digest.slice(0, 4)), kind: "child" };
+  } finally {
+    if (node) try {
+      node.wipePrivateData();
+    } catch {
+    }
+    hodlWipeBytes(seed);
+    hodlWipeBytes(payload);
+    hodlWipeBytes(privateKey);
+    hodlWipeBytes(digest);
+  }
 }
 function hodlBip85PrivateValue(value) {
   let mask = "************", text = String(value ?? "\u2014");
@@ -8119,17 +8291,16 @@ function hodlBip85LoadXprv(text) {
   if (!isPrivate) throw new Error("BIP-85 needs a private root (xprv/tprv), not an extended public key.");
   let node = hodlHDKey.fromExtendedKey(xkey);
   if (node.depth !== 0) throw new Error("BIP-85 starts at the BIP32 root. This extended key is not depth 0.");
-  hodlBip85WipeMem();
+  hodlBip85WipeParent();
   hodlBip85Root = node;
   hodlBip85Testnet = /^[tuvn]prv/i.test(value);
   hodlBip85Source = "manual";
   hodlBip85Note = "Parent: pasted root " + (hodlBip85Testnet ? "tprv" : "xprv") + ". Kept in page memory only.";
 }
-function hodlUseActiveKeyForBip85() {
-  let state = hodlKeys[hodlActiveKey];
-  if (!state || !state.result) throw new Error("Derive an active key first, then return to BIP-85.");
+function hodlUseKeyForBip85(state) {
+  if (!state || !state.result) throw new Error("Derive a key in Key Station first, then return to BIP-85 Station.");
   let result = state.result;
-  hodlBip85WipeMem();
+  hodlBip85WipeParent();
   if (result.kind === "hd" && result.mnemonic) {
     let seed = hodlMnemonicToSeed(result.mnemonic, state.fields.pass || "");
     try {
@@ -8138,14 +8309,28 @@ function hodlUseActiveKeyForBip85() {
       hodlWipeBytes(seed);
     }
     hodlBip85Testnet = false;
-    hodlBip85Note = "Parent: " + (state.name || "the active key") + (result.passphraseUsed || (state.fields.pass || "").length ? " with BIP-39 passphrase (COLDCARD does the same \u2014 children differ without it)." : ".") + " Kept in page memory only.";
+    hodlBip85Note = "Parent: " + (state.name || "Key Station key") + (result.passphraseUsed || (state.fields.pass || "").length ? " with BIP-39 passphrase (COLDCARD does the same \u2014 children differ without it)." : ".") + " Kept in page memory only.";
   } else if (result.kind === "hd" && result.rootXprv) {
     hodlBip85Root = hodlHDKey.fromExtendedKey(hodlParseExtendedKey(result.rootXprv).xkey);
     hodlBip85Testnet = result.network === "testnet";
-    hodlBip85Note = "Parent: root xprv from " + (state.name || "the active key") + ". Kept in page memory only.";
-  } else if (result.kind === "hd") throw new Error("The active key is not a BIP32 root. Import the original seed or root xprv.");
-  else throw new Error("BIP-85 needs an HD root. The active key is a single private key.");
-  hodlBip85Source = "active";
+    hodlBip85Note = "Parent: root xprv from " + (state.name || "Key Station key") + ". Kept in page memory only.";
+  } else if (result.kind === "hd") throw new Error("This Key Station key is not a BIP32 root. Import the original seed or root xprv.");
+  else throw new Error("BIP-85 needs an HD root. This Key Station key is a single private key.");
+  hodlBip85Source = "key:" + state.id;
+}
+function hodlPickBip85SessionKey(state) {
+  let error = document.getElementById("bip85-error");
+  if (error) error.textContent = "";
+  try {
+    hodlUseKeyForBip85(state);
+    let rootXprv = state.result?.rootXprv || hodlBip85Root?.privateExtendedKey;
+    if (!rootXprv) throw new Error("This Key Station key does not expose a BIP32 root xprv/tprv.");
+    document.getElementById("bip85-key").value = rootXprv;
+    document.getElementById("bip85-session").textContent = hodlBip85Note;
+  } catch (exception) {
+    if (error) error.textContent = exception.message || String(exception);
+  }
+  hodlRefreshStationKeyPickers();
 }
 function hodlCopyBip85Child(button) {
   let phrase = button?.dataset.phrase;
@@ -8178,11 +8363,14 @@ function hodlCopyBip85Child(button) {
 function hodlRenderBip85Out() {
   let box = document.getElementById("bip85-out");
   if (!box) return;
-  if (!hodlBip85Result) {
+  let state = hodlBip85ActiveState();
+  hodlBip85Result = state?.result || null;
+  if (!hodlBip85Result || state?.isLab) {
     box.innerHTML = "";
     return;
   }
   let derived = hodlBip85Result, notes = [...derived.notes || [], ...derived.warnings || []].map((message) => `<li>${hodlEscapeHtml(message)}</li>`).join("");
+  let fingerprintLabel = state.fingerprintKind === "master" ? "Master fingerprint" : state.fingerprintKind === "key" ? "Key fingerprint" : "Child fingerprint";
   box.innerHTML = `<section class="wallet-data-section wallet-private-section" aria-labelledby="bip85-private-heading">
       <div class="wallet-data-section-head">
         <h3 id="bip85-private-heading">Derived child</h3>
@@ -8197,6 +8385,7 @@ function hodlRenderBip85Out() {
       </div>
       <div class="wallet-data-fields">
         ${hodlPublicFieldHtml("Path", derived.path)}
+        ${hodlPublicFieldHtml(fingerprintLabel, state.fingerprint)}
         ${hodlBip85SecretField(derived.secretLabel, derived.secret)}
         ${hodlBip85SecretField("Derived entropy", derived.entropyHex)}
       </div>
@@ -8204,6 +8393,7 @@ function hodlRenderBip85Out() {
     </section>`;
   document.getElementById("bip85-reveal")?.addEventListener("change", (event) => {
     hodlBip85Reveal = event.target.checked;
+    state.reveal = hodlBip85Reveal;
     hodlRenderBip85Out();
     requestAnimationFrame(() => document.getElementById("bip85-reveal")?.focus({ preventScroll: true }));
   });
@@ -8213,60 +8403,170 @@ function hodlRenderBip85Out() {
     copy.onclick = () => hodlCopyBip85Child(copy);
   }
 }
+function hodlCreateBip85Tab(index) {
+  let state = hodlBip85Children[index], active = index === hodlActiveBip85, button = document.createElement("button"), label = document.createElement("span"), name = state.isLab ? "BIP-85 Station" : state.fingerprint;
+  button.type = "button";
+  button.id = state.isLab ? "bip85-tab-lab" : "bip85-tab-" + state.id;
+  button.className = "tab key-tab bip85-tab" + (state.isLab ? " is-lab" : "") + (active ? " active" : "");
+  label.className = "key-tab-label";
+  label.textContent = name;
+  if (state.isLab) button.append(hodlCreateBip85BenchIcon(), label);
+  else {
+    let image = document.createElement("img");
+    image.className = "key-tab-lifehash";
+    image.width = 22;
+    image.height = 22;
+    image.alt = "";
+    image.hidden = true;
+    hodlFillKeyTabLifehash(image, state.fingerprint);
+    button.append(image, label);
+  }
+  button.setAttribute("role", "tab");
+  button.setAttribute("aria-controls", "bip85-card");
+  button.setAttribute("aria-selected", String(active));
+  if (state.isLab) {
+    button.setAttribute("aria-label", "BIP-85 Station" + (active ? ", selected" : ". Activate to derive a BIP-85 child."));
+    button.title = "Derive a BIP-85 child";
+  } else {
+    let kind = state.fingerprintKind === "master" ? "master fingerprint" : state.fingerprintKind === "key" ? "key fingerprint" : "child fingerprint";
+    button.setAttribute("aria-label", `${hodlBip85AppLabel(state.result?.app)} ${kind} ${name}${active ? ", selected" : ". Activate to select."}`);
+    button.title = `${hodlBip85AppLabel(state.result?.app)} · ${state.result?.path || ""}`;
+  }
+  button.onclick = () => hodlSelectBip85(index);
+  button.tabIndex = active ? 0 : -1;
+  button.onkeydown = (event) => hodlBip85TabKeydown(event, index);
+  return button;
+}
+function hodlSyncBip85DeleteButton() {
+  let button = document.getElementById("delete-bip85"), state = hodlBip85ActiveState();
+  if (!button) return;
+  button.disabled = !state || state.isLab;
+  button.setAttribute("aria-disabled", String(button.disabled));
+}
+function hodlRenderBip85Tabs() {
+  let box = document.getElementById("bip85-tabs"), panel = document.getElementById("bip85-card");
+  if (!box || !panel) return;
+  box.innerHTML = "";
+  panel.removeAttribute("aria-labelledby");
+  hodlBip85Children.forEach((state, index) => {
+    let button = hodlCreateBip85Tab(index);
+    box.appendChild(button);
+    if (index === hodlActiveBip85) panel.setAttribute("aria-labelledby", button.id);
+  });
+  hodlRevealTab(box, hodlActiveBip85);
+  hodlSyncBip85DeleteButton();
+}
+function hodlSyncBip85View() {
+  let state = hodlBip85ActiveState(), bench = document.getElementById("bip85-bench"), card = document.getElementById("bip85-card");
+  if (bench) bench.hidden = !state?.isLab;
+  if (card) card.classList.toggle("is-result-view", Boolean(state && !state.isLab));
+  hodlBip85Result = state?.result || null;
+  hodlBip85Reveal = Boolean(state?.reveal);
+  hodlRenderBip85Out();
+}
+function hodlSelectBip85(index) {
+  if (!hodlBip85Children[index]) return;
+  hodlActiveBip85 = index;
+  hodlRenderBip85Tabs();
+  hodlSyncBip85View();
+}
+function hodlSelectBip85Bench() {
+  let index = hodlBip85Children.findIndex((state) => state.isLab);
+  if (index < 0) {
+    hodlBip85Children.unshift(hodlNewBip85BenchState());
+    index = 0;
+    if (hodlActiveBip85 >= 0) hodlActiveBip85 += 1;
+  }
+  hodlSelectBip85(index);
+}
+function hodlDeleteActiveBip85() {
+  let state = hodlBip85ActiveState();
+  if (!state || state.isLab) {
+    hodlSyncBip85DeleteButton();
+    return;
+  }
+  let deletedIndex = hodlActiveBip85;
+  hodlBip85Result = null;
+  wipeBip85Result(state.result);
+  hodlBip85Children.splice(deletedIndex, 1);
+  if (!hodlBip85Children.length) hodlBip85Children.push(hodlNewBip85BenchState());
+  hodlActiveBip85 = Math.min(deletedIndex, hodlBip85Children.length - 1);
+  hodlRenderBip85Tabs();
+  hodlSyncBip85View();
+  document.getElementById("bip85-tabs")?.children[hodlActiveBip85]?.focus();
+}
+function hodlBip85TabKeydown(event, index) {
+  let next = null, length = hodlBip85Children.length;
+  if (event.key === "ArrowRight") next = (index + 1) % length;
+  else if (event.key === "ArrowLeft") next = (index - 1 + length) % length;
+  else if (event.key === "Home") next = 0;
+  else if (event.key === "End") next = length - 1;
+  if (next === null) return;
+  event.preventDefault();
+  hodlSelectBip85(next);
+  document.getElementById("bip85-tabs")?.children[next]?.focus();
+}
 function hodlRunBip85() {
   let error = document.getElementById("bip85-error"), session = document.getElementById("bip85-session"), manual = document.getElementById("bip85-key")?.value || "";
+  let result = null;
   if (error) error.textContent = "";
   try {
     if (manual.trim()) {
-      hodlBip85LoadXprv(manual);
-      document.getElementById("bip85-key").value = "";
-    } else if (!hodlBip85Root) hodlUseActiveKeyForBip85();
-    wipeBip85Result(hodlBip85Result);
-    hodlBip85Result = deriveApplication(hodlBip85Root, hodlBip85Spec());
+      if (!hodlBip85Root || !hodlBip85Source.startsWith("key:")) hodlBip85LoadXprv(manual);
+    } else if (!hodlBip85Root) throw new Error("Choose a compatible Key Station key, or paste a root xprv/tprv.");
+    result = deriveApplication(hodlBip85Root, hodlBip85Spec());
+    let fingerprint = hodlBip85ChildFingerprint(result);
+    let state = { isLab: false, id: hodlNextBip85ChildId++, name: fingerprint.value, result, reveal: false, fingerprint: fingerprint.value, fingerprintKind: fingerprint.kind };
+    hodlBip85Children.push(state);
+    hodlActiveBip85 = hodlBip85Children.length - 1;
+    hodlBip85Result = state.result;
+    result = null;
     hodlBip85Reveal = false;
     if (session) session.textContent = hodlBip85Note;
-    hodlRenderBip85Out();
+    hodlRenderBip85Tabs();
+    hodlSyncBip85View();
   } catch (exception) {
+    wipeBip85Result(result);
     if (error) error.textContent = exception.message || String(exception);
   }
+  hodlRefreshStationKeyPickers();
 }
 function hodlInitBip85() {
   let go = document.getElementById("bip85-go");
   if (!go) return;
+  if (!hodlBip85Children.length) {
+    hodlBip85Children.push(hodlNewBip85BenchState());
+    hodlActiveBip85 = 0;
+  }
+  document.getElementById("add-bip85").onclick = hodlSelectBip85Bench;
+  document.getElementById("delete-bip85").onclick = hodlDeleteActiveBip85;
+  hodlInitTabDrag(document.getElementById("bip85-tabs"));
+  hodlRenderBip85Tabs();
+  hodlSyncBip85View();
+  hodlRefreshStationKeyPickers();
+  document.getElementById("bip85-key").addEventListener("input", () => {
+    if (!hodlBip85Source.startsWith("key:")) return;
+    hodlBip85WipeParent();
+    hodlBip85Source = document.getElementById("bip85-key").value.trim() ? "manual" : "";
+    document.getElementById("bip85-session").textContent = hodlBip85Source ? "Manual root key entered. It will be validated when you derive a child." : hodlBip85Note;
+    hodlRefreshStationKeyPickers();
+  });
   go.onclick = hodlRunBip85;
-  // Entry point beside Derive Wallet (idea adopted from PR #150): jump to the
+  // Entry point beside Derive Key (idea adopted from PR #150): jump to the
   // BIP-85 tab with the active key loaded as parent. Errors land in the tab's
   // own error line; secrets stay behind the existing reveal/wipe flow.
   let open = document.getElementById("bip85-open");
   if (open) open.onclick = () => {
     hodlShowWorkspace("bip85");
-    let error = document.getElementById("bip85-error");
-    if (error) error.textContent = "";
-    try {
-      hodlUseActiveKeyForBip85();
-      let session = document.getElementById("bip85-session");
-      if (session) session.textContent = hodlBip85Note;
-    } catch (exception) {
-      if (error) error.textContent = exception.message || String(exception);
-    }
-  };
-  document.getElementById("bip85-use-calc").onclick = () => {
-    let error = document.getElementById("bip85-error");
-    if (error) error.textContent = "";
-    try {
-      hodlUseActiveKeyForBip85();
-      document.getElementById("bip85-key").value = "";
-      document.getElementById("bip85-session").textContent = hodlBip85Note;
-    } catch (exception) {
-      if (error) error.textContent = exception.message || String(exception);
-    }
+    hodlSelectBip85Bench();
+    hodlPickBip85SessionKey(hodlKeys[hodlActiveKey]);
   };
   document.getElementById("bip85-wipe").onclick = () => {
-    hodlBip85WipeMem();
+    hodlBip85WipeParent();
     document.getElementById("bip85-key").value = "";
-    document.getElementById("bip85-out").innerHTML = "";
     document.getElementById("bip85-error").textContent = "";
-    document.getElementById("bip85-session").textContent = "Derived child and parent session were cleared (best effort).";
+    document.getElementById("bip85-session").textContent = "Parent session cleared (best effort). Derived child tabs remain until deleted.";
+    hodlRefreshStationKeyPickers();
   };
   for (let id of ["bip85-app", "bip85-index", "bip85-words", "bip85-bytes", "bip85-pwdlen"]) {
     document.getElementById(id)?.addEventListener("input", hodlBip85SyncOptions);
@@ -8293,7 +8593,7 @@ function hodlRunPsbt() {
   }
 }
 
-var hodlSpHd = null, hodlSpKeys = null, hodlSpNote = "No session key. Receive and verify need a seed or root xprv.", hodlSpMode = "receive", hodlSpReveal = false;
+var hodlSpHd = null, hodlSpKeys = null, hodlSpNote = "No session key. Receive and verify need a seed or root xprv.", hodlSpMode = "receive", hodlSpReveal = false, hodlSpSource = "";
 function hodlSpWipeKeys() {
   if (hodlSpKeys) {
     try { hodlSpKeys.scanPriv && hodlSpKeys.scanPriv.fill(0); } catch {}
@@ -8304,6 +8604,7 @@ function hodlSpWipeKeys() {
     try { hodlSpHd.wipePrivateData(); } catch {}
   }
   hodlSpHd = null;
+  hodlSpSource = "";
   hodlSpNote = "No session key. Receive and verify need a seed or root xprv.";
 }
 function hodlSpWipeMem() {
@@ -8330,6 +8631,7 @@ function hodlSpLoadKey(text, passphrase) {
     if (!parsed.isPrivate) throw new Error("Watch-only extended keys cannot derive BIP-352 scan/spend paths.");
     if (parsed.node.depth !== 0) throw new Error("Silent Payments needs a BIP32 root private key (depth 0), not an account xprv.");
     hodlSpHd = parsed.node;
+    hodlSpSource = "manual";
     hodlSpNote = `Session key: root ${parsed.prefix}. Kept in page memory only.`;
     return;
   }
@@ -8341,30 +8643,43 @@ function hodlSpLoadKey(text, passphrase) {
   } finally {
     seed.fill(0);
   }
+  hodlSpSource = "manual";
   hodlSpNote = "Session key: BIP39 seed" + (passphrase ? " + passphrase" : "") + ". Kept in page memory only.";
 }
-function hodlSpUseActiveKey() {
-  let state = hodlKeys[hodlActiveKey];
-  if (!state || !state.result) throw new Error("Generate an active key first, then return to Silent Payments.");
+function hodlSpUseKey(state) {
+  if (!state || !state.result) throw new Error("Derive a key in Key Station first, then return to SP Station.");
   let result = state.result;
   hodlSpWipeKeys();
   if (result.kind === "hd" && result.mnemonic) {
     let seed = hodlMnemonicToSeed(result.mnemonic, state.fields.pass || "");
     try { hodlSpHd = hodlHDKey.fromMasterSeed(seed); } finally { seed.fill(0); }
-    hodlSpNote = "Session key from " + (state.name || "the active key") + " (BIP39 seed). Kept in page memory only.";
+    hodlSpNote = "Session key from " + (state.name || "Key Station key") + " (BIP39 seed). Kept in page memory only.";
   } else if (result.kind === "hd" && result.rootXprv) {
     hodlSpHd = hodlHDKey.fromExtendedKey(hodlParseExtendedKey(result.rootXprv).xkey);
-    hodlSpNote = "Session key from " + (state.name || "the active key") + " (root xprv). Kept in page memory only.";
-  } else throw new Error("Silent Payments needs the active key's seed or root xprv. Account-level and single keys cannot derive m/352'.");
+    hodlSpNote = "Session key from " + (state.name || "Key Station key") + " (root xprv). Kept in page memory only.";
+  } else throw new Error("SP Station needs the Key Station key's seed or root xprv. Account-level and single keys cannot derive m/352'.");
+  hodlSpSource = "key:" + state.id;
+}
+function hodlPickSpSessionKey(state) {
+  let error = document.getElementById("sp-error");
+  if (error) error.textContent = "";
+  try {
+    hodlSpUseKey(state);
+    document.getElementById("sp-key").value = state.result?.mnemonic || state.result?.rootXprv || "";
+    document.getElementById("sp-pass").value = state.result?.mnemonic ? state.fields?.pass || "" : "";
+    document.getElementById("sp-session").textContent = hodlSpNote;
+  } catch (exception) {
+    if (error) error.textContent = exception.message || String(exception);
+  }
+  hodlRefreshStationKeyPickers();
 }
 function hodlSpEnsureHd() {
   let manual = document.getElementById("sp-key")?.value;
   if (manual && manual.trim()) {
-    hodlSpLoadKey(manual, document.getElementById("sp-pass")?.value);
-    document.getElementById("sp-key").value = "";
-    document.getElementById("sp-pass").value = "";
+    if (!hodlSpHd || !hodlSpSource.startsWith("key:")) hodlSpLoadKey(manual, document.getElementById("sp-pass")?.value);
+    hodlRefreshStationKeyPickers();
   }
-  if (!hodlSpHd || !hodlSpHd.privateKey) throw new Error("Load a BIP39 seed or root xprv first (or use the active key).");
+  if (!hodlSpHd || !hodlSpHd.privateKey) throw new Error("Choose a compatible Key Station key, or enter a BIP39 seed or root xprv.");
   document.getElementById("sp-session").textContent = hodlSpNote;
 }
 function hodlSpDeriveSessionKeys() {
@@ -8544,23 +8859,22 @@ function hodlRunSp() {
 }
 function hodlInitSp() {
   if (!document.getElementById("sp-card")) return;
+  hodlRefreshStationKeyPickers();
+  let detachStationKey = () => {
+    if (!hodlSpSource.startsWith("key:")) return;
+    hodlSpWipeKeys();
+    hodlSpSource = document.getElementById("sp-key").value.trim() ? "manual" : "";
+    document.getElementById("sp-session").textContent = hodlSpSource ? "Manual session key entered. It will be validated when you use this Station." : hodlSpNote;
+    hodlRefreshStationKeyPickers();
+  };
+  document.getElementById("sp-key").addEventListener("input", detachStationKey);
+  document.getElementById("sp-pass").addEventListener("input", detachStationKey);
   document.querySelectorAll("#sp-modes [data-sp-mode]").forEach((button) => {
     button.onclick = () => { hodlSpSetMode(button.dataset.spMode); document.getElementById("sp-out").innerHTML = ""; document.getElementById("sp-error").textContent = ""; };
   });
   document.getElementById("sp-derive").onclick = () => { hodlSpMode = "receive"; hodlRunSp(); };
   document.getElementById("sp-send-go").onclick = () => { hodlSpMode = "send"; hodlRunSp(); };
   document.getElementById("sp-verify-go").onclick = () => { hodlSpMode = "verify"; hodlRunSp(); };
-  document.getElementById("sp-use-calc").onclick = () => {
-    document.getElementById("sp-error").textContent = "";
-    try {
-      hodlSpUseActiveKey();
-      document.getElementById("sp-key").value = "";
-      document.getElementById("sp-pass").value = "";
-      document.getElementById("sp-session").textContent = hodlSpNote;
-    } catch (exception) {
-      document.getElementById("sp-error").textContent = exception.message || String(exception);
-    }
-  };
   document.getElementById("sp-wipe").onclick = () => {
     hodlSpWipeMem();
     ["sp-key", "sp-pass", "sp-recipients", "sp-send-vins", "sp-verify-vins", "sp-verify-outputs", "sp-label"].forEach((id) => {
@@ -8574,6 +8888,7 @@ function hodlInitSp() {
     document.getElementById("sp-out").innerHTML = "";
     document.getElementById("sp-error").textContent = "";
     document.getElementById("sp-session").textContent = "Session ended and accessible fields were cleared (best effort).";
+    hodlRefreshStationKeyPickers();
   };
   document.getElementById("sp-out").addEventListener("click", (event) => {
     let button = event.target.closest?.("[data-sp-copy]");
@@ -9009,7 +9324,7 @@ function hodlNewKeyState(name, keyId, keyNumber) {
   return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", globalSync: false, globalSyncSource: "", globalSyncBitCount: 0, seedAutocomplete: true, passphraseBip39Words: false, brainWalletOutput: "scalar", passphraseAutocomplete: true, brainWalletTrim: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", derivationPath: "m/84'/0'/0'/0/0", derivationAccountPath: "m/84'/0'/0'", purpose: "84'", purposeHarden: true, coinType: "0'", coinTypeHarden: true, network: "mainnet", account: "0'", accountHarden: true, branchStart: "0", branchHarden: false, branchRange: "1", addressStart: "0", addressHarden: false, addressRange: "1", dice: "", bitboxDice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", brainLab: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
 }
 function hodlNewLabState() {
-  let state = hodlNewKeyState("Key Lab", 0, 0);
+  let state = hodlNewKeyState("Key Station", 0, 0);
   state.isLab = true;
   return state;
 }
@@ -9089,7 +9404,7 @@ function hodlFillLabFromKey(source) {
   let labIndex = hodlKeys.findIndex((state) => state.isLab);
   let existing = labIndex >= 0 ? hodlKeys[labIndex] : hodlNewLabState();
   let lab = hodlCloneDerivedKey(source, existing);
-  Object.assign(lab, { isLab: true, name: "Key Lab", result: null, error: "", reveal: false, createdScript: "", createdPath: "" });
+  Object.assign(lab, { isLab: true, name: "Key Station", result: null, error: "", reveal: false, createdScript: "", createdPath: "" });
   if (labIndex < 0) {
     hodlKeys.unshift(lab);
     labIndex = 0;
@@ -9441,9 +9756,9 @@ function hodlKeyTabKeydown(event, index) {
   hodlElement("#key-tabs").children[next]?.focus();
 }
 var hodlKeySilhouette = "M512 176c0 97.2-78.8 176-176 176-11.2 0-22.2-1.1-32.8-3.1l-24 27c-4.4 4.9-10.8 8.1-17.9 8.1H224v40c0 13.3-10.7 24-24 24h-40v40c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24v-78.1c0-6.4 2.5-12.5 7-17l161.8-161.8c-5.7-17.4-8.8-35.9-8.8-55.2C160 78.8 238.8 0 336 0s176 78.8 176 176zM374 112a54 54 0 1 0 0 108 54 54 0 1 0 0-108z";
-function hodlCreateMsigIcon() {
-  let ns = "http://www.w3.org/2000/svg", darkest = "#4b4f55", middle = "#888d94", span = document.createElement("span"), svg = document.createElementNS(ns, "svg");
-  span.className = "multisig-tab-icon";
+function hodlCreateMsigIcon(monochrome = false) {
+  let ns = "http://www.w3.org/2000/svg", darkest = monochrome ? "currentColor" : "#4b4f55", middle = monochrome ? "currentColor" : "#888d94", span = document.createElement("span"), svg = document.createElementNS(ns, "svg");
+  span.className = "multisig-tab-icon" + (monochrome ? " bench-tab-icon" : "");
   span.setAttribute("aria-hidden", "true");
   svg.setAttribute("viewBox", "0 -4 49 40");
   svg.setAttribute("focusable", "false");
@@ -9460,13 +9775,14 @@ function hodlCreateMsigIcon() {
   ring.setAttribute("stroke-linecap", "round");
   ring.setAttribute("stroke-linejoin", "round");
   svg.appendChild(ring);
-  [["key-back", darkest, -28], ["key-middle", middle, 0], ["key-front", "#d1d4d8", 28]].forEach(([part, fill, angle]) => {
+  [["key-back", darkest, -28, monochrome ? ".52" : "1"], ["key-middle", middle, 0, monochrome ? ".76" : "1"], ["key-front", monochrome ? "currentColor" : "#d1d4d8", 28, "1"]].forEach(([part, fill, angle, opacity]) => {
     let path = document.createElementNS(ns, "path");
     path.setAttribute("data-part", part);
     path.setAttribute("d", hodlKeySilhouette);
     path.setAttribute("fill", fill);
     path.setAttribute("fill-rule", "evenodd");
     path.setAttribute("clip-rule", "evenodd");
+    path.setAttribute("opacity", opacity);
     path.setAttribute("transform", "translate(34 10.5) rotate(" + angle + ") scale(.052) translate(-374 -166)");
     svg.appendChild(path);
   });
@@ -9483,14 +9799,93 @@ function hodlCreateMsigIcon() {
   return span;
 }
 function hodlCreateLabIcon() {
-  let span = document.createElement("span"), source = document.querySelector(".site-logo");
-  span.className = "key-tab-icon key-tab-lab-icon";
+  let ns = "http://www.w3.org/2000/svg", span = document.createElement("span"), svg = document.createElementNS(ns, "svg"), path = document.createElementNS(ns, "path");
+  span.className = "key-tab-icon key-tab-lab-icon bench-tab-icon";
   span.setAttribute("aria-hidden", "true");
-  if (source) source.querySelectorAll("svg").forEach((svg) => span.appendChild(svg.cloneNode(true)));
+  svg.setAttribute("viewBox", "0 0 512 512");
+  svg.setAttribute("fill", "currentColor");
+  svg.setAttribute("focusable", "false");
+  svg.setAttribute("aria-hidden", "true");
+  path.setAttribute("fill-rule", "evenodd");
+  path.setAttribute("clip-rule", "evenodd");
+  path.setAttribute("d", hodlKeySilhouette);
+  svg.appendChild(path);
+  span.appendChild(svg);
+  return span;
+}
+function hodlCreateBip85BenchIcon() {
+  let ns = "http://www.w3.org/2000/svg", span = document.createElement("span"), svg = document.createElementNS(ns, "svg");
+  span.className = "key-tab-icon key-tab-lab-icon bip85-bench-icon bench-tab-icon";
+  span.setAttribute("aria-hidden", "true");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "currentColor");
+  svg.setAttribute("focusable", "false");
+  svg.setAttribute("aria-hidden", "true");
+  [
+    ["seed", "M12 1.75c1.78 0 3.22 1.5 3.22 3.35S13.78 8.45 12 8.45 8.78 6.95 8.78 5.1 10.22 1.75 12 1.75Z"],
+    ["left-leaf", "M10.92 21.75C5.47 20.99 2.25 17.03 2.25 9.2c5.48.85 8.67 4.89 8.67 12.55Z"],
+    ["right-leaf", "M13.08 21.75c5.45-.76 8.67-4.72 8.67-12.55-5.48.85-8.67 4.89-8.67 12.55Z"]
+  ].forEach(([part, data]) => {
+    let path = document.createElementNS(ns, "path");
+    path.setAttribute("data-part", part);
+    path.setAttribute("d", data);
+    svg.appendChild(path);
+  });
+  span.appendChild(svg);
+  return span;
+}
+function hodlCreateSilentPaymentsIcon() {
+  let ns = "http://www.w3.org/2000/svg", span = document.createElement("span"), svg = document.createElementNS(ns, "svg");
+  span.className = "key-tab-icon key-tab-lab-icon silent-payments-icon bench-tab-icon";
+  span.setAttribute("aria-hidden", "true");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("focusable", "false");
+  svg.setAttribute("aria-hidden", "true");
+  let coin = document.createElementNS(ns, "g");
+  coin.setAttribute("data-part", "coin");
+  coin.setAttribute("transform", "rotate(14 8 14.5)");
+  let rim = document.createElementNS(ns, "path");
+  rim.setAttribute("data-part", "coin-rim");
+  rim.setAttribute("d", "M1.85 14.4v1.65c0 2.4 2.75 4.35 6.15 4.35s6.15-1.95 6.15-4.35V14.4c0 2.4-2.75 4.35-6.15 4.35S1.85 16.8 1.85 14.4Z");
+  rim.setAttribute("fill", "currentColor");
+  rim.setAttribute("fill-opacity", ".45");
+  rim.setAttribute("stroke", "currentColor");
+  rim.setAttribute("stroke-width", "1.1");
+  coin.appendChild(rim);
+  ["M3.35 17.3v1.25", "M5.45 18.15v1.4", "M7.8 18.45v1.45", "M10.15 18.15v1.35", "M12.2 17.3v1.15"].forEach((data) => {
+    let ridge = document.createElementNS(ns, "path");
+    ridge.setAttribute("data-part", "coin-ridge");
+    ridge.setAttribute("d", data);
+    ridge.setAttribute("stroke", "currentColor");
+    ridge.setAttribute("stroke-width", ".8");
+    ridge.setAttribute("stroke-linecap", "round");
+    coin.appendChild(ridge);
+  });
+  let face = document.createElementNS(ns, "ellipse");
+  face.setAttribute("cx", "8");
+  face.setAttribute("cy", "14.4");
+  face.setAttribute("rx", "6.15");
+  face.setAttribute("ry", "4.2");
+  face.setAttribute("fill", "currentColor");
+  face.setAttribute("stroke", "currentColor");
+  face.setAttribute("stroke-width", "1.25");
+  coin.appendChild(face);
+  svg.appendChild(coin);
+  [["signal-inner", "M14.25 9.15a4.65 4.65 0 0 1 3.55 3.6"], ["signal-outer", "M14.7 4.25a9.2 9.2 0 0 1 7.05 7.2"]].forEach(([part, data]) => {
+    let path = document.createElementNS(ns, "path");
+    path.setAttribute("data-part", part);
+    path.setAttribute("d", data);
+    path.setAttribute("stroke", "currentColor");
+    path.setAttribute("stroke-width", "1.8");
+    path.setAttribute("stroke-linecap", "round");
+    svg.appendChild(path);
+  });
+  span.appendChild(svg);
   return span;
 }
 function hodlCreateKeyTab(index) {
-  let state = hodlKeys[index], active = index === hodlActiveKey, button = document.createElement("button"), fingerprint = state.result?.masterFingerprint || "", name = state.isLab ? "Key Lab" : state.name || fingerprint || "Key " + state.number, label = document.createElement("span");
+  let state = hodlKeys[index], active = index === hodlActiveKey, button = document.createElement("button"), fingerprint = state.result?.masterFingerprint || "", name = state.isLab ? "Key Station" : state.name || fingerprint || "Key " + state.number, label = document.createElement("span");
   button.type = "button";
   button.id = state.isLab ? "key-tab-lab" : "key-tab-" + (index + 1);
   button.className = "tab key-tab" + (state.isLab ? " is-lab" : "") + (active ? " active" : "");
@@ -9513,7 +9908,7 @@ function hodlCreateKeyTab(index) {
   button.setAttribute("aria-controls", "calc-card");
   button.setAttribute("aria-selected", String(active));
   if (state.isLab) {
-    button.setAttribute("aria-label", "Key Lab" + (active ? ", selected" : ". Activate to derive a key."));
+    button.setAttribute("aria-label", "Key Station" + (active ? ", selected" : ". Activate to derive a key."));
     button.title = "Derive a key";
     button.onclick = () => hodlSelectKey(index);
   } else {
@@ -9615,6 +10010,8 @@ function hodlRenderKeyTabs() {
   });
   hodlRevealTab(box, hodlActiveKey);
   hodlSyncKeyDeleteButton();
+  hodlRefreshMsigSessionPickers();
+  hodlRefreshStationKeyPickers();
 }
 function hodlSelectKey(index) {
   if (index === hodlActiveKey || !hodlKeys[index]) return;
@@ -9661,6 +10058,7 @@ function hodlNewMsigState(name, msigId, msigNumber) {
       purposeHarden: true,
       legacyBip87: !1,
       keyOrder: "sorted",
+      reuseSessionKeys: false,
       xpubs: ["", "", ""],
       coinType: "0",
       coinTypeHarden: true,
@@ -9676,7 +10074,7 @@ function hodlNewMsigState(name, msigId, msigNumber) {
   }
 }
 function hodlNewMsigLabState() {
-  let state = hodlNewMsigState("Multisig Lab", 0, 0);
+  let state = hodlNewMsigState("MS Station", 0, 0);
   state.isLab = true;
   return state;
 }
@@ -9784,7 +10182,7 @@ function hodlFillMsigLabFromWallet(source) {
   let labIndex = hodlMsigs.findIndex((state) => state.isLab);
   let existing = labIndex >= 0 ? hodlMsigs[labIndex] : hodlNewMsigLabState();
   let lab = hodlCloneDerivedMsig(source, existing);
-  Object.assign(lab, { isLab: true, name: "Multisig Lab", result: null, error: "", createdPolicy: "", createdScript: "", createdNetwork: "" });
+  Object.assign(lab, { isLab: true, name: "MS Station", result: null, error: "", createdPolicy: "", createdScript: "", createdNetwork: "" });
   if (labIndex < 0) {
     hodlMsigs.unshift(lab);
     labIndex = 0;
@@ -9806,7 +10204,7 @@ function hodlMsigStateNeedsClear(state) {
   let fields = state.fields || {},
     xpubs = Array.isArray(fields.xpubs) ? fields.xpubs : [];
   return Boolean(state.result) || String(state.error ?? "").length > 0 || xpubs.some(value => String(value ?? "").length > 0) ||
-    String(fields.m ?? "2") !== "2" || String(fields.n ?? "3") !== "3" || String(fields.script ?? "p2wsh") !== "p2wsh" || String(fields.purpose ?? "48") !== "48" || fields.purposeHarden === false || Boolean(fields.legacyBip87) || String(fields.keyOrder ?? "sorted") !== "sorted" || String(fields.coinType ?? (fields.network === "testnet" ? "1" : "0")) !== "0" || fields.coinTypeHarden === false || fields.accountHarden === false || String(fields.branchStart ?? "0") !== "0" || Boolean(fields.branchHarden) || String(fields.branchRange ?? "2") !== "2" || String(fields.addressStart ?? "0") !== "0" || Boolean(fields.addressHarden) || String(fields.addressRange ?? fields.count ?? "5") !== "5"
+    String(fields.m ?? "2") !== "2" || String(fields.n ?? "3") !== "3" || String(fields.script ?? "p2wsh") !== "p2wsh" || String(fields.purpose ?? "48") !== "48" || fields.purposeHarden === false || Boolean(fields.legacyBip87) || String(fields.keyOrder ?? "sorted") !== "sorted" || Boolean(fields.reuseSessionKeys) || String(fields.coinType ?? (fields.network === "testnet" ? "1" : "0")) !== "0" || fields.coinTypeHarden === false || fields.accountHarden === false || String(fields.branchStart ?? "0") !== "0" || Boolean(fields.branchHarden) || String(fields.branchRange ?? "2") !== "2" || String(fields.addressStart ?? "0") !== "0" || Boolean(fields.addressHarden) || String(fields.addressRange ?? fields.count ?? "5") !== "5"
 }
 
 function hodlSyncMsigClearButton(capture = !1) {
@@ -9825,6 +10223,7 @@ function hodlCaptureMsig() {
   state.fields.purpose = document.getElementById("msig-purpose")?.value || "48";
   state.fields.legacyBip87 = hodlSelectedLegacyMultisigStandard() === "bip87";
   state.fields.keyOrder = hodlMsigKeysSorted() ? "sorted" : "listed";
+  state.fields.reuseSessionKeys = Boolean(document.getElementById("msig-reuse-session-keys")?.checked);
   hodlMergeMsigXpubs(state);
   state.fields.coinType = document.getElementById("msig-network")?.value || "0";
   let hardening = hodlReadHardening("msig-");
@@ -9864,6 +10263,9 @@ function hodlRestoreMsig() {
   hodlUpdateMsigLegacyControls();
   state.fields.keyOrder = state.fields.keyOrder === "listed" ? "listed" : "sorted";
   hodlSyncSelect(document.getElementById("msig-key-order"), state.fields.keyOrder);
+  let reuseSessionKeys = document.getElementById("msig-reuse-session-keys"), sessionStatus = document.getElementById("msig-session-key-status");
+  if (reuseSessionKeys) reuseSessionKeys.checked = Boolean(state.fields.reuseSessionKeys);
+  if (sessionStatus) sessionStatus.textContent = "";
   let advanced = document.getElementById("msig-advanced");
   if (advanced) advanced.open = state.fields.keyOrder === "listed";
   state.fields.coinType = String(state.fields.coinType ?? (state.fields.network === "testnet" ? 1 : 0));
@@ -9913,19 +10315,19 @@ function hodlMsigTabKeydown(event, index) {
   hodlElement("#msig-tabs").children[next]?.focus();
 }
 function hodlCreateMsigTab(index) {
-  let state = hodlMsigs[index], active = index === hodlActiveMsig, button = document.createElement("button"), name = state.isLab ? "Multisig Lab" : state.createdPolicy || state.name || "Multisig " + state.number, label = document.createElement("span");
+  let state = hodlMsigs[index], active = index === hodlActiveMsig, button = document.createElement("button"), name = state.isLab ? "MS Station" : state.createdPolicy || state.name || "Multisig " + state.number, label = document.createElement("span");
   button.type = "button";
   button.id = state.isLab ? "msig-tab-lab" : "msig-tab-" + (index + 1);
   button.className = "tab key-tab msig-tab" + (state.isLab ? " is-lab" : "") + (active ? " active" : "");
   button.dataset.msigNumber = String(state.number);
   label.className = "key-tab-label";
   label.textContent = name;
-  button.append(state.isLab ? hodlCreateLabIcon() : hodlCreateMsigIcon(), label);
+  button.append(hodlCreateMsigIcon(state.isLab), label);
   button.setAttribute("role", "tab");
   button.setAttribute("aria-controls", "msig-card");
   button.setAttribute("aria-selected", String(active));
   if (state.isLab) {
-    button.setAttribute("aria-label", "Multisig Lab" + (active ? ", selected" : ". Activate to derive a multisig."));
+    button.setAttribute("aria-label", "MS Station" + (active ? ", selected" : ". Activate to derive a multisig."));
     button.title = "Derive a multisig";
     button.onclick = () => hodlSelectMsig(index);
   } else {
@@ -10053,7 +10455,9 @@ function hodlShowWorkspace(id) {
     if (active) hodlRevealTab(hodlElement("#workspace-tabs"), [...hodlElement("#workspace-tabs").children].indexOf(button));
   });
   document.getElementById("key-manager").hidden = id !== "calc";
+  document.getElementById("bip85-manager").hidden = id !== "bip85";
   document.getElementById("msig-manager").hidden = id !== "msig";
+  document.getElementById("sp-manager").hidden = id !== "sp";
   document.getElementById("calc-card").hidden = true;
   document.getElementById("msig-card").hidden = true;
   document.getElementById("psbt-card").hidden = id !== "psbt";
@@ -10074,7 +10478,11 @@ function hodlShowWorkspace(id) {
   } else if (id === "msig") {
     hodlRenderMsigTabs();
     hodlRestoreMsig();
-  } else if (id === "bip85") hodlBip85SyncOptions();
+  } else if (id === "bip85") {
+    hodlRenderBip85Tabs();
+    hodlSyncBip85View();
+    hodlBip85SyncOptions();
+  }
   if (hodlWorkspaceScrollFrame) cancelAnimationFrame(hodlWorkspaceScrollFrame);
   window.scrollTo(preservedLeft, preservedTop);
   hodlWorkspaceScrollFrame = requestAnimationFrame(() => {
@@ -10146,6 +10554,22 @@ function hodlInitMsigManager() {
   if (hodlWorkspace === "msig") hodlRestoreMsig();
   else document.getElementById("msig-card").hidden = true;
 }
+function hodlInitSpBench() {
+  let tabs = document.getElementById("sp-tabs");
+  if (!tabs) return;
+  let button = document.createElement("button"), label = document.createElement("span");
+  button.type = "button";
+  button.id = "sp-tab-bench";
+  button.className = "tab key-tab is-lab active";
+  button.setAttribute("role", "tab");
+  button.setAttribute("aria-selected", "true");
+  button.setAttribute("aria-controls", "sp-card");
+  button.setAttribute("aria-label", "SP Station, selected");
+  label.className = "key-tab-label";
+  label.textContent = "SP Station";
+  button.append(hodlCreateSilentPaymentsIcon(), label);
+  tabs.replaceChildren(button);
+}
 function hodlInitDefaultTabStates() {
   if (!hodlKeys.length) {
     hodlKeys.push(hodlNewLabState());
@@ -10203,9 +10627,12 @@ function hodlInitWorkspace() {
     button.dataset.workspace = id;
     button.setAttribute("role", "tab");
     button.setAttribute("aria-selected", String(active));
-    button.innerHTML = `<span class="workspace-tab-full"></span><span class="workspace-tab-short"></span>`;
-    button.firstChild.textContent = label;
-    button.lastChild.textContent = short;
+    let fullLabel = document.createElement("span"), shortLabel = document.createElement("span");
+    fullLabel.className = "workspace-tab-full";
+    shortLabel.className = "workspace-tab-short";
+    fullLabel.textContent = label;
+    shortLabel.textContent = short;
+    button.append(fullLabel, shortLabel);
     // The short form is display:none at wide widths and the full one is hidden
     // at narrow ones, and hidden text is not in the accessibility tree — so the
     // name is stated outright rather than left to whichever span is showing.
@@ -10412,6 +10839,8 @@ function hodlInitSecretFieldAutoClear() {
     if (bip85Out) bip85Out.innerHTML = "";
     if (bip85Error) bip85Error.textContent = "";
     if (bip85Session) bip85Session.textContent = hodlBip85Note;
+    hodlRenderBip85Tabs();
+    hodlSyncBip85View();
     let spKey = document.getElementById("sp-key"), spPass = document.getElementById("sp-pass");
     if (spKey) spKey.value = "";
     if (spPass) spPass.value = "";
@@ -10476,6 +10905,7 @@ function hodlBoot() {
   hodlInitDefaultTabStates();
   hodlInitKeyManager();
   hodlInitMsigManager();
+  hodlInitSpBench();
   hodlInitClearActionState();
   hodlInitSecretFieldAutoClear();
   hodlInitTheme();

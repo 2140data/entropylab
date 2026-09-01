@@ -779,17 +779,17 @@ test("multisig consistently uses derive for its heading and action", () => {
   assert.match(app, /let\{network,coinType,count,addressStart,branchStart,branchRange,n,m,kind,purpose,hardening,legacyStandard,nodes,xpubs,keyTokens,accountSummary,accountWarning\}=hodlValidatedMsigInputs\(\)/);
 });
 
-test("key and multisig add controls stay pinned to the right of their tab strips", () => {
+test("Station add controls stay pinned to the right of their tab strips", () => {
   assert.match(css, /\.key-tab-strip \{ display: flex; align-items: flex-end; min-width: 0; margin-top: 12px; \}/);
   assert.match(css, /\.key-tabs \{\s*display: flex;[^}]*flex: 1 1 auto; min-width: 0;/s);
   assert.match(css, /\.add-item-control \{ position: relative; display: inline-flex; flex: 0 0 auto; \}/);
 });
 
-test("the delete control reads as unavailable on the Lab tab", () => {
-  // Both strips ship it disabled: a fresh page holds only Lab, and app.js
-  // keeps minus unavailable while Lab is selected.
+test("the delete control reads as unavailable on a Station tab", () => {
+  // All three strips ship it disabled: a fresh page holds only the bench,
+  // and app.js keeps minus unavailable while that bench is selected.
   for (const markup of [template, appSource]) {
-    for (const id of ["delete-key", "delete-msig"]) {
+    for (const id of ["delete-key", "delete-bip85", "delete-msig"]) {
       assert.match(
         markup,
         new RegExp(`<button class="add-key remove-key" id="${id}"[^>]*disabled`),
@@ -1349,13 +1349,13 @@ test("PSBT Editor tab follows PSBT / Nonce and wires the rust-bitcoin editor", (
   assert.match(css, /#psbted-card\[hidden\]/);
 });
 
-test("BIP-85 entry point sits beside Derive Wallet and opens the BIP-85 tab", () => {
+test("BIP-85 entry point sits beside Derive Key and opens the BIP-85 tab", () => {
   for (const markup of [template, appSource]) {
-    assert.match(markup, /id="go"[^>]*>Derive Wallet<\/button>[\s\S]*?id="bip85-open"[^>]*>Derive BIP-85 child<\/button>[\s\S]*?id="wipe"/);
+    assert.match(markup, /id="go"[^>]*>Derive Key<\/button>[\s\S]*?id="bip85-open"[^>]*>Derive BIP-85 child<\/button>[\s\S]*?id="wipe"/);
   }
   assert.match(appSource, /getElementById\("bip85-open"\)/);
   assert.match(appSource, /open\.onclick = \(\) => \{\s*hodlShowWorkspace\("bip85"\)/);
-  assert.match(appSource, /open\.onclick[\s\S]*?hodlUseActiveKeyForBip85\(\)/);
+  assert.match(appSource, /open\.onclick[\s\S]*?hodlPickBip85SessionKey\(hodlKeys\[hodlActiveKey\]\)/);
 });
 
 test("Silent Payments sits between Multi Signature and PSBT / Nonce", () => {
@@ -1372,6 +1372,23 @@ test("Silent Payments sits between Multi Signature and PSBT / Nonce", () => {
     assert.match(markup, /BIP-352/);
   }
   assert.match(css, /#sp-card\[hidden\]/);
+});
+
+test("Silent Payments has a connected SP Station with a monochrome coin-and-signal icon", () => {
+  assert.match(appSource, /function hodlCreateSilentPaymentsIcon\(\) \{/);
+  assert.match(appSource, /span\.className = "key-tab-icon key-tab-lab-icon silent-payments-icon bench-tab-icon"/);
+  assert.match(appSource, /\[\["signal-inner",[\s\S]*?\["signal-outer",/);
+  assert.match(appSource, /rim\.setAttribute\("data-part", "coin-rim"\)/);
+  assert.match(appSource, /ridge\.setAttribute\("data-part", "coin-ridge"\)/);
+  assert.doesNotMatch(appSource, /let inset = document\.createElementNS/);
+  assert.match(appSource, /function hodlInitSpBench\(\) \{/);
+  assert.match(appSource, /label\.textContent = "SP Station";/);
+  assert.match(appSource, /button\.append\(hodlCreateSilentPaymentsIcon\(\), label\);/);
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /id="sp-manager"/);
+    assert.match(markup, /id="sp-tabs"/);
+  }
+  assert.doesNotMatch(template, /aria-label="Silent Payments"><span class="workspace-tab-icon/);
 });
 
 test("the workspace switcher keeps every tool on screen as a tab strip", () => {
@@ -1393,12 +1410,12 @@ test("the workspace switcher keeps every tool on screen as a tab strip", () => {
   // One swaps for the other at the width the header drops its own labels.
   assert.match(css, /\.workspace-tab-short \{ display: none; \}/);
   assert.match(css, /@media \(max-width: 719px\) \{[\s\S]*?\.workspace-tab-full \{ display: none; \}\s*\.workspace-tab-short \{ display: inline; \}/);
-  assert.match(appSource, /button\.firstChild\.textContent = label;\s*button\.lastChild\.textContent = short;/);
+  assert.match(appSource, /fullLabel\.textContent = label;\s*shortLabel\.textContent = short;/);
   // Hidden text leaves the accessibility tree, so the full name is stated on
   // the tab itself and assistive tech hears it at every width.
   assert.match(appSource, /button\.setAttribute\("aria-label", label\);/);
   for (const full of ["Keys", "BIP-85", "Multi Signature", "Silent Payments", "PSBT / Nonce"]) {
-    assert.ok(template.includes(`aria-label="${full}"><span class="workspace-tab-full">${full}</span>`), `${full} tab needs its accessible name`);
+    assert.match(template, new RegExp(`aria-label="${full.replace("/", "\\/")}">[\\s\\S]*?<span class="workspace-tab-full">${full.replace("/", "\\/")}</span>`), `${full} tab needs its accessible name`);
   }
   // A tablist owes arrow keys; the key and multisig strips already answer them.
   assert.match(appSource, /function hodlWorkspaceTabKeydown\(event, index\) \{/);
@@ -1477,11 +1494,12 @@ test("the workspace switcher keeps every tool on screen as a tab strip", () => {
   assert.match(css, /\.workspace-more\[hidden\] \{ display: none; \}/);
 });
 
-test("Lab stays put and a derived key opens a fingerprint tab with a summary", () => {
+test("Key Station stays put and a derived key opens a fingerprint tab with a summary", () => {
   assert.match(appSource, /function hodlNewLabState\(\) \{/);
-  assert.match(appSource, /hodlNewKeyState\("Key Lab", 0, 0\)/);
-  assert.match(appSource, /name = state\.isLab \? "Key Lab"/);
-  assert.match(appSource, /source\.querySelectorAll\("svg"\)\.forEach\(\(svg\) => span\.appendChild\(svg\.cloneNode\(true\)\)\)/);
+  assert.match(appSource, /hodlNewKeyState\("Key Station", 0, 0\)/);
+  assert.match(appSource, /name = state\.isLab \? "Key Station"/);
+  assert.match(appSource, /path\.setAttribute\("d", hodlKeySilhouette\)/);
+  assert.match(css, /\.key-tab-icon\.key-tab-lab-icon \{[^}]*color: var\(--muted\);/s);
   assert.match(appSource, /function hodlCommitDerivedKey\(\) \{/);
   assert.match(appSource, /function hodlSelectLab\(\) \{/);
   assert.match(appSource, /function hodlSyncKeyResultView\(\) \{/);
@@ -1495,7 +1513,7 @@ test("Lab stays put and a derived key opens a fingerprint tab with a summary", (
     assert.match(markup, /id="key-lab"/);
     assert.match(markup, /id="key-edit-inputs"/);
     assert.match(markup, /id="key-summary-path"/);
-    assert.match(markup, /Open the lab to derive another key/);
+    assert.match(markup, /Open Key Station to derive another key/);
   }
   assert.match(appSource, /function hodlSnapshotKeySummary\(/);
   assert.match(appSource, /state\.createdScript = hodlKeySummaryScript\(state\)/);
@@ -1521,23 +1539,58 @@ test("derived key results put private recovery before script type and addresses"
   assert.match(appSource, /hodlBindWalletResultActions\(\);/);
 });
 
-test("multisig co-signer rows can pick a session key or paste a public key", () => {
+test("MS Station assigns keys from one session picker and makes reuse opt in", () => {
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /class="station-key-source msig-station-key-source"[\s\S]*id="msig-session-keys"[\s\S]*id="msig-reuse-session-keys"/);
+    assert.match(markup, /Choose a compatible HD-root key from this session, or paste a co-signer extended public key below/);
+    assert.match(markup, /id="msig-reuse-session-keys" type="checkbox"/);
+  }
   assert.match(appSource, /function hodlSessionMsigKeys\(\) \{/);
   assert.match(appSource, /function hodlMatchingMsigExport\(result\) \{/);
   assert.match(appSource, /function hodlSyncMsigKeyAvatar\(row\) \{/);
-  assert.match(appSource, /chips\.className = "msig-session-keys"/);
-  assert.match(appSource, /button\.className = "msig-session-key"/);
+  assert.match(appSource, /function hodlPickMsigSessionKey\(state\) \{/);
+  assert.match(appSource, /function hodlMsigCanonicalSessionKey\(value\) \{/);
+  assert.match(appSource, /return hodlCanonicalMultisigKey\(hodlParseMultisigCosigner/);
+  assert.match(appSource, /function hodlMsigUsedSessionKeys\(\) \{/);
+  assert.match(appSource, /available = reuse \? options : options\.filter/);
+  assert.match(appSource, /hodlMsigKeyTarget = \[\.\.\.document\.querySelectorAll\("#msig-keys textarea"\)\]\.find/);
+  assert.doesNotMatch(appSource, /chips\.className = "msig-session-keys"/);
   assert.match(appSource, /hodlFillKeyTabLifehash\(image, fingerprint\)/);
   assert.match(appSource, /hodlRefreshMsigSessionPickers\(\)/);
-  assert.match(css, /\.msig-session-key \{/);
+  assert.match(appSource, /reuseSessionKeys: false/);
+  assert.match(appSource, /state\.fields\.reuseSessionKeys = Boolean/);
+  assert.match(css, /\.msig-key-reuse-toggle/);
   assert.match(css, /\.msig-key-ident \{/);
 });
 
-test("Multisig Lab stays put and a derived wallet opens its own results tab", () => {
+test("BIP-85 and SP Stations can bring in compatible Key Station roots", () => {
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /id="bip85-session-keys"/);
+    assert.match(markup, /id="sp-session-keys"/);
+    assert.match(markup, /Bring in a key from Key Station/);
+    assert.doesNotMatch(markup, /id="bip85-use-calc"/);
+    assert.doesNotMatch(markup, /id="sp-use-calc"/);
+  }
+  assert.match(appSource, /function hodlSessionHdRootKeys\(\) \{/);
+  assert.match(appSource, /state\.result\?\.kind === "hd" && \(state\.result\.mnemonic \|\| state\.result\.rootXprv\)/);
+  assert.match(appSource, /function hodlFillStationKeyPicker\(id, selectedSource, onSelect\) \{/);
+  assert.match(appSource, /hodlFillKeyTabLifehash\(image, fingerprint\)/);
+  assert.match(appSource, /function hodlPickBip85SessionKey\(state\) \{/);
+  assert.match(appSource, /function hodlPickSpSessionKey\(state\) \{/);
+  assert.match(appSource, /document\.getElementById\("bip85-key"\)\.value = rootXprv;/);
+  assert.match(appSource, /document\.getElementById\("sp-key"\)\.value = state\.result\?\.mnemonic \|\| state\.result\?\.rootXprv \|\| "";/);
+  assert.match(appSource, /document\.getElementById\("sp-pass"\)\.value = state\.result\?\.mnemonic \? state\.fields\?\.pass \|\| "" : "";/);
+  assert.match(appSource, /document\.getElementById\("bip85-key"\)\.addEventListener\("input"/);
+  assert.match(appSource, /document\.getElementById\("sp-key"\)\.addEventListener\("input", detachStationKey\)/);
+  assert.match(css, /\.session-key-picker \{ display: flex; flex-wrap: wrap; gap: 8px; \}/);
+  assert.match(css, /\.session-key-option\.active \{ border-color: var\(--accent\); \}/);
+});
+
+test("MS Station stays put and a derived wallet opens its own results tab", () => {
   assert.match(appSource, /function hodlNewMsigLabState\(\) \{/);
-  assert.match(appSource, /hodlNewMsigState\("Multisig Lab", 0, 0\)/);
-  assert.match(appSource, /name = state\.isLab \? "Multisig Lab"/);
-  assert.match(appSource, /button\.append\(state\.isLab \? hodlCreateLabIcon\(\) : hodlCreateMsigIcon\(\), label\)/);
+  assert.match(appSource, /hodlNewMsigState\("MS Station", 0, 0\)/);
+  assert.match(appSource, /name = state\.isLab \? "MS Station"/);
+  assert.match(appSource, /button\.append\(hodlCreateMsigIcon\(state\.isLab\), label\)/);
   assert.match(appSource, /function hodlCommitDerivedMsig\(\) \{/);
   assert.match(appSource, /function hodlSelectMsigLab\(\) \{/);
   assert.match(appSource, /hodlMsigs\.push\(hodlNewMsigLabState\(\)\)/);
@@ -1558,11 +1611,35 @@ test("Multisig Lab stays put and a derived wallet opens its own results tab", ()
   assert.match(css, /#msig-card\.is-result-view \.msig-lab/);
 });
 
+test("BIP-85 Station retains each child in a LifeHash fingerprint tab", () => {
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /id="bip85-manager"/);
+    assert.match(markup, /id="bip85-tabs"/);
+    assert.match(markup, /id="add-bip85"/);
+    assert.match(markup, /id="delete-bip85"/);
+    assert.match(markup, /id="bip85-bench"/);
+  }
+  assert.match(appSource, /function hodlNewBip85BenchState\(\) \{/);
+  assert.match(appSource, /name: "BIP-85 Station"/);
+  assert.match(appSource, /function hodlCreateBip85Tab\(index\) \{/);
+  assert.match(appSource, /if \(state\.isLab\) button\.append\(hodlCreateBip85BenchIcon\(\), label\)/);
+  assert.match(appSource, /function hodlCreateBip85BenchIcon\(\) \{/);
+  assert.match(appSource, /\["seed", "M12 1\.75/);
+  assert.match(appSource, /\["left-leaf",/);
+  assert.match(appSource, /\["right-leaf",/);
+  assert.match(css, /\.bench-tab-icon,[\s\S]*?width: 18px; height: 18px;[\s\S]*?color: var\(--muted\);/);
+  assert.match(appSource, /hodlFillKeyTabLifehash\(image, state\.fingerprint\)/);
+  assert.match(appSource, /hodlBip85Children\.push\(state\)/);
+  assert.match(appSource, /function hodlDeleteActiveBip85\(\) \{[\s\S]*wipeBip85Result\(state\.result\)/);
+  assert.match(appSource, /state\.reveal = hodlBip85Reveal/);
+  assert.match(css, /#bip85-card:not\(\[hidden\]\)/);
+});
+
 test("session wallets use folder tabs that merge into the card", () => {
   assert.match(css, /\.key-manager \{ margin: 14px 0 -1px;/);
   assert.match(css, /\.key-tab \{[^}]*border-radius: 10px 10px 0 0;/s);
   assert.match(css, /\.key-tab\.active, \.key-tab-editing \{[^}]*border-bottom-color: var\(--surface\);/s);
-  assert.match(css, /#calc-card:not\(\[hidden\]\), #msig-card:not\(\[hidden\]\) \{[^}]*border-radius: 0 0 20px 20px;/s);
+  assert.match(css, /#calc-card:not\(\[hidden\]\), #msig-card:not\(\[hidden\]\), #bip85-card:not\(\[hidden\]\), #sp-card:not\(\[hidden\]\) \{[^}]*border-radius: 0 0 20px 20px;/s);
   assert.match(css, /\.workspace-tab \{[^}]*border-radius: 10px 10px 0 0;/s);
   assert.match(appSource, /let lifehash = tab\.querySelector\("\.key-tab-lifehash"\);/);
   assert.doesNotMatch(appSource, /editor\.append\(hodlCreateKeyIcon\(state\.color\), input\)/);

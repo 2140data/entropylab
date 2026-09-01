@@ -43,7 +43,17 @@
         <li>Keep your private keys offline.</li>
       </ul>
     </section>
-    <nav class="workspace no-print" id="workspace"><button type="button" class="workspace-more" id="workspace-more" aria-controls="workspace-tabs" aria-label="Scroll the tool list to see more tools" hidden>More tools<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button><div class="workspace-tabs" id="workspace-tabs" role="tablist" aria-label="Tool"><button type="button" class="workspace-tab active" role="tab" aria-selected="true" aria-label="Keys"><span class="workspace-tab-full">Keys</span><span class="workspace-tab-short">Keys</span></button><button type="button" class="workspace-tab" role="tab" aria-selected="false" aria-label="BIP-85"><span class="workspace-tab-full">BIP-85</span><span class="workspace-tab-short">BIP85</span></button><button type="button" class="workspace-tab" role="tab" aria-selected="false" aria-label="Multi Signature"><span class="workspace-tab-full">Multi Signature</span><span class="workspace-tab-short">MultiSig</span></button><button type="button" class="workspace-tab" role="tab" aria-selected="false" aria-label="Silent Payments"><span class="workspace-tab-full">Silent Payments</span><span class="workspace-tab-short">SP</span></button><button type="button" class="workspace-tab" role="tab" aria-selected="false" aria-label="PSBT / Nonce"><span class="workspace-tab-full">PSBT / Nonce</span><span class="workspace-tab-short">PSBT</span></button><button type="button" class="workspace-tab" role="tab" aria-selected="false" aria-label="PSBT Editor"><span class="workspace-tab-full">PSBT Editor</span><span class="workspace-tab-short">Editor</span></button></div></nav>
+    <nav class="workspace no-print" id="workspace">
+      <button type="button" class="workspace-more" id="workspace-more" aria-controls="workspace-tabs" aria-label="Scroll the tool list to see more tools" hidden>More tools<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button>
+      <div class="workspace-tabs" id="workspace-tabs" role="tablist" aria-label="Tool">
+        <button type="button" class="workspace-tab active" role="tab" aria-selected="true" aria-label="Keys"><span class="workspace-tab-full">Keys</span><span class="workspace-tab-short">Keys</span></button>
+        <button type="button" class="workspace-tab" role="tab" aria-selected="false" aria-label="BIP-85"><span class="workspace-tab-full">BIP-85</span><span class="workspace-tab-short">BIP85</span></button>
+        <button type="button" class="workspace-tab" role="tab" aria-selected="false" aria-label="Multi Signature"><span class="workspace-tab-full">Multi Signature</span><span class="workspace-tab-short">MultiSig</span></button>
+        <button type="button" class="workspace-tab" role="tab" aria-selected="false" aria-label="Silent Payments"><span class="workspace-tab-full">Silent Payments</span><span class="workspace-tab-short">SP</span></button>
+        <button type="button" class="workspace-tab" role="tab" aria-selected="false" aria-label="PSBT / Nonce"><span class="workspace-tab-full">PSBT / Nonce</span><span class="workspace-tab-short">PSBT</span></button>
+        <button type="button" class="workspace-tab" role="tab" aria-selected="false" aria-label="PSBT Editor"><span class="workspace-tab-full">PSBT Editor</span><span class="workspace-tab-short">Editor</span></button>
+      </div>
+    </nav>
     <div class="workspace-panel" id="workspace-panel">
       <div class="tool-intro" id="calc-tool-intro">
         <div class="kicker">Your entropy enters the lab</div>
@@ -51,7 +61,7 @@
         <p class="muted calc-intro">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
       </div>
       <section class="key-manager no-print" id="key-manager">
-      <div class="key-tab-strip"><div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div><div class="add-item-control"><button class="add-key" id="add-key" type="button" aria-label="Open the lab to derive another key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Open the lab to derive another key</span></div><div class="add-item-control"><button class="add-key remove-key" id="delete-key" type="button" aria-label="Delete current key" aria-describedby="delete-key-tooltip" disabled>−</button><span class="add-item-tooltip" id="delete-key-tooltip" role="tooltip">Delete this key</span></div></div>
+      <div class="key-tab-strip"><div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div><div class="add-item-control"><button class="add-key" id="add-key" type="button" aria-label="Open Key Station to derive another key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Open Key Station to derive another key</span></div><div class="add-item-control"><button class="add-key remove-key" id="delete-key" type="button" aria-label="Delete current key" aria-describedby="delete-key-tooltip" disabled>−</button><span class="add-item-tooltip" id="delete-key-tooltip" role="tooltip">Delete this key</span></div></div>
     </section>
     <section class="card no-print" id="calc-card" role="tabpanel" hidden>
       <div class="row segmented-control" id="modes"><button class="tab active" aria-pressed="true">Dice rolls</button><button class="tab" aria-pressed="false">Cards</button><button class="tab" aria-pressed="false">Number bases</button><button class="tab" aria-pressed="false">Seed phrase</button><button class="tab" aria-pressed="false">Private key</button><button class="tab" aria-pressed="false">Brain wallet — lab</button></div>
@@ -185,8 +195,8 @@ words, pick one of the checksum words.</span></span>
       </div>
       <p class="field-note address-estimate derivation-estimate" id="address-estimate" role="status">Measuring this device…</p>
       <div class="row key-action-row current-item-actions">
-        <button class="btn primary" id="go" disabled aria-disabled="true">Derive Wallet</button>
-        <div class="derive-progress" id="derive-progress" role="progressbar" aria-label="Wallet derivation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0% complete" hidden><span class="derive-progress-track"><span class="derive-progress-bar"></span></span><span class="derive-progress-label">0%</span></div>
+        <button class="btn primary" id="go" disabled aria-disabled="true">Derive Key</button>
+        <div class="derive-progress" id="derive-progress" role="progressbar" aria-label="Key derivation progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-valuetext="0% complete" hidden><span class="derive-progress-track"><span class="derive-progress-bar"></span></span><span class="derive-progress-label">0%</span></div>
         <button class="btn secondary" id="bip85-open" type="button">Derive BIP-85 child</button>
         <button class="btn clear-current-action" id="wipe" type="button" disabled aria-disabled="true">Clear Current Key</button>
       </div>
@@ -194,14 +204,23 @@ words, pick one of the checksum words.</span></span>
       </div>
       <div id="out"></div>
     </section>
-    <div class="tool-intro" id="bip85-tool-intro" hidden>
+      <div class="tool-intro" id="bip85-tool-intro" hidden>
         <div class="kicker">One seed. Many children.</div>
         <h2>Derive BIP-85 child entropy</h2>
-        <p class="muted bip85-intro">Deterministic child seeds, keys, and passwords from the active key's BIP32 root. Same parent, application, and index always reproduce the same child. This does not invent entropy — it is a calculator. English BIP-39 children match COLDCARD.</p>
+        <p class="muted bip85-intro">Deterministic child seeds, keys, and passwords from a Key Station BIP32 root. Same parent, application, and index always reproduce the same child. This does not invent entropy — it is a calculator. English BIP-39 children match COLDCARD.</p>
       </div>
+      <section class="key-manager no-print" id="bip85-manager" hidden>
+        <div class="key-tab-strip"><div class="key-tabs" id="bip85-tabs" role="tablist" aria-label="BIP-85 child seeds"></div><div class="add-item-control"><button class="add-key" id="add-bip85" type="button" aria-label="Open BIP-85 Station to derive another child" aria-describedby="add-bip85-tooltip">+</button><span class="add-item-tooltip" id="add-bip85-tooltip" role="tooltip">Open BIP-85 Station</span></div><div class="add-item-control"><button class="add-key remove-key" id="delete-bip85" type="button" aria-label="Delete current BIP-85 child" aria-describedby="delete-bip85-tooltip" disabled>−</button><span class="add-item-tooltip" id="delete-bip85-tooltip" role="tooltip">Delete this BIP-85 child</span></div></div>
+      </section>
       <section class="card no-print" id="bip85-card" role="tabpanel" hidden>
-      <label class="field">Optional root xprv (leave blank to use the active key)
-        <textarea id="bip85-key" placeholder="xprv… or leave blank to use the active key" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+      <div class="bip85-bench" id="bip85-bench">
+      <div class="station-key-source">
+        <p class="label">Bring in a key from Key Station</p>
+        <div class="session-key-picker" id="bip85-session-keys" role="group" aria-label="Compatible Key Station keys" hidden></div>
+        <p class="field-note">Choose a compatible HD-root key from this session, or paste a root extended private key below.</p>
+      </div>
+      <label class="field">Root xprv (optional)
+        <textarea id="bip85-key" placeholder="Paste a root xprv or tprv" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
       </label>
       <div class="bip85-grid">
         <label class="field">Application
@@ -242,11 +261,11 @@ words, pick one of the checksum words.</span></span>
       <p class="muted bip85-path-row">Path <code id="bip85-path">m/83696968'/39'/0'/24'/0'</code></p>
       <div class="row bip85-actions">
         <button class="btn primary" id="bip85-go" type="button">Derive child</button>
-        <button class="btn secondary" id="bip85-use-calc" type="button">Use active key</button>
-        <button class="btn secondary" id="bip85-wipe" type="button">Clear derived child</button>
+        <button class="btn secondary" id="bip85-wipe" type="button">Clear parent session</button>
       </div>
-      <p class="muted" id="bip85-session" aria-live="polite">No parent loaded. Derive a key first, or paste a root xprv.</p>
+      <p class="muted" id="bip85-session" aria-live="polite">No parent loaded. Choose a Key Station key, or paste a root xprv.</p>
       <p class="err" id="bip85-error" role="alert"></p>
+      </div>
       <div id="bip85-out" aria-live="polite"></div>
       <p class="muted">Derived children remain in this page only. Anyone with the parent seed, passphrase, application, and index can reproduce them. Memory clearing is best-effort; close the page before reconnecting the computer.</p>
     </section>
@@ -256,7 +275,7 @@ words, pick one of the checksum words.</span></span>
         <p class="muted msig-intro">Combine extended public keys into a multisignature wallet. Paste each key origin and extended public key as exported by its signer: <span class="mono">[fingerprint/48h/0h/0h/2h]xpub…</span>. Private keys are not needed. The derived addresses can receive bitcoin, and spending requires the configured number of signatures.</p>
       </div>
       <section class="key-manager no-print" id="msig-manager" hidden="">
-      <div class="key-tab-strip"><div class="key-tabs" id="msig-tabs" role="tablist" aria-label="Multisigs"></div><div class="add-item-control"><button class="add-key" id="add-msig" type="button" aria-label="Open the lab to derive another multisig" aria-describedby="add-msig-tooltip">+</button><span class="add-item-tooltip" id="add-msig-tooltip" role="tooltip">Open the lab to derive another multisig</span></div><div class="add-item-control"><button class="add-key remove-key" id="delete-msig" type="button" aria-label="Delete current multisig" aria-describedby="delete-msig-tooltip" disabled>−</button><span class="add-item-tooltip" id="delete-msig-tooltip" role="tooltip">Delete this multisig</span></div></div>
+      <div class="key-tab-strip"><div class="key-tabs" id="msig-tabs" role="tablist" aria-label="Multisigs"></div><div class="add-item-control"><button class="add-key" id="add-msig" type="button" aria-label="Open MS Station to derive another multisig" aria-describedby="add-msig-tooltip">+</button><span class="add-item-tooltip" id="add-msig-tooltip" role="tooltip">Open MS Station</span></div><div class="add-item-control"><button class="add-key remove-key" id="delete-msig" type="button" aria-label="Delete current multisig" aria-describedby="delete-msig-tooltip" disabled>−</button><span class="add-item-tooltip" id="delete-msig-tooltip" role="tooltip">Delete this multisig</span></div></div>
     </section>
     <section class="card no-print" id="msig-card" role="tabpanel" hidden="">
       <div class="key-summary" id="msig-summary" hidden>
@@ -268,6 +287,16 @@ words, pick one of the checksum words.</span></span>
         <button class="btn secondary" id="msig-edit-inputs" type="button">Edit input</button>
       </div>
       <div class="msig-lab" id="msig-lab">
+      <div class="station-key-source msig-station-key-source">
+        <p class="label">Bring in a key from Key Station</p>
+        <div class="session-key-picker" id="msig-session-keys" role="group" aria-label="Compatible Key Station keys" hidden></div>
+        <p class="field-note">Choose a compatible HD-root key from this session, or paste a co-signer extended public key below.</p>
+        <label class="choice msig-key-reuse-toggle">
+          <input id="msig-reuse-session-keys" type="checkbox">
+          <span><strong>Allow key reuse</strong><span class="desc">Keep selected Key Station keys available for more than one co-signer input.</span></span>
+        </label>
+        <p class="field-note" id="msig-session-key-status" aria-live="polite"></p>
+      </div>
       <div class="msig-threshold-labels">
         <label for="msig-m-number"><span>Signatures needed to spend (m)</span><input class="msig-threshold-number" id="msig-m-number" type="number" min="1" max="15" step="1" value="2" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
         <label for="msig-n-number"><span>Total signing keys (n)</span><input class="msig-threshold-number" id="msig-n-number" type="number" min="1" max="15" step="1" value="3" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
@@ -360,15 +389,23 @@ words, pick one of the checksum words.</span></span>
         <h2>Silent Payments</h2>
         <p class="muted tool-intro-note">A calculator, not a chain scanner. Derive a reusable <code>sp1q…</code> address from your seed, compute the unique taproot output a sender must pay, or check pasted outputs against your scan key. Nothing here talks to the network.</p>
       </div>
+      <section class="key-manager no-print" id="sp-manager" hidden>
+        <div class="key-tab-strip"><div class="key-tabs" id="sp-tabs" role="tablist" aria-label="Silent Payments"></div></div>
+      </section>
       <section class="card no-print" id="sp-card" role="tabpanel" hidden>
       <div class="row no-print segmented-control" id="sp-modes">
         <button class="tab active" type="button" data-sp-mode="receive" aria-pressed="true">Receive</button>
         <button class="tab" type="button" data-sp-mode="send" aria-pressed="false">Send</button>
         <button class="tab" type="button" data-sp-mode="verify" aria-pressed="false">Verify</button>
       </div>
+      <div class="station-key-source">
+        <p class="label">Bring in a key from Key Station</p>
+        <div class="session-key-picker" id="sp-session-keys" role="group" aria-label="Compatible Key Station keys" hidden></div>
+        <p class="field-note">Choose a compatible HD-root key from this session, or enter a seed phrase or root extended private key below.</p>
+      </div>
       <div class="psbt-grid">
         <label class="field">Session key (BIP39 seed phrase or root xprv/tprv)
-          <textarea id="sp-key" placeholder="Leave blank and use the active key, or paste a seed / root xprv" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+          <textarea id="sp-key" placeholder="Enter a seed phrase or root xprv/tprv" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
         </label>
         <div>
           <label class="field">Optional BIP39 passphrase
@@ -383,7 +420,6 @@ words, pick one of the checksum words.</span></span>
         </div>
       </div>
       <div class="row psbt-actions">
-        <button class="btn secondary" id="sp-use-calc" type="button">Use active key this session</button>
         <button class="btn secondary" id="sp-wipe" type="button">End session / clear fields</button>
       </div>
       <p class="muted" id="sp-session" aria-live="polite">No session key. Receive and verify need a seed or root xprv.</p>

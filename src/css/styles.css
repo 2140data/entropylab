@@ -937,7 +937,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .tool-intro[hidden] { display: none; }
 .tool-intro h2 { margin: 5px 0 8px; }
 .tool-intro > .muted { max-width: 760px; margin: 0; }
-.key-lab[hidden], .key-summary[hidden], .msig-lab[hidden] { display: none; }
+.key-lab[hidden], .key-summary[hidden], .msig-lab[hidden], .bip85-bench[hidden] { display: none; }
 #calc-card.is-result-view #modes,
 #calc-card:not(.is-result-view) #out,
 #msig-card:not(.is-result-view) #msig-out { display: none; }
@@ -955,24 +955,28 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .key-summary-path { font-family: var(--mono); word-break: break-all; }
 .key-tab-lifehash { width: 22px; height: 22px; border-radius: 4px; image-rendering: pixelated; background: #fff; }
 .key-tab.is-lab { font-weight: 700; }
-.key-tab-lab-icon { width: 18px; height: 22px; padding: 0; color: inherit; }
+.key-tab-lab-icon { width: 16px; height: 16px; padding: 0; color: var(--muted); }
 .key-tab-lab-icon svg { display: block; width: 100%; height: 100%; }
-.key-tab-lab-icon .site-logo-light { display: none; }
-:root[data-theme="light"] .key-tab-lab-icon .site-logo-dark { display: none; }
-:root[data-theme="light"] .key-tab-lab-icon .site-logo-light { display: block; }
 .key-result { margin-top: 16px; }
 .key-result-scripts-label { margin: 0 0 8px; color: var(--muted); font-size: 12px; font-weight: 700; }
 .key-result-main { margin-top: 8px; padding: 16px 16px 20px; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); }
 .key-result .wallet-result-messages { margin: 0 0 16px; }
 .account-receive-section { margin-top: 0; }
-.msig-session-keys { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 8px; }
-.msig-session-keys[hidden] { display: none; }
-.msig-session-key {
+.station-key-source { margin: 0 0 20px; }
+#sp-modes + .station-key-source { margin-top: 20px; }
+.station-key-source > .label { margin: 0 0 8px; }
+.station-key-source > .field-note { display: block; margin: 8px 0 0; }
+.msig-key-reuse-toggle { margin-top: 12px; }
+.msig-station-key-source #msig-session-key-status:empty { display: none; }
+.msig-station-key-source + .msig-threshold-labels { margin-top: 0; }
+.session-key-picker { display: flex; flex-wrap: wrap; gap: 8px; }
+.session-key-picker[hidden] { display: none; }
+.session-key-option {
   display: inline-flex; align-items: center; gap: 8px;
   min-height: 44px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 10px;
   background: var(--surface-2); color: var(--fg); font-family: var(--mono); font-size: 13px; cursor: pointer;
 }
-.msig-session-key.active { border-color: var(--accent); color: var(--fg); }
+.session-key-option.active { border-color: var(--accent); }
 .msig-key-ident { display: inline-flex; align-items: center; gap: 8px; margin: 0; }
 .msig-key-ident[hidden] { display: none; }
 .msig-key-ident-fp { font-family: var(--mono); font-size: 13px; letter-spacing: 0.04em; }
@@ -1006,7 +1010,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .segmented-control.is-stacked > .tab:last-child { border-radius: 0 0 8px 8px; }
 .segmented-control.is-stacked > .tab:only-child { border-radius: 8px; }
 #msig-card[hidden], #calc-card[hidden], #psbt-card[hidden], #psbted-card[hidden], #bip85-card[hidden], #sp-card[hidden] { display: none !important; }
-#calc-card:not([hidden]), #msig-card:not([hidden]) { margin-top: 0; border-radius: 0 0 20px 20px; position: relative; z-index: 1; }
+#calc-card:not([hidden]), #msig-card:not([hidden]), #bip85-card:not([hidden]), #sp-card:not([hidden]) { margin-top: 0; border-radius: 0 0 20px 20px; position: relative; z-index: 1; }
 .psbt-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 14px; }
 @media (min-width: 720px) {
   .psbt-grid { grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); }
@@ -1460,6 +1464,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .bip85-actions { margin-top: var(--space-component); }
 .bip85-notes { margin: var(--space-component) 0 0; padding-left: 20px; color: var(--muted); font-size: 13px; line-height: 1.5; }
 #bip85-out { margin-top: var(--space-component); }
+#bip85-card.is-result-view #bip85-out { margin-top: 0; }
 #bip85-out .wallet-private-section { margin-top: 0; }
 #psbt-session { margin: var(--space-control) 0 0; }
 .key-manager { margin: 14px 0 -1px; position: relative; z-index: 2; }
@@ -1473,7 +1478,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .add-key:not(:disabled):hover { background: transparent; color: var(--accent); }
 .add-key:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
 .add-key:not(:disabled):active { background: transparent; color: var(--accent); }
-/* The minus is disabled while a single key or multisig is all there is. It
+/* The minus is disabled while a Station tab is selected. It
    drops to the border tone, which sits close to its ground in either theme,
    and stops answering hover, so nothing about it invites a click. Disabled
    controls are exempt from the contrast floor, and the state is on the
@@ -1682,10 +1687,15 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 }
 .key-tab-icon { display: inline-flex; flex: 0 0 auto; width: 16px; height: 16px; color: var(--key-color); }
 .key-tab-icon svg { display: block; width: 16px; height: 16px; }
-.key-tab-lab-icon { display: inline-flex; width: 18px; height: 22px; }
+.key-tab-icon.key-tab-lab-icon { display: inline-flex; width: 16px; height: 16px; color: var(--muted); }
 .key-tab-lab-icon svg { width: 100%; height: 100%; }
 .multisig-tab-icon { display: inline-flex; flex: 0 0 auto; width: 28px; height: 23px; margin-left: -5px; }
 .multisig-tab-icon svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.bench-tab-icon,
+.multisig-tab-icon.bench-tab-icon {
+  flex: 0 0 18px; width: 18px; height: 18px; margin-left: 0; padding: 0; color: var(--muted);
+}
+.bench-tab-icon svg { display: block; width: 100%; height: 100%; }
 .key-tab-label { display: inline-block; white-space: nowrap; }
 .key-tab-editing { height: 44px; }
 .key-tabs .key-tab-editing input.key-tab-name-input {
