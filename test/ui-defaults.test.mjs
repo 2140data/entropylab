@@ -862,13 +862,16 @@ test("the beta notice sits at the top of the page as a banner", () => {
 
 test("the page closes on a footer in both markups", () => {
   // Not the removed beta fine print: a plain closing line that ships in the
-  // static template and the runtime template alike, and stays off paper.
+  // static template and the runtime template alike, and stays off paper. The
+  // build stamp (version, commit, LifeHash of the commit) rides the footer;
+  // the build tokens are stamped by scripts/build.mjs.
   for (const markup of [template, app]) {
-    // esbuild escapes the emoji when it minifies the runtime template, so the
-    // two markups carry the same characters in two spellings.
+    // esbuild escapes the emoji and the middots when it minifies the
+    // runtime template, so the two markups carry the same characters in two
+    // spellings.
     assert.match(
       markup,
-      /<footer class="page-footer muted no-print"><div>Team Ooga Booga<\/div><div class="page-footer-emoji">(?:🪨|\\u\{1FAA8\}) (?:🔥|\\u\{1F525\}) (?:🎲|\\u\{1F3B2\}) (?:🍌|\\u\{1F34C\})<\/div><div>Since 964013<\/div><\/footer>/,
+      /<footer class="page-footer muted no-print"><div>Team Ooga Booga<\/div><div class="page-footer-emoji">(?:🪨|\\u\{1FAA8\}) (?:🔥|\\u\{1F525\}) (?:🎲|\\u\{1F3B2\}) (?:🍌|\\u\{1F34C\})<\/div><div>Since 964013 (?:·|\\x[Bb]7|\\u00[Bb]7) <span class="page-footer-build">v\{\{VERSION\}\} (?:·|\\x[Bb]7|\\u00[Bb]7) commit <code>\{\{COMMIT_SHORT\}\}<\/code> <img class="page-footer-lifehash" id="page-footer-lifehash" data-commit="\{\{COMMIT\}\}" width="20" height="20" alt="LifeHash of the build commit" hidden><\/span><\/div><\/footer>/,
     );
     // It closes the wrap, so nothing of the page follows it.
     assert.ok(

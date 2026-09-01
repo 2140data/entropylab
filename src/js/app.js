@@ -1006,7 +1006,7 @@ ec.innerHTML = `
     <div class="tool-intro" id="psbted-tool-intro" hidden>
         <div class="kicker">Full-fidelity editor. Sign elsewhere.</div>
         <h2>Edit a PSBT, field by field.</h2>
-        <p class="muted psbt-intro">A BIP-174 editor in the spirit of bip174.org, backed by rust-bitcoin compiled to WebAssembly. Every key-value pair of the global, per-input and per-output maps is shown with a typed decode (BIP-174 and BIP-371 taproot fields) and stays editable as raw hex, and the unsigned transaction's version, locktime, input prevouts/sequences and output amounts/scripts get structured fields. Adding or removing a pair re-validates the file immediately; Re-serialize validates the pending field edits and produces the new PSBT. PSBT v0 only; unknown and proprietary pairs round-trip untouched. Editing never signs anything.</p>
+        <p class="muted psbt-intro">A BIP-174 editor in the spirit of bip174.org, backed by rust-bitcoin compiled to WebAssembly. Every key-value pair of the global, per-input and per-output maps is shown with a typed decode (BIP-174 and BIP-371 taproot fields) and stays editable as raw hex, and the unsigned transaction's version, locktime, input prevouts/sequences and output amounts/scripts get structured fields. Every edit rebuilds the file through rust-bitcoin as you type — the fields always show its decode of the current build — and the result follows live as base64, hex, a downloadable .psbt and a QR code (a single static code, or an animated ur:crypto-psbt sequence for larger files). A binary .psbt file as saved by Sparrow, Coldcard or another wallet uploads directly. PSBT v0 only; unknown and proprietary pairs round-trip untouched. Editing never signs anything.</p>
       </div>
       <section class="card no-print" id="psbted-card" role="tabpanel" hidden>
       <label class="field">PSBT v0 (base64 or hex)
@@ -1014,6 +1014,8 @@ ec.innerHTML = `
       </label>
       <div class="row psbt-actions psbted-actions">
         <button class="btn primary" id="psbted-load" type="button">Load PSBT</button>
+        <button class="btn secondary" id="psbted-upload" type="button">Upload .psbt file</button>
+        <input type="file" id="psbted-file" accept=".psbt,.txt,.hex" hidden>
         <button class="btn secondary" id="psbted-wipe" type="button">Clear editor</button>
         <label class="field psbted-network-field">Address network
           <select id="psbted-network"><option value="mainnet" selected>Bitcoin mainnet</option><option value="testnet">Testnet (practice)</option></select>
@@ -1035,7 +1037,7 @@ ec.innerHTML = `
       <p>BIP-352 Silent Payments: <a href="https://github.com/bitcoin/bips/blob/master/bip-0352.mediawiki" target="_blank" rel="noopener noreferrer">bips/bip-0352</a> — reusable <code>sp1q…</code> addresses and unique taproot outputs. Descriptors: <a href="https://github.com/bitcoin/bips/blob/master/bip-0392.mediawiki" target="_blank" rel="noopener noreferrer">BIP-392</a>.</p>
       <p>Inscription envelopes: <a href="https://docs.ordinals.com/inscriptions.html" target="_blank" rel="noopener noreferrer">docs.ordinals.com/inscriptions</a> — <code>OP_FALSE OP_IF "ord"</code> parser only. This tool does not create inscriptions or number sats.</p>
     </section>
-    <footer class="page-footer muted no-print"><div>Team Ooga Booga</div><div class="page-footer-emoji">🪨 🔥 🎲 🍌</div><div>Since 964013</div></footer>
+    <footer class="page-footer muted no-print"><div>Team Ooga Booga</div><div class="page-footer-emoji">🪨 🔥 🎲 🍌</div><div>Since 964013 · <span class="page-footer-build">v{{VERSION}} · commit <code>{{COMMIT_SHORT}}</code> <img class="page-footer-lifehash" id="page-footer-lifehash" data-commit="{{COMMIT}}" width="20" height="20" alt="LifeHash of the build commit" hidden></span></div></footer>
   </div>
 `;
 if (/^(www\.)?entropylab\.online$/i.test(location.hostname)) document.getElementById("online-warning")?.removeAttribute("hidden");
@@ -10900,6 +10902,29 @@ function hodlInitSecretFieldAutoClear() {
     if (event.persisted) clearSecretFields();
   });
 }
+// The footer stamps the build — version, commit, and a LifeHash of the
+// commit — so a downloaded page identifies its exact source revision. The
+// LifeHash renders from the stamped data-commit; a snapshot build stamped
+// "unknown" leaves the image hidden.
+function hodlInitFooterBuild() {
+  document.querySelectorAll(".page-footer-lifehash").forEach((image) => {
+    const commit = image.dataset.commit || "";
+    if (!/^[0-9a-f]{40}$/.test(commit)) return;
+    if (typeof hodlLifeHash === "undefined" || typeof hodlLifeHash.fromFingerprint !== "function") return;
+    hodlLifeHash
+      .fromFingerprint(commit)
+      .then((url) => {
+        image.src = url;
+        image.hidden = false;
+      })
+      .catch(() => {});
+  });
+}
+// Boot can run before the later classic script tags execute (the WASM-ready
+// promise may settle between parser-inserted scripts), so the stamp waits
+// for the full page load: the footer markup and the LifeHash module are both
+// guaranteed by then. The page is self-contained, so load follows parse.
+addEventListener("load", hodlInitFooterBuild);
 function hodlBoot() {
   hodlInitWorkspace();
   hodlSeedInitialManagers();

@@ -119,6 +119,10 @@ button:not(:disabled):active * { color: inherit !important; }
    off the two text rows. */
 .page-footer { margin-top: var(--space-lede); padding: 24px 0; border-top: 1px solid var(--border); text-align: center; color: var(--faint); }
 .page-footer-emoji { font-size: 1.5em; line-height: 1; margin: 6px 0; }
+/* The build stamp: version, short commit, and the commit's LifeHash as a
+   small inline identicon next to the hash it visualizes. */
+.page-footer-build code { font-family: var(--mono); }
+.page-footer-lifehash { vertical-align: -0.25em; margin-left: 4px; border-radius: 3px; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; }
 .tab, .btn {
   min-height: 44px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border);
@@ -1024,30 +1028,52 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .psbted-map > h3 { margin: 0 0 4px; font-size: 15px; }
 .psbted-txhead { display: flex; flex-wrap: wrap; gap: 0 16px; margin-bottom: 4px; }
 .psbted-txhead label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.psbted-txhead input { width: 11em; }
 .psbted-pairs { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 13px; table-layout: fixed; }
 .psbted-pairs th, .psbted-pairs td { text-align: left; padding: 4px 8px 4px 0; vertical-align: top; overflow-wrap: anywhere; }
 .psbted-pairs th { font-weight: 600; color: var(--muted); }
-/* The input/output index is a small integer (a transaction can hold at most
-   ~150,000 of either), so keep that column header-sized and leave the room
-   to the txid / value / script columns. */
-.psbted-pairs .psbted-idx { width: 4.5em; }
+/* The tables are fixed-layout, so the header row sets the column widths and
+   every unspecified column shares what is left. Keep the utility columns
+   (row index, delete button) snug and size the numeric columns near their
+   real maxima — sequences are 10 digits, prevout indexes ~6, output values
+   stay under ~2.1e15 sats (16 digits) — so the room lands on the txid,
+   scriptPubKey, key and value columns that actually carry data. */
+.psbted-pairs .psbted-idx { width: 2.5em; }
+.psbted-pairs .psbted-col-del { width: 2.4em; }
+.psbted-txins .psbted-col-vout { width: 9ch; }
+.psbted-txins .psbted-col-seq { width: 15ch; }
+.psbted-txouts .psbted-col-val { width: 20ch; }
+.psbted-kv .psbted-col-field { width: 15em; }
 .psbted-pairs .psbted-name, .psbted-pairs .psbted-hex { font-family: var(--mono); font-size: 12px; }
-.psbted-pairs input, .psbted-add input, .psbted-add select { margin-top: 0; padding: 6px 8px; border-radius: 6px; font-size: 12px; }
-.psbted-pairs .psbted-num { min-width: 90px; }
-/* Size the tx-table number fields near their real maxima — output values
-   stay under ~2.1e15 sats (16 digits), sequences are 10 digits, prevout
-   indexes ~6 — so "sats" fits on the input's line and the wide columns go
-   to the txid and scriptPubKey fields. */
-.psbted-pairs input[data-txout-val] { width: 19ch; }
-.psbted-pairs input[data-txin-seq] { width: 13ch; }
-.psbted-pairs input[data-txin-vout] { width: 9ch; }
+/* Compact, data-table density: the fields fill their column and drop the
+   global control sizing (full width comes from the fixed cell, not the
+   field's own rule). */
+.psbted-pairs input, .psbted-add input, .psbted-add select { margin-top: 0; padding: 6px 8px; border-radius: 6px; font-size: 12px; min-height: 0; }
+.psbted-pairs .psbted-num { min-width: 0; }
 /* The decoded address under a scriptPubKey (and in a map section's "Pays"
    line) is one long unbroken bech32 string: wrap it anywhere so it can
    never overflow the cell or the card. */
 .psbted-addr { display: block; margin-top: 2px; overflow-wrap: anywhere; }
+/* The output-script builder sits inside the scriptPubKey cell under the hex
+   field: the text input takes the column's room, the mode select and the Set
+   button stay compact at its right. */
+.psbted-build { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px; margin-top: 4px; }
+.psbted-build input, .psbted-build select { margin-top: 0; padding: 6px 8px; border-radius: 6px; font-size: 12px; min-height: 0; }
+.psbted-build select { width: auto; }
+.psbted-build .btn { min-height: 0; padding: 6px 10px; }
+/* The edited PSBT as a QR follows every successful rebuild; while the
+   fields do not build, the last valid build (text and QR) stays, dimmed. */
+.psbted-qr-block { margin: 12px 0 4px; }
+.psbted-qr { padding: 12px; }
+.psbted-qr svg { width: 240px; height: 240px; }
+.psbted-stale { opacity: 0.55; }
 .psbted-map > p { overflow-wrap: anywhere; }
 .psbted-del { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--danger); cursor: pointer; padding: 4px 10px; font-size: 14px; line-height: 1; }
 .psbted-add { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 2fr) auto; gap: 8px; align-items: center; margin: 4px 0 14px; }
+/* The Add input / Add output controls are single natural-width buttons, not
+   the pair grid, so they read as actions rather than a form row. */
+.psbted-add-el { margin: 4px 0 14px; }
+.psbted-add-el .btn { min-height: 0; padding: 6px 12px; }
 @media (max-width: 720px) {
   .psbted-add { grid-template-columns: minmax(0, 1fr); }
 }
