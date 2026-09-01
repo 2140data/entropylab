@@ -9085,6 +9085,27 @@ function hodlSelectLab() {
   if (lab === hodlActiveKey) return;
   hodlSelectKey(lab);
 }
+function hodlFillLabFromKey(source) {
+  let labIndex = hodlKeys.findIndex((state) => state.isLab);
+  let existing = labIndex >= 0 ? hodlKeys[labIndex] : hodlNewLabState();
+  let lab = hodlCloneDerivedKey(source, existing);
+  Object.assign(lab, { isLab: true, name: "Key Lab", result: null, error: "", reveal: false, createdScript: "", createdPath: "" });
+  if (labIndex < 0) {
+    hodlKeys.unshift(lab);
+    labIndex = 0;
+    if (hodlActiveKey >= 0) hodlActiveKey += 1;
+  } else hodlKeys[labIndex] = lab;
+  return labIndex;
+}
+function hodlEditKeyInputs() {
+  let source = hodlKeys[hodlActiveKey];
+  if (!source || source.isLab) {
+    hodlSelectLab();
+    return;
+  }
+  hodlCaptureKey();
+  hodlSelectKey(hodlFillLabFromKey(hodlKeys[hodlActiveKey]));
+}
 function hodlKeyHasResult(state = hodlKeys[hodlActiveKey]) {
   return Boolean(state && !state.isLab && state.result);
 }
@@ -9135,7 +9156,7 @@ function hodlPaintKeySummary() {
     image.removeAttribute("src");
     if (fingerprint) hodlFillKeyTabLifehash(image, fingerprint);
   }
-  if (edit) edit.onclick = hodlSelectLab;
+  if (edit) edit.onclick = hodlEditKeyInputs;
 }
 function hodlSyncKeyResultView() {
   let card = document.getElementById("calc-card"), lab = document.getElementById("key-lab"), summary = document.getElementById("key-summary"), result = hodlKeyHasResult();
@@ -9420,23 +9441,6 @@ function hodlKeyTabKeydown(event, index) {
   hodlElement("#key-tabs").children[next]?.focus();
 }
 var hodlKeySilhouette = "M512 176c0 97.2-78.8 176-176 176-11.2 0-22.2-1.1-32.8-3.1l-24 27c-4.4 4.9-10.8 8.1-17.9 8.1H224v40c0 13.3-10.7 24-24 24h-40v40c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24v-78.1c0-6.4 2.5-12.5 7-17l161.8-161.8c-5.7-17.4-8.8-35.9-8.8-55.2C160 78.8 238.8 0 336 0s176 78.8 176 176zM374 112a54 54 0 1 0 0 108 54 54 0 1 0 0-108z";
-function hodlCreateKeyIcon(color) {
-  let ns = "http://www.w3.org/2000/svg", span = document.createElement("span"), svg = document.createElementNS(ns, "svg"), path = document.createElementNS(ns, "path");
-  span.className = "key-tab-icon";
-  span.style.color = color;
-  span.setAttribute("aria-hidden", "true");
-  svg.setAttribute("viewBox", "0 0 512 512");
-  svg.setAttribute("fill", "currentColor");
-  svg.setAttribute("focusable", "false");
-  svg.setAttribute("aria-hidden", "true");
-  path.setAttribute("data-part", "key-silhouette");
-  path.setAttribute("fill-rule", "evenodd");
-  path.setAttribute("clip-rule", "evenodd");
-  path.setAttribute("d", hodlKeySilhouette);
-  svg.appendChild(path);
-  span.appendChild(svg);
-  return span;
-}
 function hodlCreateMsigIcon() {
   let ns = "http://www.w3.org/2000/svg", darkest = "#4b4f55", middle = "#888d94", span = document.createElement("span"), svg = document.createElementNS(ns, "svg");
   span.className = "multisig-tab-icon";
@@ -9486,7 +9490,7 @@ function hodlCreateLabIcon() {
   return span;
 }
 function hodlCreateKeyTab(index) {
-  let state = hodlKeys[index], active = index === hodlActiveKey, button = document.createElement("button"), fingerprint = state.result?.masterFingerprint || "", name = state.isLab ? "Key Lab" : fingerprint || state.name || "Key " + state.number, label = document.createElement("span");
+  let state = hodlKeys[index], active = index === hodlActiveKey, button = document.createElement("button"), fingerprint = state.result?.masterFingerprint || "", name = state.isLab ? "Key Lab" : state.name || fingerprint || "Key " + state.number, label = document.createElement("span");
   button.type = "button";
   button.id = state.isLab ? "key-tab-lab" : "key-tab-" + (index + 1);
   button.className = "tab key-tab" + (state.isLab ? " is-lab" : "") + (active ? " active" : "");
@@ -9503,7 +9507,7 @@ function hodlCreateKeyTab(index) {
     image.hidden = true;
     hodlFillKeyTabLifehash(image, fingerprint);
     button.append(image, label);
-  } else button.append(hodlCreateKeyIcon(state.color), label);
+  } else button.append(label);
   button.dataset.keyNumber = String(state.number);
   button.setAttribute("role", "tab");
   button.setAttribute("aria-controls", "calc-card");
@@ -9577,7 +9581,9 @@ function hodlBeginKeyRename(index) {
     }
   };
   input.onblur = () => finish(true, false);
-  editor.append(hodlCreateKeyIcon(state.color), input);
+  let lifehash = tab.querySelector(".key-tab-lifehash");
+  if (lifehash) editor.append(lifehash.cloneNode(true), input);
+  else editor.append(input);
   tab.replaceWith(editor);
   hodlSizeKeyTabEditor(input);
   input.focus();
@@ -9702,7 +9708,7 @@ function hodlPaintMsigSummary() {
   }
   if (script) script.textContent = state?.createdScript || hodlMsigScriptLabel(state?.result?.script);
   if (network) network.textContent = state?.createdNetwork || state?.result?.network || "";
-  if (edit) edit.onclick = hodlSelectMsigLab;
+  if (edit) edit.onclick = hodlEditMsigInputs;
 }
 function hodlSyncMsigResultView() {
   let card = document.getElementById("msig-card"), lab = document.getElementById("msig-lab"), summary = document.getElementById("msig-summary"), result = hodlMsigHasResult();
@@ -9773,6 +9779,27 @@ function hodlSelectMsigLab() {
   }
   if (lab === hodlActiveMsig) return;
   hodlSelectMsig(lab);
+}
+function hodlFillMsigLabFromWallet(source) {
+  let labIndex = hodlMsigs.findIndex((state) => state.isLab);
+  let existing = labIndex >= 0 ? hodlMsigs[labIndex] : hodlNewMsigLabState();
+  let lab = hodlCloneDerivedMsig(source, existing);
+  Object.assign(lab, { isLab: true, name: "Multisig Lab", result: null, error: "", createdPolicy: "", createdScript: "", createdNetwork: "" });
+  if (labIndex < 0) {
+    hodlMsigs.unshift(lab);
+    labIndex = 0;
+    if (hodlActiveMsig >= 0) hodlActiveMsig += 1;
+  } else hodlMsigs[labIndex] = lab;
+  return labIndex;
+}
+function hodlEditMsigInputs() {
+  let source = hodlMsigs[hodlActiveMsig];
+  if (!source || source.isLab) {
+    hodlSelectMsigLab();
+    return;
+  }
+  hodlCaptureMsig();
+  hodlSelectMsig(hodlFillMsigLabFromWallet(hodlMsigs[hodlActiveMsig]));
 }
 function hodlMsigStateNeedsClear(state) {
   if (!state) return !1;
