@@ -821,6 +821,21 @@ test("multisig heading spans beneath the delete action on narrow screens", () =>
   );
 });
 
+test("the tools' closing button groups stack full width on narrow screens", () => {
+  // Wrapped, each control is only as wide as its label and the group reads as
+  // ragged lines. Below 520px every child takes the whole row instead.
+  assert.match(
+    css,
+    /@media \(max-width: 520px\)[\s\S]*\.current-item-actions,\s*\.bip85-actions,\s*\.psbt-actions \{ align-items: stretch; \}[\s\S]*\.current-item-actions > \*,\s*\.bip85-actions > \*,\s*\.psbt-actions > \* \{ width: 100%; justify-content: center; \}/,
+  );
+  // .psbted-actions pins the editor's row to flex-end, so the stacking rule has
+  // to follow it to win on order.
+  assert.ok(
+    css.indexOf(".psbt-actions > *") > css.indexOf(".psbted-actions { align-items: flex-end; }"),
+    "the narrow-screen stack must follow .psbted-actions so its alignment wins",
+  );
+});
+
 test("private alternate account exports are visible without an accordion", () => {
   assert.match(appWhitespace, /if\(includePrivate\)return`<div class="wallet-advanced">\$\{privateExport\}<\/div>`/);
   assert.doesNotMatch(app, /Advanced private export/);
