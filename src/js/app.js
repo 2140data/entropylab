@@ -9488,7 +9488,7 @@ function hodlNewKeyState(name, keyId, keyNumber) {
   return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", globalSync: false, globalSyncSource: "", globalSyncBitCount: 0, seedAutocomplete: true, passphraseBip39Words: false, brainWalletOutput: "scalar", passphraseAutocomplete: true, brainWalletTrim: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", derivationPath: "m/84'/0'/0'/0/0", derivationAccountPath: "m/84'/0'/0'", purpose: "84'", purposeHarden: true, coinType: "0'", coinTypeHarden: true, network: "mainnet", account: "0'", accountHarden: true, branchStart: "0", branchHarden: false, branchRange: "1", addressStart: "0", addressHarden: false, addressRange: "1", dice: "", bitboxDice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", brainLab: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
 }
 function hodlNewLabState() {
-  let state = hodlNewKeyState("Lab", 0, 0);
+  let state = hodlNewKeyState("Key Lab", 0, 0);
   state.isLab = true;
   return state;
 }
@@ -9958,24 +9958,14 @@ function hodlCreateMsigIcon() {
   return span;
 }
 function hodlCreateLabIcon() {
-  let ns = "http://www.w3.org/2000/svg", span = document.createElement("span"), svg = document.createElementNS(ns, "svg"), path = document.createElementNS(ns, "path");
+  let span = document.createElement("span"), source = document.querySelector(".site-logo");
   span.className = "key-tab-icon key-tab-lab-icon";
   span.setAttribute("aria-hidden", "true");
-  svg.setAttribute("viewBox", "0 0 24 24");
-  svg.setAttribute("fill", "none");
-  svg.setAttribute("stroke", "currentColor");
-  svg.setAttribute("stroke-width", "1.8");
-  svg.setAttribute("stroke-linecap", "round");
-  svg.setAttribute("stroke-linejoin", "round");
-  svg.setAttribute("focusable", "false");
-  svg.setAttribute("aria-hidden", "true");
-  path.setAttribute("d", "M9 3h6M10 3v3.2L6.4 14.5A4.6 4.6 0 0 0 10.5 21h3a4.6 4.6 0 0 0 4.1-6.5L14 6.2V3M8.2 14.2c1.4 1.6 2.6 2.3 3.8 2.3");
-  svg.appendChild(path);
-  span.appendChild(svg);
+  if (source) source.querySelectorAll("svg").forEach((svg) => span.appendChild(svg.cloneNode(true)));
   return span;
 }
 function hodlCreateKeyTab(index) {
-  let state = hodlKeys[index], active = index === hodlActiveKey, button = document.createElement("button"), fingerprint = state.result?.masterFingerprint || "", name = state.isLab ? "Lab" : fingerprint || state.name || "Key " + state.number, label = document.createElement("span");
+  let state = hodlKeys[index], active = index === hodlActiveKey, button = document.createElement("button"), fingerprint = state.result?.masterFingerprint || "", name = state.isLab ? "Key Lab" : fingerprint || state.name || "Key " + state.number, label = document.createElement("span");
   button.type = "button";
   button.id = state.isLab ? "key-tab-lab" : "key-tab-" + (index + 1);
   button.className = "tab key-tab" + (state.isLab ? " is-lab" : "") + (active ? " active" : "");
@@ -9998,7 +9988,7 @@ function hodlCreateKeyTab(index) {
   button.setAttribute("aria-controls", "calc-card");
   button.setAttribute("aria-selected", String(active));
   if (state.isLab) {
-    button.setAttribute("aria-label", "Lab" + (active ? ", selected" : ". Activate to derive a key."));
+    button.setAttribute("aria-label", "Key Lab" + (active ? ", selected" : ". Activate to derive a key."));
     button.title = "Derive a key";
     button.onclick = () => hodlSelectKey(index);
   } else {
@@ -10159,7 +10149,7 @@ function hodlNewMsigState(name, msigId, msigNumber) {
   }
 }
 function hodlNewMsigLabState() {
-  let state = hodlNewMsigState("Lab", 0, 0);
+  let state = hodlNewMsigState("Multisig Lab", 0, 0);
   state.isLab = true;
   return state;
 }
@@ -10375,19 +10365,19 @@ function hodlMsigTabKeydown(event, index) {
   W("#msig-tabs").children[next]?.focus();
 }
 function hodlCreateMsigTab(index) {
-  let state = hodlMsigs[index], active = index === hodlActiveMsig, button = document.createElement("button"), name = state.isLab ? "Lab" : state.createdPolicy || state.name || "Multisig " + state.number, label = document.createElement("span");
+  let state = hodlMsigs[index], active = index === hodlActiveMsig, button = document.createElement("button"), name = state.isLab ? "Multisig Lab" : state.createdPolicy || state.name || "Multisig " + state.number, label = document.createElement("span");
   button.type = "button";
   button.id = state.isLab ? "msig-tab-lab" : "msig-tab-" + (index + 1);
   button.className = "tab key-tab msig-tab" + (state.isLab ? " is-lab" : "") + (active ? " active" : "");
   button.dataset.msigNumber = String(state.number);
   label.className = "key-tab-label";
   label.textContent = name;
-  button.append(hodlCreateMsigIcon(), label);
+  button.append(state.isLab ? hodlCreateLabIcon() : hodlCreateMsigIcon(), label);
   button.setAttribute("role", "tab");
   button.setAttribute("aria-controls", "msig-card");
   button.setAttribute("aria-selected", String(active));
   if (state.isLab) {
-    button.setAttribute("aria-label", "Lab" + (active ? ", selected" : ". Activate to derive a multisig."));
+    button.setAttribute("aria-label", "Multisig Lab" + (active ? ", selected" : ". Activate to derive a multisig."));
     button.title = "Derive a multisig";
     button.onclick = () => hodlSelectMsig(index);
   } else {
@@ -10620,7 +10610,7 @@ function hodlSeedInitialManagers() {
 }
 // Each tool carries a full name and a short one. Narrow screens show the
 // short form so more tools stay on screen instead of off the right edge.
-var hodlWorkspaceTabs = [["calc", "Key Derivation", "Keys"], ["bip85", "BIP-85", "BIP85"], ["msig", "Multi Signature", "MultiSig"], ["sp", "Silent Payments", "SP"], ["psbt", "PSBT / Nonce", "PSBT"], ["psbted", "PSBT Editor", "Editor"]];
+var hodlWorkspaceTabs = [["calc", "Keys", "Keys"], ["bip85", "BIP-85", "BIP85"], ["msig", "Multi Signature", "MultiSig"], ["sp", "Silent Payments", "SP"], ["psbt", "PSBT / Nonce", "PSBT"], ["psbted", "PSBT Editor", "Editor"]];
 // The switcher keeps every tool on screen as a folder-tab strip that scrolls
 // when it must, in the shape the Keys section uses for its own tabs.
 function hodlWorkspaceTabKeydown(event, index) {
