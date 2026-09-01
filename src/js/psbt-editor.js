@@ -314,8 +314,8 @@ export const initPsbtEditor = () => {
     const options = PAIR_TYPES[kind]
       .map(([type, name, hint]) => `<option value="${type}" title="keydata: ${escapeHtml(hint)}">${name}</option>`)
       .join("");
-    return `<table class="psbted-pairs">
-      <thead><tr><th>Field</th><th>Key (hex)</th><th>Value (hex)</th><th>Decoded</th><th></th></tr></thead>
+    return `<table class="psbted-pairs psbted-kv">
+      <thead><tr><th class="psbted-col-field">Field</th><th>Key (hex)</th><th>Value (hex)</th><th>Decoded</th><th class="psbted-col-del"></th></tr></thead>
       <tbody>${rows || `<tr><td colspan="5" class="muted">No pairs in this map.</td></tr>`}</tbody>
     </table>
     <div class="psbted-add">
@@ -365,7 +365,7 @@ export const initPsbtEditor = () => {
         const opret = addr ? null : opReturnSummary(output.scriptPubKey, output.value);
         return `<tr>
           <td>${index}</td>
-          <td><input class="psbted-num" data-txout-val="${index}" value="${escapeHtml(String(output.value))}" inputmode="numeric" aria-label="Output ${index} value in sats"> sats</td>
+          <td><input class="psbted-num" data-txout-val="${index}" value="${escapeHtml(String(output.value))}" inputmode="numeric" aria-label="Output ${index} value in sats"></td>
           <td><input class="psbted-txid" data-txout-script="${index}" value="${escapeHtml(output.scriptPubKey)}" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Output ${index} scriptPubKey (hex)">
             <span class="${opret?.burn ? "psbted-note-warn" : "muted"} psbted-addr">${escapeHtml(addr || opret?.text || output.asm || "")}</span>
             <span class="psbted-build"><input data-build-script="${index}" placeholder="address · OP_… ASM · 0x raw hex · text" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Build output ${index} scriptPubKey from an address, ASM, or OP_RETURN text"><select data-build-mode="${index}" aria-label="Output ${index} script builder mode"><option value="auto" selected>Auto-detect</option><option value="opreturn-text">OP_RETURN text</option><option value="opreturn-hex">OP_RETURN hex</option><option value="asm">Script ASM</option></select><button type="button" class="btn secondary" data-build-apply="${index}">Set script</button></span></td>
@@ -391,10 +391,10 @@ export const initPsbtEditor = () => {
           <label>Version <input class="psbted-num" id="psbted-tx-version" value="${escapeHtml(String(tx.version))}" inputmode="numeric"></label>
           <label>Locktime <input class="psbted-num" id="psbted-tx-locktime" value="${escapeHtml(String(tx.locktime))}" inputmode="numeric"></label>
         </div>
-        <table class="psbted-pairs"><thead><tr><th class="psbted-idx">Input</th><th>Previous txid</th><th>vout</th><th>sequence</th><th></th></tr></thead><tbody>${inputRows}</tbody></table>
-        <div class="psbted-add"><button type="button" class="btn secondary" data-tx-add="input">Add input</button></div>
-        <table class="psbted-pairs"><thead><tr><th class="psbted-idx">Output</th><th>Value</th><th>scriptPubKey</th><th></th></tr></thead><tbody>${outputRows}</tbody></table>
-        <div class="psbted-add"><button type="button" class="btn secondary" data-tx-add="output">Add output</button></div>
+        <table class="psbted-pairs psbted-txins"><thead><tr><th class="psbted-idx">#</th><th>Previous txid</th><th class="psbted-col-vout">vout</th><th class="psbted-col-seq">sequence</th><th class="psbted-col-del"></th></tr></thead><tbody>${inputRows}</tbody></table>
+        <div class="psbted-add-el"><button type="button" class="btn secondary" data-tx-add="input">Add input</button></div>
+        <table class="psbted-pairs psbted-txouts"><thead><tr><th class="psbted-idx">#</th><th class="psbted-col-val">Value (sats)</th><th>scriptPubKey</th><th class="psbted-col-del"></th></tr></thead><tbody>${outputRows}</tbody></table>
+        <div class="psbted-add-el"><button type="button" class="btn secondary" data-tx-add="output">Add output</button></div>
       </section>`;
     const isSelected = (kind, index) => selected && selected.kind === kind && (kind === "tx" || selected.index === index);
     const inputSections = doc.inputs.map((_, index) => (isSelected("input", index) ? "" : mapSection("input", index))).join("");
