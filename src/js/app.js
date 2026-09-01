@@ -1037,7 +1037,7 @@ ec.innerHTML = `
       <p>BIP-352 Silent Payments: <a href="https://github.com/bitcoin/bips/blob/master/bip-0352.mediawiki" target="_blank" rel="noopener noreferrer">bips/bip-0352</a> — reusable <code>sp1q…</code> addresses and unique taproot outputs. Descriptors: <a href="https://github.com/bitcoin/bips/blob/master/bip-0392.mediawiki" target="_blank" rel="noopener noreferrer">BIP-392</a>.</p>
       <p>Inscription envelopes: <a href="https://docs.ordinals.com/inscriptions.html" target="_blank" rel="noopener noreferrer">docs.ordinals.com/inscriptions</a> — <code>OP_FALSE OP_IF "ord"</code> parser only. This tool does not create inscriptions or number sats.</p>
     </section>
-    <footer class="page-footer muted no-print"><div>Team Ooga Booga</div><div class="page-footer-emoji">🪨 🔥 🎲 🍌</div><div>Since 964013</div></footer>
+    <footer class="page-footer muted no-print"><div>Team Ooga Booga</div><div class="page-footer-emoji">🪨 🔥 🎲 🍌</div><div>Since 964013 · <span class="page-footer-build">v{{VERSION}} · commit <code>{{COMMIT_SHORT}}</code> <img class="page-footer-lifehash" id="page-footer-lifehash" data-commit="{{COMMIT}}" width="20" height="20" alt="LifeHash of the build commit" hidden></span></div></footer>
   </div>
 `;
 if (/^(www\.)?entropylab\.online$/i.test(location.hostname)) document.getElementById("online-warning")?.removeAttribute("hidden");
@@ -10902,6 +10902,29 @@ function hodlInitSecretFieldAutoClear() {
     if (event.persisted) clearSecretFields();
   });
 }
+// The footer stamps the build — version, commit, and a LifeHash of the
+// commit — so a downloaded page identifies its exact source revision. The
+// LifeHash renders from the stamped data-commit; a snapshot build stamped
+// "unknown" leaves the image hidden.
+function hodlInitFooterBuild() {
+  document.querySelectorAll(".page-footer-lifehash").forEach((image) => {
+    const commit = image.dataset.commit || "";
+    if (!/^[0-9a-f]{40}$/.test(commit)) return;
+    if (typeof hodlLifeHash === "undefined" || typeof hodlLifeHash.fromFingerprint !== "function") return;
+    hodlLifeHash
+      .fromFingerprint(commit)
+      .then((url) => {
+        image.src = url;
+        image.hidden = false;
+      })
+      .catch(() => {});
+  });
+}
+// Boot can run before the later classic script tags execute (the WASM-ready
+// promise may settle between parser-inserted scripts), so the stamp waits
+// for the full page load: the footer markup and the LifeHash module are both
+// guaranteed by then. The page is self-contained, so load follows parse.
+addEventListener("load", hodlInitFooterBuild);
 function hodlBoot() {
   hodlInitWorkspace();
   hodlSeedInitialManagers();

@@ -1879,6 +1879,15 @@
     // CSP (connect-src 'none') deliberately forbids an in-page fetch.
   });
 
+  await test("the footer stamps version, commit, and a LifeHash of the commit", async () => {
+    const footer = await until(() => document.querySelector(".page-footer"), "page footer");
+    assert(/v\d+\.\d+\.\d+/.test(footer.textContent), "version missing from the footer");
+    assert(/commit [0-9a-f]{7}/.test(footer.textContent), "short commit missing from the footer");
+    const image = footer.querySelector(".page-footer-lifehash");
+    assert(/^[0-9a-f]{40}$/.test(image.dataset.commit), "full commit missing from the footer image");
+    await until(() => !image.hidden && image.src.startsWith("data:image/png"), "footer LifeHash");
+  });
+
   await test("hosted application makes only expected same-origin connections", () => {
     const resources = performance.getEntriesByType("resource").map((entry) => entry.name);
     const observed = [...state.network.map((entry) => entry.url), ...resources];

@@ -119,6 +119,10 @@ button:not(:disabled):active * { color: inherit !important; }
    off the two text rows. */
 .page-footer { margin-top: var(--space-lede); padding: 24px 0; border-top: 1px solid var(--border); text-align: center; color: var(--faint); }
 .page-footer-emoji { font-size: 1.5em; line-height: 1; margin: 6px 0; }
+/* The build stamp: version, short commit, and the commit's LifeHash as a
+   small inline identicon next to the hash it visualizes. */
+.page-footer-build code { font-family: var(--mono); }
+.page-footer-lifehash { vertical-align: -0.25em; margin-left: 4px; border-radius: 3px; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; }
 .tab, .btn {
   min-height: 44px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border);
