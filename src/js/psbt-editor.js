@@ -286,6 +286,9 @@ export const initPsbtEditor = () => {
       ? `<span class="psbted-note-warn">rust-bitcoin reports: ${escapeHtml(doc.rustBitcoinError)}</span>`
       : `<span class="psbted-note-ok">parses under rust-bitcoin</span>`;
 
+    // The last remaining input carries no delete control: a zero-input
+    // unsigned transaction cannot round-trip through BIP-174 serialization,
+    // so rust-bitcoin would reject the rebuild.
     const inputRows = tx.inputs
       .map(
         (input, index) => `<tr>
@@ -293,6 +296,7 @@ export const initPsbtEditor = () => {
           <td><input class="psbted-txid" data-txin="${index}" value="${escapeHtml(input.txid)}" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Input ${index} previous txid (hex)"></td>
           <td><input class="psbted-num" data-txin-vout="${index}" value="${escapeHtml(String(input.vout))}" inputmode="numeric" aria-label="Input ${index} prevout index"></td>
           <td><input class="psbted-num" data-txin-seq="${index}" value="${escapeHtml(String(input.sequence))}" inputmode="numeric" aria-label="Input ${index} sequence"></td>
+          <td>${tx.inputs.length > 1 ? `<button type="button" class="psbted-del" data-txin-del="${index}" aria-label="Delete input ${index}">×</button>` : ""}</td>
         </tr>`
       )
       .join("");
@@ -304,6 +308,7 @@ export const initPsbtEditor = () => {
           <td><input class="psbted-num" data-txout-val="${index}" value="${escapeHtml(String(output.value))}" inputmode="numeric" aria-label="Output ${index} value in sats"> sats</td>
           <td><input class="psbted-txid" data-txout-script="${index}" value="${escapeHtml(output.scriptPubKey)}" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Output ${index} scriptPubKey (hex)">
             <span class="muted psbted-addr">${escapeHtml(addr || output.asm || "")}</span></td>
+          <td><button type="button" class="psbted-del" data-txout-del="${index}" aria-label="Delete output ${index}">×</button></td>
         </tr>`;
       })
       .join("");
@@ -325,8 +330,10 @@ export const initPsbtEditor = () => {
           <label>Version <input class="psbted-num" id="psbted-tx-version" value="${escapeHtml(String(tx.version))}" inputmode="numeric"></label>
           <label>Locktime <input class="psbted-num" id="psbted-tx-locktime" value="${escapeHtml(String(tx.locktime))}" inputmode="numeric"></label>
         </div>
-        <table class="psbted-pairs"><thead><tr><th class="psbted-idx">Input</th><th>Previous txid</th><th>vout</th><th>sequence</th></tr></thead><tbody>${inputRows}</tbody></table>
-        <table class="psbted-pairs"><thead><tr><th class="psbted-idx">Output</th><th>Value</th><th>scriptPubKey</th></tr></thead><tbody>${outputRows}</tbody></table>
+        <table class="psbted-pairs"><thead><tr><th class="psbted-idx">Input</th><th>Previous txid</th><th>vout</th><th>sequence</th><th></th></tr></thead><tbody>${inputRows}</tbody></table>
+        <div class="psbted-add"><button type="button" class="btn secondary" data-tx-add="input">Add input</button></div>
+        <table class="psbted-pairs"><thead><tr><th class="psbted-idx">Output</th><th>Value</th><th>scriptPubKey</th><th></th></tr></thead><tbody>${outputRows}</tbody></table>
+        <div class="psbted-add"><button type="button" class="btn secondary" data-tx-add="output">Add output</button></div>
       </section>`;
     const isSelected = (kind, index) => selected && selected.kind === kind && (kind === "tx" || selected.index === index);
     const inputSections = doc.inputs.map((_, index) => (isSelected("input", index) ? "" : mapSection("input", index))).join("");
@@ -518,6 +525,48 @@ export const initPsbtEditor = () => {
     );
     out.querySelectorAll("[data-txout-script]").forEach((input) =>
       input.addEventListener("input", () => (doc.tx.outputs[Number(input.dataset.txoutScript)].scriptPubKey = input.value.trim()))
+    );
+
+    // Structural edits to the transaction itself: an added input/output gets
+    // its (empty) key-value map at the same index, so the document the WASM
+    // checks always has one map per tx element. Like pair add/remove, the
+    // change round-trips through rust-bitcoin immediately; on rejection the
+    // working document is kept. The detail panel closes because box indices
+    // may shift.
+    out.querySelectorAll("[data-tx-add]").forEach((button) =>
+      button.addEventListener("click", () => {
+        setError("");
+        selected = null;
+        mutate((draft) => {
+          if (button.dataset.txAdd === "input") {
+            draft.tx.inputs.push({ txid: "0".repeat(64), vout: 0, scriptSig: "", sequence: 4294967295 });
+            draft.inputs.push([]);
+          } else {
+            draft.tx.outputs.push({ value: 0, scriptPubKey: "" });
+            draft.outputs.push([]);
+          }
+        });
+      })
+    );
+    out.querySelectorAll("[data-txin-del]").forEach((button) =>
+      button.addEventListener("click", () => {
+        const index = Number(button.dataset.txinDel);
+        selected = null;
+        mutate((draft) => {
+          draft.tx.inputs.splice(index, 1);
+          draft.inputs.splice(index, 1);
+        });
+      })
+    );
+    out.querySelectorAll("[data-txout-del]").forEach((button) =>
+      button.addEventListener("click", () => {
+        const index = Number(button.dataset.txoutDel);
+        selected = null;
+        mutate((draft) => {
+          draft.tx.outputs.splice(index, 1);
+          draft.outputs.splice(index, 1);
+        });
+      })
     );
 
     // Flow-diagram boxes (and the middle transaction box) toggle the detail
