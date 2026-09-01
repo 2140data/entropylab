@@ -864,7 +864,7 @@ test("the page closes on a footer in both markups", () => {
     // two markups carry the same character in two spellings.
     assert.match(
       markup,
-      /<footer class="page-footer muted no-print">Ooga Booga <span class="page-footer-emoji">(?:🍌|\\u\{1F34C\})<\/span><\/footer>/,
+      /<footer class="page-footer muted no-print">Ooga Booga <span class="page-footer-emoji">(?:🍌|\\u\{1F34C\})<\/span> Since 964013<\/footer>/,
     );
     // It closes the wrap, so nothing of the page follows it.
     assert.ok(
