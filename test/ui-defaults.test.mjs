@@ -1096,7 +1096,9 @@ test("the seam into the tool is wider than the page's other major seams", () => 
   // The pitch-to-tool seam is the page's widest; the closing Sources card keeps
   // the ordinary major one. Both collapse with a neighbouring card's 16px, so
   // the larger value wins rather than the two adding up.
-  assert.match(css, /\.workspace \{ position: relative; margin: var\(--space-lede\) 0 4px; \}/);
+  // The strip is the panel's top edge now, so the tool seam is above the tabs
+  // and there is no gap below them to collapse with anything.
+  assert.match(css, /\.workspace \{ position: relative; margin: var\(--space-lede\) 0 0; \}/);
   assert.match(css, /\.sources \{ margin-top: var\(--space-major\); \}/);
   for (const markup of [template, app]) {
     assert.match(markup, /<section class="card muted sources">/);
@@ -1234,7 +1236,7 @@ test("virtual keypads never focus the field on touch so the mobile keyboard stay
 });
 
 test("workspace tabs place BIP-85 between Key Derivation and Multi Signature", () => {
-  assert.match(appSource, /\["calc", "Key Derivation"\], \["bip85", "BIP-85"\], \["msig", "Multi Signature"\], \["sp", "Silent Payments"\], \["psbt", "PSBT \/ Nonce"\], \["psbted", "PSBT Editor"\]/);
+  assert.match(appSource, /\["calc", "Key Derivation", "Keys"\], \["bip85", "BIP-85", "BIP85"\], \["msig", "Multi Signature", "MultiSig"\], \["sp", "Silent Payments", "SP"\], \["psbt", "PSBT \/ Nonce", "PSBT"\], \["psbted", "PSBT Editor", "Editor"\]/);
   for (const markup of [template, appSource]) {
     assert.match(markup, /id="bip85-card"/);
     assert.match(markup, /id="bip85-go"/);
@@ -1245,7 +1247,7 @@ test("workspace tabs place BIP-85 between Key Derivation and Multi Signature", (
 });
 
 test("PSBT Editor tab follows PSBT / Nonce and wires the rust-bitcoin editor", () => {
-  assert.match(appSource, /\["psbt", "PSBT \/ Nonce"\], \["psbted", "PSBT Editor"\]/);
+  assert.match(appSource, /\["psbt", "PSBT \/ Nonce", "PSBT"\], \["psbted", "PSBT Editor", "Editor"\]/);
   assert.match(appSource, /getElementById\("psbted-card"\)\.hidden = id !== "psbted"/);
   for (const markup of [template, appSource]) {
     assert.match(markup, /id="psbted-card"/);
@@ -1279,7 +1281,7 @@ test("BIP-85 entry point sits beside Derive Wallet and opens the BIP-85 tab", ()
 test("Silent Payments sits between Multi Signature and PSBT / Nonce", () => {
   const order = /Key Derivation[\s\S]*Multi Signature[\s\S]*Silent Payments[\s\S]*PSBT \/ Nonce/;
   assert.match(template, order);
-  assert.match(appSource, /\["calc", "Key Derivation"\], \["bip85", "BIP-85"\], \["msig", "Multi Signature"\], \["sp", "Silent Payments"\], \["psbt", "PSBT \/ Nonce"\], \["psbted", "PSBT Editor"\]/);
+  assert.match(appSource, /\["calc", "Key Derivation", "Keys"\], \["bip85", "BIP-85", "BIP85"\], \["msig", "Multi Signature", "MultiSig"\], \["sp", "Silent Payments", "SP"\], \["psbt", "PSBT \/ Nonce", "PSBT"\], \["psbted", "PSBT Editor", "Editor"\]/);
   for (const markup of [template, appSource]) {
     assert.match(markup, /id="sp-card"/);
     assert.match(markup, /id="sp-key"/);
@@ -1292,36 +1294,101 @@ test("Silent Payments sits between Multi Signature and PSBT / Nonce", () => {
   assert.match(css, /#sp-card\[hidden\]/);
 });
 
-test("the workspace switcher is a hamburger dropdown menu at every width", () => {
-  // The switcher is a nav holding a hamburger toggle and the menu it
-  // controls; it is no longer one of the segmented controls.
+test("the workspace switcher keeps every tool on screen as a tab strip", () => {
+  // The switcher is a nav holding one scrollable strip of tabs; it is neither
+  // a segmented control nor a dropdown. Every tool is visible without asking.
   assert.match(template, /<nav class="workspace no-print" id="workspace">/);
   assert.match(appSource, /<nav class="workspace no-print" id="workspace"><\/nav>/);
   assert.doesNotMatch(template, /segmented-control" id="workspace"/);
-  // The toggle is wired to the menu it opens, and names the current
-  // workspace in the collapsed bar.
-  assert.match(template, /<button type="button" class="workspace-menu-toggle" id="workspace-menu-toggle" aria-expanded="false" aria-controls="workspace-menu">/);
-  assert.match(template, /<span class="workspace-menu-current" id="workspace-menu-current">Key Derivation<\/span>/);
-  assert.match(template, /<div class="workspace-menu" id="workspace-menu" role="group" aria-label="Workspace">/);
-  // The menu hides until toggled. There is no wide-screen sidebar layout:
-  // the same dropdown serves every width and the page keeps its single
-  // 1000px measure.
-  assert.match(css, /\.workspace-menu \{[^}]*position: absolute;[^}]*display: none;/s);
-  assert.match(css, /\.workspace\.is-open \.workspace-menu \{ display: grid; \}/);
-  assert.doesNotMatch(css, /min-width: 1024px|max-width: 1260px|tool-shell|tool-content/);
-  assert.doesNotMatch(appSource, /matchMedia\("\(min-width: 1024px\)"\)/);
-  assert.doesNotMatch(`${template}${appSource}`, /tool-shell|tool-content/);
-  // Menu entries keep the app's orange active state.
-  assert.match(css, /\.workspace-menu \.tab:is\(\.active, \[aria-pressed="true"\]\) \{[^}]*background: var\(--selection-accent\);/s);
-  // Runtime: the toggle flips aria-expanded with the open class, picking an
-  // entry closes the dropdown, and the collapsed bar tracks the workspace.
-  assert.match(appSource, /function hodlSetWorkspaceMenuOpen\(open\) \{/);
-  assert.match(appSource, /W\("#workspace"\)\.classList\.toggle\("is-open", open\);/);
-  assert.match(appSource, /W\("#workspace-menu-toggle"\)\.setAttribute\("aria-expanded", String\(open\)\);/);
-  assert.match(appSource, /hodlShowWorkspace\(id\);\s*hodlSetWorkspaceMenuOpen\(false\);/);
-  assert.match(appSource, /\[\.\.\.W\("#workspace-menu"\)\.children\]\.forEach/);
-  assert.match(appSource, /W\("#workspace-menu-current"\)\.textContent = hodlWorkspaceTabs\.find/);
-  // Clicking outside or pressing Escape closes the dropdown.
-  assert.match(appSource, /!event\.target\.closest\("#workspace"\)\) hodlSetWorkspaceMenuOpen\(false\);/);
-  assert.match(appSource, /event\.key === "Escape" && box\.classList\.contains\("is-open"\)/);
+  assert.match(template, /<div class="workspace-tabs" id="workspace-tabs" role="tablist" aria-label="Tool">/);
+  // All five tools ship in the static markup, each with a full name and the
+  // short form narrow screens show instead.
+  for (const [full, short] of [["Key Derivation", "Keys"], ["BIP-85", "BIP85"], ["Multi Signature", "MultiSig"], ["Silent Payments", "SP"], ["PSBT / Nonce", "PSBT"], ["PSBT Editor", "Editor"]]) {
+    assert.ok(
+      template.includes(`<span class="workspace-tab-full">${full}</span><span class="workspace-tab-short">${short}</span>`),
+      `${full} is missing from the workspace strip`,
+    );
+    assert.match(appSource, new RegExp(`\\["[a-z0-9]+", "${full.replace("/", "\\/")}", "${short}"\\]`));
+  }
+  // One swaps for the other at the width the header drops its own labels.
+  assert.match(css, /\.workspace-tab-short \{ display: none; \}/);
+  assert.match(css, /@media \(max-width: 719px\) \{[\s\S]*?\.workspace-tab-full \{ display: none; \}\s*\.workspace-tab-short \{ display: inline; \}/);
+  assert.match(appSource, /button\.firstChild\.textContent = label;\s*button\.lastChild\.textContent = short;/);
+  // Hidden text leaves the accessibility tree, so the full name is stated on
+  // the tab itself and assistive tech hears it at every width.
+  assert.match(appSource, /button\.setAttribute\("aria-label", label\);/);
+  for (const full of ["Key Derivation", "BIP-85", "Multi Signature", "Silent Payments", "PSBT / Nonce"]) {
+    assert.ok(template.includes(`aria-label="${full}"><span class="workspace-tab-full">${full}</span>`), `${full} tab needs its accessible name`);
+  }
+  // A tablist owes arrow keys; the key and multisig strips already answer them.
+  assert.match(appSource, /function hodlWorkspaceTabKeydown\(event, index\) \{/);
+  assert.match(appSource, /if \(event\.key === "ArrowRight"\) next = \(index \+ 1\) % length;/);
+  assert.match(appSource, /else if \(event\.key === "ArrowLeft"\) next = \(index - 1 \+ length\) % length;/);
+  assert.match(appSource, /else if \(event\.key === "Home"\) next = 0;/);
+  assert.match(appSource, /else if \(event\.key === "End"\) next = length - 1;/);
+  assert.match(appSource, /button\.onkeydown = \(event\) => hodlWorkspaceTabKeydown\(event, index\);/);
+  // Nothing collapses the strip behind a control: no toggle, no dropdown, and
+  // no open/close state left over from one.
+  assert.doesNotMatch(`${template}${appSource}`, /workspace-menu|hodlSetWorkspaceMenuOpen/);
+  assert.doesNotMatch(css, /\.workspace-menu/);
+  // It wears the key tabs' folder shape: a raised active tab whose bottom
+  // border is painted out against the strip's rule.
+  // The strip overlaps the panel by a pixel rather than drawing its own rule:
+  // it is a scroll container, so it would clip any tab reaching past its edge
+  // and the chosen tab could never cut the line.
+  assert.match(css, /\.workspace-tabs \{[^}]*margin-bottom: -1px;/s);
+  assert.doesNotMatch(css, /\.workspace-tabs \{[^}]*border-bottom:/s);
+  assert.match(css, /\.workspace-tab \{[^}]*border-radius: 10px 10px 0 0;/s);
+  // The chosen tab takes the panel's ground and hides its own bottom edge in
+  // it, so the strip's rule is cut and the two become one shape.
+  assert.match(css, /\.workspace-tab\.active \{[^}]*background: var\(--bg\); color: var\(--fg\); border-color: var\(--border\); border-bottom-color: var\(--bg\);/s);
+  // The panel closes the folder: the tool content sits inside a border that
+  // carries on from the strip, open at the top where the strip's rule is.
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /<div class="workspace-panel" id="workspace-panel">/);
+  }
+  assert.match(css, /\.workspace-panel \{[^}]*border: 1px solid var\(--border\); border-radius: 0 0 20px 20px;/s);
+  // Every tool panel lives inside it, and the closing Sources card does not.
+  for (const markup of [template, appSource]) {
+    const panel = markup.slice(markup.indexOf('<div class="workspace-panel"'), markup.indexOf('class="card muted sources"'));
+    for (const id of ["calc-card", "bip85-card", "msig-card", "sp-card", "psbt-card"]) {
+      assert.ok(panel.includes(`id="${id}"`), `${id} must sit inside the workspace panel`);
+    }
+    assert.ok(panel.includes('<div id="out">'), "the results region must sit inside the workspace panel");
+  }
+  // Overflow scrolls instead of wrapping or hiding, so more tools still fit.
+  assert.match(css, /\.workspace-tabs \{[^}]*overflow-x: auto;/s);
+  assert.match(css, /\.workspace-tabs::-webkit-scrollbar \{ display: none;/);
+  // Runtime: entries drive the workspace, the strip drags like the key tabs,
+  // and the active tab is scrolled into view when it changes.
+  assert.match(appSource, /strip\.setAttribute\("role", "tablist"\);/);
+  assert.match(appSource, /button\.onclick = \(\) => hodlShowWorkspace\(id\);/);
+  assert.match(appSource, /hodlInitTabDrag\(strip\);/);
+  assert.match(appSource, /\[\.\.\.W\("#workspace-tabs"\)\.querySelectorAll\("\[data-workspace\]"\)\]\.forEach/);
+  assert.match(appSource, /hodlRevealTab\(W\("#workspace-tabs"\)/);
+  // A hint points at tools past the right edge. It tracks what is still out
+  // there rather than merely whether the strip scrolls, so it clears once the
+  // end is reached, and it is decorative: the tabs are the real route.
+  for (const markup of [template, appSource]) {
+    assert.match(markup, /More tools/);
+  }
+  // It is a real control, so it is a button with a label rather than a
+  // decorative span: an interactive element must not be hidden from the
+  // accessibility tree.
+  assert.match(template, /<button type="button" class="workspace-more" id="workspace-more" aria-controls="workspace-tabs" aria-label="Scroll the tool list to see more tools" hidden>/);
+  assert.match(appSource, /hint\.setAttribute\("aria-label", "Scroll the tool list to see more tools"\);/);
+  assert.doesNotMatch(appSource, /hint\.setAttribute\("aria-hidden"/);
+  // One click finishes the journey: the label promises the remaining tools and
+  // clears at the end, so stopping short would read as a broken control.
+  assert.match(appSource, /hint\.onclick = \(\) => strip\.scrollTo\(\{\s*left: strip\.scrollWidth,/s);
+  assert.match(appSource, /behavior: matchMedia\("\(prefers-reduced-motion: reduce\)"\)\.matches \? "auto" : "smooth",/);
+  // No edge fade: the strip is narrow enough on a phone that every pixel of a
+  // label has to stay readable.
+  assert.doesNotMatch(`${css}${appSource}`, /has-overflow/);
+  assert.match(appSource, /function hodlSyncWorkspaceOverflow\(\) \{/);
+  assert.match(appSource, /hint\.hidden = strip\.scrollWidth - strip\.clientWidth - strip\.scrollLeft <= 1;/);
+  assert.match(appSource, /strip\.addEventListener\("scroll", hodlSyncWorkspaceOverflow, \{ passive: true \}\);/);
+  assert.match(appSource, /new ResizeObserver\(hodlSyncWorkspaceOverflow\)\.observe\(strip\);/);
+  assert.match(css, /\.workspace-more \{[^}]*position: absolute; right: 0; bottom: 100%;/s);
+  assert.match(css, /\.workspace-more\[hidden\] \{ display: none; \}/);
 });
