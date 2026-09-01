@@ -695,7 +695,11 @@ test("the master fingerprint cards reserve a compact empty square for each LifeH
   assert.match(app, /hodlLifeHash\.fromFingerprint\(value\)/);
   assert.match(appSource, /imageNode\.hidden = true;\s*imageNode\.removeAttribute\("src"\);/);
   assert.match(appSource, /imageNode\.src = url;\s*imageNode\.hidden = false;/);
+  assert.match(css, /\.master-fingerprint-card \{[^}]*display: grid;/);
   assert.match(css, /\.master-fingerprint-lifehash-frame \{[^}]*width: 40px; height: 40px;/);
+  assert.doesNotMatch(css, /\.master-fingerprint-lifehash-frame \{[^}]*float: right;/);
+  assert.match(css, /\.master-fingerprint-value \{[^}]*overflow: hidden;/);
+  assert.match(css, /\.master-fingerprint-preview \{ display: grid; grid-template-columns: minmax\(0, 1fr\); gap: 8px; \}/);
   // Crisp pixels per the LifeHash presentation guidance.
   assert.match(css, /\.master-fingerprint-lifehash \{[^}]*image-rendering: pixelated;/);
 });
