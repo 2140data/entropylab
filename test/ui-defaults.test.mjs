@@ -781,9 +781,9 @@ test("key and multisig add controls stay pinned to the right of their tab strips
   assert.match(css, /\.add-item-control \{ position: relative; display: inline-flex; flex: 0 0 auto; \}/);
 });
 
-test("the delete control reads as unavailable while one item is all there is", () => {
-  // Both strips ship it disabled: a fresh page holds a single key and a single
-  // multisig, and app.js re-syncs the attribute as items come and go.
+test("the delete control reads as unavailable on the Lab tab", () => {
+  // Both strips ship it disabled: a fresh page holds only Lab, and app.js
+  // keeps minus unavailable while Lab is selected.
   for (const markup of [template, appSource]) {
     for (const id of ["delete-key", "delete-msig"]) {
       assert.match(
@@ -793,8 +793,8 @@ test("the delete control reads as unavailable while one item is all there is", (
       );
     }
   }
-  assert.match(appSource, /button\.disabled = hodlKeys\.length <= 1;/);
-  assert.match(appSource, /button\.disabled = hodlMsigs\.length <= 1;/);
+  assert.match(appSource, /function hodlSyncKeyDeleteButton\(\) \{[\s\S]*?button\.disabled = !state \|\| state\.isLab;/);
+  assert.match(appSource, /function hodlSyncMsigDeleteButton\(\) \{[\s\S]*?button\.disabled = !state \|\| state\.isLab;/);
   // Disabled, it drops off the muted tone the live plus keeps.
   assert.match(css, /\.add-key:disabled \{ color: var\(--border\); cursor: not-allowed; \}/);
   assert.match(css, /\.add-key \{[^}]*color: var\(--muted\);/s);
