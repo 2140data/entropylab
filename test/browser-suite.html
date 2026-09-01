@@ -784,6 +784,7 @@
     tabs.forEach((tab, i) => {
       assert(tab.getAttribute("aria-label") === names[i], `Tab ${i} should be named "${names[i]}"`);
     });
+    assert(!document.querySelector('#workspace [data-workspace="sp"] .silent-payments-icon'), "Silent Payments icon should not be in the workspace tab");
     const start = document.querySelector('#workspace [data-workspace="calc"]');
     try {
       start.focus();
@@ -805,6 +806,20 @@
       document.querySelector('#workspace [data-workspace="calc"]').click();
       await until(() => !document.getElementById("key-manager").hidden, "key workspace");
     }
+  });
+  await test("Silent Payments opens a connected SP Station with its monochrome icon", async () => {
+    document.querySelector('#workspace [data-workspace="sp"]').click();
+    await until(() => !document.getElementById("sp-card").hidden, "Silent Payments workspace");
+    const manager = document.getElementById("sp-manager"), bench = document.getElementById("sp-tab-bench");
+    assert(manager && !manager.hidden, "SP Station manager should be visible");
+    assert(bench && bench.textContent.includes("SP Station"), "SP Station tab is missing or mislabeled");
+    const icon = bench.querySelector(".silent-payments-icon");
+    assert(icon, "SP Station tab is missing its icon");
+    equal(icon.querySelectorAll('[data-part^="signal-"]').length, 2, "SP Station icon should have two signal arcs");
+    equal(icon.querySelectorAll('[data-part="coin-ridge"]').length, 5, "SP Station coin should have a restrained ridged rim");
+    assert(!icon.querySelector('ellipse[fill="none"]'), "SP Station coin face should not have a hole");
+    document.querySelector('#workspace [data-workspace="calc"]').click();
+    await until(() => !document.getElementById("key-manager").hidden, "key workspace");
   });
   await test("the tool strip advertises tools that are off its right edge", async () => {
     const strip = document.getElementById("workspace-tabs");
@@ -1547,6 +1562,58 @@
       () => document.querySelectorAll('#acct [data-address-table="hd-receive"] tbody tr').length === 5,
       "restored unhardened wallet result",
     );
+  });
+
+  await test("BIP-85 keeps its Station and opens each child in a LifeHash fingerprint tab", async () => {
+    const bip85Workspace = document.querySelector('#workspace [data-workspace="bip85"]');
+    const keyWorkspace = document.querySelector('#workspace [data-workspace="calc"]');
+    bip85Workspace.click();
+    await until(() => !document.getElementById("bip85-manager").hidden, "BIP-85 Station");
+    const tabs = document.getElementById("bip85-tabs");
+    equal(tabs.children.length, 1, "BIP-85 did not start with only its Station");
+    assert(tabs.children[0].textContent.includes("BIP-85 Station"), "BIP-85 Station tab is mislabeled");
+    assert(tabs.children[0].querySelector(".bip85-bench-icon"), "BIP-85 bench tab is missing its seedling icon");
+    equal(tabs.children[0].querySelectorAll(".bip85-bench-icon [data-part=seed]").length, 1, "BIP-85 bench icon should have one seed");
+
+    const parentKey = document.querySelector("#bip85-session-keys .session-key-option");
+    assert(parentKey, "BIP-85 Station did not offer the compatible Key Station key");
+    parentKey.click();
+    assert(!document.getElementById("bip85-error").textContent, "The active key could not be loaded for BIP-85");
+    document.getElementById("bip85-index").value = "0";
+    document.getElementById("bip85-go").click();
+    await until(() => tabs.children.length === 2 && document.querySelector("#bip85-out #bip85-private-heading"), "first BIP-85 child tab");
+    const firstTab = tabs.children[1];
+    assert(/^[0-9a-f]{8}$/.test(firstTab.querySelector(".key-tab-label")?.textContent || ""), "The first BIP-85 child tab did not show an XFP");
+    await until(() => !firstTab.querySelector(".key-tab-lifehash")?.hidden, "first BIP-85 child LifeHash");
+    assert(document.querySelector("#bip85-out .wallet-data-fields")?.textContent.includes("Master fingerprint"), "The BIP39 child did not identify its master fingerprint");
+    assert(!document.getElementById("delete-bip85").disabled, "The child delete control did not become available");
+
+    document.getElementById("add-bip85").click();
+    await until(() => !document.getElementById("bip85-bench").hidden, "BIP-85 bench after plus");
+    assert(!document.getElementById("bip85-out").textContent.trim(), "Returning to the bench left a child result visible");
+    input(document.getElementById("bip85-index"), "1");
+    document.getElementById("bip85-go").click();
+    await until(() => tabs.children.length === 3 && document.querySelector("#bip85-out #bip85-private-heading"), "second BIP-85 child tab");
+    assert(tabs.children[2].querySelector(".key-tab-lifehash"), "The second BIP-85 child tab is missing its LifeHash target");
+    document.getElementById("delete-bip85").click();
+    await until(() => tabs.children.length === 2, "selected BIP-85 child deletion");
+    assert(!document.getElementById("delete-bip85").disabled, "The remaining child was not selected after deletion");
+
+    keyWorkspace.click();
+    await until(() => !document.getElementById("key-manager").hidden, "key workspace after BIP-85 test");
+  });
+
+  await test("SP Station can bring in a compatible Key Station root", async () => {
+    document.querySelector('#workspace [data-workspace="sp"]').click();
+    await until(() => !document.getElementById("sp-manager").hidden, "SP Station");
+    const key = document.querySelector("#sp-session-keys .session-key-option");
+    assert(key, "SP Station did not offer the compatible Key Station key");
+    key.click();
+    assert(document.querySelector("#sp-session-keys .session-key-option.active"), "The selected SP Station key was not marked active");
+    assert(document.getElementById("sp-session").textContent.includes("Session key from"), "SP Station did not load the selected key");
+    assert(!document.getElementById("sp-error").textContent, "SP Station rejected a compatible Key Station key");
+    document.querySelector('#workspace [data-workspace="calc"]').click();
+    await until(() => !document.getElementById("key-manager").hidden, "key workspace after SP Station test");
   });
 
   await test("a custom arbitrary-depth account path drives the derived addresses and descriptors", async () => {
