@@ -622,10 +622,21 @@ ec.innerHTML = `
         <p class="muted calc-intro">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
       </div>
       <section class="key-manager no-print" id="key-manager">
-      <div class="key-tab-strip"><div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div><div class="add-item-control"><button class="add-key" id="add-key" type="button" aria-label="Add key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Add another key</span></div><div class="add-item-control"><button class="add-key remove-key" id="delete-key" type="button" aria-label="Delete current key" aria-describedby="delete-key-tooltip" disabled>−</button><span class="add-item-tooltip" id="delete-key-tooltip" role="tooltip">Delete this key</span></div></div>
+      <div class="key-tab-strip"><div class="key-tabs" id="key-tabs" role="tablist" aria-label="Keys"></div><div class="add-item-control"><button class="add-key" id="add-key" type="button" aria-label="Open the lab to derive another key" aria-describedby="add-key-tooltip">+</button><span class="add-item-tooltip" id="add-key-tooltip" role="tooltip">Open the lab to derive another key</span></div><div class="add-item-control"><button class="add-key remove-key" id="delete-key" type="button" aria-label="Delete current key" aria-describedby="delete-key-tooltip" disabled>−</button><span class="add-item-tooltip" id="delete-key-tooltip" role="tooltip">Delete this key</span></div></div>
     </section>
     <section class="card no-print" id="calc-card" role="tabpanel" hidden>
       <div class="row segmented-control" id="modes" role="group" aria-label="Key input mode"></div>
+      <div class="key-summary" id="key-summary" hidden>
+        <img class="key-summary-lifehash" id="key-summary-lifehash" width="48" height="48" alt="" hidden>
+        <div class="key-summary-text">
+          <code class="key-summary-fingerprint" id="key-summary-fingerprint"></code>
+          <p class="key-summary-meta" id="key-summary-method"></p>
+          <p class="key-summary-meta" id="key-summary-script"></p>
+          <p class="key-summary-meta key-summary-path" id="key-summary-path"></p>
+        </div>
+        <button class="btn secondary" id="key-edit-inputs" type="button">Edit input</button>
+      </div>
+      <div class="key-lab" id="key-lab">
       <div class="global-sync-host" id="global-sync-host"></div>
       <section class="seed-length-control" id="seed-length" aria-labelledby="seed-length-label">
         <p class="label" id="seed-length-label">Seed phrase length</p>
@@ -720,6 +731,8 @@ ec.innerHTML = `
         <button class="btn clear-current-action" id="wipe" type="button" disabled aria-disabled="true">Clear Current Key</button>
       </div>
       <p class="err" id="error"></p>
+      </div>
+      <div id="out"></div>
     </section>
     <div class="tool-intro" id="bip85-tool-intro" hidden>
         <div class="kicker">One seed. Many children.</div>
@@ -783,9 +796,18 @@ ec.innerHTML = `
         <p class="muted msig-intro">Combine extended public keys into a multisignature wallet. Paste each key origin and extended public key as exported by its signer: <span class="mono">[fingerprint/48h/0h/0h/2h]xpub\u2026</span>. Private keys are not needed. The derived addresses can receive bitcoin, and spending requires the configured number of signatures.</p>
       </div>
       <section class="key-manager no-print" id="msig-manager" hidden>
-      <div class="key-tab-strip"><div class="key-tabs" id="msig-tabs" role="tablist" aria-label="Multisigs"></div><div class="add-item-control"><button class="add-key" id="add-msig" type="button" aria-label="Add multisig" aria-describedby="add-msig-tooltip">+</button><span class="add-item-tooltip" id="add-msig-tooltip" role="tooltip">Add another multisig</span></div><div class="add-item-control"><button class="add-key remove-key" id="delete-msig" type="button" aria-label="Delete current multisig" aria-describedby="delete-msig-tooltip" disabled>−</button><span class="add-item-tooltip" id="delete-msig-tooltip" role="tooltip">Delete this multisig</span></div></div>
+      <div class="key-tab-strip"><div class="key-tabs" id="msig-tabs" role="tablist" aria-label="Multisigs"></div><div class="add-item-control"><button class="add-key" id="add-msig" type="button" aria-label="Open the lab to derive another multisig" aria-describedby="add-msig-tooltip">+</button><span class="add-item-tooltip" id="add-msig-tooltip" role="tooltip">Open the lab to derive another multisig</span></div><div class="add-item-control"><button class="add-key remove-key" id="delete-msig" type="button" aria-label="Delete current multisig" aria-describedby="delete-msig-tooltip" disabled>−</button><span class="add-item-tooltip" id="delete-msig-tooltip" role="tooltip">Delete this multisig</span></div></div>
     </section>
     <section class="card no-print" id="msig-card" role="tabpanel" hidden>
+      <div class="key-summary" id="msig-summary" hidden>
+        <div class="key-summary-text">
+          <code class="key-summary-fingerprint" id="msig-summary-policy"></code>
+          <p class="key-summary-meta" id="msig-summary-script"></p>
+          <p class="key-summary-meta" id="msig-summary-network"></p>
+        </div>
+        <button class="btn secondary" id="msig-edit-inputs" type="button">Edit input</button>
+      </div>
+      <div class="msig-lab" id="msig-lab">
       <div class="msig-threshold-labels">
         <label for="msig-m-number"><span>Signatures needed to spend (m)</span><input class="msig-threshold-number" id="msig-m-number" type="number" min="1" max="15" step="1" value="2" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
         <label for="msig-n-number"><span>Total signing keys (n)</span><input class="msig-threshold-number" id="msig-n-number" type="number" min="1" max="15" step="1" value="3" inputmode="numeric" aria-describedby="msig-threshold-help"></label>
@@ -870,6 +892,8 @@ ec.innerHTML = `
         <button class="btn clear-current-action" id="msig-wipe" type="button" disabled aria-disabled="true">Clear Current Multisig</button>
       </div>
       <p class="err" id="msig-error"></p>
+      </div>
+      <div id="msig-out"></div>
     </section>
     <div class="tool-intro" id="sp-tool-intro" hidden>
         <div class="kicker">BIP-352 · reusable address, unique outputs</div>
@@ -999,7 +1023,6 @@ ec.innerHTML = `
       <div id="psbted-out" aria-live="polite"></div>
       <p class="muted">Fees and input amounts shown here are unverified PSBT claims; the editor does not check them against previous transactions or the blockchain. Nothing is signed or broadcast.</p>
     </section>
-    <div id="out"></div>
     </div>
     <section class="card muted sources">
       <h3 class="sources-heading">Sources</h3>
@@ -1193,13 +1216,16 @@ function tc() {
   }
   if (re.kind === "single") {
     let t = re;
-    dr.innerHTML = hodlSingleWalletData(t);
+    dr.innerHTML = `<div class="key-result">${hodlSingleWalletData(t)}</div>`;
   } else {
     let t = re, r = t.accounts.find((o) => o.def.id === hodlAccountId) ?? t.accounts.find((o) => o.def.id === "bip84") ?? t.accounts[0];
     dr.innerHTML = `
-      ${hodlHdWalletData(t)}
-      <div class="account-tabs no-print" id="acct-tabs" role="tablist" aria-label="Script type results"></div>
-      <div id="acct" role="tabpanel"></div>
+      <div class="key-result">
+        ${hodlHdWalletData(t)}
+        <p class="key-result-scripts-label" id="acct-tabs-label">Script type</p>
+        <div class="account-tabs no-print" id="acct-tabs" role="tablist" aria-labelledby="acct-tabs-label"></div>
+        <div id="acct" role="tabpanel"></div>
+      </div>
     `;
     let n = W("#acct-tabs");
     t.accounts.forEach((o) => {
@@ -1900,7 +1926,7 @@ function Qs(id) {
       <p class="account-private-warning"><strong>Keep these exports together only in secure offline backups.</strong> An account extended public key combined with any non-hardened descendant private key, including a WIF shown in the address tables below, can reconstruct that account's extended private key.</p>
     </section>` : "";
   W("#acct").innerHTML = `
-    <section class="card account-result-card">
+    <div class="key-result-main">
       <div class="kicker">${$t(purposeLabel)} \xB7 ${$t(re.network)}</div>
       <h2>${$t(account.def.label)}</h2>
       <p class="muted">${$t(account.def.beginner)}</p>
@@ -1925,9 +1951,10 @@ function Qs(id) {
         ${hodlAddressBranchTables(branches, hasPrivate, "hd")}
         ${hodlAddressMatchMarkup()}
       </section>
-    </section>`;
+    </div>`;
   hodlBindAddressVirtualization(hodlAddressBranchVirtualConfigs(branches, hasPrivate, "hd"));
-  hodlBindAddressMatch()
+  hodlBindAddressMatch();
+  hodlBindWalletResultActions();
 }
 function ye(label, value) {
   return `<p><span class="muted">${$t(label)}</span><br><span class="mono">${$t(value ?? "\u2014")}</span></p>`;
@@ -2026,6 +2053,15 @@ function hodlSingleWalletData(wallet) {
     </section>
   </section>`;
 }
+function hodlHdRootRecovery(wallet) {
+  let privateFields = [];
+  if (wallet.mnemonic) privateFields.push(hodlSeedPhraseField(`Your seed phrase \xB7 ${wallet.mnemonic.trim().split(/\s+/).length} words`, wallet.mnemonic), hodlSeedQrExport(wallet.mnemonic, { passphraseUsed: wallet.passphraseUsed, entropyHex: wallet.entropyHex }));
+  if (wallet.entropyHex) privateFields.push(Ee("BIP39 entropy hex", wallet.entropyHex));
+  if (wallet.seedHex) privateFields.push(Ee("Master seed hex", wallet.seedHex));
+  if (wallet.rootXprv) privateFields.push(Ee(`Root ${wallet.rootPrivateLabel || cr[wallet.network].x.prvName}`, wallet.rootXprv));
+  if (wallet.importedPrivateKey) privateFields.push(Ee(`Imported ${wallet.importedPrivateLabel || "extended private key"}`, wallet.importedPrivateKey));
+  return privateFields.length ? `<div class="wallet-data-fields">${privateFields.join("")}</div>` : "";
+}
 function hodlHdWalletData(wallet) {
   let privateFields = [];
   if (wallet.mnemonic) privateFields.push(hodlSeedPhraseField(`Your seed phrase \xB7 ${wallet.mnemonic.trim().split(/\s+/).length} words`, wallet.mnemonic), hodlSeedQrExport(wallet.mnemonic, { passphraseUsed: wallet.passphraseUsed, entropyHex: wallet.entropyHex }));
@@ -2116,6 +2152,8 @@ function hodlBindWalletResultActions() {
   let reveal = document.getElementById("reveal");
   if (reveal) reveal.onchange = () => {
     Ge = reveal.checked;
+    let state = hodlKeys[hodlActiveKey];
+    if (state) state.reveal = Ge;
     tc();
     requestAnimationFrame(() => document.getElementById("reveal")?.focus({ preventScroll: true }));
   };
@@ -2140,7 +2178,7 @@ function hodlBindWalletResultActions() {
   hodlBindAddressMatch();
 }
 function hodlFocusWalletResult() {
-  requestAnimationFrame(() => dr.querySelector(".wallet-data-intro h2, .account-result-card > h2")?.focus({ preventScroll: false }));
+  requestAnimationFrame(() => (hodlWorkspace === "msig" ? document.getElementById("msig-summary-policy") || document.querySelector("#msig-out h2") : document.getElementById("key-summary-fingerprint") || dr.querySelector(".account-address-lead, .wallet-data-intro h2"))?.focus?.({ preventScroll: false }));
 }
 var hodlRenderWalletBase = tc;
 tc = function() {
@@ -6676,7 +6714,8 @@ async function hodlCalculateKey(progress) {
     Ge = false;
     hodlSetSelectedScriptType(scriptType);
     hodlCaptureKey();
-    tc();
+    hodlSnapshotKeySummary();
+    hodlCommitDerivedKey();
     hodlFocusWalletResult();
     return true;
   } catch (error) {
@@ -7142,8 +7181,8 @@ function hodlUpdateMsigAccount() {
     help.textContent = summary.mixed ? `Account index · ${mode} · Co-signer key origins use different account numbers.` : summary.account == null ? `Account index · ${mode} · Derived from co-signer key origins.` : `Account index · ${mode} · Derived from the co-signer account paths.`;
   }
   if (warning) {
-    warning.textContent = message;
     warning.hidden = !message;
+    warning.textContent = message || "";
   }
   return summary;
 }
@@ -7154,7 +7193,7 @@ function hodlInvalidateMsig() {
     state.error = "";
   }
   re = null;
-  dr.innerHTML = "";
+  hodlClearMsigOut();
   let err = document.getElementById("msig-error");
   if (err) err.textContent = "";
   hodlStopDerivation("msig");
@@ -7413,6 +7452,70 @@ function hodlMsigScriptOrder(keyTokens) {
   })
 }
 
+function hodlSessionMsigKeys() {
+  return hodlKeys.filter((state) => !state.isLab && state.result?.multisigCosignerExports?.length);
+}
+function hodlMatchingMsigExport(result) {
+  if (!result?.multisigCosignerExports?.length) return "";
+  let kind = hodlScriptKind(), purpose = hodlReadMsigPurpose(), exports = result.multisigCosignerExports;
+  let match = exports.find((item) => item.kind === kind) || exports.find((item) => String(item.originPath || "").startsWith(String(purpose) + "h")) || exports[0];
+  return match?.value || "";
+}
+function hodlMsigKeyOriginFingerprint(value) {
+  try {
+    return hodlParseMultisigCosigner(String(value || "").trim()).origin?.fingerprint || "";
+  } catch {
+    return "";
+  }
+}
+function hodlSyncMsigKeyAvatar(row) {
+  if (!row) return;
+  let ta = row.querySelector("textarea"), ident = row.querySelector(".msig-key-ident"), image = ident?.querySelector("img"), code = ident?.querySelector("code"), fingerprint = hodlMsigKeyOriginFingerprint(ta?.value);
+  row.querySelectorAll(".msig-session-key").forEach((button) => {
+    button.classList.toggle("active", Boolean(fingerprint) && button.dataset.fingerprint === fingerprint);
+    button.setAttribute("aria-pressed", String(button.classList.contains("active")));
+  });
+  if (ident) ident.hidden = !fingerprint;
+  if (code) code.textContent = fingerprint;
+  if (image) {
+    image.hidden = true;
+    image.removeAttribute("src");
+    if (fingerprint) hodlFillKeyTabLifehash(image, fingerprint);
+  }
+}
+function hodlRefreshMsigSessionPickers() {
+  let keys = hodlSessionMsigKeys();
+  document.querySelectorAll(".msig-key-row").forEach((row) => {
+    let box = row.querySelector(".msig-session-keys"), ta = row.querySelector("textarea");
+    if (!box) return;
+    box.innerHTML = "";
+    box.hidden = !keys.length;
+    keys.forEach((state) => {
+      let fingerprint = state.result?.masterFingerprint || state.name, button = document.createElement("button"), image = document.createElement("img"), label = document.createElement("span");
+      button.type = "button";
+      button.className = "msig-session-key";
+      button.dataset.keyId = String(state.id);
+      button.dataset.fingerprint = fingerprint;
+      button.setAttribute("aria-pressed", "false");
+      button.setAttribute("aria-label", "Use session key " + fingerprint);
+      image.className = "key-tab-lifehash";
+      image.width = 22;
+      image.height = 22;
+      image.alt = "";
+      image.hidden = true;
+      if (fingerprint) hodlFillKeyTabLifehash(image, fingerprint);
+      label.textContent = fingerprint;
+      button.append(image, label);
+      button.onclick = () => {
+        if (!ta) return;
+        ta.value = hodlMatchingMsigExport(state.result);
+        ta.dispatchEvent(new Event("input"));
+      };
+      box.appendChild(button);
+    });
+    hodlSyncMsigKeyAvatar(row);
+  });
+}
 function hodlFillKeys(values) {
   let n = Number(document.getElementById("msig-n").value || 3),
     saved = Array.isArray(values) ? values : hodlReadMsigXpubs(),
@@ -7453,15 +7556,31 @@ function hodlFillKeys(values) {
     ta.autocomplete = "off";
     ta.spellcheck = false;
     ta.value = saved[i] || "";
-    lab.appendChild(ta);
-    row.appendChild(lab);
+    let chips = document.createElement("div");
+    chips.className = "msig-session-keys";
+    chips.hidden = true;
+    let ident = document.createElement("div");
+    ident.className = "msig-key-ident";
+    ident.hidden = true;
+    let identImage = document.createElement("img");
+    identImage.className = "key-tab-lifehash";
+    identImage.width = 22;
+    identImage.height = 22;
+    identImage.alt = "";
+    identImage.hidden = true;
+    let identFp = document.createElement("code");
+    identFp.className = "msig-key-ident-fp";
+    ident.append(identImage, identFp);
+    lab.append(ident, ta);
+    row.append(chips, lab);
     box.appendChild(row);
     ta.oninput = () => {
       ta.value = hodlFilterXpub(ta.value);
       hodlUpdateMsigScriptDetection();
       document.querySelectorAll("#msig-keys textarea").forEach(hodlCheckXpub);
       hodlUpdateMsigKeyOrderStatus();
-      hodlInvalidateMsig()
+      hodlInvalidateMsig();
+      hodlSyncMsigKeyAvatar(row);
     }
   }
   hodlBindMsigKeyReorder(box);
@@ -7472,7 +7591,8 @@ function hodlFillKeys(values) {
   });
   hodlUpdateMsigHint();
   hodlUpdateMsigAccount();
-  hodlUpdateMsigKeyOrderStatus()
+  hodlUpdateMsigKeyOrderStatus();
+  hodlRefreshMsigSessionPickers();
 }
 function hodlMultisigPrefixCompatible(parsed, kind, purpose) {
   if (kind === "p2tr" || purpose === 87) return parsed.family === "x";
@@ -7576,7 +7696,8 @@ function hodlInitMsig() {
       hodlUpdateMsigScriptDetection();
       hodlInvalidateMsig();
       document.querySelectorAll("#msig-keys textarea").forEach(hodlCheckXpub);
-      hodlUpdateMsigKeyOrderStatus()
+      hodlUpdateMsigKeyOrderStatus();
+      hodlRefreshMsigSessionPickers();
     },
     script = document.getElementById("msig-script-type"),
     purpose = document.getElementById("msig-purpose"),
@@ -7803,23 +7924,30 @@ async function hodlBuildMsig(progress) {
       warnings: accountWarning ? [accountWarning] : []
     };
     hodlCaptureMsig();
-    hodlShowMsig();
+    hodlSnapshotMsigSummary();
+    hodlCommitDerivedMsig();
     hodlFocusWalletResult();
     return true;
   } catch (exception) {
     if (exception instanceof HodlDerivationCancelledError) throw exception;
     re = null;
-    dr.innerHTML = "";
+    hodlClearMsigOut();
     error.textContent = exception.message || String(exception);
     hodlCaptureMsig();
     return false;
   }
 }
+function hodlClearMsigOut() {
+  let out = document.getElementById("msig-out");
+  if (out) out.innerHTML = "";
+}
 function hodlShowMsig() {
   if (!re || re.kind !== "msig") return;
   Ge = false;
+  let out = document.getElementById("msig-out");
+  if (!out) return;
   let accountLabel = re.accountMixed ? " \xB7 Account Mixed" : re.account == null ? "" : ` \xB7 Account ${re.account}`, purposeLabel = Number.isSafeInteger(re.purpose) ? ` \xB7 Purpose ${hodlOriginPathIndex(re.purpose, re.hardening?.purpose !== false)}` : "", branches = hodlAccountAddressBranches(re), firstBranch = branches[0], firstAddress = firstBranch?.rows[0], firstIndex = firstAddress?.index ?? 0, firstLabel = firstBranch ? hodlAddressBranchLabel(firstBranch.branch) : "Address";
-  dr.innerHTML = `
+  out.innerHTML = `
     <section class="card account-result-card">
       <div class="kicker">${re.m}-of-${re.n} multisig${purposeLabel}${re.sorted===!1?" \xB7 listed order":""} \xB7 ${re.network}${accountLabel}</div>
       <h2 tabindex="-1">Your multisig wallet</h2>
@@ -9359,6 +9487,142 @@ function hodlNewKeyState(name, keyId, keyNumber) {
   let id = keyId ?? hodlNextKeyId++, number = keyNumber ?? hodlNextKeyNumber++;
   return { id, number, color: hodlKeyColor(id), name: name || hodlDefaultKeyName(number), mode: "dice", diceMethod: "coldcard", cardMethod: "hashed", seedMethod: "words", seedZeroIndexed: false, cardColemanSymbols: false, entropyFormat: "bin", globalSync: false, globalSyncSource: "", globalSyncBitCount: 0, seedAutocomplete: true, passphraseBip39Words: false, brainWalletOutput: "scalar", passphraseAutocomplete: true, brainWalletTrim: false, showCards: false, showDiceFairness: false, targetWords: 24, diceCoinPositions: [], lastWord: "", dplusLastWord: "", result: null, reveal: false, accountId: "bip84", error: "", fields: { pass: "", script: "bip84", derivationPath: "m/84'/0'/0'/0/0", derivationAccountPath: "m/84'/0'/0'", purpose: "84'", purposeHarden: true, coinType: "0'", coinTypeHarden: true, network: "mainnet", account: "0'", accountHarden: true, branchStart: "0", branchHarden: false, branchRange: "1", addressStart: "0", addressHarden: false, addressRange: "1", dice: "", bitboxDice: "", dplusDice: "", hex: "", bin: "", base4: "", base8: "", base32: "", base64: "", cards: "", directCards: "", seed: "", seedNumbers: "", brainLab: "", key: "", keyKind: "wif", privateKeys: { wif: "", "hex-key": "", minikey: "", brain: "" } } };
 }
+function hodlNewLabState() {
+  let state = hodlNewKeyState("Lab", 0, 0);
+  state.isLab = true;
+  return state;
+}
+function hodlCloneDerivedKey(source, existing) {
+  let state = existing ? { ...existing, fields: { ...existing.fields, ...(existing.fields.privateKeys ? { privateKeys: { ...existing.fields.privateKeys } } : {}) } } : hodlNewKeyState();
+  let fingerprint = source.result?.masterFingerprint || "";
+  Object.assign(state, {
+    isLab: false,
+    name: fingerprint || state.name,
+    mode: source.mode,
+    diceMethod: source.diceMethod,
+    cardMethod: source.cardMethod,
+    seedMethod: source.seedMethod,
+    seedZeroIndexed: source.seedZeroIndexed,
+    cardColemanSymbols: source.cardColemanSymbols,
+    entropyFormat: source.entropyFormat,
+    globalSync: source.globalSync,
+    globalSyncSource: source.globalSyncSource,
+    globalSyncBitCount: source.globalSyncBitCount,
+    seedAutocomplete: source.seedAutocomplete,
+    passphraseBip39Words: source.passphraseBip39Words,
+    brainWalletOutput: source.brainWalletOutput,
+    passphraseAutocomplete: source.passphraseAutocomplete,
+    brainWalletTrim: source.brainWalletTrim,
+    showCards: source.showCards,
+    showDiceFairness: source.showDiceFairness,
+    showNumberBaseCalculations: source.showNumberBaseCalculations,
+    targetWords: source.targetWords,
+    diceCoinPositions: Array.isArray(source.diceCoinPositions) ? source.diceCoinPositions.slice() : [],
+    lastWord: source.lastWord,
+    dplusLastWord: source.dplusLastWord,
+    result: source.result,
+    reveal: source.reveal,
+    accountId: source.accountId,
+    createdScript: source.createdScript,
+    createdPath: source.createdPath,
+    error: source.error,
+    fields: { ...source.fields, ...(source.fields?.privateKeys ? { privateKeys: { ...source.fields.privateKeys } } : {}) }
+  });
+  return state;
+}
+function hodlCommitDerivedKey() {
+  let lab = hodlKeys[hodlActiveKey];
+  if (!lab?.isLab || !lab.result) {
+    hodlRenderKeyTabs();
+    hodlRestoreKey();
+    return hodlActiveKey;
+  }
+  let fingerprint = lab.result.masterFingerprint || "";
+  let existing = fingerprint ? hodlKeys.findIndex((state) => !state.isLab && state.result?.masterFingerprint === fingerprint) : -1;
+  if (existing >= 0) {
+    hodlKeys[existing] = hodlCloneDerivedKey(lab, hodlKeys[existing]);
+    hodlKeys[hodlActiveKey] = hodlNewLabState();
+    hodlActiveKey = existing;
+  } else {
+    let derived = hodlCloneDerivedKey(lab);
+    hodlKeys[hodlActiveKey] = hodlNewLabState();
+    hodlKeys.push(derived);
+    hodlActiveKey = hodlKeys.length - 1;
+  }
+  hodlRenderKeyTabs();
+  hodlRestoreKey();
+  return hodlActiveKey;
+}
+function hodlSelectLab() {
+  let lab = hodlKeys.findIndex((state) => state.isLab);
+  if (lab < 0) {
+    hodlCaptureKey();
+    hodlKeys.unshift(hodlNewLabState());
+    lab = 0;
+    if (hodlActiveKey >= 0) hodlActiveKey += 1;
+  }
+  if (lab === hodlActiveKey) return;
+  hodlSelectKey(lab);
+}
+function hodlKeyHasResult(state = hodlKeys[hodlActiveKey]) {
+  return Boolean(state && !state.isLab && state.result);
+}
+function hodlKeySummaryMethod(state) {
+  if (!state) return "";
+  if (state.mode === "dice") return "Dice rolls";
+  if (state.mode === "cards") return "Cards";
+  if (state.mode === "hex") return "Number bases";
+  if (state.mode === "seed") return "Seed phrase";
+  if (state.mode === "key") return "Private key";
+  return "";
+}
+function hodlKeySummaryScript(state) {
+  let id = state?.accountId || state?.fields?.script || "bip84";
+  let def = typeof hodlScriptDefinition === "function" ? hodlScriptDefinition(id) : null;
+  return def?.label || id;
+}
+function hodlKeySummaryPath(state) {
+  return hodlDisplayDerivationPath(state?.fields?.derivationPath || "");
+}
+function hodlSnapshotKeySummary(state = hodlKeys[hodlActiveKey]) {
+  if (!state) return;
+  state.createdScript = hodlKeySummaryScript(state);
+  state.createdPath = hodlKeySummaryPath(state);
+}
+function hodlFillKeyTabLifehash(image, fingerprint) {
+  if (!image || !fingerprint || typeof hodlLifeHash?.fromFingerprint !== "function") return;
+  hodlLifeHash.fromFingerprint(fingerprint).then((url) => {
+    if (!image.isConnected) return;
+    image.src = url;
+    image.hidden = false;
+  });
+}
+function hodlPaintKeySummary() {
+  let state = hodlKeys[hodlActiveKey], fingerprint = state?.result?.masterFingerprint || "", node = document.getElementById("key-summary-fingerprint"), method = document.getElementById("key-summary-method"), script = document.getElementById("key-summary-script"), path = document.getElementById("key-summary-path"), image = document.getElementById("key-summary-lifehash"), edit = document.getElementById("key-edit-inputs");
+  if (node) {
+    node.textContent = fingerprint;
+    node.tabIndex = -1;
+  }
+  if (method) method.textContent = hodlKeySummaryMethod(state);
+  if (script) script.textContent = state?.createdScript || hodlKeySummaryScript(state);
+  if (path) {
+    path.textContent = state?.createdPath || hodlKeySummaryPath(state);
+    path.hidden = !path.textContent;
+  }
+  if (image) {
+    image.hidden = true;
+    image.removeAttribute("src");
+    if (fingerprint) hodlFillKeyTabLifehash(image, fingerprint);
+  }
+  if (edit) edit.onclick = hodlSelectLab;
+}
+function hodlSyncKeyResultView() {
+  let card = document.getElementById("calc-card"), lab = document.getElementById("key-lab"), summary = document.getElementById("key-summary"), result = hodlKeyHasResult();
+  if (card) card.classList.toggle("is-result-view", result);
+  if (lab) lab.hidden = result;
+  if (summary) summary.hidden = !result;
+  hodlPaintKeySummary();
+}
 function hodlRestoreFormFields(state) {
   if (!state) return;
   let privateKeys = hodlPrivateKeyValues(state.fields), restoredKeyKind = hodlNormalizePrivateKeyKind(state.fields.keyKind, privateKeys[state.fields.keyKind] || "");
@@ -9425,7 +9689,7 @@ function hodlSyncKeyClearButton(capture = false) {
 function hodlWipeActiveKey() {
   if (hodlActiveKey < 0 || !hodlKeys[hodlActiveKey]) return;
   let state = hodlKeys[hodlActiveKey];
-  hodlKeys[hodlActiveKey] = hodlNewKeyState(state.name, state.id, state.number);
+  hodlKeys[hodlActiveKey] = state.isLab ? hodlNewLabState() : hodlNewKeyState(state.name, state.id, state.number);
   hodlRestoreKey();
 }
 function hodlCaptureKey() {
@@ -9553,6 +9817,7 @@ function hodlRestoreKey() {
     W("#error").textContent = "";
     dr.innerHTML = "";
     document.getElementById("calc-card").hidden = true;
+    hodlSyncKeyResultView();
     hodlQueueMasterFingerprintPreview(0);
     hodlUpdateDerivationPathPreview();
     hodlSyncKeyClearButton();
@@ -9610,6 +9875,7 @@ function hodlRestoreKey() {
   document.getElementById("calc-card").hidden = false;
   W("#error").textContent = state.error || "";
   tc();
+  hodlSyncKeyResultView();
   hodlQueueMasterFingerprintPreview(0);
   hodlUpdateDerivationPathPreview();
   hodlSyncKeyClearButton();
@@ -9617,6 +9883,7 @@ function hodlRestoreKey() {
 }
 function hodlKeyTabKeydown(event, index) {
   if (event.key === "F2") {
+    if (hodlKeys[index]?.isLab) return;
     event.preventDefault();
     if (index === hodlActiveKey) hodlBeginKeyRename(index);
     return;
@@ -9690,23 +9957,56 @@ function hodlCreateMsigIcon() {
   span.appendChild(svg);
   return span;
 }
+function hodlCreateLabIcon() {
+  let ns = "http://www.w3.org/2000/svg", span = document.createElement("span"), svg = document.createElementNS(ns, "svg"), path = document.createElementNS(ns, "path");
+  span.className = "key-tab-icon key-tab-lab-icon";
+  span.setAttribute("aria-hidden", "true");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("stroke", "currentColor");
+  svg.setAttribute("stroke-width", "1.8");
+  svg.setAttribute("stroke-linecap", "round");
+  svg.setAttribute("stroke-linejoin", "round");
+  svg.setAttribute("focusable", "false");
+  svg.setAttribute("aria-hidden", "true");
+  path.setAttribute("d", "M9 3h6M10 3v3.2L6.4 14.5A4.6 4.6 0 0 0 10.5 21h3a4.6 4.6 0 0 0 4.1-6.5L14 6.2V3M8.2 14.2c1.4 1.6 2.6 2.3 3.8 2.3");
+  svg.appendChild(path);
+  span.appendChild(svg);
+  return span;
+}
 function hodlCreateKeyTab(index) {
-  let state = hodlKeys[index], active = index === hodlActiveKey, button = document.createElement("button"), name = state.name || "Key " + state.number, label = document.createElement("span");
+  let state = hodlKeys[index], active = index === hodlActiveKey, button = document.createElement("button"), fingerprint = state.result?.masterFingerprint || "", name = state.isLab ? "Lab" : fingerprint || state.name || "Key " + state.number, label = document.createElement("span");
   button.type = "button";
-  button.id = "key-tab-" + (index + 1);
-  button.className = "tab key-tab" + (active ? " active" : "");
+  button.id = state.isLab ? "key-tab-lab" : "key-tab-" + (index + 1);
+  button.className = "tab key-tab" + (state.isLab ? " is-lab" : "") + (active ? " active" : "");
   button.style.setProperty("--key-color", state.color);
   label.className = "key-tab-label";
   label.textContent = name;
-  button.append(hodlCreateKeyIcon(state.color), label);
+  if (state.isLab) button.append(hodlCreateLabIcon(), label);
+  else if (fingerprint) {
+    let image = document.createElement("img");
+    image.className = "key-tab-lifehash";
+    image.width = 22;
+    image.height = 22;
+    image.alt = "";
+    image.hidden = true;
+    hodlFillKeyTabLifehash(image, fingerprint);
+    button.append(image, label);
+  } else button.append(hodlCreateKeyIcon(state.color), label);
   button.dataset.keyNumber = String(state.number);
   button.setAttribute("role", "tab");
   button.setAttribute("aria-controls", "calc-card");
   button.setAttribute("aria-selected", String(active));
-  button.setAttribute("aria-label", name + (active ? ", selected. Activate or press F2 to rename." : ". Activate to select."));
-  button.title = active ? "Click again or press F2 to rename" : "Click to select";
+  if (state.isLab) {
+    button.setAttribute("aria-label", "Lab" + (active ? ", selected" : ". Activate to derive a key."));
+    button.title = "Derive a key";
+    button.onclick = () => hodlSelectKey(index);
+  } else {
+    button.setAttribute("aria-label", name + (active ? ", selected. Activate or press F2 to rename." : ". Activate to select."));
+    button.title = active ? "Click again or press F2 to rename" : "Click to select";
+    button.onclick = () => index === hodlActiveKey ? hodlBeginKeyRename(index) : hodlSelectKey(index);
+  }
   button.tabIndex = active ? 0 : -1;
-  button.onclick = () => index === hodlActiveKey ? hodlBeginKeyRename(index) : hodlSelectKey(index);
   button.onkeydown = (event) => hodlKeyTabKeydown(event, index);
   return button;
 }
@@ -9730,7 +10030,7 @@ function hodlDefaultKeyName(number) {
   return name;
 }
 function hodlBeginKeyRename(index) {
-  if (index !== hodlActiveKey || !hodlKeys[index]) return;
+  if (index !== hodlActiveKey || !hodlKeys[index] || hodlKeys[index].isLab) return;
   let box = W("#key-tabs"), tab = box.children[index];
   if (!tab || tab.classList.contains("key-tab-editing")) return;
   let state = hodlKeys[index], editor = document.createElement("div"), input = document.createElement("input"), previous = state.name || "Key " + state.number;
@@ -9781,9 +10081,9 @@ function hodlRevealTab(box, index) {
   if (target !== left) box.scrollTo({ left: target, behavior: "smooth" });
 }
 function hodlSyncKeyDeleteButton() {
-  let button = W("#delete-key");
+  let button = W("#delete-key"), state = hodlKeys[hodlActiveKey];
   if (!button) return;
-  button.disabled = hodlKeys.length <= 1;
+  button.disabled = !state || state.isLab;
   button.setAttribute("aria-disabled", String(button.disabled));
 }
 function hodlRenderKeyTabs() {
@@ -9807,21 +10107,21 @@ function hodlSelectKey(index) {
   hodlRestoreKey();
 }
 function hodlAddKey() {
-  hodlCaptureKey();
-  hodlKeys.push(hodlNewKeyState());
-  hodlActiveKey = hodlKeys.length - 1;
-  hodlRenderKeyTabs();
-  hodlRestoreKey();
+  hodlSelectLab();
 }
 function hodlDeleteActiveKey() {
-  if (hodlKeys.length <= 1 || hodlActiveKey < 0 || !hodlKeys[hodlActiveKey]) {
+  let state = hodlKeys[hodlActiveKey];
+  if (!state || state.isLab) {
     hodlSyncKeyDeleteButton();
     return;
   }
-  let deletedIndex = hodlActiveKey, deletedState = hodlKeys[deletedIndex];
+  let deletedIndex = hodlActiveKey, deletedState = state;
   hodlKeys.splice(deletedIndex, 1);
   hodlNextKeyNumber = hodlKeys.length ? hodlKeys.reduce((latest, state) => Math.max(latest, state.number), 0) + 1 : deletedState.number;
-  hodlActiveKey = hodlKeys.length ? Math.min(deletedIndex, hodlKeys.length - 1) : -1;
+  if (!hodlKeys.length) {
+    hodlKeys.push(hodlNewLabState());
+    hodlActiveKey = 0;
+  } else hodlActiveKey = Math.min(deletedIndex, hodlKeys.length - 1);
   hodlRenderKeyTabs();
   hodlRestoreKey();
   (hodlActiveKey >= 0 ? W("#key-tabs").children[hodlActiveKey] : W("#add-key"))?.focus();
@@ -9857,6 +10157,111 @@ function hodlNewMsigState(name, msigId, msigNumber) {
       addressRange: "5"
     }
   }
+}
+function hodlNewMsigLabState() {
+  let state = hodlNewMsigState("Lab", 0, 0);
+  state.isLab = true;
+  return state;
+}
+function hodlMsigScriptLabel(kind) {
+  if (kind === "p2sh") return "Legacy";
+  if (kind === "p2sh-p2wsh") return "Nested SegWit";
+  if (kind === "p2wsh") return "Native SegWit";
+  if (kind === "p2tr") return "Taproot";
+  return kind || "";
+}
+function hodlMsigPolicyName(result) {
+  if (!result) return "";
+  return `${result.m}-of-${result.n}`;
+}
+function hodlSnapshotMsigSummary(state = hodlMsigs[hodlActiveMsig]) {
+  if (!state?.result || state.result.kind !== "msig") return;
+  state.createdPolicy = hodlMsigPolicyName(state.result);
+  state.createdScript = hodlMsigScriptLabel(state.result.script);
+  state.createdNetwork = state.result.network || "";
+}
+function hodlMsigHasResult(state = hodlMsigs[hodlActiveMsig]) {
+  return Boolean(state && !state.isLab && state.result?.kind === "msig");
+}
+function hodlPaintMsigSummary() {
+  let state = hodlMsigs[hodlActiveMsig], policy = document.getElementById("msig-summary-policy"), script = document.getElementById("msig-summary-script"), network = document.getElementById("msig-summary-network"), edit = document.getElementById("msig-edit-inputs");
+  if (policy) {
+    policy.textContent = state?.createdPolicy || hodlMsigPolicyName(state?.result);
+    policy.tabIndex = -1;
+  }
+  if (script) script.textContent = state?.createdScript || hodlMsigScriptLabel(state?.result?.script);
+  if (network) network.textContent = state?.createdNetwork || state?.result?.network || "";
+  if (edit) edit.onclick = hodlSelectMsigLab;
+}
+function hodlSyncMsigResultView() {
+  let card = document.getElementById("msig-card"), lab = document.getElementById("msig-lab"), summary = document.getElementById("msig-summary"), result = hodlMsigHasResult();
+  if (card) card.classList.toggle("is-result-view", result);
+  if (lab) lab.hidden = result;
+  if (summary) summary.hidden = !result;
+  hodlPaintMsigSummary();
+}
+function hodlCloneDerivedMsig(source, existing) {
+  let state = existing ? { ...existing, fields: { ...existing.fields, xpubs: (existing.fields.xpubs || []).slice() } } : hodlNewMsigState();
+  let name = source.createdPolicy || hodlMsigPolicyName(source.result) || state.name;
+  Object.assign(state, {
+    isLab: false,
+    name,
+    result: source.result,
+    error: source.error,
+    createdPolicy: source.createdPolicy,
+    createdScript: source.createdScript,
+    createdNetwork: source.createdNetwork,
+    fields: { ...source.fields, xpubs: (source.fields.xpubs || []).slice() }
+  });
+  let skip = existing ? hodlMsigs.indexOf(existing) : -1;
+  if (hodlMsigNameTaken(state.name, skip)) state.name = hodlUniqueMsigName(state.name, skip);
+  return state;
+}
+function hodlUniqueMsigName(base, index) {
+  let name = base, suffix = 2;
+  while (hodlMsigNameTaken(name, index)) {
+    name = base + " (" + suffix + ")";
+    suffix++;
+  }
+  return name;
+}
+function hodlMsigIdentity(state) {
+  let fields = state?.fields || {};
+  return [fields.m, fields.n, fields.script, ...(Array.isArray(fields.xpubs) ? fields.xpubs : [])].join("|");
+}
+function hodlCommitDerivedMsig() {
+  let lab = hodlMsigs[hodlActiveMsig];
+  if (!lab?.isLab || !lab.result || lab.result.kind !== "msig") {
+    hodlRenderMsigTabs();
+    hodlRestoreMsig();
+    return hodlActiveMsig;
+  }
+  let identity = hodlMsigIdentity(lab);
+  let existing = hodlMsigs.findIndex((state) => !state.isLab && hodlMsigIdentity(state) === identity);
+  if (existing >= 0) {
+    hodlMsigs[existing] = hodlCloneDerivedMsig(lab, hodlMsigs[existing]);
+    hodlMsigs[hodlActiveMsig] = hodlNewMsigLabState();
+    hodlActiveMsig = existing;
+  } else {
+    let derived = hodlCloneDerivedMsig(lab);
+    hodlMsigs[hodlActiveMsig] = hodlNewMsigLabState();
+    hodlMsigs.push(derived);
+    hodlActiveMsig = hodlMsigs.length - 1;
+  }
+  hodlRenderMsigTabs();
+  hodlRestoreMsig();
+  return hodlActiveMsig;
+}
+function hodlSelectMsigLab() {
+  let lab = hodlMsigs.findIndex((state) => state.isLab);
+  if (lab < 0) {
+    hodlCaptureMsig();
+    hodlMsigs.unshift(hodlNewMsigLabState());
+    lab = 0;
+    if (hodlActiveMsig >= 0) hodlActiveMsig += 1;
+  }
+  if (lab === hodlActiveMsig) return;
+  hodlSelectMsig(lab);
 }
 function hodlMsigStateNeedsClear(state) {
   if (!state) return !1;
@@ -9907,8 +10312,9 @@ function hodlRestoreMsig() {
     re = null;
     Ge = false;
     hodlResetMsigForm();
-    dr.innerHTML = "";
+    hodlClearMsigOut();
     panel.hidden = true;
+    hodlSyncMsigResultView();
     hodlSyncMsigClearButton();
     return;
   }
@@ -9941,17 +10347,19 @@ function hodlRestoreMsig() {
   Ge = false;
   panel.hidden = false;
   if (re && re.kind === "msig") hodlShowMsig();
-  else dr.innerHTML = "";
+  else hodlClearMsigOut();
+  hodlSyncMsigResultView();
   hodlSyncMsigClearButton();
 }
 function hodlWipeActiveMsig() {
   if (hodlActiveMsig < 0 || !hodlMsigs[hodlActiveMsig]) return;
   let state = hodlMsigs[hodlActiveMsig];
-  hodlMsigs[hodlActiveMsig] = hodlNewMsigState(state.name, state.id, state.number);
+  hodlMsigs[hodlActiveMsig] = state.isLab ? hodlNewMsigLabState() : hodlNewMsigState(state.name, state.id, state.number);
   hodlRestoreMsig();
 }
 function hodlMsigTabKeydown(event, index) {
   if (event.key === "F2") {
+    if (hodlMsigs[index]?.isLab) return;
     event.preventDefault();
     if (index === hodlActiveMsig) hodlBeginMsigRename(index);
     return;
@@ -9967,10 +10375,10 @@ function hodlMsigTabKeydown(event, index) {
   W("#msig-tabs").children[next]?.focus();
 }
 function hodlCreateMsigTab(index) {
-  let state = hodlMsigs[index], active = index === hodlActiveMsig, button = document.createElement("button"), name = state.name || "Multisig " + state.number, label = document.createElement("span");
+  let state = hodlMsigs[index], active = index === hodlActiveMsig, button = document.createElement("button"), name = state.isLab ? "Lab" : state.createdPolicy || state.name || "Multisig " + state.number, label = document.createElement("span");
   button.type = "button";
-  button.id = "msig-tab-" + (index + 1);
-  button.className = "tab key-tab msig-tab" + (active ? " active" : "");
+  button.id = state.isLab ? "msig-tab-lab" : "msig-tab-" + (index + 1);
+  button.className = "tab key-tab msig-tab" + (state.isLab ? " is-lab" : "") + (active ? " active" : "");
   button.dataset.msigNumber = String(state.number);
   label.className = "key-tab-label";
   label.textContent = name;
@@ -9978,10 +10386,16 @@ function hodlCreateMsigTab(index) {
   button.setAttribute("role", "tab");
   button.setAttribute("aria-controls", "msig-card");
   button.setAttribute("aria-selected", String(active));
-  button.setAttribute("aria-label", name + (active ? ", selected. Activate or press F2 to rename." : ". Activate to select."));
-  button.title = active ? "Click again or press F2 to rename" : "Click to select";
+  if (state.isLab) {
+    button.setAttribute("aria-label", "Lab" + (active ? ", selected" : ". Activate to derive a multisig."));
+    button.title = "Derive a multisig";
+    button.onclick = () => hodlSelectMsig(index);
+  } else {
+    button.setAttribute("aria-label", name + (active ? ", selected. Activate or press F2 to rename." : ". Activate to select."));
+    button.title = active ? "Click again or press F2 to rename" : "Click to select";
+    button.onclick = () => index === hodlActiveMsig ? hodlBeginMsigRename(index) : hodlSelectMsig(index);
+  }
   button.tabIndex = active ? 0 : -1;
-  button.onclick = () => index === hodlActiveMsig ? hodlBeginMsigRename(index) : hodlSelectMsig(index);
   button.onkeydown = (event) => hodlMsigTabKeydown(event, index);
   return button;
 }
@@ -10001,7 +10415,7 @@ function hodlDefaultMsigName(number) {
   return name;
 }
 function hodlBeginMsigRename(index) {
-  if (index !== hodlActiveMsig || !hodlMsigs[index]) return;
+  if (index !== hodlActiveMsig || !hodlMsigs[index] || hodlMsigs[index].isLab) return;
   let box = W("#msig-tabs"), tab = box.children[index];
   if (!tab || tab.classList.contains("key-tab-editing")) return;
   let state = hodlMsigs[index], editor = document.createElement("div"), input = document.createElement("input"), previous = state.name || "Multisig " + state.number;
@@ -10043,9 +10457,9 @@ function hodlBeginMsigRename(index) {
   input.select();
 }
 function hodlSyncMsigDeleteButton() {
-  let button = W("#delete-msig");
+  let button = W("#delete-msig"), state = hodlMsigs[hodlActiveMsig];
   if (!button) return;
-  button.disabled = hodlMsigs.length <= 1;
+  button.disabled = !state || state.isLab;
   button.setAttribute("aria-disabled", String(button.disabled));
 }
 function hodlRenderMsigTabs() {
@@ -10069,21 +10483,21 @@ function hodlSelectMsig(index) {
   hodlRestoreMsig();
 }
 function hodlAddMsig() {
-  hodlCaptureMsig();
-  hodlMsigs.push(hodlNewMsigState());
-  hodlActiveMsig = hodlMsigs.length - 1;
-  hodlRenderMsigTabs();
-  hodlRestoreMsig();
+  hodlSelectMsigLab();
 }
 function hodlDeleteActiveMsig() {
-  if (hodlMsigs.length <= 1 || hodlActiveMsig < 0 || !hodlMsigs[hodlActiveMsig]) {
+  let state = hodlMsigs[hodlActiveMsig];
+  if (!state || state.isLab) {
     hodlSyncMsigDeleteButton();
     return;
   }
-  let deletedIndex = hodlActiveMsig, deletedState = hodlMsigs[deletedIndex];
+  let deletedIndex = hodlActiveMsig, deletedState = state;
   hodlMsigs.splice(deletedIndex, 1);
   hodlNextMsigNumber = hodlMsigs.length ? hodlMsigs.reduce((latest, state) => Math.max(latest, state.number), 0) + 1 : deletedState.number;
-  hodlActiveMsig = hodlMsigs.length ? Math.min(deletedIndex, hodlMsigs.length - 1) : -1;
+  if (!hodlMsigs.length) {
+    hodlMsigs.push(hodlNewMsigLabState());
+    hodlActiveMsig = 0;
+  } else hodlActiveMsig = Math.min(deletedIndex, hodlMsigs.length - 1);
   hodlRenderMsigTabs();
   hodlRestoreMsig();
   (hodlActiveMsig >= 0 ? W("#msig-tabs").children[hodlActiveMsig] : W("#add-msig"))?.focus();
@@ -10196,11 +10610,11 @@ function hodlInitMsigManager() {
 }
 function hodlSeedInitialManagers() {
   if (!hodlKeys.length) {
-    hodlKeys.push(hodlNewKeyState());
+    hodlKeys.push(hodlNewLabState());
     hodlActiveKey = 0;
   }
   if (!hodlMsigs.length) {
-    hodlMsigs.push(hodlNewMsigState());
+    hodlMsigs.push(hodlNewMsigLabState());
     hodlActiveMsig = 0;
   }
 }
@@ -10439,7 +10853,7 @@ function hodlInitSecretFieldAutoClear() {
       state.result = null;
       state.reveal = false;
       state.error = "";
-      return hodlNewKeyState(state.name, state.id, state.number);
+      return state.isLab ? hodlNewLabState() : hodlNewKeyState(state.name, state.id, state.number);
     });
     re = null;
     Ge = false;

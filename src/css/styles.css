@@ -930,6 +930,42 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .tool-intro[hidden] { display: none; }
 .tool-intro h2 { margin: 5px 0 8px; }
 .tool-intro > .muted { max-width: 760px; margin: 0; }
+.key-lab[hidden], .key-summary[hidden], .msig-lab[hidden] { display: none; }
+#calc-card.is-result-view #modes,
+#calc-card:not(.is-result-view) #out,
+#msig-card:not(.is-result-view) #msig-out { display: none; }
+#msig-card.is-result-view .msig-lab { display: none; }
+.key-summary {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 12px 14px; border: 1px solid var(--border); border-radius: 14px;
+  background: color-mix(in oklab, var(--surface-2) 70%, var(--bg));
+}
+.key-summary-lifehash { flex: 0 0 auto; width: 48px; height: 48px; border-radius: 8px; image-rendering: pixelated; background: #fff; }
+.key-summary-lifehash[hidden] { display: none; }
+.key-summary-text { flex: 1 1 auto; min-width: 0; }
+.key-summary-fingerprint { display: block; font-family: var(--mono); font-weight: 700; letter-spacing: 0.04em; color: var(--fg); }
+.key-summary-meta { margin: 2px 0 0; color: var(--muted); font-size: 13px; line-height: 1.35; }
+.key-summary-path { font-family: var(--mono); word-break: break-all; }
+.key-tab-lifehash { width: 22px; height: 22px; border-radius: 4px; image-rendering: pixelated; background: #fff; }
+.key-tab.is-lab { font-weight: 700; }
+.key-tab-lab-icon { color: var(--accent); }
+.key-result { margin-top: 16px; }
+.key-result-scripts-label { margin: 0 0 8px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.key-result-main { margin-top: 8px; padding: 16px 16px 20px; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); }
+.key-result .wallet-result-messages { margin: 0 0 16px; }
+.account-receive-section { margin-top: 0; }
+.msig-session-keys { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 8px; }
+.msig-session-keys[hidden] { display: none; }
+.msig-session-key {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 44px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface-2); color: var(--fg); font-family: var(--mono); font-size: 13px; cursor: pointer;
+}
+.msig-session-key.active { border-color: var(--accent); color: var(--fg); }
+.msig-key-ident { display: inline-flex; align-items: center; gap: 8px; margin: 0; }
+.msig-key-ident[hidden] { display: none; }
+.msig-key-ident-fp { font-family: var(--mono); font-size: 13px; letter-spacing: 0.04em; }
+#msig-keys .msig-key-row > .field { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
 .workspace-panel > :first-child { margin-top: 0; }
 .workspace-panel > :last-child { margin-bottom: 0; }
 /* Inside the panel a card closes on its own bottom edge. Whatever follows
@@ -1479,7 +1515,7 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 }
 .account-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
 #acct .account-result-card {
-  margin-top: 0; border-radius: 0 0 20px 20px; position: relative; z-index: 1;
+  margin-top: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none;
 }
 .wallet-data-card { padding: 24px; }
 .wallet-data-intro { max-width: none; }
