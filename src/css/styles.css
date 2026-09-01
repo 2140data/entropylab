@@ -1664,6 +1664,16 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   .account-private-section { padding: 14px; }
   .wallet-data-actions { align-items: stretch; }
   .wallet-data-actions > * { width: 100%; justify-content: center; }
+  /* The tools' closing button groups wrap into ragged lines here, each control
+     only as wide as its label. Give every child the whole row so the group
+     stacks as one block, the way .wallet-data-actions above already does.
+     Listed after .psbted-actions so the editor's flex-end alignment gives way. */
+  .current-item-actions,
+  .bip85-actions,
+  .psbt-actions { align-items: stretch; }
+  .current-item-actions > *,
+  .bip85-actions > *,
+  .psbt-actions > * { width: 100%; justify-content: center; }
 }
 .key-tab-icon { display: inline-flex; flex: 0 0 auto; width: 16px; height: 16px; color: var(--key-color); }
 .key-tab-icon svg { display: block; width: 16px; height: 16px; }
