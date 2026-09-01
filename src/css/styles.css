@@ -114,10 +114,11 @@ button:not(:disabled):active * { color: inherit !important; }
 .pitch-list { display: grid; gap: 7px; margin: var(--space-component) 0 0; padding-left: 20px; }
 .sources-heading { color: var(--fg); font-size: 1.17rem; }
 /* One step dimmer than the .muted it carries for its size and leading, so
-   the closing line sits behind the sources it follows. The banana is the
-   one thing in it worth reading, so it keeps its own size. */
+   the closing line sits behind the sources it follows. The emoji row is the
+   one thing in it worth reading, so it keeps its own size and spaces itself
+   off the two text rows. */
 .page-footer { margin-top: var(--space-lede); padding: 24px 0; border-top: 1px solid var(--border); text-align: center; color: var(--faint); }
-.page-footer-emoji { font-size: 1.5em; line-height: 1; vertical-align: -0.15em; }
+.page-footer-emoji { font-size: 1.5em; line-height: 1; margin: 6px 0; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; }
 .tab, .btn {
   min-height: 44px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border);

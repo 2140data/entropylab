@@ -865,10 +865,10 @@ test("the page closes on a footer in both markups", () => {
   // static template and the runtime template alike, and stays off paper.
   for (const markup of [template, app]) {
     // esbuild escapes the emoji when it minifies the runtime template, so the
-    // two markups carry the same character in two spellings.
+    // two markups carry the same characters in two spellings.
     assert.match(
       markup,
-      /<footer class="page-footer muted no-print">Ooga Booga <span class="page-footer-emoji">(?:🍌|\\u\{1F34C\})<\/span> Since 964013<\/footer>/,
+      /<footer class="page-footer muted no-print"><div>Team Ooga Booga<\/div><div class="page-footer-emoji">(?:🪨|\\u\{1FAA8\}) (?:🔥|\\u\{1F525\}) (?:🎲|\\u\{1F3B2\}) (?:🍌|\\u\{1F34C\})<\/div><div>Since 964013<\/div><\/footer>/,
     );
     // It closes the wrap, so nothing of the page follows it.
     assert.ok(
@@ -886,7 +886,7 @@ test("the page closes on a footer in both markups", () => {
     css.indexOf(".page-footer {") > css.indexOf(".muted {"),
     "the footer rule must follow .muted so its colour wins",
   );
-  // The banana outgrows the line it sits on.
+  // The emoji row outgrows the two text rows it sits between.
   assert.match(css, /\.page-footer-emoji \{[^}]*font-size: 1\.5em;/);
   assert.doesNotMatch(css, /\.wrap \{[^}]*16px 64px/);
 });
