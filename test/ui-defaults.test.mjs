@@ -781,6 +781,28 @@ test("key and multisig add controls stay pinned to the right of their tab strips
   assert.match(css, /\.add-item-control \{ position: relative; display: inline-flex; flex: 0 0 auto; \}/);
 });
 
+test("the delete control reads as unavailable while one item is all there is", () => {
+  // Both strips ship it disabled: a fresh page holds a single key and a single
+  // multisig, and app.js re-syncs the attribute as items come and go.
+  for (const markup of [template, appSource]) {
+    for (const id of ["delete-key", "delete-msig"]) {
+      assert.match(
+        markup,
+        new RegExp(`<button class="add-key remove-key" id="${id}"[^>]*disabled`),
+        `${id} must ship disabled`,
+      );
+    }
+  }
+  assert.match(appSource, /button\.disabled = hodlKeys\.length <= 1;/);
+  assert.match(appSource, /button\.disabled = hodlMsigs\.length <= 1;/);
+  // Disabled, it drops off the muted tone the live plus keeps.
+  assert.match(css, /\.add-key:disabled \{ color: var\(--border\); cursor: not-allowed; \}/);
+  assert.match(css, /\.add-key \{[^}]*color: var\(--muted\);/s);
+  // And it never lights up under the pointer: both accent states exclude it.
+  assert.match(css, /\.add-key:not\(:disabled\):hover \{ background: transparent; color: var\(--accent\); \}/);
+  assert.match(css, /\.add-key:not\(:disabled\):active \{ background: transparent; color: var\(--accent\); \}/);
+});
+
 test("seed-entry tools keep a square keyboard toggle and a block note on narrow screens", () => {
   assert.match(
     css,
@@ -832,6 +854,37 @@ test("the beta notice sits at the top of the page as a banner", () => {
     assert.doesNotMatch(live, /site-footer|fine-print/);
   }
   assert.doesNotMatch(css, /\.site-footer|\.fine-print/);
+});
+
+test("the page closes on a footer in both markups", () => {
+  // Not the removed beta fine print: a plain closing line that ships in the
+  // static template and the runtime template alike, and stays off paper.
+  for (const markup of [template, app]) {
+    // esbuild escapes the emoji when it minifies the runtime template, so the
+    // two markups carry the same character in two spellings.
+    assert.match(
+      markup,
+      /<footer class="page-footer muted no-print">Ooga Booga <span class="page-footer-emoji">(?:🍌|\\u\{1F34C\})<\/span><\/footer>/,
+    );
+    // It closes the wrap, so nothing of the page follows it.
+    assert.ok(
+      markup.indexOf('class="page-footer') > markup.indexOf('class="card muted sources"'),
+      "the footer must follow the sources card",
+    );
+  }
+  // The wrap gives up its bottom padding so the footer's own padding is the
+  // page's last band of space; a top border draws the seam above it.
+  // The widest seam in the page opens above it, wider than the major seam the
+  // sources card takes, so the closing line reads as its own band.
+  assert.match(css, /\.page-footer \{ margin-top: var\(--space-lede\); padding: 24px 0; border-top: 1px solid var\(--border\); text-align: center; color: var\(--faint\);/);
+  // .muted would otherwise colour it: the footer rule has to win on order.
+  assert.ok(
+    css.indexOf(".page-footer {") > css.indexOf(".muted {"),
+    "the footer rule must follow .muted so its colour wins",
+  );
+  // The banana outgrows the line it sits on.
+  assert.match(css, /\.page-footer-emoji \{[^}]*font-size: 1\.5em;/);
+  assert.doesNotMatch(css, /\.wrap \{[^}]*16px 64px/);
 });
 
 test("the beta banner carries a dismiss control in a narrow right-hand column", () => {
@@ -1069,7 +1122,7 @@ test("the site header is fixed, carries the logo, and holds the version, downloa
   // markup is the only source, and the app makes no runtime requests.
   assert.doesNotMatch(online, /fetch\s*\(|site-version|innerHTML/);
   // Content clears the fixed header on screen, and reclaims the space in print.
-  assert.match(css, /\.wrap \{ max-width: 1000px; margin: 0 auto; padding: calc\(var\(--site-header-height\) \+ 20px\) 16px 64px; \}/);
+  assert.match(css, /\.wrap \{ max-width: 1000px; margin: 0 auto; padding: calc\(var\(--site-header-height\) \+ 20px\) 16px 0; \}/);
   assert.match(css, /@media print \{[\s\S]*?\.wrap \{ padding-top: 20px; \}/);
   assert.match(css, /html \{[^}]*scroll-padding-top: calc\(var\(--site-header-height\) \+ 12px\)/);
   // Every header control is one height, and the bar is sized to match it.
@@ -1099,7 +1152,8 @@ test("the seam into the tool is wider than the page's other major seams", () => 
   // The strip is the panel's top edge now, so the tool seam is above the tabs
   // and there is no gap below them to collapse with anything.
   assert.match(css, /\.workspace \{ position: relative; margin: var\(--space-lede\) 0 0; \}/);
-  assert.match(css, /\.sources \{ margin-top: var\(--space-major\); \}/);
+  // The card's surface comes off it: no background, no border, padding kept.
+  assert.match(css, /\.sources \{ margin-top: var\(--space-major\); background: none; border: 0; \}/);
   for (const markup of [template, app]) {
     assert.match(markup, /<section class="card muted sources">/);
   }
@@ -1348,6 +1402,10 @@ test("the workspace switcher keeps every tool on screen as a tab strip", () => {
     assert.match(markup, /<div class="workspace-panel" id="workspace-panel">/);
   }
   assert.match(css, /\.workspace-panel \{[^}]*border: 1px solid var\(--border\); border-radius: 0 0 20px 20px;/s);
+  // Cards in the panel close on their own edge; the page's other cards, the
+  // pitch and the sources among them, keep the shared 16px both ways.
+  assert.match(css, /\.workspace-panel \.card \{ margin-bottom: 0; \}/);
+  assert.match(css, /\.card \{[^}]*margin: 16px 0; \}/);
   // Every tool panel lives inside it, and the closing Sources card does not.
   for (const markup of [template, appSource]) {
     const panel = markup.slice(markup.indexOf('<div class="workspace-panel"'), markup.indexOf('class="card muted sources"'));

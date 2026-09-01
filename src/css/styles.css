@@ -94,13 +94,18 @@ button:not(:disabled):active {
   border-color: var(--selection-accent) !important;
 }
 button:not(:disabled):active * { color: inherit !important; }
-.wrap { max-width: 1000px; margin: 0 auto; padding: calc(var(--site-header-height) + 20px) 16px 64px; }
+/* No bottom padding: the closing footer supplies the page's last band of
+   space itself, so it sits flush with the bottom of the document. */
+.wrap { max-width: 1000px; margin: 0 auto; padding: calc(var(--site-header-height) + 20px) 16px 0; }
 .kicker { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 20px; margin: 16px 0; }
 /* Major seam above the closing Sources card. It collapses with the previous
    card's 16px, so the larger value wins rather than the two adding up. The seam
    below the marketing card lives on #workspace and is deliberately wider. */
-.sources { margin-top: var(--space-major); }
+/* It keeps .card for its padding and seam, but not the surface: the closing
+   reference list reads as the page's own bottom matter rather than one more
+   panel. Padding stays, so its text still aligns with the cards above. */
+.sources { margin-top: var(--space-major); background: none; border: 0; }
 .warn { background: color-mix(in oklab, var(--danger) 12%, var(--bg)); border-color: color-mix(in oklab, var(--danger) 40%, var(--border)); }
 .muted { color: var(--muted); font-size: 14px; line-height: 1.5; }
 /* The pitch is a set of discrete claims rather than prose, so it reads as a
@@ -108,6 +113,11 @@ button:not(:disabled):active * { color: inherit !important; }
    bottom one lets the card's own padding close it out. */
 .pitch-list { display: grid; gap: 7px; margin: var(--space-component) 0 0; padding-left: 20px; }
 .sources-heading { color: var(--fg); font-size: 1.17rem; }
+/* One step dimmer than the .muted it carries for its size and leading, so
+   the closing line sits behind the sources it follows. The banana is the
+   one thing in it worth reading, so it keeps its own size. */
+.page-footer { margin-top: var(--space-lede); padding: 24px 0; border-top: 1px solid var(--border); text-align: center; color: var(--faint); }
+.page-footer-emoji { font-size: 1.5em; line-height: 1; vertical-align: -0.15em; }
 .row { display: flex; flex-wrap: wrap; gap: 8px; }
 .tab, .btn {
   min-height: 44px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--border);
@@ -922,6 +932,10 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .tool-intro > .muted { max-width: 760px; margin: 0; }
 .workspace-panel > :first-child { margin-top: 0; }
 .workspace-panel > :last-child { margin-bottom: 0; }
+/* Inside the panel a card closes on its own bottom edge. Whatever follows
+   brings its own 16px top margin (they collapsed to one 16px before), so the
+   only thing this drops is the gap left above the panel's bottom padding. */
+.workspace-panel .card { margin-bottom: 0; }
 .segmented-control {
   display: flex; align-items: stretch; flex-wrap: wrap; gap: 0; max-width: 100%; isolation: isolate;
 }
@@ -1393,9 +1407,15 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   width: 36px; min-width: 36px; min-height: 44px; padding: 0; border: 0; border-radius: 0;
   background: transparent; box-shadow: none; color: var(--muted); font-size: 28px; line-height: 1; cursor: pointer;
 }
-.add-key:hover { background: transparent; color: var(--accent); }
+.add-key:not(:disabled):hover { background: transparent; color: var(--accent); }
 .add-key:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
-.add-key:active { background: transparent; color: var(--accent); }
+.add-key:not(:disabled):active { background: transparent; color: var(--accent); }
+/* The minus is disabled while a single key or multisig is all there is. It
+   drops to the border tone, which sits close to its ground in either theme,
+   and stops answering hover, so nothing about it invites a click. Disabled
+   controls are exempt from the contrast floor, and the state is on the
+   element for assistive tech besides. */
+.add-key:disabled { color: var(--border); cursor: not-allowed; }
 .add-item-control { position: relative; display: inline-flex; flex: 0 0 auto; }
 .add-item-tooltip {
   position: absolute; top: calc(100% + 10px); right: 0; z-index: 10; width: max-content; max-width: min(240px, calc(100vw - 32px));
