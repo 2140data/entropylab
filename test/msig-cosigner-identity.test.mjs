@@ -38,7 +38,7 @@ function loadIdentityFn() {
   const path = join(root, "test", `.msig-identity-${Math.random().toString(16).slice(2)}.mjs`);
   writeFileSync(
     path,
-    `import { hex as M } from "@scure/base";\n${app.slice(start, end)}\nexport { hodlCanonicalMultisigKey };\n`,
+    `import { hex as hodlHex } from "@scure/base";\n${app.slice(start, end)}\nexport { hodlCanonicalMultisigKey };\n`,
   );
   return path;
 }
@@ -115,7 +115,7 @@ test("both duplicate checks and the final script guard use derivation identity",
   assert.match(app, /function hodlDuplicateMultisigKey\(ta, parsed\) \{\s*let canonical = hodlCanonicalMultisigKey\(parsed\)/);
   assert.match(app, /canonical = hodlCanonicalMultisigKey\(parsed\);\s*if \(xpubs\.includes\(canonical\)\) throw new Error\(`Co-signer \$\{index \+ 1\} duplicates an earlier co-signer/);
   // Final defense: a generated script never contains a repeated public key.
-  assert.match(app, /new Set\(publicKeys\.map\(M\.encode\)\)\.size !== publicKeys\.length/);
+  assert.match(app, /new Set\(publicKeys\.map\(hodlHex\.encode\)\)\.size !== publicKeys\.length/);
   // Identity ignores the reserialized extended key (which carries metadata).
   const start = app.indexOf("function hodlCanonicalMultisigKey(");
   const end = app.indexOf("function hodlDuplicateMultisigKey", start);

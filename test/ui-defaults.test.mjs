@@ -94,7 +94,7 @@ test("key and multisig derivation use an indexed address window with an estimate
   assert.match(appSource, /Math\.min\(hodlMaxAddressRange, hodlMaxAddressIndex - start \+ 1\)/);
   assert.match(appSource, /if \(\/\^\\d\+\$\/\.test\(rangeRaw\)[^\n]*range > maximum\) rangeInput\.value = String\(maximum\)/);
   assert.match(appSource, /Max \$\{maximum\.toLocaleString\(\)\}/);
-  assert.match(appSource, /for \(let index = startIndex; index < startIndex \+ o; index\+\+\)/);
+  assert.match(appSource, /for \(let index = startIndex; index < startIndex \+ count; index\+\+\)/);
   assert.match(appSource, /function hodlInitAddressBenchmark\(\)/);
   assert.match(appSource, /requestIdleCallback\(run, \{ timeout: 750 \}\)/);
   assert.match(appSource, /var hodlAddressVirtualThreshold = 24, hodlAddressVirtualRowHeight = 34, hodlAddressVirtualOverscan = 6/);
@@ -135,7 +135,7 @@ test("key and multisig derivation select one or two address branches", () => {
   assert.match(appSource, /function hodlReadBranchWindow\(prefix = "", mark = true\)/);
   assert.match(appSource, /function hodlAddressBranchLabel\(branch\)/);
   assert.match(appSource, /branch: Boolean\(fields\.branchHarden\)/);
-  assert.match(appSource, /hodlPathIndex\(chain, branchHardened\)/);
+  assert.match(appSource, /hodlPathComponent\(chain, branchHardened\)/);
   assert.match(appSource, /Hardened address branches cannot be derived from the supplied multisig extended public keys/);
   assert.match(appSource, /branch === 0 \? "Receive" : branch === 1 \? "Change" : `Custom branch \$\{branch\}`/);
   assert.match(appSource, /progress\.setTotal\(count \* branchRange\)/);
@@ -175,7 +175,7 @@ test("direct dice and card methods expose manual BIP39 calculations before copyi
   assert.match(appSource, /id="show-manual-calculations"/);
   assert.match(appSource, /id="dice-manual-calculations" class="manual-calculations-container"/);
   assert.match(appSource, /id="cards-manual-calculations" class="manual-calculations-container"/);
-  assert.match(appSource, /function hodlManualCalculationMarkup\(method, value, targetWords = Pt\)/);
+  assert.match(appSource, /function hodlManualCalculationMarkup\(method, value, targetWords = hodlTargetWordCount\)/);
   assert.match(appSource, /hodlRenderManualCalculations\("dice-manual-calculations",\s*"dplus"/);
   assert.match(appSource, /hodlRenderManualCalculations\("dice-manual-calculations",\s*"bitbox"/);
   assert.match(appSource, /hodlRenderManualCalculations\("cards-manual-calculations",\s*"cards"/);
@@ -199,7 +199,7 @@ test("Seed phrase offers one-based or zero-based BIP39 word-number entry", () =>
   assert.match(appSource, /0–2047 instead of the default 1–2048/);
   assert.match(appSource, /function hodlTranslateSeedNumberIndex\(value, toZeroIndexed\)/);
   assert.match(appSource, /function hodlSeedNumberCanInsertDigit\(input, digit, zeroIndexed = hodlSeedZeroIndexed\)/);
-  assert.match(appSource, /function hodlAutocompleteSeedNumberInput\(input, event, targetWords = Pt, zeroIndexed = hodlSeedZeroIndexed\)/);
+  assert.match(appSource, /function hodlAutocompleteSeedNumberInput\(input, event, targetWords = hodlTargetWordCount, zeroIndexed = hodlSeedZeroIndexed\)/);
   assert.match(appSource, /number <= 204 \|\| number > maximum/);
   assert.match(appSource, /class="dice-input-pad seed-number-pad"/);
   assert.match(appSource, /\[0, 1, 2, 3, 4, 5, 6, 7, 8, 9\]/);
@@ -230,11 +230,11 @@ test("Number bases offers exact Base 2, 4, 8, 16, Crockford Base32, and Base64-a
   }
   assert.match(app, /alphabet:"0123456789ABCDEFGHJKMNPQRSTVWXYZ"/);
   assert.match(app, /alphabet:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789\+\/"/);
-  assert.match(app, /function hodlNumberBaseEntropy\(value,format,targetWords=Pt\)/);
-  assert.match(app, /function hodlNumberBasePreviewWords\(value,format,targetWords=Pt\)/);
-  assert.match(app, /function hodlNumberBaseValueFromBytes\(bytes,format,targetWords=Pt\)/);
+  assert.match(app, /function hodlNumberBaseEntropy\(value,format,targetWords=hodlTargetWordCount\)/);
+  assert.match(app, /function hodlNumberBasePreviewWords\(value,format,targetWords=hodlTargetWordCount\)/);
+  assert.match(app, /function hodlNumberBaseValueFromBytes\(bytes,format,targetWords=hodlTargetWordCount\)/);
   assert.match(app, /id="show-number-base-calculations"/);
-  assert.match(app, /function hodlBinaryCalculationRows\(value,targetWords=Pt\)/);
+  assert.match(app, /function hodlBinaryCalculationRows\(value,targetWords=hodlTargetWordCount\)/);
   assert.match(app, /id="number-base-calculations" class="number-base-calculations-panel"/);
   assert.match(appSource, /id="global-sync-host"/);
   assert.doesNotMatch(appSource, /global-sync-hash-host/);
@@ -320,17 +320,17 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /function hodlCycleSeedKeyboardLayout\(keyboard,button\)/);
   assert.match(app, /function hodlSetSeedKeyboardLayout\(keyboard,button,next\)/);
   assert.match(app, /order=\["lower","upper","number"\]/);
-  assert.match(app, /function hodlSeedKeyboardCanEnterCharacter\(input,key,targetWords=Pt\)/);
-  assert.match(app, /hodlBip39WordIndex=new Map\(Ae\.map\(\(word,index\)=>\[word,index\]\)\)/);
+  assert.match(app, /function hodlSeedKeyboardCanEnterCharacter\(input,key,targetWords=hodlTargetWordCount\)/);
+  assert.match(app, /hodlBip39WordIndex=new Map\(hodlBip39Wordlist\.map\(\(word,index\)=>\[word,index\]\)\)/);
   assert.match(app, /hodlLastWordCache=new Map(?:\(\))?/);
-  assert.match(app, /function hodlComputeTargetLastWords\(words,targetWords=Pt\)/);
+  assert.match(app, /function hodlComputeTargetLastWords\(words,targetWords=hodlTargetWordCount\)/);
   assert.match(app, /missingEntropyBits=config\.bits-prefixBits\.length/);
   assert.match(app, /for\(let suffix=0;suffix<2\*\*missingEntropyBits;suffix\+\+\)/);
   assert.match(app, /let finalContext=analysis\.finalContext,validation=/);
   assert.match(app, /options=context\.candidates/);
-  assert.match(app, /function hodlSeedKeyboardCanEnterSpace\(input,targetWords=Pt\)/);
+  assert.match(app, /function hodlSeedKeyboardCanEnterSpace\(input,targetWords=hodlTargetWordCount\)/);
   assert.match(app, /words\.length<config\.words&&words\.every\(word=>hodlBip39WordSet\.has\(word\)\)/);
-  assert.match(app, /function hodlUpdateSeedKeyboardKeys\(input,targetWords=Pt\)/);
+  assert.match(app, /function hodlUpdateSeedKeyboardKeys\(input,targetWords=hodlTargetWordCount\)/);
   // The seed keyboard doubles as the passphrase keyboard while that field has
   // focus, so the key-state update takes whichever keyboard is asking.
   assert.match(app, /function hodlUpdatePassphraseKeyboardKeys\(input,keyboardId="passphrase-keyboard"\)/);
@@ -392,7 +392,7 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(app, /hodlKeyboardMarkup\(!0,"private key","private-keyboard",!0\)/);
   assert.doesNotMatch(app, /hodlKeyboardMarkup\(!0\)/);
   assert.match(app, /function hodlRenderPassphraseKeyboard\(\)/);
-  assert.match(app, /keyMode=Ne==="key",hdBrain=hodlBrainHdActive\(\),privateKey=keyMode,passphrase=!keyMode\|\|hdBrain/);
+  assert.match(app, /keyMode=hodlKeyMode==="key",hdBrain=hodlBrainHdActive\(\),privateKey=keyMode,passphrase=!keyMode\|\|hdBrain/);
   // Where the seed keyboard exists it already follows focus into the passphrase
   // box, so no second on-screen keyboard is rendered underneath it.
   assert.match(app, /shared=passphrase&&!!document\.getElementById\("seed-keyboard"\),ownToggle=passphrase&&!shared&&!hdBrain,enabled=!shared/);
@@ -447,7 +447,7 @@ test("seed phrase mode has a lowercase Jade-style on-screen keyboard", () => {
   assert.match(css, /\.passphrase-bip39-options \{[^}]*flex: 1 1 auto[^}]*gap: var\(--space-control\)/s);
   assert.match(css, /\.passphrase-bip39-toggle, \.passphrase-autocomplete-toggle \{[^}]*width: 100%[^}]*margin-top: 0/s);
   assert.match(css, /\.passphrase-keyboard-host \.seed-keyboard \{ margin-top: var\(--space-control\); margin-right: auto; margin-left: 0; \}/);
-  assert.match(css, /\.seed-keyboard-toggle\s*\{[^}]*width: 44px[^}]*min-height: 44px[^}]*height: auto/s);
+  assert.match(css, /\.seed-keyboard-toggle,\s*\.theme-toggle\s*\{[^}]*width: 44px[^}]*min-height: 44px[^}]*height: auto/s);
   assert.match(css, /\.seed-keyboard-toggle svg \{[^}]*width: 30px[^}]*height: 22px/s);
   assert.match(css, /\.seed-keyboard-icon-case \{[^}]*fill: none[^}]*stroke: currentColor/s);
   assert.match(css, /\.seed-keyboard\s*\{[^}]*gap: 4px[^}]*max-width: 640px[^}]*margin: var\(--space-control\) auto 0 0[^}]*padding: 7px 8px/s);
@@ -501,7 +501,7 @@ test("one editable derivation path replaces schemes and accepts arbitrary depth"
   assert.match(appSource, /function hodlParseCustomDerivationPath\(value\)/);
   assert.match(appSource, /function hodlReadVisibleDerivationPath\(mark = true\)/);
   assert.match(appSource, /\.\.\.existing\.slice\(3\)/);
-  assert.match(appSource, /accountPath = derivationPlan\?\.accountPath \|\| Ao/);
+  assert.match(appSource, /accountPath = derivationPlan\?\.accountPath \|\| hodlAccountPath/);
 });
 
 test("advanced derivation indexes constrain and restore hardening suffixes", () => {
@@ -529,7 +529,7 @@ test("derivation indexes keep adjacent Harden controls with safe defaults", () =
   assert.match(appSource, /function hodlReadHardening\(prefix = ""\)/);
   assert.match(appSource, /function hodlSyncDerivationPrime\(input\)/);
   assert.match(appSource, /prime\.dataset\.indexValue = String\(input\.value \?\? ""\)/);
-  assert.match(appSource, /hodlPathIndex\(e\.purpose, hardening\.purpose\)/);
+  assert.match(appSource, /hodlPathComponent\(e\.purpose, hardening\.purpose\)/);
   assert.match(appSource, /Hardened address indexes cannot be derived from multisig extended public keys/);
 });
 
@@ -540,7 +540,7 @@ test("multisig script type and placeholders follow detected co-signer exports", 
     assert.match(markup, /id="msig-go"[^>]*aria-describedby="msig-script-warning"/);
   }
   assert.match(template, /placeholder="\[fingerprint\/48h\/0h\/0h\/2h\]Zpub…"/);
-  assert.match(app, /function hodlMultisigKeyPlaceholder\(kind,network,purpose,coinType=Rs\(network\),hardening=/);
+  assert.match(app, /function hodlMultisigKeyPlaceholder\(kind,network,purpose,coinType=hodlCoinTypeFromNetwork\(network\),hardening=/);
   assert.match(appWhitespace, /kind==="p2sh"&&purpose===45\)return`\[fingerprint\/\$\{purposeStep\}\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
   assert.match(appWhitespace, /kind==="p2sh"\|\|purpose===87\)return`\[fingerprint\/\$\{purposeStep\}\/\$\{coin\}\/\$\{account\}\]\$\{testnet\?"tpub":"xpub"\}(?:…|\\u2026)`/);
   assert.match(app, /testnet\?"Upub":"Ypub"/);
@@ -556,7 +556,7 @@ test("multisig script type and placeholders follow detected co-signer exports", 
 });
 
 test("key derivation shows the relevant paste-ready multisig co-signer exports", () => {
-  assert.match(app, /function hodlBuildMultisigCosignerExports\(root,network,accountIndex,masterFingerprint,coinType=Rs\(network\)\)/);
+  assert.match(app, /function hodlBuildMultisigCosignerExports\(root,network,accountIndex,masterFingerprint,coinType=hodlCoinTypeFromNetwork\(network\)\)/);
   assert.match(appWhitespace, /accountId:"bip44",kind:"p2sh",standard:"bip45",label:"Legacy (?:·|\\xB7) BIP45 (?:·|\\xB7) No account",family:"x",accountPath:"m\/45'",originPath:"45h"/);
   assert.match(appWhitespace, /accountId:"bip44",kind:"p2sh",standard:"bip87",label:`Legacy (?:·|\\xB7) BIP87 (?:·|\\xB7) Account \$\{accountIndex\}`,family:"x",accountPath:`m\/87'\/\$\{coinType\}'\/\$\{accountIndex\}'`,originPath:`87h\/\$\{coinType\}h\/\$\{accountIndex\}h`/);
   assert.match(appWhitespace, /accountId:"bip49",kind:"p2sh-p2wsh",label:"Nested SegWit (?:·|\\xB7) BIP48",family:"y",scriptIndex:1/);
@@ -567,8 +567,8 @@ test("key derivation shows the relevant paste-ready multisig co-signer exports",
   assert.match(app, /multisigCosignerExports:root\.privateKey\?hodlBuildMultisigCosignerExports\(root,network,accountIndex,masterFingerprint,coinType\):\[\]/);
   assert.match(app, /function hodlRenderMultisigCosignerExport\(exports,accountId\)/);
   assert.match(app, /exports\.filter\(candidate=>candidate\.accountId===accountId\)/);
-  assert.match(appWhitespace, /items\.map\(item=>ye\(`Multisig co-signer \$\{item\.prefix\} · \$\{item\.label\}`,item\.value\)\)\.join\(""\)/);
-  assert.match(app, /\$\{hodlSlip132WatchFields\(account,re\)\}\s*\$\{hodlImportedCoreRecoveryExport\(re,account\)\}\s*\$\{hodlRenderMultisigCosignerExport\(re\.multisigCosignerExports,account\.def\.id\)\}/);
+  assert.match(appWhitespace, /items\.map\(item=>hodlPublicFieldHtml\(`Multisig co-signer \$\{item\.prefix\} · \$\{item\.label\}`,item\.value\)\)\.join\(""\)/);
+  assert.match(app, /\$\{hodlSlip132WatchFields\(account,hodlWalletResult\)\}\s*\$\{hodlImportedCoreRecoveryExport\(hodlWalletResult,account\)\}\s*\$\{hodlRenderMultisigCosignerExport\(hodlWalletResult.multisigCosignerExports,account\.def\.id\)\}/);
   assert.doesNotMatch(`${app}\n${css}`, /account-multisig-exports/);
   assert.match(app, /Legacy P2SH requires the depth-1 BIP45 purpose key at m\/45h/);
   assert.match(app, /suffix=bip45\?`\/0\/\$\{branch\}\/\*`:`\/\$\{branch\}\/\*`/);
@@ -999,12 +999,14 @@ test("the online and noscript warnings are titled like the beta banner", () => {
 });
 
 test("the beta disclaimer gates the page as a modal until accepted", () => {
-  // The overlay sits in the static template after the #btc-calc root: the
-  // application boot replaces that root's contents, so the gate must live
-  // outside it — and outside the runtime template — to survive boot.
-  const marker = template.indexOf("<!--/$-->");
+  // The overlay sits in the static template after the #btc-calc root (whose
+  // last child is the page footer): the application boot replaces that root's
+  // contents, so the gate must live outside it — and outside the runtime
+  // template — to survive boot.
+  const rootAt = template.indexOf('<div id="btc-calc">');
+  const footerAt = template.indexOf('<footer class="page-footer');
   const overlayAt = template.indexOf('<div class="disclaimer-overlay');
-  assert.ok(marker >= 0 && overlayAt > marker, "the disclaimer overlay must follow the #btc-calc root");
+  assert.ok(rootAt >= 0 && footerAt > rootAt && overlayAt > footerAt, "the disclaimer overlay must follow the #btc-calc root");
   assert.ok(overlayAt < template.indexOf("/*@@JS_BROWSER_CHECK@@*/"), "the disclaimer overlay must ship before the scripts");
   assert.doesNotMatch(appSource, /beta-disclaimer/, "the runtime template must not carry the disclaimer");
   // It starts hidden: the reveal is scripted, so a no-JavaScript host never
@@ -1070,7 +1072,7 @@ test("the layout has a 320px floor that the fixed header shares", () => {
 
 test("header theme toggle cycles dark, light, and OS themes without a flash", () => {
   for (const markup of [template, app]) {
-    assert.match(markup, /class="seed-keyboard-toggle theme-toggle header-button" id="theme-toggle" data-theme-mode="dark" aria-label="Theme: dark\. Switch to light"/);
+    assert.match(markup, /class="theme-toggle header-button" id="theme-toggle" data-theme-mode="dark" aria-label="Theme: dark\. Switch to light"/);
   }
   assert.match(template, /<script>\(function\(\)\{try\{var m=localStorage\.getItem\("entropylab-theme"\)/);
   assert.match(app, /var hodlThemeModes=\["dark","light"\],hodlThemeStorageKey="entropylab-theme"/);
@@ -1268,8 +1270,8 @@ test("dice rolls hide Pearson chi-squared fairness behind a text expand button",
   assert.match(app, /function hodlSetDiceFairnessOpen\(open\)/);
   assert.match(app, /function hodlChiSquaredCdf\(/);
   assert.match(app, /function hodlDiceFairnessAssess\(rolls,\s*labels,\s*title\)/);
-  assert.match(app, /function hodlRenderDiceFairness\(value,\s*method,\s*targetWords\s*=\s*Pt\)/);
-  assert.match(app, /hodlRenderDiceFairness\(input\.value,\s*ge,\s*config\.words\)/);
+  assert.match(app, /function hodlRenderDiceFairness\(value,\s*method,\s*targetWords\s*=\s*hodlTargetWordCount\)/);
+  assert.match(app, /hodlRenderDiceFairness\(input\.value,\s*hodlDiceMethod,\s*config\.words\)/);
   assert.match(app, /showDiceFairness:!1/);
   assert.match(app, /Looks pretty fair/);
   assert.match(app, /Looks biased/);
@@ -1306,7 +1308,7 @@ test("virtual keypads never focus the field on touch so the mobile keyboard stay
   assert.match(body("hodlPlaceCaret"), /document\.activeElement === input/);
   // Every keypad routes pointerdown through the shared binder; no pad focuses the input directly.
   assert.doesNotMatch(appSource, /pointerdown", \(event\) => \{\s*event\.preventDefault\(\);\s*\w+\.focus\(/);
-  for (const call of ['at.querySelectorAll("[data-d]")', 'at.querySelectorAll("[data-entropy-digit]")', 'at.querySelectorAll("[data-direct-card-rank], #card-undo")', 'pad.querySelectorAll("button")', 'keyboard.querySelectorAll("button")']) {
+  for (const call of ['hodlFormEl.querySelectorAll("[data-d]")', 'hodlFormEl.querySelectorAll("[data-entropy-digit]")', 'hodlFormEl.querySelectorAll("[data-direct-card-rank], #card-undo")', 'pad.querySelectorAll("button")', 'keyboard.querySelectorAll("button")']) {
     assert.ok(appSource.includes(`hodlBindKeypadPointer(${call}`), `${call} keypad is bound`);
   }
 });
@@ -1444,8 +1446,8 @@ test("the workspace switcher keeps every tool on screen as a tab strip", () => {
   assert.match(appSource, /strip\.setAttribute\("role", "tablist"\);/);
   assert.match(appSource, /button\.onclick = \(\) => hodlShowWorkspace\(id\);/);
   assert.match(appSource, /hodlInitTabDrag\(strip\);/);
-  assert.match(appSource, /\[\.\.\.W\("#workspace-tabs"\)\.querySelectorAll\("\[data-workspace\]"\)\]\.forEach/);
-  assert.match(appSource, /hodlRevealTab\(W\("#workspace-tabs"\)/);
+  assert.match(appSource, /\[\.\.\.hodlElement\("#workspace-tabs"\)\.querySelectorAll\("\[data-workspace\]"\)\]\.forEach/);
+  assert.match(appSource, /hodlRevealTab\(hodlElement\("#workspace-tabs"\)/);
   // A hint points at tools past the right edge. It tracks what is still out
   // there rather than merely whether the strip scrolls, so it clears once the
   // end is reached, and it is decorative: the tabs are the real route.
@@ -1509,7 +1511,7 @@ test("derived key results put private recovery before script type and addresses"
   assert.match(appSource, /id="account-address-heading">Addresses/);
   assert.match(appSource, /Verify the first selected address on another trusted wallet or signing device before accepting bitcoin\./);
   assert.doesNotMatch(appSource, /id="account-receive-heading">Receive/);
-  assert.match(appSource, /if \(state\) state\.reveal = Ge;/);
+  assert.match(appSource, /if \(state\) state\.reveal = hodlRevealPrivate;/);
   assert.match(appSource, /hodlBindWalletResultActions\(\);/);
 });
 
