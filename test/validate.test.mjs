@@ -171,6 +171,9 @@ test("the WASM boot chain has a failure path that kills the page", () => {
   );
   assert.match(app, /hodlCurveFailure/, "the boot rejection must render the sanity-failure kill screen");
   assert.match(app, /<tr><td>secp256k1 WebAssembly module<\/td><td>Failed<\/td><\/tr>/);
+  assert.match(app, /Lockdown Mode block WebAssembly/);
+  const check = read("src/js/browser-check.js");
+  assert.match(check, /Lockdown Mode block WebAssembly/);
 });
 
 test("the release build attests the wallet artifact and ships a checksum manifest (issue #58)", () => {

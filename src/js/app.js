@@ -10932,7 +10932,8 @@ const hodlCurveFailure = () => {
       <thead><tr><th>Startup sanity check</th><th>Result</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <p class="sanity-failure-advice">Open this file in a current, mainstream browser such as Firefox on a trusted, air-gapped computer.</p>
+    <p class="sanity-failure-advice">iPhone, iPad, and Mac Lockdown Mode block WebAssembly. This calculator needs it for secp256k1.</p>
+    <p class="sanity-failure-advice">In Safari: tap the page-menu button in the address bar, tap More, turn off Lockdown Mode for this website, then reload. Or open the saved HTML in Firefox on a trusted air-gapped computer. Do not enter seed material until every check passes.</p>
   </div>
 </main>`;
 };
