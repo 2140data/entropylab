@@ -15,6 +15,7 @@ import { psbtInspectDoc, psbtBuildBytes, psbtWasmReady } from "./psbt-wasm.js";
 import { expandableHtml, EXPAND_LIMIT, initExpandable } from "./expandable.js";
 import { psbtVizHtml } from "./psbt-viz.js";
 import { parseOpReturn } from "./opreturn.js";
+import { buildOutputScript } from "./script-builder.js";
 
 const hexToBytes = (hex) => {
   if (!/^(?:[0-9a-f]{2})*$/i.test(hex)) throw new Error("Invalid hexadecimal input.");
@@ -343,7 +344,8 @@ export const initPsbtEditor = () => {
           <td>${index}</td>
           <td><input class="psbted-num" data-txout-val="${index}" value="${escapeHtml(String(output.value))}" inputmode="numeric" aria-label="Output ${index} value in sats"> sats</td>
           <td><input class="psbted-txid" data-txout-script="${index}" value="${escapeHtml(output.scriptPubKey)}" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Output ${index} scriptPubKey (hex)">
-            <span class="${opret?.burn ? "psbted-note-warn" : "muted"} psbted-addr">${escapeHtml(addr || opret?.text || output.asm || "")}</span></td>
+            <span class="${opret?.burn ? "psbted-note-warn" : "muted"} psbted-addr">${escapeHtml(addr || opret?.text || output.asm || "")}</span>
+            <span class="psbted-build"><input data-build-script="${index}" placeholder="address · OP_… ASM · 0x raw hex · text" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Build output ${index} scriptPubKey from an address, ASM, or OP_RETURN text"><select data-build-mode="${index}" aria-label="Output ${index} script builder mode"><option value="auto" selected>Auto-detect</option><option value="opreturn-text">OP_RETURN text</option><option value="opreturn-hex">OP_RETURN hex</option><option value="asm">Script ASM</option></select><button type="button" class="btn secondary" data-build-apply="${index}">Set script</button></span></td>
           <td><button type="button" class="psbted-del" data-txout-del="${index}" aria-label="Delete output ${index}">×</button></td>
         </tr>`;
       })
@@ -602,6 +604,33 @@ export const initPsbtEditor = () => {
           draft.tx.outputs.splice(index, 1);
           draft.outputs.splice(index, 1);
         });
+      })
+    );
+
+    // The output-script builder writes its result into the output's
+    // scriptPubKey field as a pending field edit — exactly as if the user
+    // had typed the hex — so it validates on Re-serialize like everything
+    // else. Builder errors (bad address, unknown ASM token) show inline.
+    const applyBuiltScript = (index) => {
+      const text = out.querySelector(`[data-build-script="${index}"]`)?.value ?? "";
+      const mode = out.querySelector(`[data-build-mode="${index}"]`)?.value ?? "auto";
+      try {
+        const built = buildOutputScript(text, { network: network.value, mode });
+        doc.tx.outputs[Number(index)].scriptPubKey = built.scriptHex;
+        setError("");
+        render();
+        renderResult();
+      } catch (exception) {
+        setError(exception.message || String(exception));
+      }
+    };
+    out.querySelectorAll("[data-build-apply]").forEach((button) => button.addEventListener("click", () => applyBuiltScript(button.dataset.buildApply)));
+    out.querySelectorAll("[data-build-script]").forEach((input) =>
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          applyBuiltScript(input.dataset.buildScript);
+        }
       })
     );
 

@@ -1045,6 +1045,11 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
    line) is one long unbroken bech32 string: wrap it anywhere so it can
    never overflow the cell or the card. */
 .psbted-addr { display: block; margin-top: 2px; overflow-wrap: anywhere; }
+/* The output-script builder sits inside the scriptPubKey cell under the hex
+   field: one wide text input, a compact mode select and the Set button. */
+.psbted-build { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px; margin-top: 4px; }
+.psbted-build input, .psbted-build select { margin-top: 0; padding: 6px 8px; border-radius: 6px; font-size: 12px; }
+.psbted-build .btn { min-height: 0; padding: 6px 10px; }
 .psbted-map > p { overflow-wrap: anywhere; }
 .psbted-del { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--danger); cursor: pointer; padding: 4px 10px; font-size: 14px; line-height: 1; }
 .psbted-add { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 2fr) auto; gap: 8px; align-items: center; margin: 4px 0 14px; }
