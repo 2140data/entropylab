@@ -1166,14 +1166,16 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 }
 .master-fingerprint-heading { flex: 0 0 100%; margin: 0 0 -4px; }
 .master-fingerprint-card {
-  flex: 0 1 180px; min-width: 0; padding: 10px 12px; border: 1px solid var(--border);
+  flex: 0 1 180px; min-width: 0; display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px; column-gap: 8px; row-gap: 2px;
+  align-items: center; padding: 10px 12px; border: 1px solid var(--border);
   border-radius: 10px; background: var(--surface-2);
   transition: background-color .16s ease, border-color .16s ease;
 }
 /* The fixed-size frame stays present while the fingerprint is unavailable, so
    resolving a LifeHash never changes the card height or shifts nearby fields. */
 .master-fingerprint-lifehash-frame {
-  float: right; display: block; width: 40px; height: 40px; margin-left: 8px;
+  grid-column: 2; grid-row: 1 / span 2; display: block; width: 40px; height: 40px;
   border: 1px solid var(--border); border-radius: 4px; overflow: hidden; background: transparent;
 }
 .master-fingerprint-lifehash {
@@ -1181,11 +1183,11 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 }
 .master-fingerprint-lifehash[hidden] { display: none; }
 .master-fingerprint-label {
-  display: block; color: var(--muted); font-size: 12px; line-height: 1.35;
+  grid-column: 1; min-width: 0; color: var(--muted); font-size: 12px; line-height: 1.35;
   transition: color .16s ease, opacity .16s ease;
 }
 .master-fingerprint-value {
-  display: block; min-height: 1.25em; margin-top: 4px; color: var(--fg); font-family: var(--mono);
+  grid-column: 1; min-width: 0; min-height: 1.25em; overflow: hidden; color: var(--fg); font-family: var(--mono);
   font-size: 16px; font-weight: 700; line-height: 1.25; letter-spacing: .08em; white-space: nowrap;
   transition: color .16s ease, opacity .16s ease;
 }
@@ -1259,18 +1261,10 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
   .key-settings-row { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 520px) {
-  .master-fingerprint-preview { gap: 8px; }
-  .master-fingerprint-card { flex: 1 1 0; padding: 9px; }
-  .master-fingerprint-label { font-size: 11px; }
-  .master-fingerprint-value { font-size: 14px; }
-  .master-fingerprint-arrow { font-size: 22px; }
-}
-@media (max-width: 360px) {
-  .master-fingerprint-preview { gap: 5px; }
-  .master-fingerprint-card { padding: 8px 7px; }
-  .master-fingerprint-label { font-size: 10px; }
-  .master-fingerprint-value { font-size: 13px; letter-spacing: .04em; }
-  .master-fingerprint-arrow { font-size: 18px; }
+  .master-fingerprint-preview { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .master-fingerprint-heading { margin: 0; }
+  .master-fingerprint-card { padding: 10px 12px; }
+  .master-fingerprint-arrow { justify-self: center; transform: rotate(90deg); font-size: 22px; }
 }
 .last-word-field { flex: 1 1 260px; max-width: 420px; margin-top: 0 !important; }
 .last-word-field .custom-select-list {
