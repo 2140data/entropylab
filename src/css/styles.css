@@ -1050,6 +1050,12 @@ input.bad, textarea.bad { border-color: var(--danger) !important; }
 .psbted-build { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px; margin-top: 4px; }
 .psbted-build input, .psbted-build select { margin-top: 0; padding: 6px 8px; border-radius: 6px; font-size: 12px; }
 .psbted-build .btn { min-height: 0; padding: 6px 10px; }
+/* The edited PSBT as a QR follows every successful rebuild; while the
+   fields do not build, the last valid build (text and QR) stays, dimmed. */
+.psbted-qr-block { margin: 12px 0 4px; }
+.psbted-qr { padding: 12px; }
+.psbted-qr svg { width: 240px; height: 240px; }
+.psbted-stale { opacity: 0.55; }
 .psbted-map > p { overflow-wrap: anywhere; }
 .psbted-del { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--danger); cursor: pointer; padding: 4px 10px; font-size: 14px; line-height: 1; }
 .psbted-add { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 2fr) minmax(0, 2fr) auto; gap: 8px; align-items: center; margin: 4px 0 14px; }

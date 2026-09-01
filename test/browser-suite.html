@@ -1159,7 +1159,7 @@
     await until(() => !document.getElementById("calc-card").hidden, "key workspace");
   });
 
-  await test("PSBT editor decodes, edits, and re-serializes a BIP-174 vector", async () => {
+  await test("PSBT editor decodes, edits, and rebuilds a BIP-174 vector live", async () => {
     // BIP-174 valid vector 2 (rust-bitcoin's valid_vector_2): two inputs —
     // a finalized P2PKH scriptSig and a nested P2WPKH — and two outputs.
     const vector = "cHNidP8BAKACAAAAAqsJSaCMWvfEm4IS9Bfi8Vqz9cM9zxU4IagTn4d6W3vkAAAAAAD+////qwlJoIxa98SbghL0F+LxWrP1wz3PFTghqBOfh3pbe+QBAAAAAP7///8CYDvqCwAAAAAZdqkUdopAu9dAy+gdmI5x3ipNXHE5ax2IrI4kAAAAAAAAGXapFG9GILVT+glechue4O/p+gOcykWXiKwAAAAAAAEHakcwRAIgR1lmF5fAGwNrJZKJSGhiGDR9iYZLcZ4ff89X0eURZYcCIFMJ6r9Wqk2Ikf/REf3xM286KdqGbX+EhtdVRs7tr5MZASEDXNxh/HupccC1AaZGoqg7ECy0OIEhfKaC3Ibi1z+ogpIAAQEgAOH1BQAAAAAXqRQ1RebjO4MsRwUPJNPuuTycA5SLx4cBBBYAFIXRNTfy4mVAWjTbr6nj3aAfuCMIAAAA";
@@ -1172,13 +1172,17 @@
     assert(outText().includes("PSBT_IN_WITNESS_UTXO"), "typed pair names missing");
     assert(outText().includes("100000000 sats"), "witness utxo amount missing");
     assert(outText().includes("parses under rust-bitcoin"), "rust-bitcoin verdict missing");
+    // The loaded PSBT builds at once: result text and QR without a click.
+    assert((document.getElementById("psbted-result-b64") || {}).value.startsWith("cHNidP8B"), "result did not follow the load");
+    assert(document.querySelector("#psbted-qr-code svg"), "QR did not follow the load");
     const valueInput = document.querySelector("[data-txout-val='0']");
     input(valueInput, "199901000");
-    document.getElementById("psbted-build").click();
-    await until(() => (document.getElementById("psbted-result-b64") || {}).value || document.getElementById("psbted-error").textContent, "editor rebuild");
-    equal(document.getElementById("psbted-error").textContent, "", "editor rebuild failed");
+    // Live editing: the input event itself rebuilds — there is no Re-serialize.
+    await until(() => outText().includes("199901000") || document.getElementById("psbted-error").textContent, "live rebuild");
+    equal(document.getElementById("psbted-error").textContent, "", "live rebuild failed");
     const edited = document.getElementById("psbted-result-b64").value;
     assert(edited.startsWith("cHNidP8B") && edited !== vector, "edited PSBT missing or unchanged");
+    assert(!document.getElementById("psbted-build"), "the Re-serialize button is gone");
     assert(outText().includes("199901000"), "edited amount was not re-decoded");
     input(box, '<img src=x onerror="window.__browserTestInjected=true">');
     document.getElementById("psbted-load").click();
@@ -1275,8 +1279,9 @@
     area.value = longValue.slice(0, -2) + "cd";
     document.getElementById("exp-apply").click();
     assert(overlay.hidden, "Apply did not close the overlay");
-    document.getElementById("psbted-build").click();
-    await until(() => (document.getElementById("psbted-result-hex") || {}).value || document.getElementById("psbted-error").textContent, "editor rebuild");
+    // Applying the overlay edit rebuilds live; wait for the result hex to
+    // carry the edited value.
+    await until(() => (document.getElementById("psbted-result-hex") || { value: "" }).value.includes(longValue.slice(0, -2) + "cd") || document.getElementById("psbted-error").textContent, "editor rebuild");
     equal(document.getElementById("psbted-error").textContent, "", "editor rebuild failed");
     assert(document.getElementById("psbted-result-hex").value.includes(longValue.slice(0, -2) + "cd"), "overlay edit did not reach the rebuilt PSBT");
     // A long key truncates read-only and Escape closes the overlay. The table
@@ -1358,19 +1363,17 @@
     const lit = document.querySelectorAll("#psbted-out .psbted-viz-line.is-open");
     equal(lit.length, 1, "open box's connector not highlighted");
     assert(lit[0].classList.contains("psbted-viz-line-in"), "wrong connector highlighted");
-    // Edit the witness UTXO's claimed amount in the panel (3,900,000 sats LE)
-    // and re-serialize: the diagram re-decodes the new claim.
+    // Edit the witness UTXO's claimed amount in the panel (3,900,000 sats
+    // LE): the live rebuild re-decodes the new claim into the diagram.
     const claim = panel.querySelector('.psbted-value[data-kind="input"][data-map="1"][data-pair="0"]');
     input(claim, "60823b000000000017a9143545e6e33b832c47050f24d3eeb93c9c03948bc787");
-    document.getElementById("psbted-build").click();
-    await until(() => (document.getElementById("psbted-result-b64") || {}).value || document.getElementById("psbted-error").textContent, "editor rebuild");
-    equal(document.getElementById("psbted-error").textContent, "", "editor rebuild failed");
+    await until(() => document.querySelector("#psbted-out .psbted-viz").textContent.includes("3\u202f900\u202f000 sats") || document.getElementById("psbted-error").textContent, "live rebuild of the claim");
+    equal(document.getElementById("psbted-error").textContent, "", "live rebuild failed");
     assert(document.querySelector("#psbted-out .psbted-viz").textContent.includes("3\u202f900\u202f000 sats"), "edited claim was not re-decoded into the diagram");
     assert(document.getElementById("psbted-viz-detail"), "panel did not stay open across the rebuild");
     // The output boxes edit the unsigned transaction inline (WYSIWYG).
     const sats = document.querySelector('.psbted-viz [data-txout-val="0"]');
     input(sats, "199902000");
-    document.getElementById("psbted-build").click();
     await until(() => document.getElementById("psbted-error").textContent === "" && document.querySelector('.psbted-viz [data-txout-val="0"]').value === "199902000" ? true : document.getElementById("psbted-error").textContent, "inline amount rebuild");
     equal(document.getElementById("psbted-error").textContent, "", "inline amount rebuild failed");
     // × puts the map back into the sections list.
