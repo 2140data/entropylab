@@ -93,9 +93,12 @@ Official website: [entropylab.online](https://entropylab.online)
   sender taproot outputs from pasted vin JSON, and receiver verification of
   pasted x-only outputs. This is a calculator: it does not scan the chain.
 - Runs a quick barrage of startup sanity checks on the host browser (secure
-  context, CSPRNG, BigInt, UTF-8 encoding, and NFKD normalization). If any
+  context, CSPRNG, BigInt, UTF-8 encoding, NFKD, and WebAssembly). If any
   check fails, the page is replaced with a failure report listing the failed
   checks, because wallet output from a broken host cannot be trusted.
+  iPhone/iPad/Mac Lockdown Mode blocks WebAssembly (the secp256k1 engine):
+  exclude the site in Safari's page menu, or open the saved HTML in Firefox
+  on an air-gapped computer. There is no JavaScript secp256k1 fallback.
 - Produces recovery information that can be saved or printed for offline use.
 - Exports a Bitcoin Core `wallet.dat` (SQLite descriptor wallet) with every
   derived output descriptor already imported — receive and change for each
