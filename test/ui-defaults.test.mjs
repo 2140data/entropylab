@@ -1353,7 +1353,7 @@ test("BIP-85 entry point sits beside Derive Key and opens the BIP-85 tab", () =>
   }
   assert.match(appSource, /getElementById\("bip85-open"\)/);
   assert.match(appSource, /open\.onclick = \(\) => \{\s*hodlShowWorkspace\("bip85"\)/);
-  assert.match(appSource, /open\.onclick[\s\S]*?hodlUseActiveKeyForBip85\(\)/);
+  assert.match(appSource, /open\.onclick[\s\S]*?hodlPickBip85SessionKey\(hodlKeys\[hodlActiveKey\]\)/);
 });
 
 test("Silent Payments sits between Multi Signature and PSBT / Nonce", () => {
@@ -1547,8 +1547,10 @@ test("MS Station assigns keys from one session picker and makes reuse opt in", (
   assert.match(appSource, /function hodlMatchingMsigExport\(result\) \{/);
   assert.match(appSource, /function hodlSyncMsigKeyAvatar\(row\) \{/);
   assert.match(appSource, /function hodlPickMsigSessionKey\(state\) \{/);
-  assert.match(appSource, /function hodlMsigUsedSessionFingerprints\(\) \{/);
-  assert.match(appSource, /reuse \? keys : keys\.filter/);
+  assert.match(appSource, /function hodlMsigCanonicalSessionKey\(value\) \{/);
+  assert.match(appSource, /return hodlCanonicalMultisigKey\(hodlParseMultisigCosigner/);
+  assert.match(appSource, /function hodlMsigUsedSessionKeys\(\) \{/);
+  assert.match(appSource, /available = reuse \? options : options\.filter/);
   assert.match(appSource, /hodlMsigKeyTarget = \[\.\.\.document\.querySelectorAll\("#msig-keys textarea"\)\]\.find/);
   assert.doesNotMatch(appSource, /chips\.className = "msig-session-keys"/);
   assert.match(appSource, /hodlFillKeyTabLifehash\(image, fingerprint\)/);

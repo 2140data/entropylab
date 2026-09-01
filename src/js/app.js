@@ -7066,8 +7066,15 @@ function hodlSyncMsigKeyAvatar(row) {
   }
 }
 var hodlMsigKeyTarget = null;
-function hodlMsigUsedSessionFingerprints() {
-  return new Set([...document.querySelectorAll("#msig-keys textarea")].map((textarea) => hodlMsigKeyOriginFingerprint(textarea.value)).filter(Boolean));
+function hodlMsigCanonicalSessionKey(value) {
+  try {
+    return hodlCanonicalMultisigKey(hodlParseMultisigCosigner(String(value || "").trim()));
+  } catch {
+    return "";
+  }
+}
+function hodlMsigUsedSessionKeys() {
+  return new Set([...document.querySelectorAll("#msig-keys textarea")].map((textarea) => hodlMsigCanonicalSessionKey(textarea.value)).filter(Boolean));
 }
 function hodlMsigNextKeyTarget() {
   let inputs = [...document.querySelectorAll("#msig-keys textarea")];
@@ -7095,11 +7102,18 @@ function hodlPickMsigSessionKey(state) {
 function hodlRefreshMsigSessionPickers() {
   let box = document.getElementById("msig-session-keys"), status = document.getElementById("msig-session-key-status");
   if (!box) return;
-  let keys = hodlSessionMsigKeys(), reuse = document.getElementById("msig-reuse-session-keys")?.checked, used = hodlMsigUsedSessionFingerprints(), available = reuse ? keys : keys.filter((state) => !used.has(state.result?.masterFingerprint || ""));
+  let keys = hodlSessionMsigKeys(), reuse = document.getElementById("msig-reuse-session-keys")?.checked, used = hodlMsigUsedSessionKeys(), options = keys.map((state) => {
+    let value = "";
+    try {
+      value = hodlMatchingMsigExport(state.result);
+    } catch {
+    }
+    return { state, canonical: hodlMsigCanonicalSessionKey(value) };
+  }), available = reuse ? options : options.filter((option) => !option.canonical || !used.has(option.canonical));
   box.replaceChildren();
   box.hidden = !available.length;
-  available.forEach((state) => {
-    let fingerprint = state.result?.masterFingerprint || state.name, button = document.createElement("button"), image = document.createElement("img"), label = document.createElement("span"), assigned = used.has(fingerprint);
+  available.forEach(({ state, canonical }) => {
+    let fingerprint = state.result?.masterFingerprint || state.name, button = document.createElement("button"), image = document.createElement("img"), label = document.createElement("span"), assigned = Boolean(canonical) && used.has(canonical);
     button.type = "button";
     button.className = "session-key-option" + (assigned ? " active" : "");
     button.dataset.keyId = String(state.id);
@@ -8304,9 +8318,6 @@ function hodlUseKeyForBip85(state) {
   else throw new Error("BIP-85 needs an HD root. This Key Station key is a single private key.");
   hodlBip85Source = "key:" + state.id;
 }
-function hodlUseActiveKeyForBip85() {
-  hodlUseKeyForBip85(hodlKeys[hodlActiveKey]);
-}
 function hodlPickBip85SessionKey(state) {
   let error = document.getElementById("bip85-error");
   if (error) error.textContent = "";
@@ -8548,16 +8559,7 @@ function hodlInitBip85() {
   if (open) open.onclick = () => {
     hodlShowWorkspace("bip85");
     hodlSelectBip85Bench();
-    let error = document.getElementById("bip85-error");
-    if (error) error.textContent = "";
-    try {
-      hodlUseActiveKeyForBip85();
-      let session = document.getElementById("bip85-session");
-      if (session) session.textContent = hodlBip85Note;
-    } catch (exception) {
-      if (error) error.textContent = exception.message || String(exception);
-    }
-    hodlRefreshStationKeyPickers();
+    hodlPickBip85SessionKey(hodlKeys[hodlActiveKey]);
   };
   document.getElementById("bip85-wipe").onclick = () => {
     hodlBip85WipeParent();
