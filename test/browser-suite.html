@@ -1579,6 +1579,7 @@
     assert(parentKey, "BIP-85 Station did not offer the compatible Key Station key");
     parentKey.click();
     assert(!document.getElementById("bip85-error").textContent, "The active key could not be loaded for BIP-85");
+    assert(/^[xt]prv/.test(document.getElementById("bip85-key").value), "BIP-85 Station did not populate the selected root xprv/tprv");
     document.getElementById("bip85-index").value = "0";
     document.getElementById("bip85-go").click();
     await until(() => tabs.children.length === 2 && document.querySelector("#bip85-out #bip85-private-heading"), "first BIP-85 child tab");
@@ -1610,6 +1611,7 @@
     assert(key, "SP Station did not offer the compatible Key Station key");
     key.click();
     assert(document.querySelector("#sp-session-keys .session-key-option.active"), "The selected SP Station key was not marked active");
+    assert(document.getElementById("sp-key").value.trim(), "SP Station did not populate the selected session key");
     assert(document.getElementById("sp-session").textContent.includes("Session key from"), "SP Station did not load the selected key");
     assert(!document.getElementById("sp-error").textContent, "SP Station rejected a compatible Key Station key");
     document.querySelector('#workspace [data-workspace="calc"]').click();

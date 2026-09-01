@@ -8267,7 +8267,9 @@ function hodlPickBip85SessionKey(state) {
   if (error) error.textContent = "";
   try {
     hodlUseKeyForBip85(state);
-    document.getElementById("bip85-key").value = "";
+    let rootXprv = state.result?.rootXprv || hodlBip85Root?.privateExtendedKey;
+    if (!rootXprv) throw new Error("This Key Station key does not expose a BIP32 root xprv/tprv.");
+    document.getElementById("bip85-key").value = rootXprv;
     document.getElementById("bip85-session").textContent = hodlBip85Note;
   } catch (exception) {
     if (error) error.textContent = exception.message || String(exception);
@@ -8454,8 +8456,7 @@ function hodlRunBip85() {
   if (error) error.textContent = "";
   try {
     if (manual.trim()) {
-      hodlBip85LoadXprv(manual);
-      document.getElementById("bip85-key").value = "";
+      if (!hodlBip85Root || !hodlBip85Source.startsWith("key:")) hodlBip85LoadXprv(manual);
     } else if (!hodlBip85Root) throw new Error("Choose a compatible Key Station key, or paste a root xprv/tprv.");
     result = deriveApplication(hodlBip85Root, hodlBip85Spec());
     let fingerprint = hodlBip85ChildFingerprint(result);
@@ -8487,6 +8488,13 @@ function hodlInitBip85() {
   hodlRenderBip85Tabs();
   hodlSyncBip85View();
   hodlRefreshStationKeyPickers();
+  document.getElementById("bip85-key").addEventListener("input", () => {
+    if (!hodlBip85Source.startsWith("key:")) return;
+    hodlBip85WipeParent();
+    hodlBip85Source = document.getElementById("bip85-key").value.trim() ? "manual" : "";
+    document.getElementById("bip85-session").textContent = hodlBip85Source ? "Manual root key entered. It will be validated when you derive a child." : hodlBip85Note;
+    hodlRefreshStationKeyPickers();
+  });
   go.onclick = hodlRunBip85;
   // Entry point beside Derive Wallet (idea adopted from PR #150): jump to the
   // BIP-85 tab with the active key loaded as parent. Errors land in the tab's
@@ -8610,8 +8618,8 @@ function hodlPickSpSessionKey(state) {
   if (error) error.textContent = "";
   try {
     hodlSpUseKey(state);
-    document.getElementById("sp-key").value = "";
-    document.getElementById("sp-pass").value = "";
+    document.getElementById("sp-key").value = state.result?.mnemonic || state.result?.rootXprv || "";
+    document.getElementById("sp-pass").value = state.result?.mnemonic ? state.fields?.pass || "" : "";
     document.getElementById("sp-session").textContent = hodlSpNote;
   } catch (exception) {
     if (error) error.textContent = exception.message || String(exception);
@@ -8621,9 +8629,7 @@ function hodlPickSpSessionKey(state) {
 function hodlSpEnsureHd() {
   let manual = document.getElementById("sp-key")?.value;
   if (manual && manual.trim()) {
-    hodlSpLoadKey(manual, document.getElementById("sp-pass")?.value);
-    document.getElementById("sp-key").value = "";
-    document.getElementById("sp-pass").value = "";
+    if (!hodlSpHd || !hodlSpSource.startsWith("key:")) hodlSpLoadKey(manual, document.getElementById("sp-pass")?.value);
     hodlRefreshStationKeyPickers();
   }
   if (!hodlSpHd || !hodlSpHd.privateKey) throw new Error("Choose a compatible Key Station key, or enter a BIP39 seed or root xprv.");
@@ -8807,6 +8813,15 @@ function hodlRunSp() {
 function hodlInitSp() {
   if (!document.getElementById("sp-card")) return;
   hodlRefreshStationKeyPickers();
+  let detachStationKey = () => {
+    if (!hodlSpSource.startsWith("key:")) return;
+    hodlSpWipeKeys();
+    hodlSpSource = document.getElementById("sp-key").value.trim() ? "manual" : "";
+    document.getElementById("sp-session").textContent = hodlSpSource ? "Manual session key entered. It will be validated when you use this Station." : hodlSpNote;
+    hodlRefreshStationKeyPickers();
+  };
+  document.getElementById("sp-key").addEventListener("input", detachStationKey);
+  document.getElementById("sp-pass").addEventListener("input", detachStationKey);
   document.querySelectorAll("#sp-modes [data-sp-mode]").forEach((button) => {
     button.onclick = () => { hodlSpSetMode(button.dataset.spMode); document.getElementById("sp-out").innerHTML = ""; document.getElementById("sp-error").textContent = ""; };
   });
